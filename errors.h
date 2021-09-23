@@ -2,6 +2,7 @@
 // Created by xskua01 on 23.09.2021.
 //
 
+#pragma once
 
 enum errors {
     ERROR_LEXICAL = 1,

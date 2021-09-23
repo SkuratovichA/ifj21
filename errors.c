@@ -1,5 +1,5 @@
 //
-// Created by suka on 23.09.2021.
+// Created by xskura01 on 23.09.2021.
 //
 
 #include "errors.h"
@@ -9,45 +9,45 @@ static int Return_error(int errcode) {
     char *errmsg = "Undefined error code!";
     switch (errcode) {
         case ERROR_LEXICAL:
-//             1 - chyba v programu v rámci lexikální analýzy (chybná struktura aktuálního lexému).
+            // 1 - lexical error
             errmsg = "Lexical error";
             break;
         case ERROR_SYNTAX:
-//            • 2 - chyba v programu v rámci syntaktické analýzy (chybná syntaxe programu).
+            // 2 - syntactic error
             errmsg = "Syntax error";
             break;
         case ERROR_UNDEF_FUN_OR_VAR:
             // todo: does it want to add more error messages? i.e undefined function, undefined variable ...
         // case ERROR_UNDEFINED_FUNCTION:
-//            • 3 - sémantická chyba v programu – nedefinovaná funkce/proměnná, pokus o redefinici proměnné, atp.
+            // 3 - semantic error in the program - undefined function/variable, attempt of redefining the variable,. ..
             errmsg = "Undefined function/variable!";
             break;
         case ERROR_TYPE_MISSMATCH:
- //           • 4 - sémantická chyba v příkazu přiřazení (typová nekompatibilita).
+            // 4 - type missmatch in assignment expression
             errmsg = "Type missmatch!";
             break;
         case ERROR_SEMANTICS_NUMBER_PARAMETERS:
-  //          • 5 - sémantická chyba v programu – špatný počet/typ parametrů či návratových hodnot u volání funkce či návratu z funkce.
+            // 5 - semantic error - wrong number/type of parameters(function calling/return) or return values
             errmsg = "Wrong number of parameters/return values!";
             break;
         case ERROR_SEMANTICS_TYPE_INCOMPATABLE:
-   //         • 6 - sémantická chyba typové kompatibility v aritmetických, řetězcových a relačních výrazech.
+            // 6 - semantic error of type compatibility in arithmetic, string and relation operators.
             errmsg = "Type incompatibility error!";
             break;
         case ERROR_SEMANTICS_OTHER:
-    //        • 7 - ostatní sémantické chyby.
+            // 7 - other semantic errors.
             errmsg = "Semantic error!";
             break;
         case ERROR_RUNTIME_NIL:
-     //       • 8 - běhová chyba při práci s neočekávanou hodnotou nil.
+            // 8 - runtime error while working with nil constant.
             errmsg = "nil assignment error!";
             break;
         case ERROR_RUNTIME_DIV_BY_ZERO:
-      //      • 9 - běhová chyba celočíselného dělení nulovou konstantou.
+            // 9 - runtime error of division by 0.
             errmsg = "Division by zero error";
             break;
         case ERROR_INTERNAL:
-       //     • 99 - interní chyba překladače tj. neovlivněná vstupním programem (např. chyba alokace paměti, atd.).
+            // 99 - internal compiler error - not affected by program input (memory management error, ...).
             errmsg = "Internal error";
             break;
         default:
