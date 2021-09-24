@@ -3,8 +3,6 @@ project(ifj21 C)
 
 set(CMAKE_C_STANDARD 11)
 
-#SET(CMAKE_C_FLAGS  "-DDEBUG -Wall -Werror -Wextra -pedantic -g")
-#SET(CMAKE_CXX_FLAGS  "-DDEBUG -Wall -Werror -Wextra -pedantic -g")
 add_compile_options(-DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
 
 add_executable(ifj21
