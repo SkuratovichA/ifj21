@@ -133,7 +133,7 @@ static progfile_t *Getfile(const char *filename, const char *mode) {
 
 
 const struct progfile_op_struct_t Progfile = {
-        .getfile  = Getfile,
+        .getfile = Getfile,
         .getfile_stdin  = Getfile_stdin,
         .free = Free,
         .pgetc = Getc,
