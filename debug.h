@@ -9,7 +9,7 @@
 
 
 #ifdef DEBUG
-#include <assert.h>
+    #include <assert.h>
     #include <stdio.h>
 
     #define debug_msg(...) debug_print(stdout, __VA_ARGS__)
