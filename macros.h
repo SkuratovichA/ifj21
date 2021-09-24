@@ -44,7 +44,7 @@
 
 #define case_nonzero_digit case_9('1', '2', '3', '4', '5', '6', '7', '8', '9')
 
-#define case_digit case_NONZERO_DIGIT: case '0'
+#define case_digit case_nonzero_digit: case '0'
 
 #define case_alnum \
     case_alpha: case_digit \

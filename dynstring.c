@@ -12,14 +12,15 @@ static inline bool is_on_heap(const string *str) {
 
 static bool Str_create(string *str, const char *s) {
     size_t length = strlen(s);
-    if( length < sizeof(string)) {
+    if (length < sizeof(string)) {
         strcpy(str->stack_str, s);
         str->stack_size = length;
         str->is_on_heap = false;
     } else {
-        str->heap_str = (char *)calloc(length + 1, 1);
-        if( !str->heap_str)
+        str->heap_str = (char *) calloc(length + 1, 1);
+        if (!str->heap_str) {
             return false;
+        }
         strcpy(str->heap_str, s);
         str->size = length;
         str->allocated_size = length + 1;
@@ -35,27 +36,27 @@ static void Str_create_empty(string *str) {
 }
 
 static char *Str_c_str(string *str) {
-    return ( is_on_heap(str)) ? str->heap_str : str->stack_str;
+    return (is_on_heap(str)) ? str->heap_str : str->stack_str;
 }
 
 static size_t Str_length(const string *str) {
-    return ( is_on_heap(str)) ? str->size : str->stack_size;
+    return (is_on_heap(str)) ? str->size : str->stack_size;
 }
 
 static void Str_free(string *str) {
-    if( str != NULL && is_on_heap(str)) {
+    if (str != NULL && is_on_heap(str)) {
         free(str->heap_str);
         str->is_on_heap = false;
     }
 }
 
 static bool Str_append_char(string *str, char ch) {
-    if( is_on_heap(str)) {
+    if (is_on_heap(str)) {
         // new_char + null byte = 2
-        if( str->size + 2 > str->allocated_size ) {
+        if (str->size + 2 > str->allocated_size) {
             str->allocated_size *= 2;
             void *tmp = realloc(str->heap_str, str->allocated_size);
-            if( !tmp ) {
+            if (!tmp) {
                 free(str->heap_str);
                 return false;
             }
@@ -65,11 +66,11 @@ static bool Str_append_char(string *str, char ch) {
         str->heap_str[str->size] = '\0';
     } else {
         // move stack str to heap if too long
-        if( str->stack_size + 1U >= sizeof(string)) {
+        if (str->stack_size + 1U >= sizeof(string)) {
             size_t new_length = str->stack_size + 1;
             // allocate string on the heap
             void *tmp = malloc(new_length + 1);
-            if( !tmp ) {
+            if (!tmp) {
                 return false;
             }
             // copy contents and set size
@@ -87,15 +88,17 @@ static bool Str_append_char(string *str, char ch) {
     }
     return true;
 }
+
 static bool Str_create_onheap(string *str) {
-    if (!str)
+    if (!str) {
         return false;
+    }
     str->heap_str = calloc(1, (str->allocated_size = 42)); // here's the answer ...
     str->size = 0;
     str->is_on_heap = true;
-    assert((bool)NULL == false && "NULL must be false");
-    assert((bool)!NULL == true && "!NULL must be true");
-    return (bool)str->heap_str; // NULL == 0 == false
+    assert((bool) NULL == false && "NULL must be false");
+    assert((bool) !NULL == true && "!NULL must be true");
+    return (bool) str->heap_str; // NULL == 0 == false
 }
 
 // interface to use when dealing with strings

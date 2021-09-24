@@ -18,7 +18,7 @@ static int Return_error(int errcode) {
             break;
         case ERROR_UNDEF_FUN_OR_VAR:
             // todo: does it want to add more error messages? i.e undefined function, undefined variable ...
-        // case ERROR_UNDEFINED_FUNCTION:
+            // case ERROR_UNDEFINED_FUNCTION:
             // 3 - semantic error in the program - undefined function/variable, attempt of redefining the variable,. ..
             errmsg = "Undefined function/variable!";
             break;
@@ -57,6 +57,6 @@ static int Return_error(int errcode) {
     return errcode;
 }
 
-const struct error Errors= {
+const struct error Errors = {
         .return_error = Return_error
 };

@@ -15,8 +15,8 @@ union string_t {
     struct {
         char *heap_str;
         size_t allocated_size;
-        size_t size : _SIZE_BITS;
-        size_t is_on_heap : 1; // use 1 bit for a flag denoting the string is allocated on heap
+        size_t size: _SIZE_BITS;
+        size_t is_on_heap: 1; // use 1 bit for a flag denoting the string is allocated on heap
     };
     struct {
         uint8_t stack_size;
