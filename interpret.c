@@ -20,7 +20,7 @@ int main() {
     }
 
     while ((token = Scanner.get_curr_token()).type != TOKEN_EOFILE) {
-        debug_msg("%s", Scanner.to_string(Scanner.get_next_token(pfile).type));
+        debug_msg("%s\n", Scanner.to_string(Scanner.get_next_token(pfile).type));
         if (token.type == TOKEN_EOL) {
             debug_msg("\n");
         }
@@ -28,7 +28,6 @@ int main() {
 
 
     Progfile.free(pfile);
-
     Errors.return_error(42);
     return 0;
 }
