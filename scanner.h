@@ -3,6 +3,12 @@
 //
 #pragma once
 
+//============================================
+// DEBUG
+#ifndef DEBUG_SCANNER
+#undef DEBUG
+#endif
+
 
 //============================================
 // Includes
