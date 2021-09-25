@@ -6,7 +6,8 @@
 #include <stdio.h>
 
 static int Return_error(int errcode) {
-    char *errmsg = "Undefined error code!";
+
+    char *errmsg = "BLASPHEMOUS RUMORS!";
     switch (errcode) {
         case ERROR_LEXICAL:
             // 1 - lexical error
