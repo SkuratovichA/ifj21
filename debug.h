@@ -16,6 +16,7 @@
     #define debug_msg_stderr(...) debug_print(stderr, __VA_ARGS__)
     #define debug_msg_s(...) fprintf(stdout, __VA_ARGS__)
 
+    #define DEBUG_SEP "\033[0;36m<><><><><><><><>\033[0m\n"
 
     #define debug_todo(...) do{ \
         fprintf(stderr, "TODO: "); \
