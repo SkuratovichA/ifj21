@@ -7,13 +7,26 @@
 // todo: create documentation
 // todo: write tests, test
 
+static char *state_tostring(const int s) {
+    switch (s) {
+        #define X(nam) case STATE(nam): return #nam;
+            STATES(X)
+        #undef X
+        default:
+            assert(!"No such state...");
+    }
+}
 
 static char *_to_string(const int t) {
+    debug_msg("Token number: %d\n", t);
+
     switch (t) {
         case TOKEN_EOFILE:
-            return "EOF";
+            return "END OF FILE";
+        case TOKEN_WS:
+            return " whitespace ";
         case TOKEN_EOL:
-            return "EOL";
+            return "END OF LINE";
         case TOKEN_ID:
             return "id";
         case TOKEN_NUM_I:
@@ -60,6 +73,8 @@ static char *_to_string(const int t) {
             return ";";
         case TOKEN_STRCAT:
             return "..";
+        case TOKEN_DEAD:
+            return "DEAD TOKEN";
 
 //        #define X(name) case KEYWORD(name): return #name;
 //            KEYWORDS(X)
@@ -75,24 +90,27 @@ static int state;
 
 
 static token_t lex_string(progfile_t *pfile) {
+    debug_msg(DEBUG_SEP);
     state = STATE_STR_INIT;
     int ch;
     uint8_t escaped_char;
     bool accepted = false;
-    token_t token;
+    token_t token = { .type = TOKEN_STR };
 
     Dynstring.create_empty(&token.attribute.id);
 
     while (!accepted && ch != EOF) {
         ch = Progfile.pgetc(pfile);
+        debug_msg("GOT: %c in state %s\n", ch, state_tostring(state));
         switch (state) {
-            case STATE(STR_INIT):
+            case STATE_STR_INIT:
                 switch (ch) {
                     case '\\':
                         state = STATE_STR_ESC;
                         break;
                     case '"':
                         state = STATE_STR_FINAL;
+                        accepted = true;
                         break;
                     case '\n':
                         accepted = true;
@@ -116,9 +134,11 @@ static token_t lex_string(progfile_t *pfile) {
                         break;
                     case 't':
                         Dynstring.append_char(&token.attribute.id, '\n');
+                        state = STATE_STR_INIT;
                         break;
                     case 'n':
                         Dynstring.append_char(&token.attribute.id, '\t');
+                        state = STATE_STR_INIT;
                         break;
                     case_2('\\', '\"'):
                         Dynstring.append_char(&token.attribute.id, (char) ch);
@@ -194,7 +214,7 @@ static token_t lex_string(progfile_t *pfile) {
                 break;
         }
     }
-    token.type = TOKEN_STR;
+    debug_msg("GOT STRING: %s\n", Dynstring.c_str(&token.attribute.id));
     if (state != STATE_STR_FINAL) {
         token.type = TOKEN_DEAD;
         Dynstring.free(&token.attribute.id);
@@ -206,8 +226,10 @@ static token_t lex_string(progfile_t *pfile) {
 
 
 static token_t lex_identif(progfile_t *pfile) {
-    state = STATE(ID_INIT);
-    token_t token;
+    debug_msg(DEBUG_SEP);
+
+    state = STATE_ID_INIT;
+    token_t token = { .type = TOKEN_ID };
     Dynstring.create_empty(&token.attribute.id);
     int ch;
     bool accepted = false;
@@ -237,7 +259,9 @@ static token_t lex_identif(progfile_t *pfile) {
                 break;
         }
     }
+
     if (state != STATE_ID_FINAL) {
+        Dynstring.free(&token.attribute.id);
         token.type = TOKEN_DEAD;
     }
 
@@ -249,6 +273,7 @@ static token_t lex_identif(progfile_t *pfile) {
 }
 
 static bool process_comment(progfile_t *pfile) {
+    debug_msg(DEBUG_SEP);
     state = STATE_COMMENT_INIT;
     bool accepted = false;
     int ch;
@@ -305,6 +330,7 @@ static bool process_comment(progfile_t *pfile) {
 
 // >= <= == ~= < >
 static token_t lex_relate_op(progfile_t *pfile) {
+    debug_msg(DEBUG_SEP);
     token_t token;
     bool accepted = false;
     int ch;
@@ -332,6 +358,7 @@ static token_t lex_relate_op(progfile_t *pfile) {
 }
 
 static token_t lex_number(progfile_t *pfile) {
+    debug_msg(DEBUG_SEP);
     state = STATE_NUM_INIT;
     string ascii_num;
     Dynstring.create_empty(&ascii_num);
@@ -483,8 +510,9 @@ static token_t lex_number(progfile_t *pfile) {
 }
 
 static token_t scanner(progfile_t *pfile) {
+    debug_msg(DEBUG_SEP);
     int ch;
-    token_t token;
+    token_t token = {0, };
 
     next_lexeme:
     state = STATE_INIT;
@@ -576,6 +604,7 @@ static token_t scanner(progfile_t *pfile) {
             token.type = TOKEN_EOFILE;
             break;
         default:
+            debug_msg("UNKNOWN CHARACTER: %c\n", ch);
             token.type = TOKEN_DEAD;
             break;
     }
@@ -583,7 +612,6 @@ static token_t scanner(progfile_t *pfile) {
     if (token.type == TOKEN_DEAD) {
         assert(!"Handle errors"); // todo: handle errors
     }
-
 
     return token;
 }
