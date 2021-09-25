@@ -3,7 +3,6 @@
 //
 
 #include "dynstring.h"
-#include "dynstring.h"
 #include <stdlib.h>
 
 static inline bool is_on_heap(const string *str) {
