@@ -72,10 +72,10 @@ enum states {
 //============================================
 #define TOKEN(name) _cat_2_(TOKEN, name)
 typedef enum token_type {
-    // errors
-    TOKEN(DEAD) = -127,
     // tokens
     TOKEN(EOFILE) = EOF, // to be compatible with EOF
+    // dead token == NULL
+    TOKEN(DEAD) = 0,
     // normal tokens
     TOKEN(WS), // ' '
     TOKEN(EOL), // '\n'
@@ -195,4 +195,3 @@ struct scanner_op_struct {
 //    return TOKEN_IDENTIFIER;
 //}
 ////============================================
-//
