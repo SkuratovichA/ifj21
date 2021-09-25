@@ -32,8 +32,11 @@
 #else
 // undef debug macros
 #define debug_err(...)
+#define debug_msg(...)
 #define debug_msg_stdout(...)
+#define debug_msg_stderr(...)
 #define debug_todo(...)
 #define debug_assert(cond)
+#define DEBUG_SEP
 #endif
 
