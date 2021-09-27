@@ -1,6 +1,29 @@
-//
-// Created by xskura01 on 23.09.2021.
-//
+/********************************************
+ * Project name: IFJ - projekt
+ * File: scanner.h
+ * Date: 23. 09. 2021
+ * Last change: 23. 09. 2021
+ * Team: TODO
+ * Authors:  Aliaksandr Skuratovich
+ *           Evgeny Torbin
+ *           Lucie Svobodová
+ *           Jakub Kuzník
+ *******************************************/
+/**
+ *
+ *
+ *  @package scanner
+ *  @file scanner.h
+ *  @brief Header for scanner.c with structures and macros.
+ *
+ *
+ *
+ *  @author Aliaksandr Skuratovich
+ *  @author Evgeny Torbin
+ *  @author Lucie Svobodová
+ *  @author Jakub Kuzník
+ */
+
 #pragma once
 
 //============================================
@@ -34,6 +57,9 @@
 // States of the scanner automaton
 #define STATE(name) _cat_2_(STATE, name)
 
+/**
+ * TODO Explain
+ */
 #define STATES(X) \
     X(INIT) \
     X(STR_INIT) \
@@ -77,6 +103,9 @@ enum states {
 
 //============================================
 #define TOKEN(name) _cat_2_(TOKEN, name)
+/**
+ * Tokens enum. What does each token represent.
+ */
 typedef enum token_type {
     // tokens
     TOKEN(EOFILE) = EOF, // to be compatible with EOF
@@ -115,12 +144,18 @@ typedef enum token_type {
 
 //===========================================
 // Token and itt attribute
+/**
+ * Token attributes.
+ */
 typedef union token_attribute {
-    string id; // iff token == string || token == identifier
-    uint64_t num_i; // iff token == number_int
-    double num_f; // -//- number_float
+    string id;       /**< if token == string || token == identifer  */
+    uint64_t num_i;  /**< if token == number_int */
+    double num_f;    /**< number_float */
 } attribute_t;
 
+/**
+ * Token struct.
+ */
 typedef struct token {
     int type;
     attribute_t attribute;
@@ -128,8 +163,9 @@ typedef struct token {
 //
 
 
-//============================================
-// An interface to access scanner functions
+/**
+ * An interface to access scanner functions
+ */
 extern const struct scanner_op_struct Scanner;
 
 struct scanner_op_struct {

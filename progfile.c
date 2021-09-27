@@ -1,6 +1,27 @@
-//
-// Created by xskura01 on 23.09.2021.
-//
+/********************************************
+ * Project name: IFJ - projekt
+ * File: progfile.c
+ * Date: 23. 09. 2021
+ * Last change: 23. 09. 2021
+ * Team: TODO
+ * Authors:  Aliaksandr Skuratovich
+ *           Evgeny Torbin
+ *           Lucie Svobodová
+ *           Jakub Kuzník
+ *******************************************/
+/**
+ *
+ *  @package progfile
+ *  @file progfile.c
+ *  @brief //TODO WHAT IS THIS FILE FOR WHERE ARE THESE FUNCTIONS USED
+ *
+ *
+ *  @author Aliaksandr Skuratovich
+ *  @author Evgeny Torbin
+ *  @author Lucie Svobodová
+ *  @author Jakub Kuzník
+ */
+
 
 #include "progfile.h"
 
@@ -11,19 +32,38 @@
 
 // opaque structure
 struct c_progfile {
-    size_t size;
-    size_t pos;
+    size_t size; // File size
+    size_t pos;  // position in file
     char tape[];
 };
 
-static char Peek_at(progfile_t *pfile, size_t step) {
+/**
+ * @brief Move char pointer (*pfile->tape) by step.
+ *
+ * @param pfile char array
+ * @param step
+ * @return pfile->tape[pos+step] if empty char* or out of bounds return EOF.
+ */
+static char Peek_at(progfile_t *pfile, size_t step) {  //MAYBE RENAME TO MOVE_FILE_POINTER
     if (!pfile) {
         return EOF;
     }
     size_t newpos = pfile->pos + step;
-    return (newpos < pfile->size) ? pfile->tape[newpos] : EOF;
+
+    if (newpos < pfile->size)
+        return pfile->tape[newpos];
+    else
+        return EOF;
+
+    //return (newpos < pfile->size) ? pfile->tape[newpos] : EOF;
 }
 
+/**
+ * @brief Get actual character and move to next one.
+ *
+ * @param pfile
+ * @return Actual character. If end or empty return EOF.
+ */
 static int Getc(progfile_t *pfile) {
     if (pfile != NULL && pfile->pos < pfile->size) {
         return pfile->tape[pfile->pos++];
@@ -34,23 +74,54 @@ static int Getc(progfile_t *pfile) {
     return EOF;;
 }
 
+/**
+ * @brief Get to character before. Tape must be the part of pfile->tape, otherwise insanity happens.
+ *
+ * @param pfile
+ * @return character before or EOF
+ */
 static int Ungetc(progfile_t *pfile) {
     return (pfile != NULL && pfile->pos > 0) ? pfile->tape[--pfile->pos] : EOF;
 }
 
+/**
+ * @brief Free data structure.
+ *
+ * @param pfile struct that will be freed
+ * @return void
+ */
 static void Free(progfile_t *pfile) {
     free(pfile);
 }
 
+/**
+ * @brief Returns pointer to start.
+ *
+ * @param pfile
+ * @return pfile->tape
+ */
 static char *Get_tape(progfile_t *pfile) {
     return pfile->tape;
 }
 
+/**
+ * @brief Returns pointer to actual position.
+ *
+ * @param pfile
+ * @return pfile->tape + pfile->pos
+ */
 static char *Get_tape_current(progfile_t *pfile) {
     return (pfile->tape + pfile->pos);
 }
 
-// tape must be the part of pfile->tape, otherwise insanity happens
+/**
+ * @brief Set pfile to tape. Tape must be the part of pfile->tape, otherwise insanity happens.
+ *
+ * @param pfile
+ * @param tape where to move
+ * @return new pfile->pos on tape pos.
+ *
+ */
 static void Set_tape(progfile_t *pfile, char *tape) {
     if (pfile == NULL) {
         return;
@@ -61,8 +132,11 @@ static void Set_tape(progfile_t *pfile, char *tape) {
     }
 }
 
-// very advanced method to read a file from an stdin
-// my face is ready for tomatoes to throw in
+/**
+ * @brief Reads a file from stdin.
+ *
+ * @return File stored in pfile structur. If error return NULL.
+ */
 static progfile_t *Getfile_stdin() {
     progfile_t *pfile;
     size_t size;
@@ -97,6 +171,13 @@ static progfile_t *Getfile_stdin() {
     return NULL;
 }
 
+/**
+ * @brief Store file to pfile.
+ *
+ * @param filename
+ * @param mode File opening mode.
+ * @return pfile where file is stored. If error returns NULL.
+ */
 static progfile_t *Getfile(const char *filename, const char *mode) {
     progfile_t *pfile;
     FILE *fp = fopen(filename, mode);
@@ -132,6 +213,9 @@ static progfile_t *Getfile(const char *filename, const char *mode) {
 }
 
 
+/**
+ * Functions are in struct so we can use them in different files.
+ */
 const struct progfile_op_struct_t Progfile = {
         .getfile = Getfile,
         .getfile_stdin  = Getfile_stdin,

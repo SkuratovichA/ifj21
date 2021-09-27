@@ -1,12 +1,41 @@
-//
-// Created by xskura01 on 23.09.2021.
-//
+/********************************************
+ * Project name: IFJ - projekt
+ * File: scanner.c
+ * Date: 23. 09. 2021
+ * Last change: 23. 09. 2021
+ * Team: TODO
+ * Authors:  Aliaksandr Skuratovich
+ *           Evgeny Torbin
+ *           Lucie Svobodová
+ *           Jakub Kuzník
+ *******************************************/
+/**
+ *
+ *
+ *  @package scanner
+ *  @file scanner.c
+ *  @brief Scanner creates valid tokens for Parser. And check if all the inputs characters are language alphabet.
+ *
+ *
+ *
+ *  @author Aliaksandr Skuratovich
+ *  @author Evgeny Torbin
+ *  @author Lucie Svobodová
+ *  @author Jakub Kuzník
+ */
+
 
 #include "scanner.h"
 
 // todo: create documentation
-// todo: write tests, test
+// todo: write tests, test || someone on dc will write tests
 
+/**
+ * @brief Covert state to string.
+ *
+ * @param s
+ * @return String that represent state.
+ */
 static char *state_tostring(const int s) {
     switch (s) {
         #define X(nam) case STATE(nam): return #nam;
@@ -17,6 +46,12 @@ static char *state_tostring(const int s) {
     }
 }
 
+/**
+ * @brief Convert token to string.
+ *
+ * @param t token
+ * @return String that represent token.
+ */
 static char *_to_string(const int t) {
     debug_msg("Token number: %d\n", t);
 
@@ -89,6 +124,12 @@ static size_t lines;
 static int state;
 
 
+/**
+ * @brief viz FSM STRING
+ *
+ * @param pfile
+ * @return token. If STATE!= STATE_STR_FINAL returns TOKEN_DEAD.
+ */
 static token_t lex_string(progfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     state = STATE_STR_INIT;
@@ -224,7 +265,12 @@ static token_t lex_string(progfile_t *pfile) {
     return token;
 }
 
-
+/**
+ * @brief viz FSM
+ * //TODO TENHLE NECHÁPU NAPSAT BRIEF
+ * @param pfile
+ * @return token. If state != STATE_ID_FINAL return TOKEN_DEAD
+ */
 static token_t lex_identif(progfile_t *pfile) {
     debug_msg(DEBUG_SEP);
 
@@ -272,6 +318,12 @@ static token_t lex_identif(progfile_t *pfile) {
     return token;
 }
 
+/**
+ * @brief viz FSM comments
+ * //TODO CHECK IF COULD BE VOID
+ * @param pfile
+ * @return true
+ */
 static bool process_comment(progfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     state = STATE_COMMENT_INIT;
@@ -329,6 +381,12 @@ static bool process_comment(progfile_t *pfile) {
 }
 
 // >= <= == ~= < >
+/**
+ * @brief viz FSM RELOP.
+ *
+ * @param pfile
+ * @return (token_t) (.type = actual_state)
+ */
 static token_t lex_relate_op(progfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     token_t token;
@@ -357,6 +415,12 @@ static token_t lex_relate_op(progfile_t *pfile) {
     return (token_t) {.type = TOKEN_DEAD};
 }
 
+/**
+ * @brief viz FSM
+ *
+ * @param pfile
+ * @return token
+ */
 static token_t lex_number(progfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     state = STATE_NUM_INIT;
@@ -508,7 +572,12 @@ static token_t lex_number(progfile_t *pfile) {
 
     return token;
 }
-
+/**
+ * @brief Get throw whole file. It does lexical analysis. If there are characters that are not from language alphabet. Break and return TOKEN_DEAD
+ *
+ * @param pfile
+ * @return token
+ */
 static token_t scanner(progfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     int ch;
@@ -618,10 +687,22 @@ static token_t scanner(progfile_t *pfile) {
 
 
 // ==============================================
+/**
+ * @brief Initialize scanner
+ *
+ * @param
+ * @return File
+ */
 static progfile_t *_initialize_scanner() {
     return Progfile.getfile_stdin();
 }
 
+/**
+ * @brief Free token.
+ *
+ * @param token
+ * @return void
+ */
 static void _free_token(token_t *token) {
     if (token->type == TOKEN_ID || token->type == TOKEN_STR) {
         Dynstring.free(&token->attribute.id);
@@ -632,6 +713,12 @@ static void _free_token(token_t *token) {
 // ==============================================
 static token_t prev, curr;
 
+/**
+ * @brief Gets next token. and move to next one.
+ *
+ * @param pfile
+ * @return token
+ */
 static token_t _get_next_token(progfile_t *pfile) {
     _free_token(&prev); // need to free string
     prev = curr;
@@ -639,15 +726,31 @@ static token_t _get_next_token(progfile_t *pfile) {
     return curr;
 }
 
+/**
+ * @brief Get previous token.
+ *
+ * @return previous token
+ */
 static token_t _get_prev_token() {
     return prev;
 }
 
+/**
+ * @brief Get current token.
+ *
+ * @param
+ * @return current token.
+ */
 static token_t _get_curr() {
     return curr;
 }
 
-
+/**
+ * @brief Free pfile
+ *
+ * @param pfile
+ * @return void
+ */
 // ==============================================
 static void _free_scanner(progfile_t *pfile) {
     Dynstring.free(&prev.attribute.id);
@@ -655,6 +758,10 @@ static void _free_scanner(progfile_t *pfile) {
     Progfile.free(pfile);
 }
 
+/**
+ *
+ * Functions are in struct so we can use them in different files.
+ */
 const struct scanner_op_struct Scanner = {
         .free = _free_scanner,
         .get_next_token = _get_next_token,

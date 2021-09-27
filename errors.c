@@ -1,10 +1,39 @@
-//
-// Created by xskura01 on 23.09.2021.
-//
+/********************************************
+ * Project name: IFJ - projekt
+ * File: errors.c
+ * Date: 23. 09. 2021
+ * Last change: 23. 09. 2021
+ * Team: TODO
+ * Authors:  Aliaksandr Skuratovich
+ *           Evgeny Torbin
+ *           Lucie Svobodová
+ *           Jakub Kuzník
+ *******************************************/
+/**
+ *
+ *
+ *  @package errors
+ *  @file errors.c
+ *  @brief File has switch with all the errors and their codes. Errors codes are defined in errors.h
+ *
+ *
+ *
+ *  @author Aliaksandr Skuratovich
+ *  @author Evgeny Torbin
+ *  @author Lucie Svobodová
+ *  @author Jakub Kuzník
+ */
 
 #include "errors.h"
 #include <stdio.h>
 
+/**
+ * @brief Print error message to stderr.
+ *
+ * @param errcode Errors codes are defined in errors.h
+ * @return return errorcode number that is specified in macros.h
+ *
+ */
 static int Return_error(int errcode) {
 
     char *errmsg = "BLASPHEMOUS RUMORS!";
@@ -57,7 +86,9 @@ static int Return_error(int errcode) {
     fprintf(stderr, "ERROR: %s\n", errmsg);
     return errcode;
 }
-
+/**
+ * Functions are in struct so we can use them in different files.
+ */
 const struct error Errors = {
         .return_error = Return_error
 };

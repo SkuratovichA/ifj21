@@ -1,7 +1,28 @@
-//
-// Created by xskura01 on 23.09.2021.
-//
-
+/********************************************
+ * Project name: IFJ - projekt
+ * File: interpret.c
+ * Date: 23. 09. 2021
+ * Last change: 23. 09. 2021
+ * Team: TODO
+ * Authors:  Aliaksandr Skuratovich
+ *           Evgeny Torbin
+ *           Lucie Svobodová
+ *           Jakub Kuzník
+ *******************************************/
+/**
+ *
+ *
+ *  @package interpret
+ *  @file interpret.c
+ *  @brief Main file //TODO WHAT IS THIS PROJECT ABOUT
+ *
+ *
+ *
+ *  @author Aliaksandr Skuratovich
+ *  @author Evgeny Torbin
+ *  @author Lucie Svobodová
+ *  @author Jakub Kuzník
+ */
 #include <stdio.h>
 #include "errors.h"
 #include "progfile.h"

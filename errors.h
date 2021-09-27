@@ -1,9 +1,33 @@
-//
-// Created by xskua01 on 23.09.2021.
-//
-
+/********************************************
+ * Project name: IFJ - projekt
+ * File: errors.h
+ * Date: 23. 09. 2021
+ * Last change: 23. 09. 2021
+ * Team: TODO
+ * Authors:  Aliaksandr Skuratovich
+ *           Evgeny Torbin
+ *           Lucie Svobodová
+ *           Jakub Kuzník
+ *******************************************/
+/**
+ *
+ *
+ *  @package errors
+ *  @file errors.h
+ *  @brief Contain enum of all the error codes.
+ *
+ *
+ *
+ *  @author Aliaksandr Skuratovich
+ *  @author Evgeny Torbin
+ *  @author Lucie Svobodová
+ *  @author Jakub Kuzník
+ */
 #pragma once
 
+/**
+ * All error codes.
+ */
 enum errors {
     ERROR_LEXICAL = 1,
     ERROR_SYNTAX,
@@ -18,6 +42,11 @@ enum errors {
 };
 // todo: shall we create functinos like get_error(), which returns an error code and prints a message?
 
+
+
+/**
+ * A structure that store pointers to all the functions from errors.c. So we can use them in different files.
+ */
 struct error {
     int (*return_error)(int);
 };

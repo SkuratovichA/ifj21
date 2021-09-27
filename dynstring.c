@@ -1,14 +1,51 @@
-//
-// Created by xskura01 on 23.09.2021.
-//
+/********************************************
+ * Project name: IFJ - projekt
+ * File: dynstring.c
+ * Date: 23. 09. 2021
+ * Last change: 23. 09. 2021
+ * Team: TODO
+ * Authors:  Aliaksandr Skuratovich
+ *           Evgeny Torbin
+ *           Lucie Svobodová
+ *           Jakub Kuzník
+ *******************************************/
+/**
+ * This file can create dynamic size strings. If the string is short, it is created on stack else it is created on heap.
+ *
+ *  @package dynstring
+ *  @file dynstring.c
+ *  @brief Contain function for operations with string. String is represented by data union str.
+ *
+ *
+ *
+ *  @author Aliaksandr Skuratovich
+ *  @author Evgeny Torbin
+ *  @author Lucie Svobodová
+ *  @author Jakub Kuzník
+ */
+
 
 #include "dynstring.h"
 #include <stdlib.h>
 
+
+/**
+ * @brief Find if string is on heap or stack.
+ *
+ * @param str String that is checked.
+ * @return str->is_on_heap
+ */
 static inline bool is_on_heap(const string *str) {
     return str->is_on_heap;
 }
-
+/**
+ * @brief Create a string from a char *
+ *
+ * @param str Output string. str is data struct defined in dynstring.h
+ * @param s Char that we want to convert to string.
+ * @return true when successfully converted. False when Calloc error.
+ *
+ */
 static bool Str_create(string *str, const char *s) {
     size_t length = strlen(s);
     if (length < sizeof(string)) {
@@ -28,20 +65,50 @@ static bool Str_create(string *str, const char *s) {
     return true;
 }
 
+/**
+ * @brief Create empty string.
+ *
+ * Union variables are set to.
+ * str->is_on_heap = false;
+ * str->stack_size = 0;
+ * str->stack_str[0] = '\0';
+ *
+ * @param str
+ * @return void
+ */
 static void Str_create_empty(string *str) {
     str->is_on_heap = false;
     str->stack_size = 0;
     str->stack_str[0] = '\0';
 }
 
+
+/**
+ * @brief Get char * from string.
+ *
+ * @param str
+ * @return Pointer to char. Could be on heap or stack.
+ */
 static char *Str_c_str(string *str) {
     return (is_on_heap(str)) ? str->heap_str : str->stack_str;
 }
 
+/**
+ * @brief Return length of given string.
+ *
+ * @param str
+ * @return size of string
+ */
 static size_t Str_length(const string *str) {
     return (is_on_heap(str)) ? str->size : str->stack_size;
 }
 
+/**
+ * @brief If string was on heap free memory.
+ *
+ * @param str
+ * @return void
+ */
 static void Str_free(string *str) {
     if (str != NULL && is_on_heap(str)) {
         free(str->heap_str);
@@ -49,6 +116,13 @@ static void Str_free(string *str) {
     }
 }
 
+/**
+ * @brief Appends given character to end of string.
+ *
+ * @param str
+ * @param ch Character that we'll be appending.
+ * @return true when xxx
+ */
 static bool Str_append_char(string *str, char ch) {
     if (is_on_heap(str)) {
         // new_char + null byte = 2
@@ -88,6 +162,12 @@ static bool Str_append_char(string *str, char ch) {
     return true;
 }
 
+/**
+ * @brief Allocate string on heap.
+ *
+ * @param str
+ * @return True if success. If given pointer is NULL return false. If Calloc failed the program ends.
+ */
 static bool Str_create_onheap(string *str) {
     if (!str) {
         return false;
@@ -100,13 +180,18 @@ static bool Str_create_onheap(string *str) {
     return (bool) str->heap_str; // NULL == 0 == false
 }
 
-// interface to use when dealing with strings
+
+/**
+ * Interface to use when dealing with strings.
+ * Functions are in struct so we can use them in different files.
+ */
 const struct string_op_struct_t Dynstring = {
-        .create         = Str_create,        // create a string from a char *
-        .create_empty   = Str_create_empty,  // string constructor
-        .length         = Str_length,        // get string length
-        .c_str          = Str_c_str,         // get char * from string
-        .append_char    = Str_append_char,
-        .free           = Str_free,
-        .create_onheap  = Str_create_onheap,
+    /*@{*/
+    .create         = Str_create,        // create a string from a char *
+    .create_empty   = Str_create_empty,  // string constructor
+    .length         = Str_length,        // get string length
+    .c_str          = Str_c_str,         // get char * from string
+    .append_char    = Str_append_char,   //
+    .free           = Str_free,          //
+    .create_onheap  = Str_create_onheap, //
 };
