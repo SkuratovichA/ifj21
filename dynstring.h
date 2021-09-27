@@ -35,31 +35,31 @@
 
 /**
  * A Union represented string.
+ * Size of the structure is 24 bits. String can be
  */
 union string_t {
     /**
-     * If string is big enough we need to create it on heap.
+     * If string is big enough(> 24 bytes) we need to create it on heap.
      */
-    union string_t {
     struct {
         char *heap_str;
         size_t allocated_size;    /**< Allocated size on heap*/
-        size_t size: _SIZE_BITS;  /**<  */
-        size_t is_on_heap: 1; /   /**< Use 1 bit for a flag denoting the string is allocated on heap *//
+        size_t size: _SIZE_BITS;  /**< String length */
+        size_t is_on_heap: 1;     /**< Use 1 bit for a flag denoting the string is allocated on heap */
     };
     /**
-     * If string is on stack.
+     * If string is on stack, the last bit(which aliases with is_on_heap is '\0', which is false)
      */
     struct {
-        uint8_t stack_size; /**< Size on stack */
-        char stack_str[sizeof(char *) + 2 * sizeof(size_t) - 1]; /**< Array where is string stored. */
+        uint8_t stack_size; /**< Size on stack: 1 byte */
+        char stack_str[sizeof(size_t) * 3 - 1]; /**< Array where is string stored: 23 bytes */
     };
 };
 
 typedef union string_t string;
 
 /**
- * A structure that store pointers to all the functions from dynstring.c. So we can use them in different files.
+ * A structure that store pointers to all the functions from dynstring.c. So we can use them in different files as interface.
  */
 struct string_op_struct_t {
     bool (*create)(string *, const char *);

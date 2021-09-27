@@ -123,9 +123,8 @@ static char *_to_string(const int t) {
 static size_t lines;
 static int state;
 
-
 /**
- * @brief viz FSM STRING
+ * @brief finite automaton to lex a c string
  *
  * @param pfile
  * @return token. If STATE!= STATE_STR_FINAL returns TOKEN_DEAD.
@@ -266,8 +265,7 @@ static token_t lex_string(progfile_t *pfile) {
 }
 
 /**
- * @brief viz FSM
- * //TODO TENHLE NECHÁPU NAPSAT BRIEF
+ * @brief Finite automaton to lex an identifier.
  * @param pfile
  * @return token. If state != STATE_ID_FINAL return TOKEN_DEAD
  */
@@ -330,6 +328,7 @@ static bool process_comment(progfile_t *pfile) {
     bool accepted = false;
     int ch;
 
+    // != EOF is not a true "DFA" way of thinking, but it is more clearly
     while (!accepted && ch != EOF) {
         ch = Progfile.pgetc(pfile);
         if (ch == '\n') {
@@ -338,36 +337,32 @@ static bool process_comment(progfile_t *pfile) {
         switch (state) {
             case STATE_COMMENT_INIT:
                 if (ch == '[') {
-                    state = STATE_COMMENT_BLOCK_1;
+                    state = STATE_COMMENT_BLOCK_1; // block comment
                 } else if (ch == '\n') {
-                    state = STATE_COMMENT_FINAL;
+                    state = STATE_COMMENT_FINAL; // an empty comment
                 } else {
                     state = STATE_COMMENT_SLINE;
-                }
+                } // an order comment
                 break;
             case STATE_COMMENT_SLINE:
-                if (ch == '\n') {
-                    state = STATE_COMMENT_FINAL;
-                }
+                if (ch == '\n')
+                    state = STATE_COMMENT_FINAL; // comment end
                 break;
             case STATE_COMMENT_BLOCK_1:
-                if (ch == '[') {
+                if (ch == '[')
                     state = STATE_COMMENT_BLOCK_2;
-                } else {
-                    state = STATE_COMMENT_SLINE;
-                }
+                else
+                    state = STATE_COMMENT_SLINE; // an order comment
                 break;
             case STATE_COMMENT_BLOCK_2:
-                if (ch == ']') {
-                    state = STATE_COMMENT_BLOCK_END;
-                }
+                if (ch == ']')
+                    state = STATE_COMMENT_BLOCK_END; // end block comment 1.
                 break;
             case STATE_COMMENT_BLOCK_END:
-                if (ch == ']') {
-                    state = STATE_COMMENT_FINAL;
-                }
+                if (ch == ']')
+                    state = STATE_COMMENT_FINAL; // comment done
                 break;
-            case STATE_COMMENT_FINAL:
+            case STATE_COMMENT_FINAL: // more clear way of creating an automaton
                 Progfile.ungetc(pfile);
                 accepted = true;
                 break;
@@ -377,12 +372,12 @@ static bool process_comment(progfile_t *pfile) {
         }
     }
 
-    return true;
+    return state == STATE_COMMENT_FINAL;
 }
 
 // >= <= == ~= < >
 /**
- * @brief viz FSM RELOP.
+ * @brief DFA accepted relational operators
  *
  * @param pfile
  * @return (token_t) (.type = actual_state)
@@ -416,7 +411,7 @@ static token_t lex_relate_op(progfile_t *pfile) {
 }
 
 /**
- * @brief viz FSM
+ * @brief DFA accepts the number
  *
  * @param pfile
  * @return token
@@ -572,8 +567,9 @@ static token_t lex_number(progfile_t *pfile) {
 
     return token;
 }
+
 /**
- * @brief Get throw whole file. It does lexical analysis. If there are characters that are not from language alphabet. Break and return TOKEN_DEAD
+ * @brief returns one token, in case of a lexical error returned token is TOKEN_DEAD
  *
  * @param pfile
  * @return token
@@ -746,7 +742,7 @@ static token_t _get_curr() {
 }
 
 /**
- * @brief Free pfile
+ * @brief Free dynamic memory allocated by scanner
  *
  * @param pfile
  * @return void

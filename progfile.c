@@ -13,7 +13,7 @@
  *
  *  @package progfile
  *  @file progfile.c
- *  @brief //TODO WHAT IS THIS FILE FOR WHERE ARE THESE FUNCTIONS USED
+ *  @brief Program file - file structure for faster and more convenient file infile manipulation.
  *
  *
  *  @author Aliaksandr Skuratovich
@@ -75,7 +75,7 @@ static int Getc(progfile_t *pfile) {
 }
 
 /**
- * @brief Get to character before. Tape must be the part of pfile->tape, otherwise insanity happens.
+ * @brief Get to character before.
  *
  * @param pfile
  * @return character before or EOF
@@ -95,7 +95,7 @@ static void Free(progfile_t *pfile) {
 }
 
 /**
- * @brief Returns pointer to start.
+ * @brief Get tape.
  *
  * @param pfile
  * @return pfile->tape
@@ -105,7 +105,7 @@ static char *Get_tape(progfile_t *pfile) {
 }
 
 /**
- * @brief Returns pointer to actual position.
+ * @brief Get current tape at the pos position.
  *
  * @param pfile
  * @return pfile->tape + pfile->pos
@@ -115,10 +115,10 @@ static char *Get_tape_current(progfile_t *pfile) {
 }
 
 /**
- * @brief Set pfile to tape. Tape must be the part of pfile->tape, otherwise insanity happens.
+ * @brief Refresh pfile->tape to the new value.
  *
  * @param pfile
- * @param tape where to move
+ * @param tape must be the part of the pfile->tape, otherwise undefined behaviour.
  * @return new pfile->pos on tape pos.
  *
  */
@@ -133,13 +133,12 @@ static void Set_tape(progfile_t *pfile, char *tape) {
 }
 
 /**
- * @brief Reads a file from stdin.
+ * @brief Reads a file from stdin to progfile structure.
  *
- * @return File stored in pfile structur. If error return NULL.
+ * @return File stored in pfile structure. If error return NULL.
  */
 static progfile_t *Getfile_stdin() {
     progfile_t *pfile;
-    size_t size;
 
     string filetape;
     if (!Dynstring.create_onheap(&filetape)) {
@@ -172,7 +171,7 @@ static progfile_t *Getfile_stdin() {
 }
 
 /**
- * @brief Store file to pfile.
+ * @brief Store file to progfile structure.
  *
  * @param filename
  * @param mode File opening mode.
@@ -214,7 +213,7 @@ static progfile_t *Getfile(const char *filename, const char *mode) {
 
 
 /**
- * Functions are in struct so we can use them in different files.
+ * Interface to access functions by name of the file(in this case Progfile)
  */
 const struct progfile_op_struct_t Progfile = {
         .getfile = Getfile,

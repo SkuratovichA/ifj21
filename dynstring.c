@@ -38,6 +38,7 @@
 static inline bool is_on_heap(const string *str) {
     return str->is_on_heap;
 }
+
 /**
  * @brief Create a string from a char *
  *
@@ -84,7 +85,7 @@ static void Str_create_empty(string *str) {
 
 
 /**
- * @brief Get char * from string.
+ * @brief Get char * (c string ending with '\0') from string.
  *
  * @param str
  * @return Pointer to char. Could be on heap or stack.
@@ -104,7 +105,7 @@ static size_t Str_length(const string *str) {
 }
 
 /**
- * @brief If string was on heap free memory.
+ * @brief Call free() on string if string was allocated on the heap.
  *
  * @param str
  * @return void
@@ -180,18 +181,19 @@ static bool Str_create_onheap(string *str) {
     return (bool) str->heap_str; // NULL == 0 == false
 }
 
+// TODO: implementu functions Str_concat{str, dynstr}
 
 /**
  * Interface to use when dealing with strings.
  * Functions are in struct so we can use them in different files.
  */
 const struct string_op_struct_t Dynstring = {
-    /*@{*/
-    .create         = Str_create,        // create a string from a char *
-    .create_empty   = Str_create_empty,  // string constructor
-    .length         = Str_length,        // get string length
-    .c_str          = Str_c_str,         // get char * from string
-    .append_char    = Str_append_char,   //
-    .free           = Str_free,          //
-    .create_onheap  = Str_create_onheap, //
+        /*@{*/
+        .create         = Str_create,        // create a string from a char *
+        .create_empty   = Str_create_empty,
+        .length         = Str_length,
+        .c_str          = Str_c_str,         // get char * from string
+        .append_char    = Str_append_char,
+        .free           = Str_free,
+        .create_onheap  = Str_create_onheap,
 };
