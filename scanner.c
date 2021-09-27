@@ -607,7 +607,9 @@ static token_t scanner(progfile_t *pfile) {
         case '-':
             if (Progfile.peek_at(pfile, 0) == '-') {
                 Progfile.pgetc(pfile);
-                process_comment(pfile);
+                if (!process_comment(pfile)) {
+                    return (token_t) {.type = TOKEN_DEAD};
+                }
                 goto next_lexeme;
             }
             token.type = TOKEN_SUB;
