@@ -14,7 +14,7 @@
  *
  *  @package interpret
  *  @file interpret.c
- *  @brief Main file //TODO WHAT IS THIS PROJECT ABOUT
+ *  @brief Main file - ifj21 compiler.
  *
  *
  *
