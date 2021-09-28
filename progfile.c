@@ -13,7 +13,7 @@
  *
  *  @package progfile
  *  @file progfile.c
- *  @brief Program file - file structure for faster and more convenient file infile manipulation.
+ *  @brief Program file - buffered binary file representation.
  *
  *
  *  @author Aliaksandr Skuratovich
@@ -38,7 +38,8 @@ struct c_progfile {
 };
 
 /**
- * @brief Move char pointer (*pfile->tape) by step.
+ * @brief Move the head of the tape by step @param step. 0 means the next char will be returned, because previous pgetc()
+ * has post-increased pos.
  *
  * @param pfile char array
  * @param step
@@ -116,10 +117,12 @@ static char *Get_tape_current(progfile_t *pfile) {
 
 /**
  * @brief Refresh pfile->tape to the new value.
+ * NOTE: new @param tape must be the part of pfile->tape, e.g. it can be strchr(gettape(pfile), some_char).
+ * Otherfise it won't work.
  *
  * @param pfile
- * @param tape must be the part of the pfile->tape, otherwise undefined behaviour.
- * @return new pfile->pos on tape pos.
+ * @param tape
+ * @return
  *
  */
 static void Set_tape(progfile_t *pfile, char *tape) {
@@ -213,7 +216,7 @@ static progfile_t *Getfile(const char *filename, const char *mode) {
 
 
 /**
- * Interface to access functions by name of the file(in this case Progfile)
+ * Progfile interface.
  */
 const struct progfile_op_struct_t Progfile = {
         .getfile = Getfile,

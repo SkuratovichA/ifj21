@@ -317,10 +317,11 @@ static token_t lex_identif(progfile_t *pfile) {
 }
 
 /**
- * @brief viz FSM comments
- * //TODO CHECK IF COULD BE VOID
+ * @brief Process a comment.
+ *  [-][-].* for a single line comment.
+ *  [-][-]\[\[.*\]\] for a block comment.
  * @param pfile
- * @return true
+ * @return false if comment is wrong
  */
 static bool process_comment(progfile_t *pfile) {
     debug_msg(DEBUG_SEP);
@@ -744,7 +745,7 @@ static token_t _get_curr() {
 }
 
 /**
- * @brief Free dynamic memory allocated by scanner
+ * @brief Free heap memory allocated by scanner
  *
  * @param pfile
  * @return void
@@ -758,7 +759,7 @@ static void _free_scanner(progfile_t *pfile) {
 
 /**
  *
- * Functions are in struct so we can use them in different files.
+ * Scanner interface.
  */
 const struct scanner_op_struct Scanner = {
         .free = _free_scanner,
