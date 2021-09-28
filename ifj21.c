@@ -28,9 +28,11 @@
 #include "progfile.h"
 #include "scanner.h"
 #include "progfile.h"
+#include "parser.h"
 
 int main() {
     printf("Hello!\n");
+    Parser.hello_from_parser();
 
     progfile_t *pfile;
 

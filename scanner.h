@@ -187,7 +187,7 @@ struct scanner_op_struct {
 //// =====================================
 //#define KEYWORD(name) _cat_2_(KEYWORD, name)
 //
-//#define KEYWORDS(X) \
+// #define KEYWORDS(X) \
 //    X(do) \
 //    X(if) \
 //    X(return) \
