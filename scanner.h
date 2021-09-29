@@ -171,9 +171,13 @@ extern const struct scanner_op_struct Scanner;
 struct scanner_op_struct {
     void (*free)(progfile_t *);
     progfile_t *(*initialize)();
+
     token_t (*get_next_token)(progfile_t *);
+
     token_t (*get_prev_token)();
+
     token_t (*get_curr_token)();
+
     char *(*to_string)(const int);
 };
 //
@@ -181,59 +185,31 @@ struct scanner_op_struct {
 
 
 
-//============================================
-// Keywordisation: should be moved into syntactic analysis
-//
-//// =====================================
-//#define KEYWORD(name) _cat_2_(KEYWORD, name)
-//
-//#define KEYWORDS(X) \
-//    X(do) \
-//    X(if) \
-//    X(return) \
-//    X(else) \
-//    X(local) \
-//    X(then) \
-//    X(end) \
-//    X(nil) \
-//    X(while) \
-//    X(function) \
-//    X(read) \
-//    X(write) \
-//    X(global) \
-//    X(require) \
-//    X(boolean) \
-//    X(true) \
-//    X(elseif) \
-//    X(false) \
-//    X(break) \
-//    X(repeat) \
-//    X(until)
-//
-//typedef enum keywords {
-//    dummy_keyword = 666,
-//#define X(n) KEYWORD(n),
-//    KEYWORDS(X)
-//#undef X
-//} keyword_t;
-//
-//// keyword pair. name e.g "else" and kwd e.g KEYWORD_else
-//typedef struct kypair {
-//    const char *nam;
-//    int kwd;
-//} kpar_t;
-//
+// =====================================
+#define KEYWORD(name) _cat_2_(KEYWORD, name)
 
-//static int to_keyword(const char *identif) {
-//    static const kpar_t kwds[] = {
-//    #define X(n) { #n , KEYWORD(n) },
-//            KEYWORDS(X)
-//    #undef X
-//    };
-//    for( int i = 0; i < 9; i++ )
-//        if( strcmp(kwds[i].nam, identif) == 0 )
-//            return kwds[i].kwd;
-//
-//    return TOKEN_IDENTIFIER;
-//}
-////============================================
+#define KEYWORDS(X) \
+    X(do) \
+    X(if) \
+    X(return) \
+    X(else) \
+    X(local) \
+    X(then) \
+    X(end) \
+    X(nil) \
+    X(while) \
+    X(function) \
+    X(read) \
+    X(write) \
+    X(global) \
+    X(require) \
+
+typedef enum keywords {
+    dummy_keyword = 666,
+#define X(n) KEYWORD(n),
+    KEYWORDS(X)
+#undef X
+} keyword_t;
+
+
+//============================================
