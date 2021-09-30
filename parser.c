@@ -44,7 +44,29 @@ static void print_expected_err(const char *a, const char *b) {
 // ***************************************************************************** //
 
 
+/** //fixme decide fhat to do with this e production, because datatype list can have an error(i guess)
+ * @brief <funparam_decl_list> -> e | <datatype_list>
+ *
+ * @param pfile structure representing the input program file
+ * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
+ */
+static bool funparam_decl_list(progfile_t *pfile) {
+    return true;
+}
+
+/** //fixme decide fhat to do with this e production, because datatype list can have an error(i guess)
+ * @brief <funret_list> -> e | : <datatype_list>
+ *
+ * @param pfile structure representing the input program file
+ * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
+ */
+static bool funret_list(progfile_t *pfile) {
+    return true;
+}
+
 /**
+ *
+ *
  * @brief Statement(global statement) rule.
  *
  * function declaration: !rule <stmt> -> global id : function ( <funparam_decl_list> ) <funcret_list>
@@ -54,8 +76,42 @@ static void print_expected_err(const char *a, const char *b) {
  * @param pfile structure representing the input program file
  * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
  */
-//!rule <prolog> -> <zhopa>
 static bool stmt(progfile_t *pfile) {
+    switch (Scanner.get_curr_token().type) {
+        case KEYWORD_global:
+            // global
+        EXPECTED(KEYWORD_global);
+            // function name
+            EXPECTED(TOKEN_ID);
+            // :
+            EXPECTED(TOKEN_COLON);
+            // function
+            EXPECTED(KEYWORD_function);
+            // (
+            EXPECTED(TOKEN_LPAREN);
+            // <funparam_decl_list>
+            if (!funparam_decl_list(pfile)) {
+                return false;
+            }
+            // )
+            EXPECTED(TOKEN_RPAREN);
+            // <funret_list>
+            if (!funret_list(pfile)) {
+                return false;
+            }
+
+            break;
+
+        case KEYWORD_function:
+        EXPECTED(KEYWORD_function);
+
+            break;
+
+        default:
+            debug_todo("Add more <stmt> derivations, if there are so. Otherwise return an error message");
+            return Errors.return_error(ERROR_SYNTAX);
+    }
+
     return true;
 }
 
