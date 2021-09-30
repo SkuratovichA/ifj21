@@ -181,7 +181,24 @@ static bool Str_create_onheap(string *str) {
     return (bool) str->heap_str; // NULL == 0 == false
 }
 
-// TODO: implementu functions Str_concat{str, dynstr}
+/**
+ * @brief Allocate string on heap.
+ *
+ * @param str
+ * @return True if success. If given pointer is NULL return false. If Calloc failed the program ends.
+ */
+static Str_cmp(string
+s,
+char *s1
+) {
+return
+
+strcmp (Str_c_str(
+
+&s), s1);
+}
+
+// TODO: implement functions Str_concat{str, dynstr}
 
 /**
  * Interface to use when dealing with strings.
@@ -196,4 +213,5 @@ const struct string_op_struct_t Dynstring = {
         .append_char    = Str_append_char,
         .free           = Str_free,
         .create_onheap  = Str_create_onheap,
+        .cmp            = Str_cmp,
 };
