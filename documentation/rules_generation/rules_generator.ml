@@ -17,21 +17,22 @@ let rec merge list1 list2 =
         | hd :: tl, _ -> hd :: merge tl list2
 
 let read_lines ic =
-  let start = "//@" in
+  let start = ".*@brief" in
   let num = "\\([1-9]+[0-9]*\\|0\\)" in
-  let numend = "[.:]?" in
-  let k_ws = " +" in
-  let s_ws = "[ ]*" in
+  let numopt =  num ^ "?" in
+  let numbendopt = "[.:]?" in
+  let k_ws = " +" in (* kleene whitespaces *)
+  let s_ws = "[ ]*" in (* star whitespaces *)
   let rall = ".*" in
-  let idexp = "^" ^ start ^ k_ws ^ num ^ numend ^ s_ws ^ nonterm ^ s_ws ^ deriv ^ rall ^ "$" in
-  let replace_exp = "^" ^ start ^ k_ws ^ num ^ numend ^ k_ws in 
+  let idexp = "^" ^ start ^ s_ws ^ numopt ^ numbendopt ^ s_ws ^ nonterm ^ s_ws ^ deriv ^ rall ^ "$" in
+  let replace_exp = "^" ^ start ^ s_ws ^ numopt ^ numbendopt ^ s_ws in  (* this must be replaced with an empty string *)
   let id_match x = string_match (regexp idexp) x 0 in
   let rec aux acc =
     match input_line_opt ic with
     | Some line ->
       if id_match line then
         let line1 = replace_first (regexp replace_exp) "" line in
-        if String.contains line1 '|' then
+        if String.contains line1 '|' then (* want to separate <rule> -> smth | smth2 into "<rule> -> smth" and "<rule> -> smth2" *)
           let rest = List.nth  (bounded_split (regexp (nonterm ^ s_ws ^ deriv ^ s_ws)) line1 1) 0 in
           (* get derived part*)
           let rest_splitted =
