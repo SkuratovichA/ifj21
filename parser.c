@@ -41,75 +41,95 @@ static void print_expected_err(const char *a, const char *b) {
     if( Scanner.get_curr_token().type != (p)) \
         expected_err((p)); \
     Scanner.get_next_token(pfile)
+// ***************************************************************************** //
 
 
 /**
- * @brief
+ * @brief Statement(global statement) rule.
  *
- * @param
- * @return
+ * function declaration: !rule <stmt> -> global id : function ( <funparam_decl_list> ) <funcret_list>
+ * function definition: !rule <stmt> -> function id ( <funparam_def_list> ) <funcret_list>
+ *
+ *
+ * @param pfile structure representing the input program file
+ * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
  */
-static bool stmt_list(progfile_t *pfile) {
+//!rule <prolog> -> <zhopa>
+static bool stmt(progfile_t *pfile) {
     return true;
 }
 
 /**
- * @brief <prolog> -> require "ifj21"
  *
- * @param
- * @return
+ * @brief List of global statements: function calls, function declarations, function definitions.
+ * !rule <stmt_list> -> EOF | <stmt> <stmt_list>
+ *
+ * @param pfile structure representing the input program file
+ * @return true if rule derives its production successfully
  */
-static bool prolog(progfile_t *pfile) {
-    EXPECTED(KEYWORD_require); // must be require
-
-    if (Scanner.get_curr_token().type != TOKEN_STR) {
-        return false;
+static bool stmt_list(progfile_t *pfile) {
+    if (Scanner.get_curr_token().type == TOKEN_EOFILE) {
+        return true;
     }
 
-    if (!Dynstring.cmp(Scanner.get_curr_token().attribute.id, "ifj21")) { // can be an error with memory here
-        return false;
-    }
-
-    EXPECTED(TOKEN_STR); // "ifj21"
-
+    return stmt(pfile) && stmt_list(pfile);
 }
 
 /**
- * @brief <prog> -> <prolog> <stmt_list> EOF
+ * @brief Program(start) rule.
+ * !rule <program> -> require "ifj21" <stmt_list> EOF
  *
- * @param
- * @return
+ * @param pfile structure representing the input program file
+ * @return true if rule derives its production successfully based on the production rule(described above)
  */
-static bool prog(progfile_t *pfile) {
-    if (!prolog(pfile)) {
+static bool program(progfile_t *pfile) {
+    bool ret = false;
+    const static char *prolog_str = "ifj21";
+
+    // require keyword
+    EXPECTED(KEYWORD_require);
+
+    // "ifj21" which is a prolog string after require keyword
+    if (Scanner.get_curr_token().type == TOKEN_STR
+        || 0 != Dynstring.cmp(Scanner.get_curr_token().attribute.id, prolog_str)) {
         return false;
     }
+
+    // <stmt_list>
     if (!stmt_list(pfile)) {
         return false;
     }
 
+    // EOF
     EXPECTED(TOKEN_EOFILE);
     return true;
 }
 
 /**
- * @brief
+ * @brief Analyze function initializes the scanner, gets 1st token and starts parsing using top-down
+ * recursive descent method for everything except expressions and bottom-up precedence parsing method for expressions.
+ * Syntax analysis is based on LL(1) grammar.
  *
- * @param
- * @return
+ * @param pfile structure representing program file
+ * @return appropriate return code, viz error.c, errror.h
  */
 static bool Analyse(progfile_t *pfile) {
-    if (Scanner.initialize()) {
+    if (!Scanner.initialize()) {
         return Errors.return_error(ERROR_INTERNAL);
     }
 
-    Scanner.get_next_token(pfile); // get first token to get start
-    bool res = !prog(pfile); // here we go
+    // get first token to get start
+    Scanner.get_next_token(pfile);
+
+    // perfom a syntax analysis
+    bool res = program(pfile);
+
+    // dont forget to free
     Scanner.free(pfile);
 
     // todo: i guess it wants more clearly solution because there will
     //  be semantics controls in the parser so every function probably has to set the error code global variable up
-    return !res ? Errors.return_error(ERROR_SYNTAX) : true;
+    return res ? true : Errors.return_error(ERROR_SYNTAX);
 }
 
 /**
