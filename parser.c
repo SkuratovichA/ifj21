@@ -45,7 +45,8 @@ static void print_expected_err(const char *a, const char *b) {
 
 
 /** //fixme decide fhat to do with this e production, because datatype list can have an error(i guess)
- * @brief <funparam_decl_list> -> e | <datatype_list>
+ * @brief
+ * !rule <funparam_decl_list> -> e | <datatype_list>
  *
  * @param pfile structure representing the input program file
  * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
@@ -55,7 +56,8 @@ static bool funparam_decl_list(progfile_t *pfile) {
 }
 
 /** //fixme decide fhat to do with this e production, because datatype list can have an error(i guess)
- * @brief <funret_list> -> e | : <datatype_list>
+ * @brief
+ * !rule <funret_list> -> e | : <datatype_list>
  *
  * @param pfile structure representing the input program file
  * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
