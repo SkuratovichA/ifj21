@@ -137,7 +137,7 @@ typedef enum token_type {
     TOKEN(COMMA), // ','
 //    TOKEN(SEMICOLON), // ';' // deprecated
     TOKEN(STRCAT),  // ..
-    TOKEN(COLON),  // ..
+    TOKEN(COLON),  // :
 } token_type_t;
 //
 

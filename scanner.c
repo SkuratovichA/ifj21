@@ -123,8 +123,8 @@ static char *_to_string(const int t) {
             return ")";
         case TOKEN_COMMA:
             return ",";
-        case TOKEN_SEMICOLON:
-            return ";";
+//        case TOKEN_SEMICOLON:
+//            return ";";
         case TOKEN_STRCAT:
             return "..";
         case TOKEN_COLON:
