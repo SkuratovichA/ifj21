@@ -70,7 +70,7 @@ struct string_op_struct_t {
     void (*free)(string *);
     bool (*create_onheap)(string *);
 
-    int (*cmp)(string, char *);
+    int (*cmp)(string, const char *);
 };
 
 extern const struct string_op_struct_t Dynstring; // Functions from dynstring.c will be visible in different file under Dynstring name.

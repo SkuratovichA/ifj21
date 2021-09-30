@@ -182,14 +182,15 @@ static bool Str_create_onheap(string *str) {
 }
 
 /**
- * @brief Allocate string on heap.
+ * @brief Compare dynstring and char* using strcmp
  *
- * @param str
- * @return True if success. If given pointer is NULL return false. If Calloc failed the program ends.
+ * @param s
+ * @param s1
+ * @return -1, 0, 1 depends on lexicographical ordering of two strings.
  */
 static Str_cmp(string
 s,
-char *s1
+const char *s1
 ) {
 return
 
