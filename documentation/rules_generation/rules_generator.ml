@@ -1,3 +1,7 @@
+(* human: grammar rules in ascending order(from 1)
+ * in .c  program comment write rule in EBNF form:
+ * !rule <rule> -> productions
+ * *)
 open Str
 
 let input_line_opt ic =
@@ -17,11 +21,11 @@ let rec merge list1 list2 =
         | hd :: tl, _ -> hd :: merge tl list2
 
 let read_lines ic =
-  let start = ".*@brief" in
+  let start = ".*!rule" in
   let num = "\\([1-9]+[0-9]*\\|0\\)" in
   let numopt =  num ^ "?" in
   let numbendopt = "[.:]?" in
-  let k_ws = " +" in (* kleene whitespaces *)
+(*   let k_ws = " +" in (* kleene whitespaces *) *)
   let s_ws = "[ ]*" in (* star whitespaces *)
   let rall = ".*" in
   let idexp = "^" ^ start ^ s_ws ^ numopt ^ numbendopt ^ s_ws ^ nonterm ^ s_ws ^ deriv ^ rall ^ "$" in
@@ -73,7 +77,7 @@ let () =
 
   (* let lines = List.fold_left (fun x acc -> merge (lines_of_file x) acc) [] (get_filenames Sys.argv) in *)
 
-  List.iteri (fun i x -> Printf.printf "%d: %s\n" i x) lines
+  List.iteri (fun i x -> Printf.printf "%d: %s\n" (i + 1) x) (List.rev lines)
 
 
 
