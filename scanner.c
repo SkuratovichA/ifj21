@@ -682,9 +682,9 @@ static token_t scanner(progfile_t *pfile) {
         case ',':
             token.type = TOKEN_COMMA;
             break;
-        case ';':
-            token.type = TOKEN_SEMICOLON;
-            break;
+//        case ';': //not supported
+//            token.type = TOKEN_SEMICOLON;
+//            break;
         case '.':
             token.type = TOKEN_DEAD;
             if (Progfile.pgetc(pfile) == '.') {
