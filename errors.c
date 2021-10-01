@@ -27,6 +27,12 @@
 #include "errors.h"
 #include <stdio.h>
 
+static int error;
+
+static int Get_error() {
+    return error;
+}
+
 /**
  * @brief Print error message to stderr.
  *
@@ -84,11 +90,12 @@ static int Return_error(int errcode) {
             break;
     }
     fprintf(stderr, "ERROR: %s\n", errmsg);
-    return errcode;
+    return (error = errcode);
 }
 /**
  * Functions are in struct so we can use them in different files.
  */
 const struct error Errors = {
-        .return_error = Return_error
+        .return_error = Return_error,
+        .get_error = Get_error,
 };
