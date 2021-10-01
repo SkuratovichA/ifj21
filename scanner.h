@@ -168,13 +168,9 @@ extern const struct scanner_op_struct Scanner;
 struct scanner_op_struct {
     void (*free)(progfile_t *);
     progfile_t *(*initialize)();
-
     token_t (*get_next_token)(progfile_t *);
-
     token_t (*get_prev_token)();
-
     token_t (*get_curr_token)();
-
     char *(*to_string)(const int);
 };
 //
@@ -193,6 +189,10 @@ struct scanner_op_struct {
 
 #define KEYWORDS(X) \
     X(do) \
+    X(string) \
+    X(boolean) \
+    X(number) \
+    X(integer) \
     X(if) \
     X(return) \
     X(else) \
