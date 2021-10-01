@@ -3,7 +3,8 @@ project(ifj21 C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_compile_options(-DDEBUG_SCANNER -DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
+add_compile_options(-DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
+#add_compile_options(-DDEBUG_SCANNER)
 
 add_executable(ifj21
         ifj21.c scanner.c

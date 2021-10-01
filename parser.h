@@ -46,5 +46,5 @@
 extern const struct parser_op_struct Parser;
 
 struct parser_op_struct {
-    bool (*analyse)(progfile_t *);
+    bool (*analyse)(void);
 };
