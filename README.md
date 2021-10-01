@@ -76,7 +76,7 @@ V programovacím jazyce IFJ21 záleží na velikosti písmen u identifikátorů 
 - _Celočíselný literál_ (rozsah C-int) je tvořen neprázdnou posloupností číslic a vyjadřuje hodnotu celého nezáporného čísla v desítkové soustavě.
 - _Desetinný literál_ (rozsah C-double) také vyjadřuje nezáporná čísla v desítkové soustavě, přičemž literál je tvořen celou a desetinnou částí, nebo celou částí a exponentem, nebo celou a desetinnou částí a exponentem. Celá i desetinná část je tvořena neprázdnou posloupností číslic. Exponent je celočíselný, začíná znakem ’`e`’ nebo ’`E`’, následuje nepovinné znaménko ’`+`’ (plus) nebo ’`-`’ (mínus) a poslední částí je neprázdná posloupnost číslic. Mezi jednotlivými částmi nesmí být jiný znak, celou a desetinnou část odděluje znak ’`.`’ (tečka).
 - _Řetězcový literál_ je oboustranně ohraničen dvojitými uvozovkami (", ASCII hodnota 34). Tvoří jej libovolný počet znaků zapsaných na jediném řádku programu. Možný je i prázdný řetězec (`""`). Znaky s ASCII hodnotou větší než 31 (mimo ") lze zapisovat přímo. Některé další znaky lze zapisovat pomocí escape sekvence: ’`\"`’, ’`\n`’, ’`\t`’, ’`\\`’. Jejich význam se shoduje s odpovídajícími znakovými konstantami jazyka Lua. Neexistující escape sekvence vede na lexikální chybu. Znak v řetězci může být zadán také pomocí obecné escape sekvence ’\ddd’, kde ddd je právě třímístné desítkové číslo od 001 do 255. Délka řetězce není omezena (resp. jen dostupnou velikostí haldy). Například řetězcový literál 
-    ``` 
+    ```
     "Ahoj\n\"Sve'te \\\034" 
     ``` 
     reprezentuje řetězec</br>
@@ -101,7 +101,7 @@ IFJ21 je strukturovaný programovací jazyk podporující definice proměnných 
 Program se skládá z prologu následovaného sekvencí deklarací a definic uživatelských funkcí a příkazů volání funkce bez navracení hodnoty. V tělech uživatelských funkcí lze potom definovat lokální proměnné, používat příkazy přiřazení, větvení, iterace a volání funkcí.  
 
 Prolog se skládá z jednoho řádku:  
-```
+```lua
 require "ifj21"
 ```
 
@@ -122,7 +122,7 @@ Není-li typ inicializačního výrazu staticky (při překladu) kompatibilní s
 Definice funkce se skládá z hlavičky a těla funkce. Každá uživatelská funkce s daným identifikátorem je definována nejvýše jednou, jinak dochází k chybě 3. Definice funkce nemusí vždy lexikálně předcházet kódu pro volání této funkce. Uvažujte například vzájemné rekurzivní volání funkcí (tj. funkce 𝑓 volá funkci 𝑔, která opět může volat funkci 𝑓 ).  
 
 V případě, že je volána funkce, která ještě nebyla definována, musí jejímu volání předcházet alespoň její deklarace. Funkce může být deklarována nejvýše jednou, jinak dochází k chybě 3. K té také dochází, pokud u deklarace a definice funkce neodpovídají seznamy parametrů nebo seznamy návratových typů, či pokud deklarovaná funkce není nakonec definována. Příklad:  
-```
+```lua
 global foo : function(string) : string
 
 function bar(param : string) : string
@@ -135,7 +135,7 @@ end
 ```
 
 _Definice funkce_ je víceřádková konstrukce (hlavička a tělo) ve tvaru:
-```
+```lua
 function id ( seznam_parametrů ) : seznam_návratových_typů
   složený_příkaz
 end
@@ -147,7 +147,7 @@ definice parametru obsahuje identifikátor parametru a za dvojtečkou jeho datov
 _identifikátor_parametru : typ_  
     Parametry jsou vždy předávány hodnotou.
 - Seznam návratových typů je posloupnost datových typů, jejichž hodnoty funkce vrací. Oddělovačem v seznamu návratových typů je opět čárka. Příklad:
-    ```
+    ```lua
     require "ifj21"
     function concat (x : string, y : string) : string, integer
       return x .. y, 0 end
@@ -178,7 +178,8 @@ Dílčím příkazem se rozumí:
     kde 𝑛 ≥ 1. Syntakticky slouží čárka (’`,`’) jako oddělovač při 𝑛 ≥ 2, takže za posledním identifikátorem či výrazem se čárka nepíše. Sémantika příkazu je následující: Příkaz provádí přiřazení hodnot operandů vpravo (výrazy _výraz<sub>1</sub>_ až _výraz<sub>n</sub>_; viz kapitola 5) po řadě do odpovídajících proměnných _id<sub>1</sub>_ až _id<sub>𝑛</sub>_ tak, že nejprve provede vyhodnocení všech výrazů (operandů napravo v pořadí zprava do leva), zapamatování
 si těchto výsledků a následně přiřazení těchto výsledků jednotlivým proměnným. Všechny proměnné nalevo od `=` musí být dříve definované a platné.
 - _Podmíněný příkaz_:
-    ```if výraz then
+    ```lua
+    if výraz then
       sekvence_příkazů1
     else
       sekvence_příkazů2
@@ -186,7 +187,7 @@ si těchto výsledků a následně přiřazení těchto výsledků jednotlivým 
     ```
     Sémantika příkazu je následující: Nejprve se vyhodnotí daný výraz. Pokud je vyhodnocený výraz pravdivý, vykoná se _sekvence_příkazů<sub>1</sub>_, jinak se vykoná _sekvence_příkazů<sub>2</sub>_. Pokud výsledná hodnota výrazu není pravdivostní (tj. pravda či nepravda - v základním zadání pouze jako výsledek aplikace relačních operátorů dle sekce 5.1), tak se hodnota `nil` bere jako nepravda a ostatní hodnoty jako pravda (včetně prázdného řetězce nebo nuly).
 - _Příkaz cyklu_:
-    ```
+    ```lua
     while výraz do
       sekvence_příkazů
     end
@@ -265,7 +266,7 @@ Při použití špatného typu termu v parametrech následujících vestavěnýc
 
 _Vestavěné funkce pro načítání literálů a výpis termů_:
 - _Příkazy pro načítání hodnot_:
-    ```
+    ```lua
     function reads() : string
     function readi() : integer
     function readn() : number
@@ -303,7 +304,8 @@ Implementace tabulky symbolů bude uložena v souboru `symtable.c` (případně 
 Tato kapitola uvádí tři jednoduché příklady řídicích programů v jazyce IFJ21.
 
 ### Výpočet faktoriálu (iterativně)
-```
+
+```lua
 -- Program 1: Vypocet faktorialu (iterativne)
 require "ifj21"
 
@@ -332,7 +334,7 @@ main() -- prikaz hlavniho tela programu
 
 ### 8.2 Výpočet faktoriálu (rekurzivně)
 
-```
+```lua
 -- Program 2: Vypocet faktorialu (rekurzivne)
 require "ifj21"
 
@@ -365,7 +367,8 @@ main()
 ```
 
 ### 8.3 Práce s řetězci a vestavěnými funkcemi
-```
+
+```lua
 -- Program 3: Prace s retezci a vestavenymi funkcemi
 require "ifj21"
 
@@ -660,12 +663,12 @@ Vždy platí, že je třeba při řešení problémů aktivně a konstruktivně 
 
 ### 11.2 Dělení bodů
 
-Odevzdaný archív bude povinně obsahovat soubor `rozdeleni`, ve kterém zohledníte dělení bodů mezi jednotlivé členy týmu (i při požadavku na rovnoměrné dělení). Na každém řádku je uveden login jednoho člena týmu, bez mezery je následován dvojtečkou a po ní je bez mezery uveden požadovaný celočíselný počet procent bodů bez uvedení znaku %. Každý řádek (i poslední) je poté ihned ukončen jedním znakem ⟨LF⟩ (ASCII hodnota 10, tj. unixové ukončení řádku, ne windowsovské!). Obsah souboru bude vypadat například takto (⃝LF zastupuje unixové odřádkování):
+Odevzdaný archív bude povinně obsahovat soubor `rozdeleni`, ve kterém zohledníte dělení bodů mezi jednotlivé členy týmu (i při požadavku na rovnoměrné dělení). Na každém řádku je uveden login jednoho člena týmu, bez mezery je následován dvojtečkou a po ní je bez mezery uveden požadovaný celočíselný počet procent bodů bez uvedení znaku %. Každý řádek (i poslední) je poté ihned ukončen jedním znakem ⟨LF⟩ (ASCII hodnota 10, tj. unixové ukončení řádku, ne windowsovské!). Obsah souboru bude vypadat například takto (`(LF)` zastupuje unixové odřádkování):
 ```
-xnovak01:30⃝LF
-xnovak02:40⃝LF
-xnovak03:30⃝LF
-xnovak04:00⃝LF
+xnovak01:30(LF)
+xnovak02:40(LF)
+xnovak03:30(LF)
+xnovak04:00(LF)
 ```
 
 Součet všech procent musí být roven 100. V případě chybného celkového součtu všech procent bude použito rovnoměrné rozdělení. Formát odevzdaného souboru musí být
