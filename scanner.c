@@ -39,11 +39,32 @@
 static char *state_tostring(const int s) {
     switch (s) {
         #define X(nam) case STATE(nam): return #nam;
-            STATES(X)
+        STATES(X)
         #undef X
         default:
             assert(!"No such state...");
     }
+}
+
+// keyword pair. name e.g "else" and kwd e.g KEYWORD_else
+typedef struct kypair {
+    const char *nam;
+    int kwd;
+} kpar_t;
+
+
+static int to_keyword(const char *identif) {
+    static const kpar_t kwds[] = {
+            #define X(n) { #n , KEYWORD(n) },
+            KEYWORDS(X)
+            #undef X
+    };
+    for (int i = 0; i < 9; i++)
+        if (strcmp(kwds[i].nam, identif) == 0) {
+            return kwds[i].kwd;
+        }
+
+    return TOKEN_ID;
 }
 
 /**
@@ -53,8 +74,6 @@ static char *state_tostring(const int s) {
  * @return String that represent token.
  */
 static char *_to_string(const int t) {
-    debug_msg("Token number: %d\n", t);
-
     switch (t) {
         case TOKEN_EOFILE:
             return "END OF FILE";
@@ -104,16 +123,18 @@ static char *_to_string(const int t) {
             return ")";
         case TOKEN_COMMA:
             return ",";
-        case TOKEN_SEMICOLON:
-            return ";";
+//        case TOKEN_SEMICOLON:
+//            return ";";
         case TOKEN_STRCAT:
             return "..";
+        case TOKEN_COLON:
+            return ":";
         case TOKEN_DEAD:
             return "DEAD TOKEN";
 
-//        #define X(name) case KEYWORD(name): return #name;
-//            KEYWORDS(X)
-//        #undef X
+            #define X(name) case KEYWORD(name): return #name;
+        KEYWORDS(X)
+            #undef X
         default:
             return "unrecognized token";
     }
@@ -309,9 +330,13 @@ static token_t lex_identif(progfile_t *pfile) {
         token.type = TOKEN_DEAD;
     }
 
+    debug_msg("identif: %s", Dynstring.c_str(&token.attribute.id));
     // this 2 lines of code make parsing much more easier
-//    if ( (token.type = to_keyword(Dynstring.c_str(&token.attribute.id))) != TOKEN_ID)
-//        Dynstring.free(&token.attribute.id);
+    if ((token.type = to_keyword(Dynstring.c_str(&token.attribute.id))) != TOKEN_ID) {
+        Dynstring.free(&token.attribute.id);
+        debug_msg_s("- keyword!\n");
+    } else
+        debug_msg_s("\n");
 
     return token;
 }
@@ -462,6 +487,7 @@ static token_t lex_number(progfile_t *pfile) {
                 } else if (ch == '.') {
                     state = STATE_NUM_F_DOT;
                 } else { // can get zero here , e.g '0'
+                    state = STATE_NUM_FINAL;
                     accepted = true;
                     break;
                 }
@@ -656,9 +682,9 @@ static token_t scanner(progfile_t *pfile) {
         case ',':
             token.type = TOKEN_COMMA;
             break;
-        case ';':
-            token.type = TOKEN_SEMICOLON;
-            break;
+//        case ';': //not supported
+//            token.type = TOKEN_SEMICOLON;
+//            break;
         case '.':
             token.type = TOKEN_DEAD;
             if (Progfile.pgetc(pfile) == '.') {

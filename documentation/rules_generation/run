@@ -1,0 +1,2 @@
+#! /bin/bash
+ocamlc str.cma rules_generator.ml && ./a.out ../../parser.c
