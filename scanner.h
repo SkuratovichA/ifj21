@@ -198,9 +198,15 @@ struct scanner_op_struct {
     X(boolean) \
     X(number) \
     X(integer) \
+    X(true) \
+    X(false) \
     X(if) \
     X(return) \
     X(else) \
+    X(repeat) \
+    X(until) \
+    X(break) \
+    X(elseif) \
     X(local) \
     X(then) \
     X(end) \
@@ -210,7 +216,8 @@ struct scanner_op_struct {
     X(read) \
     X(write) \
     X(global) \
-    X(require) \
+    X(require)
+
 
 typedef enum keywords {
     dummy_keyword = 666,
