@@ -48,7 +48,7 @@ enum errors {
  * A structure that store pointers to all the functions from errors.c. So we can use them in different files.
  */
 struct error {
-    int (*return_error)(int);
+    void (*set_error)(int);
 
     int (*get_error)(void);
 };

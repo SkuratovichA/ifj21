@@ -34,7 +34,5 @@ int main() {
         return Errors.get_error();
     }
 
-
-    Errors.return_error(42);
     return 0;
 }

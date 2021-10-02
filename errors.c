@@ -40,7 +40,7 @@ static int Get_error() {
  * @return return errorcode number that is specified in macros.h
  *
  */
-static int Return_error(int errcode) {
+static void Set_error(int errcode) {
 
     char *errmsg = "BLASPHEMOUS RUMORS!";
     switch (errcode) {
@@ -90,12 +90,11 @@ static int Return_error(int errcode) {
             break;
     }
     fprintf(stderr, "ERROR: %s\n", errmsg);
-    return (error = errcode);
 }
 /**
  * Functions are in struct so we can use them in different files.
  */
 const struct error Errors = {
-        .return_error = Return_error,
+        .set_error = Set_error,
         .get_error = Get_error,
 };
