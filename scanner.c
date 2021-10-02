@@ -874,3 +874,56 @@ const struct scanner_op_struct Scanner = {
 #if NO_DEBUG_ELSEWHERE
 #undef DEBUG
 #endif
+
+#ifdef SELF_TEST
+#define MAIN main
+#else
+#define MAIN dummy
+#endif
+
+int MAIN(const int argc, const char **argv) {
+    #define failed printf /*will be a function from tests.c*/
+    #define passed printf
+    token_t token;
+    //********************************************************************//
+    //****************************** NUMBERS *****************************//
+    printf("Test 1 - float numbers, good\n");
+    progfile_t *pfile = Progfile.getfile("tests/good_numbers_float.tl");
+    if (!pfile) {
+        goto nexttest;
+    }
+    // integers
+    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; num++) {
+        if (token.type != TOKEN_NUM_F) {
+            failed("expected: got: with attribute:\n"); // will be red ansi text like [FAILED]:
+        } else
+            passed("%d\n", nu);// green [PASSED]
+    }
+    if (0) {
+        nexttest:
+        failed("Cannot open the file!\n");
+    }
+    Progfile.free(pfile);
+
+    pfile = Progfile.getfile("tests/bad_numbers_float.tl");
+    if (!pfile) {
+        goto nexttest2;
+    }
+    // integers
+    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; num++) {
+        if (token.type != TOKEN_NUM_F) {
+            failed("expected: got: with attribute:\n"); // will be red ansi text like [FAILED]:
+        } else
+            passed("%d\n", nu);// green [PASSED]
+    }
+    if (0) {
+        nexttest2:
+        failed("Cannot open the file!\n");
+    }
+    Progfile.free(pfile);
+    //********************************************************************//
+    //********************************************************************//
+
+    // todo add mere tests
+    return 0;
+}
