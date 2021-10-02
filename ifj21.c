@@ -27,10 +27,19 @@
 #include "errors.h"
 #include "progfile.h"
 #include "scanner.h"
+#include "bin_tree.h"
 #include "progfile.h"
 
 int main() {
     printf("Hello!\n");
+
+    /* bin tree debug */
+    Tree.print_tree();
+    node *tree = NULL;
+
+    /**/
+
+
 
     progfile_t *pfile;
 
