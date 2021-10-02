@@ -27,6 +27,7 @@
 
 #include "dynstring.h"
 #include <stdlib.h>
+#include "assert.h"
 
 
 /**
