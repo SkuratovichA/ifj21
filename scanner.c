@@ -30,21 +30,10 @@
 // todo: write tests, test || someone on dc will write tests
 
 
-//// DEBUG
-//#define BACK_DEBUG 0 // means we have to return a DEBUG option
-//#define NO_DEBUG_ELSEWHERE 0 // means we have to turn DEBUG off at the end of this file
-//
-//#ifndef DEBUG_SCANNER
-//    #define BACK_DEBUG 1
-//    #undef DEBUG
-//#else
-//    #ifndef DEBUG
-//        #define NO_DEBUG_ELSEWHERE
-//        #define DEBUG 1
-//    #endif
-//#endif
 
 #ifndef DEBUG_SCANNER
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmacro-redefined"
 // undef debug macros
 #define debug_err(...)
 #define debug_msg(...)
@@ -54,6 +43,7 @@
 #define debug_assert(cond)
 #define debug_msg_s(...)
 #define DEBUG_SEP
+#pragma GCC diagnostic pop
 #endif
 
 /**
@@ -866,11 +856,3 @@ const struct scanner_op_struct Scanner = {
         .get_charpos = Get_charpos,
 
 };
-
-
-#if BACK_DEBUG
-#define DEBUG 1
-#endif
-#if NO_DEBUG_ELSEWHERE
-#undef DEBUG
-#endif
