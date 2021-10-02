@@ -25,14 +25,10 @@
  */
 #include <stdio.h>
 #include "errors.h"
-#include "progfile.h"
-#include "scanner.h"
-#include "progfile.h"
 #include "parser.h"
 
 int main() {
     printf("Hello!\n");
-    Parser.hello_from_parser();
 
     if (Parser.analyse()) {
         return Errors.get_error();
