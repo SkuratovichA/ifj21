@@ -22,6 +22,13 @@
  *  @author Jakub Kuzník
  */
 
+// todo: add soft_assert to the functions
+#define sort_assert(msg) \
+do { \
+    fpritnf(stderr, msg);\
+    exit(-1);\
+} while (0)
+
 
 #include "progfile.h"
 
@@ -32,6 +39,7 @@
 
 // opaque structure
 struct c_progfile {
+    bool allocated;
     size_t size; // File size
     size_t pos;  // position in file
     char tape[];
@@ -92,7 +100,16 @@ static int Ungetc(progfile_t *pfile) {
  * @return void
  */
 static void Free(progfile_t *pfile) {
-    free(pfile);
+    if (!pfile) {
+        soft_assert("pfile is NULL, soft asserting...\n");
+    }
+    pfile->size = 0;
+    pfile->pos = 0;
+    // pfile->tape = 0; // not sure about it
+    if (pfile->allocated) {
+        free(pfile);
+        pfile->allocated = false;
+    }
 }
 
 /**
@@ -167,6 +184,8 @@ static progfile_t *Getfile_stdin() {
         pfile->tape[pfile->size++] = (char) ch;
         pfile->tape[pfile->size] = 0;
     }
+
+    pfile->allocated = false;
     return pfile;
     err:
     free(pfile);
@@ -206,6 +225,7 @@ static progfile_t *Getfile(const char *filename, const char *mode) {
 
 
     fclose(fp);
+    pfile->allocated = true;
     return pfile;
     err2:
     free(pfile);
