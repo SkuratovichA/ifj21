@@ -17,9 +17,6 @@
  *
  *
  *  @author Aliaksandr Skuratovich
- *  @author Evgeny Torbin
- *  @author Lucie Svobodová
- *  @author Jakub Kuzník
  */
 
 // todo: add soft_assert to the functions

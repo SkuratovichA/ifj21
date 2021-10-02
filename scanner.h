@@ -19,9 +19,6 @@
  *
  *
  *  @author Aliaksandr Skuratovich
- *  @author Evgeny Torbin
- *  @author Lucie Svobodová
- *  @author Jakub Kuzník
  */
 
 #pragma once

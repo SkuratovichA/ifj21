@@ -19,16 +19,10 @@
  *
  *
  *  @author Aliaksandr Skuratovich
- *  @author Evgeny Torbin
- *  @author Lucie Svobodová
- *  @author Jakub Kuzník
  */
 
 #include "scanner.h"
 #include "tests/tests.h"
-
-
-// todo: write tests, test || someone on dc will write tests
 
 
 
@@ -398,28 +392,34 @@ static bool process_comment(progfile_t *pfile) {
                     state = STATE_COMMENT_SLINE;
                 } // an order comment
                 break;
+
             case STATE_COMMENT_SLINE:
                 if (ch == '\n')
                     state = STATE_COMMENT_FINAL; // comment end
                 break;
+
             case STATE_COMMENT_BLOCK_1:
                 if (ch == '[')
                     state = STATE_COMMENT_BLOCK_2;
                 else
                     state = STATE_COMMENT_SLINE; // an order comment
                 break;
+
             case STATE_COMMENT_BLOCK_2:
                 if (ch == ']')
                     state = STATE_COMMENT_BLOCK_END; // end block comment 1.
                 break;
+
             case STATE_COMMENT_BLOCK_END:
                 if (ch == ']')
                     state = STATE_COMMENT_FINAL; // comment done
                 break;
+
             case STATE_COMMENT_FINAL: // more clear way of creating an automaton
                 Progfile.ungetc(pfile);
                 accepted = true;
                 break;
+
             default:
                 assert(!"This statement must not occur!");
                 break;

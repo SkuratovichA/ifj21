@@ -17,9 +17,6 @@
  *  @brief This file our advanced Macroc for debuging. So we don't have to use print.
  *
  *  @author Aliaksandr Skuratovich
- *  @author Evgeny Torbin
- *  @author Lucie Svobodová
- *  @author Jakub Kuzník
  */
 #pragma once
 
