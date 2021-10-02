@@ -35,7 +35,11 @@ static void print_expected_err(const char *a, const char *b) {
 }
 
 #define expected_err(a) \
-    return print_expected_err( Scanner.to_string(a), Scanner.to_string(Scanner.get_curr_token().type) ), false
+do { \
+    Errors.set_error(ERROR_SYNTAX); \
+    print_expected_err(Scanner.to_string(a), Scanner.to_string(Scanner.get_curr_token().type)); \
+    return false; \
+} while (0)
 
 #define EXPECTED(p) \
     if( Scanner.get_curr_token().type == (p)) { \
@@ -183,7 +187,7 @@ static bool fun_body(progfile_t *pfile) {
     if (!fun_body(pfile)) {
         return false;
     }
-    debug_msg("\tfun_body\n");
+    debug_msg("\t<fun_body>\n");
     return true;
 }
 
@@ -225,6 +229,7 @@ static bool other_funparams(progfile_t *pfile) {
 
     // <datatype> here datatype is expected
     if (!datatype()) {
+        Errors.set_error(ERROR_SYNTAX);
         print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
         return false;
     }
@@ -234,7 +239,11 @@ static bool other_funparams(progfile_t *pfile) {
     EXPECTED(TOKEN_ID);
     debug_msg("\tid\n");
 
-    return other_funparams(pfile);
+    if (!other_funparams(pfile)) {
+        return false;
+    }
+    debug_msg("\t<other_funparams>\n");
+    return true;
 }
 
 
@@ -280,10 +289,11 @@ static bool other_datatypes(progfile_t *pfile) {
         debug_msg("\te\n");
         return true;
     }
-
     EXPECTED(TOKEN_COMMA);
+
     // <datatype>
     if (!datatype()) {
+        Errors.set_error(ERROR_SYNTAX);
         print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
         return false;
     }
@@ -291,12 +301,12 @@ static bool other_datatypes(progfile_t *pfile) {
     debug_msg("\t<datatype>\n");
 
     // <other_datatypes> it is better to tail recurse this function
-//    if (!other_datatypes(pfile)) {
-//        return false;
-//    }
-//    debug_msg("\t<other_datatypes>\n");
+    if (!other_datatypes(pfile)) {
+        return false;
+    }
+    debug_msg("\t<other_datatypes>\n");
 
-    return other_datatypes(pfile);
+    return true;
 }
 
 /**
@@ -308,12 +318,12 @@ static bool other_datatypes(progfile_t *pfile) {
  */
 static bool datatype_list(progfile_t *pfile) {
     debug_msg("<datatype_list> ->\n");
-    // <datatype>
-
+    // <datatype> | e
     if (!datatype()) {
         debug_msg("\te\n");
         return true;
     }
+    debug_msg("\t<datatype> { %s }\n", Scanner.to_string(Scanner.get_curr_token().type));
     Scanner.get_next_token(pfile);
 
     // <other_datatypes>
@@ -327,7 +337,7 @@ static bool datatype_list(progfile_t *pfile) {
 
 /** //fixme decide fhat to do with this e production, because datatype list can have an error(i guess)
  * @brief
- * !rule <funretopt> -> e | : <datatype> <datatype_list>
+ * !rule <funretopt> -> e | : <datatype> <other_datatypes>
  *
  * @param pfile structure representing the input program file
  * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
@@ -348,13 +358,14 @@ static bool funretopt(progfile_t *pfile) {
     // <datatype>. There must be at least one datatype.
     if (!datatype()) {
         print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
+        Errors.set_error(ERROR_SYNTAX);
         return false;
     }
+    debug_msg("\t<datatype> { %s }\n", Scanner.to_string(Scanner.get_curr_token().type));
     Scanner.get_next_token(pfile);
-    debug_msg("\t<datatype>\n");
 
-    // <datatype_list>
-    if (!datatype_list(pfile)) {
+    // <other_datatypes>
+    if (!other_datatypes(pfile)) {
         return false;
     }
     debug_msg("\t<datatype_list>\n");
@@ -375,7 +386,8 @@ static bool funretopt(progfile_t *pfile) {
  */
 static bool stmt(progfile_t *pfile) {
     debug_msg("<stmt> ->\n");
-    string id;
+    token_t tok; // for debug
+
     switch (Scanner.get_curr_token().type) {
         // function declaration: global id : function ( <datatype_list> ) <funcretopt>
         case KEYWORD_global:
@@ -385,8 +397,8 @@ static bool stmt(progfile_t *pfile) {
 
             // function name
             EXPECTED(TOKEN_ID);
-            id = Scanner.get_curr_token().attribute.id;
-            debug_msg("\tid { token.attribute.id = %s }\n", Dynstring.c_str(&id));
+            tok = Scanner.get_curr_token();
+            debug_msg("\tid { token.attribute.id = %s }\n", Dynstring.c_str(&tok.attribute.id));
 
             // :
             EXPECTED(TOKEN_COLON);
@@ -400,7 +412,7 @@ static bool stmt(progfile_t *pfile) {
             EXPECTED(TOKEN_LPAREN);
             debug_msg("\t(\n");
 
-            // <funparam_decl_list>
+            // <funparam_decl_list> // can be empty
             if (!datatype_list(pfile)) {
                 return false;
             }
@@ -425,8 +437,8 @@ static bool stmt(progfile_t *pfile) {
 
             // id
             EXPECTED(TOKEN_ID);
-            id = Scanner.get_curr_token().attribute.id;
-            debug_msg("\tid { token.attribute.id = %s }\n", Dynstring.c_str(&id));
+            tok = Scanner.get_curr_token();
+            debug_msg("\tid { token.attribute.id = %s }\n", Dynstring.c_str(&tok.attribute.id));
 
             // (
             EXPECTED(TOKEN_LPAREN);
@@ -457,8 +469,10 @@ static bool stmt(progfile_t *pfile) {
             break;
 
         default:
-            debug_todo("Add more <stmt> derivations, if there are so. Otherwise return an error message");
-            return Errors.return_error(ERROR_SYNTAX);
+            debug_todo("Add more <stmt> derivations, if there are so. Otherwise return an error message\n");
+            debug_msg_s("Got token: %s", Scanner.to_string(Scanner.get_curr_token().type));
+            Errors.set_error(42);
+            return false;
     }
 
     return true;
@@ -511,13 +525,15 @@ static bool program(progfile_t *pfile) {
 
     // "ifj21" which is a prolog string after require keyword
     if (Scanner.get_curr_token().type != TOKEN_STR) {
+        Errors.set_error(ERROR_SYNTAX);
         return false;
     }
     if (0 != Dynstring.cmp(Scanner.get_curr_token().attribute.id, prolog_str)) {
+        Errors.set_error(ERROR_SYNTAX);
         return false;
     }
-
     EXPECTED(TOKEN_STR);
+
     debug_msg("\t\"ifj21\"\n");
 
     // <stmt_list>
@@ -543,8 +559,11 @@ static bool program(progfile_t *pfile) {
  */
 static bool Analyse() {
     progfile_t *pfile;
+    bool res = false;
+
     if (!(pfile = Scanner.initialize())) {
-        return Errors.return_error(ERROR_INTERNAL);
+        Errors.set_error(ERROR_INTERNAL);
+        return res;
     }
 
     // get first token to get start
@@ -552,14 +571,14 @@ static bool Analyse() {
     debug_msg("Start parser.\n");
 
     // perfom a syntax analysis
-    bool res = program(pfile);
+    res = program(pfile);
 
     // dont forget to free
     Scanner.free(pfile);
 
     // todo: i guess it wants more clearly solution because there will
     //  be semantics controls in the parser so every function probably has to set the error code global variable up
-    return res ? true : Errors.return_error(ERROR_SYNTAX);
+    return res;
 }
 
 /**
