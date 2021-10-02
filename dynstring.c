@@ -188,15 +188,8 @@ static bool Str_create_onheap(string *str) {
  * @param s1
  * @return -1, 0, 1 depends on lexicographical ordering of two strings.
  */
-static Str_cmp(string
-s,
-const char *s1
-) {
-return
-
-strcmp (Str_c_str(
-
-&s), s1);
+static int Str_cmp(string s, const char *s1) {
+    return strcmp(Str_c_str(&s), s1);
 }
 
 // TODO: implement functions Str_concat{str, dynstr}

@@ -49,6 +49,8 @@ enum errors {
  */
 struct error {
     int (*return_error)(int);
+
+    int (*get_error)(void);
 };
 
 extern const struct error Errors;

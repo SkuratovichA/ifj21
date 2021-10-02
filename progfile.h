@@ -35,6 +35,7 @@
 #include "dynstring.h"
 
 
+//TODO add comments into an interface
 /**
  * Struct is hidden. definition is in dynstring.c
  */
@@ -46,14 +47,33 @@ extern const struct progfile_op_struct_t Progfile;
  * Interface to use when dealing with strings.
  */
 struct progfile_op_struct_t {
-    bool (*check_postfix)(const char *, const char *);
+    /**
+     * @brief Store file to progfile structure.
+     *
+     * @param filename
+     * @param mode File opening mode.
+     * @return pfile where file is stored. If error returns NULL.
+     */
     progfile_t *(*getfile)(const char *, const char *);
+
+    /**
+     * @brief Reads a file from stdin to progfile structure.
+     *
+     * @return File stored in pfile structure. If error return NULL.
+     */
     progfile_t *(*getfile_stdin)(void);
+
     void (*free)(progfile_t *);
+
     int (*ungetc)(progfile_t *);
+
     int (*pgetc)(progfile_t *);
+
     char *(*get_tape)(progfile_t *);
+
     char *(*get_tape_current)(progfile_t *);
+
     void (*set_tape)(progfile_t *, char *);
+
     char (*peek_at)(progfile_t *, size_t);
 };

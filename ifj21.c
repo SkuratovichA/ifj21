@@ -34,23 +34,11 @@ int main() {
     printf("Hello!\n");
     Parser.hello_from_parser();
 
-    progfile_t *pfile;
-
-    token_t token;
-    pfile = Scanner.initialize();
-    if (!pfile) {
-        return -1;
-    }
-
-    while ((token = Scanner.get_curr_token()).type != TOKEN_EOFILE) {
-        debug_msg("%s\n", Scanner.to_string(Scanner.get_next_token(pfile).type));
-        if (token.type == TOKEN_EOL) {
-            debug_msg("\n");
-        }
+    if (Parser.analyse()) {
+        return Errors.get_error();
     }
 
 
-    Progfile.free(pfile);
     Errors.return_error(42);
     return 0;
 }

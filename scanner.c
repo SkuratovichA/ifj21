@@ -24,11 +24,37 @@
  *  @author Jakub Kuzník
  */
 
-
 #include "scanner.h"
 
-// todo: create documentation
+
 // todo: write tests, test || someone on dc will write tests
+
+
+//// DEBUG
+//#define BACK_DEBUG 0 // means we have to return a DEBUG option
+//#define NO_DEBUG_ELSEWHERE 0 // means we have to turn DEBUG off at the end of this file
+//
+//#ifndef DEBUG_SCANNER
+//    #define BACK_DEBUG 1
+//    #undef DEBUG
+//#else
+//    #ifndef DEBUG
+//        #define NO_DEBUG_ELSEWHERE
+//        #define DEBUG 1
+//    #endif
+//#endif
+
+#ifndef DEBUG_SCANNER
+// undef debug macros
+#define debug_err(...)
+#define debug_msg(...)
+#define debug_msg_stdout(...)
+#define debug_msg_stderr(...)
+#define debug_todo(...)
+#define debug_assert(cond)
+#define debug_msg_s(...)
+#define DEBUG_SEP
+#endif
 
 /**
  * @brief Covert state to string.
@@ -58,8 +84,10 @@ static int to_keyword(const char *identif) {
             #define X(n) { #n , KEYWORD(n) },
             KEYWORDS(X)
             #undef X
+            {NULL, 0} // the end
     };
-    for (int i = 0; i < 9; i++)
+
+    for (int i = 0; kwds[i].nam != NULL; i++)
         if (strcmp(kwds[i].nam, identif) == 0) {
             return kwds[i].kwd;
         }
@@ -73,7 +101,7 @@ static int to_keyword(const char *identif) {
  * @param t token
  * @return String that represent token.
  */
-static char *_to_string(const int t) {
+static char *To_string(const int t) {
     switch (t) {
         case TOKEN_EOFILE:
             return "END OF FILE";
@@ -141,8 +169,9 @@ static char *_to_string(const int t) {
 }
 
 
-static size_t lines;
-static int state;
+static size_t lines = 1;
+static int state = STATE_INIT;
+static size_t charpos;
 
 /**
  * @brief finite automaton to lex a c string
@@ -162,6 +191,7 @@ static token_t lex_string(progfile_t *pfile) {
 
     while (!accepted && ch != EOF) {
         ch = Progfile.pgetc(pfile);
+        charpos++;
         debug_msg("GOT: %c in state %s\n", ch, state_tostring(state));
         switch (state) {
             case STATE_STR_INIT:
@@ -301,6 +331,7 @@ static token_t lex_identif(progfile_t *pfile) {
 
     while (!accepted && ch != EOF) {
         ch = Progfile.pgetc(pfile);
+        charpos++;
         switch (state) {
             case STATE_ID_INIT:
                 if (isalpha(ch) || ch == '_') {
@@ -335,8 +366,9 @@ static token_t lex_identif(progfile_t *pfile) {
     if ((token.type = to_keyword(Dynstring.c_str(&token.attribute.id))) != TOKEN_ID) {
         Dynstring.free(&token.attribute.id);
         debug_msg_s("- keyword!\n");
-    } else
+    } else {
         debug_msg_s("\n");
+    }
 
     return token;
 }
@@ -357,8 +389,10 @@ static bool process_comment(progfile_t *pfile) {
     // != EOF is not a true "DFA" way of thinking, but it is more clearly
     while (!accepted && ch != EOF) {
         ch = Progfile.pgetc(pfile);
+        charpos++;
         if (ch == '\n') {
             lines++;
+            charpos = 0;
         }
         switch (state) {
             case STATE_COMMENT_INIT:
@@ -416,17 +450,22 @@ static token_t lex_relate_op(progfile_t *pfile) {
 
     while (!accepted) {
         ch = Progfile.pgetc(pfile);
+        charpos++;
         switch (ch) {
             case '>':
+                charpos++;
                 return Progfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_GE} : (Progfile.ungetc(
                         pfile), (token_t) {.type = TOKEN_GT});
             case '<':
+                charpos++;
                 return Progfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_LE} : (Progfile.ungetc(
                         pfile), (token_t) {.type = TOKEN_LT});
             case '=':
+                charpos++;
                 return Progfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_EQ} : (Progfile.ungetc(
                         pfile), (token_t) {.type = TOKEN_ASSIGN});
             case '~':
+                charpos++;
                 return Progfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_EQ} : (Progfile.ungetc(
                         pfile), (token_t) {.type = TOKEN_DEAD});
             default:
@@ -454,6 +493,7 @@ static token_t lex_number(progfile_t *pfile) {
 
     while (!accepted && ch != EOF) {
         ch = Progfile.pgetc(pfile);
+        charpos++;
         switch (state) {
             case STATE_NUM_INIT:
                 if (ch == '0') {
@@ -468,7 +508,7 @@ static token_t lex_number(progfile_t *pfile) {
                 break;
 
             case STATE_NUM_INT: // final
-                if (isdigit(ch)) { ;
+                if (isdigit(ch)) { ;; // append char is after the statemet, so an empty statement is here.
                 } else if (ch == '.') {
                     state = STATE_NUM_F_DOT;
                 } else if (ch == 'e' || ch == 'E') {
@@ -609,15 +649,18 @@ static token_t scanner(progfile_t *pfile) {
     next_lexeme:
     state = STATE_INIT;
     ch = Progfile.pgetc(pfile);
+    charpos++;
 
     switch (ch) {
         case '\n':
             lines++;
+            charpos = 0;
             goto next_lexeme;
             break;
 
         case_2('\t', ' '):
-            token.type = TOKEN_WS;
+            goto next_lexeme;
+            //    token.type = TOKEN_WS;
             break;
 
         case_alpha:
@@ -634,6 +677,7 @@ static token_t scanner(progfile_t *pfile) {
         case '-':
             if (Progfile.peek_at(pfile, 0) == '-') {
                 Progfile.pgetc(pfile);
+                charpos++;
                 if (!process_comment(pfile)) {
                     return (token_t) {.type = TOKEN_DEAD};
                 }
@@ -646,6 +690,7 @@ static token_t scanner(progfile_t *pfile) {
             token.type = TOKEN_DIV_F;
             if (Progfile.peek_at(pfile, 0) == '/') {
                 Progfile.pgetc(pfile);
+                charpos++;
                 token.type = TOKEN_DIV_I;
             }
             break;
@@ -688,6 +733,7 @@ static token_t scanner(progfile_t *pfile) {
         case '.':
             token.type = TOKEN_DEAD;
             if (Progfile.pgetc(pfile) == '.') {
+                charpos++;
                 token.type = TOKEN_STRCAT;
             }
             break;
@@ -718,7 +764,7 @@ static token_t scanner(progfile_t *pfile) {
  * @param
  * @return File
  */
-static progfile_t *_initialize_scanner() {
+static progfile_t *Initialize_scanner() {
     return Progfile.getfile_stdin();
 }
 
@@ -728,7 +774,7 @@ static progfile_t *_initialize_scanner() {
  * @param token
  * @return void
  */
-static void _free_token(token_t *token) {
+static void Free_token(token_t *token) {
     if (token->type == TOKEN_ID || token->type == TOKEN_STR) {
         Dynstring.free(&token->attribute.id);
     }
@@ -736,6 +782,7 @@ static void _free_token(token_t *token) {
 
 
 // ==============================================
+// local prev and curr tokens to return them
 static token_t prev, curr;
 
 /**
@@ -744,8 +791,8 @@ static token_t prev, curr;
  * @param pfile
  * @return token
  */
-static token_t _get_next_token(progfile_t *pfile) {
-    _free_token(&prev); // need to free string
+static token_t Get_next_token(progfile_t *pfile) {
+    Free_token(&prev); // need to free string
     prev = curr;
     curr = scanner(pfile);
     return curr;
@@ -756,18 +803,35 @@ static token_t _get_next_token(progfile_t *pfile) {
  *
  * @return previous token
  */
-static token_t _get_prev_token() {
+static token_t Get_prev_token() {
     return prev;
 }
 
 /**
  * @brief Get current token.
  *
- * @param
  * @return current token.
  */
-static token_t _get_curr() {
+static token_t Get_curr() {
     return curr;
+}
+
+/**
+ * @brief Get current line of the file.
+ *
+ * @return current line
+ */
+static size_t Get_line() {
+    return lines;
+}
+
+/**
+ * @brief Get current line of the file.
+ *
+ * @return current line
+ */
+static size_t Get_charpos() {
+    return charpos;
 }
 
 /**
@@ -777,10 +841,14 @@ static token_t _get_curr() {
  * @return void
  */
 // ==============================================
-static void _free_scanner(progfile_t *pfile) {
+static void Free_scanner(progfile_t *pfile) {
+    debug_msg("Scanner freed:\n");
     Dynstring.free(&prev.attribute.id);
+    debug_msg("\tprev.attribute.id freed\n");
     Dynstring.free(&curr.attribute.id);
+    debug_msg("\tcurr.attribute.id freed\n");
     Progfile.free(pfile);
+    debug_msg("\tprogfile freed\n");
 }
 
 /**
@@ -788,10 +856,74 @@ static void _free_scanner(progfile_t *pfile) {
  * Scanner interface.
  */
 const struct scanner_op_struct Scanner = {
-        .free = _free_scanner,
-        .get_next_token = _get_next_token,
-        .get_prev_token = _get_prev_token,
-        .initialize = _initialize_scanner,
-        .get_curr_token = _get_curr,
-        .to_string = _to_string
+        .free = Free_scanner,
+        .get_next_token = Get_next_token,
+        .get_prev_token = Get_prev_token,
+        .initialize = Initialize_scanner,
+        .get_curr_token = Get_curr,
+        .to_string = To_string,
+        .get_line = Get_line,
+        .get_charpos = Get_charpos,
+
 };
+
+
+#if BACK_DEBUG
+#define DEBUG 1
+#endif
+#if NO_DEBUG_ELSEWHERE
+#undef DEBUG
+#endif
+
+#ifdef SELF_TEST
+#define MAIN main
+#else
+#define MAIN dummy
+#endif
+
+int MAIN(const int argc, const char **argv) {
+    #define failed printf /*will be a function from tests.c*/
+    #define passed printf
+    token_t token;
+    //********************************************************************//
+    //****************************** NUMBERS *****************************//
+    printf("Test 1 - float numbers, good\n");
+    progfile_t *pfile = Progfile.getfile("tests/good_numbers_float.tl");
+    if (!pfile) {
+        goto nexttest;
+    }
+    // integers
+    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; num++) {
+        if (token.type != TOKEN_NUM_F) {
+            failed("expected: got: with attribute:\n"); // will be red ansi text like [FAILED]:
+        } else
+            passed("%d\n", nu);// green [PASSED]
+    }
+    if (0) {
+        nexttest:
+        failed("Cannot open the file!\n");
+    }
+    Progfile.free(pfile);
+
+    pfile = Progfile.getfile("tests/bad_numbers_float.tl");
+    if (!pfile) {
+        goto nexttest2;
+    }
+    // integers
+    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; num++) {
+        if (token.type != TOKEN_NUM_F) {
+            failed("expected: got: with attribute:\n"); // will be red ansi text like [FAILED]:
+        } else
+            passed("%d\n", nu);// green [PASSED]
+    }
+    if (0) {
+        nexttest2:
+        failed("Cannot open the file!\n");
+    }
+    Progfile.free(pfile);
+    //********************************************************************//
+    //********************************************************************//
+
+    // todo add mere tests
+    return 0;
+}

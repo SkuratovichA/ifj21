@@ -27,10 +27,6 @@
 #pragma once
 
 //============================================
-// DEBUG
-#ifndef DEBUG_SCANNER
-#undef DEBUG
-#endif
 
 
 //============================================
@@ -167,15 +163,20 @@ extern const struct scanner_op_struct Scanner;
 
 struct scanner_op_struct {
     void (*free)(progfile_t *);
-    progfile_t *(*initialize)();
+
+    progfile_t *(*initialize)(void);
 
     token_t (*get_next_token)(progfile_t *);
 
-    token_t (*get_prev_token)();
+    token_t (*get_prev_token)(void);
 
-    token_t (*get_curr_token)();
+    token_t (*get_curr_token)(void);
 
     char *(*to_string)(const int);
+
+    size_t (*get_line)(void);
+
+    size_t (*get_charpos)(void);
 };
 //
 
@@ -193,6 +194,10 @@ struct scanner_op_struct {
 
 #define KEYWORDS(X) \
     X(do) \
+    X(string) \
+    X(boolean) \
+    X(number) \
+    X(integer) \
     X(if) \
     X(return) \
     X(else) \

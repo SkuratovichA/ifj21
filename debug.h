@@ -31,6 +31,7 @@
 #ifdef DEBUG
     #include <assert.h>
     #include <stdio.h>
+#include <string.h>
 
     #define debug_msg(...) debug_print(stdout, __VA_ARGS__)
     #define debug_msg_stderr(...) debug_print(stderr, __VA_ARGS__)
@@ -43,8 +44,11 @@
         debug_msg_stderr(__VA_ARGS__); \
     } while(0)
 
-    #define debug_print(_dst, ...) do { \
-        fprintf((_dst), "- %s:%d in %s: ", __FILE__, __LINE__, __FUNCTION__);\
+#define debug_print(_dst, ...) do { \
+        fprintf((_dst), __FILE__":%.4d in %s %*s%s: ", \
+            __LINE__, \
+            __FUNCTION__, (int)(15 - strlen(__FUNCTION__))/*an indentation number*/, "", " "\
+            ); \
         fprintf((_dst), __VA_ARGS__);\
     } while(0)
 
@@ -57,6 +61,7 @@
 #define debug_msg_stderr(...)
 #define debug_todo(...)
 #define debug_assert(cond)
+#define debug_msg_s(...)
 #define DEBUG_SEP
 #endif
 
