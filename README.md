@@ -70,7 +70,7 @@ V programovacím jazyce IFJ21 záleží na velikosti písmen u identifikátorů 
 - _Identifikátor_ je definován jako neprázdná posloupnost písmen, číslic a znaku podtržítka ('\_’) začínající písmenem nebo podtržítkem.
 - Jazyk IFJ21 obsahuje navíc níže uvedená _klíčová slova_, která mají specifický význam, a proto se nesmějí vyskytovat jako identifikátory:
     ```
-      do, else, end, function, global, if, local, nil, require, return, then, while
+      do, else, end, function, global, if, integer, local, nil, number, require, return, string, then, while
     ```
 
 - _Celočíselný literál_ (rozsah C-int) je tvořen neprázdnou posloupností číslic a vyjadřuje hodnotu celého nezáporného čísla v desítkové soustavě.
