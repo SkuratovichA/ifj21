@@ -25,6 +25,7 @@
  */
 
 #include "scanner.h"
+#include "tests/tests.h"
 
 
 // todo: write tests, test || someone on dc will write tests
@@ -270,6 +271,7 @@ static token_t lex_string(progfile_t *pfile) {
                     accepted = true;
                 }
                 escaped_char += (ch - '0');
+                Dynstring.append_char(&token.attribute.id, (char) escaped_char);
                 break;
 
             case STATE_STR_DEC_1_1:
@@ -279,6 +281,7 @@ static token_t lex_string(progfile_t *pfile) {
                     accepted = true;
                 }
                 escaped_char += (ch - '0');
+                Dynstring.append_char(&token.attribute.id, (char) escaped_char);
                 break;
 
             case STATE_STR_DEC_1_2:
@@ -288,6 +291,7 @@ static token_t lex_string(progfile_t *pfile) {
                     accepted = true;
                 }
                 escaped_char += (ch - '0');
+                Dynstring.append_char(&token.attribute.id, (char) escaped_char);
                 break;
 
             default:
@@ -856,3 +860,53 @@ const struct scanner_op_struct Scanner = {
         .get_charpos = Get_charpos,
 
 };
+
+
+int MAIN(const int argc, const char **argv) {
+    token_t token;
+
+    //********************************************************************//
+    //****************************** NUMBERS *****************************//
+    printf("Test 1 - float numbers, good\n");
+    progfile_t *pfile = Progfile.getfile("tests/ok_numbers_f.tl", "r");
+    if (!pfile) {
+        goto nexttest;
+    }
+    // integers
+    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
+        if (token.type != TOKEN_NUM_F) {
+            Tests.failed("expected: got: with attribute:\n");
+        } else {
+            Tests.passed("%d\n", nu);
+        }
+    }
+    if (0) {
+        nexttest:
+        Tests.failed("Cannot open the file!\n");
+    }
+    Progfile.free(pfile);
+
+
+    pfile = Progfile.getfile("tests/bad_numbers_float.tl", "r");
+    if (!pfile) {
+        goto nexttest2;
+    }
+    // integers
+    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
+        if (token.type != TOKEN_NUM_F) {
+            Tests.failed("expected: got: with attribute:\n");
+        } else {
+            Tests.passed("%d\n", nu);
+        }// green [PASSED]
+    }
+    if (0) {
+        nexttest2:
+        Tests.failed("Cannot open the file!\n");
+    }
+    Progfile.free(pfile);
+    //********************************************************************//
+    //********************************************************************//
+
+    // todo add mere tests
+    return 0;
+}
