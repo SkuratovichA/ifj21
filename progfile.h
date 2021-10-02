@@ -37,14 +37,14 @@
 
 //TODO add comments into an interface
 /**
- * Struct is hidden. definition is in dynstring.c
+ * Struct is hidden. definition is in progfile.c
  */
 typedef struct c_progfile progfile_t;
 
 extern const struct progfile_op_struct_t Progfile;
 
 /**
- * Interface to use when dealing with strings.
+ * Interface to use when dealing with file.
  */
 struct progfile_op_struct_t {
     /**
