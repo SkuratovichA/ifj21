@@ -37,6 +37,16 @@ do { \
 #include <assert.h>
 #include "dynstring.h"
 
+#define soft_assert(cond) \
+do { \
+    if (!(cond)) { \
+        fprintf(stderr, "(soft)assertion failed: "); \
+        fprintf(stderr, #cond); \
+        fprintf(stderr, "\n"); \
+        exit(-1); \
+    } \
+} while (0)
+
 // opaque structure
 struct c_progfile {
     bool allocated;
@@ -54,15 +64,15 @@ struct c_progfile {
  * @return pfile->tape[pos+step] if empty char* or out of bounds return EOF.
  */
 static char Peek_at(progfile_t *pfile, size_t step) {  //MAYBE RENAME TO MOVE_FILE_POINTER
-    if (!pfile) {
-        return EOF;
-    }
+    soft_assert(pfile != NULL);
+
     size_t newpos = pfile->pos + step;
 
-    if (newpos < pfile->size)
+    if (newpos < pfile->size) {
         return pfile->tape[newpos];
-    else
+    } else {
         return EOF;
+    }
 
     //return (newpos < pfile->size) ? pfile->tape[newpos] : EOF;
 }
@@ -74,7 +84,8 @@ static char Peek_at(progfile_t *pfile, size_t step) {  //MAYBE RENAME TO MOVE_FI
  * @return Actual character. If end or empty return EOF.
  */
 static int Getc(progfile_t *pfile) {
-    if (pfile != NULL && pfile->pos < pfile->size) {
+    soft_assert(pfile != NULL);
+    if (pfile->pos < pfile->size) {
         return pfile->tape[pfile->pos++];
     } else {
         pfile->pos++;
@@ -90,7 +101,8 @@ static int Getc(progfile_t *pfile) {
  * @return character before or EOF
  */
 static int Ungetc(progfile_t *pfile) {
-    return (pfile != NULL && pfile->pos > 0) ? pfile->tape[--pfile->pos] : EOF;
+    soft_assert(pfile != NULL);
+    return (pfile->pos > 0) ? pfile->tape[--pfile->pos] : EOF;
 }
 
 /**
@@ -100,9 +112,7 @@ static int Ungetc(progfile_t *pfile) {
  * @return void
  */
 static void Free(progfile_t *pfile) {
-    if (!pfile) {
-        soft_assert("pfile is NULL, soft asserting...\n");
-    }
+    soft_assert(pfile != NULL);
     pfile->size = 0;
     pfile->pos = 0;
     // pfile->tape = 0; // not sure about it
@@ -119,6 +129,7 @@ static void Free(progfile_t *pfile) {
  * @return pfile->tape
  */
 static char *Get_tape(progfile_t *pfile) {
+    soft_assert(pfile != NULL);
     return pfile->tape;
 }
 
@@ -129,6 +140,7 @@ static char *Get_tape(progfile_t *pfile) {
  * @return pfile->tape + pfile->pos
  */
 static char *Get_tape_current(progfile_t *pfile) {
+    soft_assert(pfile != NULL);
     return (pfile->tape + pfile->pos);
 }
 
@@ -143,9 +155,8 @@ static char *Get_tape_current(progfile_t *pfile) {
  *
  */
 static void Set_tape(progfile_t *pfile, char *tape) {
-    if (pfile == NULL) {
-        return;
-    }
+    soft_assert(pfile != NULL);
+
     size_t diff = tape - pfile->tape;
     if (diff > 0 && diff < pfile->size - 1) {
         pfile->pos = diff;
