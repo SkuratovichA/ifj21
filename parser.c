@@ -196,7 +196,7 @@ static bool fun_body(progfile_t *pfile) {
  * @param pfile structure representing the input program file
  * @return true if token is datatype.
  */
-static inline bool datatype(progfile_t *pfile) {
+static inline bool datatype() {
     switch (Scanner.get_curr_token().type) {
         case_4(KEYWORD_string, KEYWORD_boolean, KEYWORD_integer, KEYWORD_number):
             debug_msg("\t%s\n", Scanner.to_string(Scanner.get_curr_token().type));
@@ -224,7 +224,7 @@ static bool other_funparams(progfile_t *pfile) {
     }
 
     // <datatype> here datatype is expected
-    if (!datatype(pfile)) {
+    if (!datatype()) {
         print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
         return false;
     }
@@ -248,7 +248,7 @@ static bool other_funparams(progfile_t *pfile) {
 static bool funparam_def_list(progfile_t *pfile) {
     debug_msg("funparam_def_list ->\n");
     // <datatype> | e
-    if (!datatype(pfile)) {
+    if (!datatype()) {
         debug_msg("\te\n");
         return true;
     }
@@ -283,7 +283,7 @@ static bool other_datatypes(progfile_t *pfile) {
 
     EXPECTED(TOKEN_COMMA);
     // <datatype>
-    if (!datatype(pfile)) {
+    if (!datatype()) {
         print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
         return false;
     }
@@ -310,7 +310,7 @@ static bool datatype_list(progfile_t *pfile) {
     debug_msg("<datatype_list> ->\n");
     // <datatype>
 
-    if (!datatype(pfile)) {
+    if (!datatype()) {
         debug_msg("\te\n");
         return true;
     }
@@ -346,7 +346,7 @@ static bool funretopt(progfile_t *pfile) {
     debug_msg("\t:\n");
 
     // <datatype>. There must be at least one datatype.
-    if (!datatype(pfile)) {
+    if (!datatype()) {
         print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
         return false;
     }
