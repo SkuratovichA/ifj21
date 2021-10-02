@@ -42,72 +42,175 @@ static void print_expected_err(const char *a, const char *b) {
       Scanner.get_next_token(pfile); \
     } else \
         expected_err((p))
-
-//#define EXPECTED_2(a, ...) \
-//    if (Scanner.get_curr_token().type == (a)) { \
-//        Scanner.get_next_token(pfile); \
-//    } else \
-//    EXPECTED(__VA_ARGS__)
-//
-//#define EXPECTED_3(a, ...) \
-//    if (Scanner.get_curr_token().type == (a)) { \
-//        Scanner.get_next_token(pfile); \
-//    } else \
-//    EXPECTED_2(__VA_ARGS__)
-//
-//#define EXPECTED_4(a, ...) \
-//    if (Scanner.get_curr_token().type == (a)) { \
-//        Scanner.get_next_token(pfile); \
-//    } else \
-//    EXPECTED_3(__VA_ARGS__)
-//
-//#define EXPECTED_5(a, ...) \
-//    if (Scanner.get_curr_token().type == (a)) { \
-//        Scanner.get_next_token(); \
-//    } else \
-//    EXPECTED_4(__VA_ARGS__)
+// ***************************************************************************** //
+// ***************************************************************************** //
+// ***************************************************************************** //
 // ***************************************************************************** //
 
 
+static bool unmatched_part(progfile_t *);
+
+static bool cond_stmt(progfile_t *);
+
+static bool fun_body(progfile_t *pfile);
+
+/**
+ * @brief Expression rules. TODO
+ *
+ * !rule <expr> -> <TODO>
+ *
+ * @param pfile @param pfile structure representing the program filethe input program file
+ * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error message otherwise
+ */
+static bool expr(progfile_t *pfile) {
+    debug_msg_s("<expr> -> \n");
+
+    EXPECTED(KEYWORD_1); // true is 0 here, funny enough...
+    debug_todo("Implement expression analysis using a precedence table bottom up solution");
+    return true;
+}
+
+/**
+ * @brief Unmatched part of a conditional statement. Can be empty(premium assignment),
+ * else <funbody>  or elseif <cond_stmt>.
+ *
+ * !rule <unmatched_part> -> else <fun_body> | elseif <cond_stmt> | e
+ *
+ * @param pfile structure representing the program filethe input program file
+ * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error message otherwise
+ */
+static bool unmatched_part(progfile_t *pfile) {
+    debug_msg_s("<unmatched_part> -> \n");
+
+    switch (Scanner.get_curr_token().type) {
+        // else <fun_body>
+        case KEYWORD_else:
+            if (!fun_body(pfile)) {
+                return false;
+            }
+            debug_msg_s("\t<fun_body>\n");
+            break;
+            // elseif <cond_stmt>
+        case KEYWORD_elseif:
+            if (!cond_stmt(pfile)) {
+                return false;
+            }
+            debug_msg_s("\t<cond_stmt>\n");
+            break;
+            // e
+        default:
+            debug_msg_s("\te\n");
+            break;
+    }
+    return true;
+}
+
+/**
+ * @brief // TODO: description what the function does
+ *
+ * !rule <cond_stmt> -> expr then <fun_body> <unmatched_part>
+ *
+ * @param pfile structure representing the program filethe input program file
+ * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error message otherwise
+ */
+static bool cond_stmt(progfile_t *pfile) {
+    debug_msg_s("<cond_stmt> -> \n");
+
+    if (!expr(pfile)) {
+        return false;
+    }
+    debug_msg_s("\texpr\n");
+
+    EXPECTED(KEYWORD_then);
+    debug_msg_s("\tthen\n");
+
+    // <fun_body>
+    if (!fun_body(pfile)) {
+        return false;
+    }
+    debug_msg_s("\t<fun_body>\n");
+
+    if (!unmatched_part(pfile)) {
+        return false;
+    }
+    debug_msg_s("\t<unmatched_part>\n");
+
+    EXPECTED(KEYWORD_end);
+    return true;
+}
 
 
 /**
- * @brief Datatype rule. To have a more "pure" solution this function has to have a "brother",
- * which is a datatype or an empty string, because some rules expects e production either,
- * when other don't. However, to write less code I've decided not to implement two similar function,
- * but to move an error message "above"(to the rule that calls this function).
+ * @brief Statement inside the function
+ * rule <fun_body> -> return expression //todo
+ * rule <fun_body> -> local id : <datatype> //todo
  *
- * !rule <datatype> -> string | integer | number | boolean | e
+ * todo:  deal with the same terminals on the lhs of the rhs of the rule
+ * rule <fun_body> -> expr // todo e.g x = fun(a + b, c + d, fun()) or a = b or fun(a, b, c)
+ * rule <fun_body> -> expr <more_expressions> = <expression> // todo x = fun(a, b)
+ *
+ * // cycles
+ * rule <fun_body> -> repeat <cycle_body> <until> // todo
+ * rule <body> -> while <expr> do <cycle_body> // todo
+ *
+ * // statements
+ * !rule <fun_body> -> if <cond_stmt> end
  *
  * @param pfile structure representing the input program file
  * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
  */
-static bool datatype(progfile_t *pfile) {
-    debug_msg("<datatype> ->\n");
+static bool fun_body(progfile_t *pfile) {
+    debug_msg("<fun_body> ->\n");
+
+    switch (Scanner.get_curr_token().type) {
+        // if <cond_stmt>
+        case KEYWORD_if:
+            EXPECTED(KEYWORD_if);
+
+            // <cond_stmt>
+            if (!cond_stmt(pfile)) {
+                return false;
+            }
+            EXPECTED(KEYWORD_end);
+            break;
+
+        default:
+            debug_msg("\te\n");
+            return true;
+    }
+
+    // <fun_body>. Non tail recursive solution, but debugging will be easier
+    if (!fun_body(pfile)) {
+        return false;
+    }
+    debug_msg("\tfun_body\n");
+    return true;
+}
+
+
+/**
+ * @brief Datatype. It is not a rule actually, but a "macro". TODO: ask meduna or krivka about it
+ *
+ * !rule <datatype> -> string | integer | boolean | number
+ *
+ * @param pfile structure representing the input program file
+ * @return true if token is datatype.
+ */
+static inline bool datatype(progfile_t *pfile) {
     switch (Scanner.get_curr_token().type) {
         case_4(KEYWORD_string, KEYWORD_boolean, KEYWORD_integer, KEYWORD_number):
             debug_msg("\t%s\n", Scanner.to_string(Scanner.get_curr_token().type));
-            Scanner.get_next_token(pfile);
+            // no need to get next token here
             break;
         default:
-            // todo:
-            //      Not sure about an error message here,
-            //      because <datatype_list> calls <datatype>
-            //      and <datatype_list> can be empty,
-            //      so it's possible to have another token here.
-            //      Probably it'll be good to add an e derivation here
-            // todo:
-            //      Not even sure if <datatype> has to be a rule.
-            //      Anyway it is more convenient if it is a rule
-            //      to not "ovverule" the grammar.
-            //print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
             return false;
     }
     return true;
 }
 
 /**
- * @brief <other_funparams> -> e | , <datatype> id <other_funparams>
+ * @brief
+ * !rule <other_funparams> -> e | , <datatype> id <other_funparams>
  *
  * @param pfile structure representing the input program file
  * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
@@ -120,10 +223,12 @@ static bool other_funparams(progfile_t *pfile) {
         return true;
     }
 
-    // <datatype>
+    // <datatype> here datatype is expected
     if (!datatype(pfile)) {
+        print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
         return false;
     }
+    Scanner.get_next_token(pfile);
     debug_msg("\t<datatype>\n");
 
     EXPECTED(TOKEN_ID);
@@ -134,7 +239,8 @@ static bool other_funparams(progfile_t *pfile) {
 
 
 /**
- * @brief <funparam_def_list> -> e | <datatype> id <other_funparams>
+ * @brief
+ * !rule <funparam_def_list> -> e | <datatype> id <other_funparams>
  *
  * @param pfile structure representing the input program file
  * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
@@ -143,7 +249,6 @@ static bool funparam_def_list(progfile_t *pfile) {
     debug_msg("funparam_def_list ->\n");
     // <datatype> | e
     if (!datatype(pfile)) {
-        // e
         debug_msg("\te\n");
         return true;
     }
@@ -182,6 +287,7 @@ static bool other_datatypes(progfile_t *pfile) {
         print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
         return false;
     }
+    Scanner.get_next_token(pfile);
     debug_msg("\t<datatype>\n");
 
     // <other_datatypes> it is better to tail recurse this function
@@ -203,10 +309,12 @@ static bool other_datatypes(progfile_t *pfile) {
 static bool datatype_list(progfile_t *pfile) {
     debug_msg("<datatype_list> ->\n");
     // <datatype>
+
     if (!datatype(pfile)) {
         debug_msg("\te\n");
         return true;
     }
+    Scanner.get_next_token(pfile);
 
     // <other_datatypes>
     if (!other_datatypes(pfile)) {
@@ -239,8 +347,10 @@ static bool funretopt(progfile_t *pfile) {
 
     // <datatype>. There must be at least one datatype.
     if (!datatype(pfile)) {
+        print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
         return false;
     }
+    Scanner.get_next_token(pfile);
     debug_msg("\t<datatype>\n");
 
     // <datatype_list>
@@ -307,7 +417,7 @@ static bool stmt(progfile_t *pfile) {
             debug_msg("\t<funretopt>\n");
             break;
 
-            // function definition: function id ( <funparam_def_list> ) <funretopt>
+            // function definition: function id ( <funparam_def_list> ) <funretopt> <fun_body> end
         case KEYWORD_function:
             // function
             EXPECTED(KEYWORD_function);
@@ -328,14 +438,22 @@ static bool stmt(progfile_t *pfile) {
             }
             debug_msg("\t<funparam_def_list>\n");
 
+            // )
             EXPECTED(TOKEN_RPAREN);
             debug_msg("\t)\n");
 
             if (!funretopt(pfile)) {
                 return false;
             }
-            debug_msg("\t<funretopt\n");
+            debug_msg("\t<funretopt>\n");
 
+            if (!fun_body(pfile)) {
+                return false;
+            }
+            debug_msg("\t<fun_body>\n");
+
+            EXPECTED(KEYWORD_end);
+            debug_msg("\tend\n");
             break;
 
         default:
