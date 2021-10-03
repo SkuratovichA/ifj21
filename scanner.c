@@ -172,7 +172,7 @@ static token_t lex_string(progfile_t *pfile) {
     bool accepted = false;
     token_t token = { .type = TOKEN_STR };
 
-    Dynstring.create_empty(&token.attribute.id);
+    Dynstring.create_onheap(&token.attribute.id);
 
     while (!accepted && ch != EOF) {
         ch = Progfile.pgetc(pfile);
@@ -313,7 +313,7 @@ static token_t lex_identif(progfile_t *pfile) {
 
     state = STATE_ID_INIT;
     token_t token = { .type = TOKEN_ID };
-    Dynstring.create_empty(&token.attribute.id);
+    Dynstring.create_onheap(&token.attribute.id);
     int ch;
     bool accepted = false;
 
@@ -479,7 +479,7 @@ static token_t lex_number(progfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     state = STATE_NUM_INIT;
     string ascii_num;
-    Dynstring.create_empty(&ascii_num);
+    Dynstring.create_onheap(&ascii_num);
 
     bool is_fp = false;
     int ch;

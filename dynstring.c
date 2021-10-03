@@ -27,15 +27,6 @@
 #include "assert.h"
 
 
-/**
- * @brief Find if string is on heap or stack.
- *
- * @param str String that is checked.
- * @return str->is_on_heap
- */
-static inline bool is_on_heap(const string *str) {
-    return str->is_on_heap;
-}
 
 /**
  * @brief Create a string from a char *
@@ -47,40 +38,16 @@ static inline bool is_on_heap(const string *str) {
  */
 static bool Str_create(string *str, const char *s) {
     size_t length = strlen(s);
-    if (length < sizeof(string)) {
-        strcpy(str->stack_str, s);
-        str->stack_size = length;
-        str->is_on_heap = false;
-    } else {
-        str->heap_str = (char *) calloc(length + 1, 1);
-        if (!str->heap_str) {
-            return false;
-        }
-        strcpy(str->heap_str, s);
-        str->size = length;
-        str->allocated_size = length + 1;
-        str->is_on_heap = true;
+    str->heap_str = (char *) calloc(length + 1, 1);
+    if (!str->heap_str) {
+        return false;
     }
+    strcpy(str->heap_str, s);
+    str->size = length;
+    str->allocated_size = length + 1;
+
     return true;
 }
-
-/**
- * @brief Create empty string.
- *
- * Union variables are set to.
- * str->is_on_heap = false;
- * str->stack_size = 0;
- * str->stack_str[0] = '\0';
- *
- * @param str
- * @return void
- */
-static void Str_create_empty(string *str) {
-    str->is_on_heap = false;
-    str->stack_size = 0;
-    str->stack_str[0] = '\0';
-}
-
 
 /**
  * @brief Get char * (c string ending with '\0') from string.
@@ -89,7 +56,7 @@ static void Str_create_empty(string *str) {
  * @return Pointer to char. Could be on heap or stack.
  */
 static char *Str_c_str(string *str) {
-    return (is_on_heap(str)) ? str->heap_str : str->stack_str;
+    return str->heap_str;
 }
 
 /**
@@ -99,7 +66,7 @@ static char *Str_c_str(string *str) {
  * @return size of string
  */
 static size_t Str_length(const string *str) {
-    return (is_on_heap(str)) ? str->size : str->stack_size;
+    return str->size;
 }
 
 /**
@@ -109,9 +76,8 @@ static size_t Str_length(const string *str) {
  * @return void
  */
 static void Str_free(string *str) {
-    if (str != NULL && is_on_heap(str)) {
+    if (str != NULL) {
         free(str->heap_str);
-        str->is_on_heap = false;
     }
 }
 
@@ -123,41 +89,19 @@ static void Str_free(string *str) {
  * @return true when xxx
  */
 static bool Str_append_char(string *str, char ch) {
-    if (is_on_heap(str)) {
-        // new_char + null byte = 2
-        if (str->size + 2 > str->allocated_size) {
-            str->allocated_size *= 2;
-            void *tmp = realloc(str->heap_str, str->allocated_size);
-            if (!tmp) {
-                free(str->heap_str);
-                return false;
-            }
-            str->heap_str = tmp;
+    // new_char + null byte = 2
+    if (str->size + 2 > str->allocated_size) {
+        str->allocated_size *= 2;
+        void *tmp = realloc(str->heap_str, str->allocated_size);
+        if (!tmp) {
+            free(str->heap_str);
+            return false;
         }
-        str->heap_str[str->size++] = ch;
-        str->heap_str[str->size] = '\0';
-    } else {
-        // move stack str to heap if too long
-        if (str->stack_size + 1U >= sizeof(string)) {
-            size_t new_length = str->stack_size + 1;
-            // allocate string on the heap
-            void *tmp = malloc(new_length + 1);
-            if (!tmp) {
-                return false;
-            }
-            // copy contents and set size
-            strcpy(tmp, str->stack_str);
-            str->heap_str = tmp;
-            str->size = new_length;
-            str->heap_str[new_length - 1] = ch;
-            str->heap_str[new_length] = '\0';
-            str->allocated_size = new_length + 1;
-            str->is_on_heap = true;
-        } else {
-            str->stack_str[str->stack_size++] = ch;
-            str->stack_str[str->stack_size] = '\0';
-        }
+        str->heap_str = tmp;
     }
+    str->heap_str[str->size++] = ch;
+    str->heap_str[str->size] = '\0';
+
     return true;
 }
 
@@ -171,11 +115,12 @@ static bool Str_create_onheap(string *str) {
     if (!str) {
         return false;
     }
+
     str->heap_str = calloc(1, (str->allocated_size = 42)); // here's the answer ...
     str->size = 0;
-    str->is_on_heap = true;
-    assert((bool) NULL == false && "NULL must be false");
-    assert((bool) !NULL == true && "!NULL must be true");
+    // I believe this is never happens
+//    assert((bool) NULL == false && "NULL must be false");
+//    assert((bool) !NULL == true && "!NULL must be true");
     return (bool) str->heap_str; // NULL == 0 == false
 }
 
@@ -199,7 +144,6 @@ static int Str_cmp(string s, const char *s1) {
 const struct string_op_struct_t Dynstring = {
         /*@{*/
         .create         = Str_create,        // create a string from a char *
-        .create_empty   = Str_create_empty,
         .length         = Str_length,
         .c_str          = Str_c_str,         // get char * from string
         .append_char    = Str_append_char,

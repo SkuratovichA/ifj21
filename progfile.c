@@ -32,7 +32,7 @@ do { \
 #include "progfile.h"
 #include "macros.h"
 #include <assert.h>
-#include "dynstring.h"
+//#include "dynstring.h"
 
 #define soft_assert(cond) \
 do { \
@@ -167,11 +167,6 @@ static void Set_tape(progfile_t *pfile, char *tape) {
  */
 static progfile_t *Getfile_stdin() {
     progfile_t *pfile;
-
-    string filetape;
-    if (!Dynstring.create_onheap(&filetape)) {
-        return false;
-    }
 
     int ch;
     size_t allocated, alloc_step = allocated = 128;
