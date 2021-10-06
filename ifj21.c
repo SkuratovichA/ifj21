@@ -29,11 +29,11 @@
 #include "scanner.h"
 #include "bin_tree.h"
 #include "progfile.h"
-
+int tree_testing();
 int main() {
 
     tree_testing();
-
+    return 0;
     printf("Hello!\n");
 
     progfile_t *pfile;
@@ -58,6 +58,26 @@ int main() {
 }
 
 int tree_testing(){
-    char *s = "hovno";
-    Tree.get_string_asci(s);
+
+    char *c = "Function_name";
+    union string_t s_c;
+
+    Dynstring.create(&s_c, c);
+
+    token_t token;
+    token.type = TOKEN(ID);
+    token.attribute.id = s_c;
+
+
+    struct node *t_one = NULL;
+    t_one = Tree.create_tree(&token, 0);
+
+    printf("%s", t_one->data->i_name);
+    Tree.delete_node(t_one);
+
+
+
+
+    return 0;
+
 }

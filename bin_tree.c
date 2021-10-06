@@ -26,6 +26,8 @@
 
 #include "bin_tree.h"
 
+
+
 /**
  * @brief print whole tree
  *
@@ -34,20 +36,9 @@
  */
 static void print_tree() {
     printf("I am tree.");
+
 }
 
-
-/**
- * @brief It insert node to binary tree.
- *
- * @param
- * @return
- */
-static int get_string_asci(char *str)
-{
-    printf("%c",str);
-    return 0;
-}
 
 /**
  * @brief Create binare tree allocate space on heap for first(root) node.
@@ -56,12 +47,12 @@ static int get_string_asci(char *str)
  * @param token
  * @param validity Information used to find identificator validity level.
  *
- * @return true. If error return false.
+ * @return true. If error return NULL;
  *
  */
-static bool create_tree(node *root, token_t *token, validity validity)
-{
-    root = calloc(1, sizeof(struct node));
+static node * create_tree(token_t *token, unsigned int validity){
+
+    struct node *root = calloc(1, sizeof(struct node));
     if (root == NULL)
         goto error1;
 
@@ -69,23 +60,23 @@ static bool create_tree(node *root, token_t *token, validity validity)
     if (root->data == NULL)
         goto error1;
 
-
-    root->data->i_name = token->attribute.id;
-    root->data->asci_val = get_string_asci(root->data->i_name);
-
-    root->data->type = validity.type;
-    root->data->validity_field = validity.validity_field;
-    root->data->validity_level = validity.validity_level;
-
-    root->l_child = NULL;
+    //TODO CALL CREATE NODE
+    root->validity_field = validity;
     root->r_child = NULL;
+    root->l_child = NULL;
 
-    return true;
+
+    root->data->type = token->type; //TODO VARIABLE OF FUNCTION
+    root->data->i_name = Dynstring.c_str(&token->attribute.id);
+
+    //root->data->i_name_num = get_unique_id(root);
+
+    return root;
 
 error1:
     fprintf(stderr,"calloc() error");
     Errors.return_error(ERROR_INTERNAL);
-    return false;
+    return NULL;
 }
 
 
@@ -97,11 +88,28 @@ error1:
  * @param
  * @return
  */
-static bool free_tree(node *root)
-{
+static bool delete_tree(node *root){
     if (root == NULL)
         return false;
+
+    struct node *help_var = root;
+
+    while (help_var != NULL){
+        //delete right side
+        while(help_var->r_child != NULL && help_var->l_child != NULL){
+            if(help_var->r_child == NULL){
+                help_var = help_var->l_child;
+            }
+        }
+    }
+
+    //delete left side
+
+    return true;
+    //TODO
+
 }
+
 
 /**
  * @brief It insert node to binary tree.
@@ -109,22 +117,75 @@ static bool free_tree(node *root)
  * @param
  * @return
  */
-static bool delete_node(node *node)
-{
+static void delete_node(node *node){
+    free(node->data);
+    free(node);
+}
+
+/**
+ * @brief It insert node to binary tree.
+ *
+ * @param
+ * @param
+ * @param
+ * @return false if validity doesn´t match
+ */
+static node * create_node(node *node, token_t *token){
+    node = calloc(1, sizeof(struct node));
     if (node == NULL)
-        return false;
+        goto error1;
 
+    node->data = calloc(1, sizeof(struct data));
+    if (node->data == NULL)
+        goto error1;
+
+    node->r_child = NULL;
+    node->l_child = NULL;
+
+
+    node->data->type = token->type; //TODO VARIABLE OF FUNCTION
+    node->data->i_name = Dynstring.c_str(&token->attribute.id);
+    return node;
+
+
+error1:
+    fprintf(stderr,"calloc() error");
+    Errors.return_error(ERROR_INTERNAL);
+    return NULL;
 }
-
 
 /**
  * @brief It insert node to binary tree.
  *
  * @param
- * @return
+ * @param
+ * @param
+ * @return false if validity doesn´t match
  */
-static bool insert(token_t *token, validity validity) {
-    printf("I am tree.");
+static bool insert(node *node, token_t *token, unsigned int validity) {
+
+    if(node->validity_field != validity){
+        return false;
+    }
+    struct node *help_var = node;
+    char *c = Dynstring.c_str(&token->attribute.id);
+
+    while (true){
+        /*If you are on leaf level.*/
+        if (help_var == NULL){
+            node = create_node(help_var, token);
+            break;
+        }
+        /* If key is less go left*/
+        else if ((strcmp(help_var->data->i_name, Dynstring.c_str(&token->attribute.id)) > 0)){
+            help_var = help_var->l_child;
+        }
+        /* If key is more or equal go right*/
+        else{
+            help_var = help_var->r_child;
+        }
+    }
+
     return true;
 }
 
@@ -138,8 +199,8 @@ const struct tree_op_struct Tree = {
         .print_tree      = print_tree,
         .insert          = insert,
         .delete_node     = delete_node,
-        .free_tree       = free_tree,
-        .get_string_asci  = get_string_asci,
+        .delete_tree       = delete_tree,
         .create_tree      = create_tree,
+        .create_node      = create_node,
 
 };

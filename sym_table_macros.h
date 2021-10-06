@@ -37,6 +37,7 @@
  */
 #define VARIABLE 1
 #define FUNCTION 2
+#define NOTYPE 3 //When we are creating tree we are inserting one empty node.
 
 /**
  * For field of validity

@@ -58,7 +58,7 @@
  */
 typedef struct data {
     char *i_name;          /**< Identificator name. Could be name of function or variable.*/
-    unsigned int i_name_num;  /**< Sum of i_name characters in asci values. This value defines how we store data. Means name in numbers. */
+ //   unsigned int i_name_num;  /**< Int identificator. This value defines how we store data. Means name in numbers. */
     char type;              /**< Type of identificator could be FUNCTION or VARIABLE */
 } data;
 
@@ -86,10 +86,11 @@ extern const struct tree_op_struct Tree;
 
 struct tree_op_struct {
     void (*print_tree)();
-    bool (*insert)(token_t *, validity);
-    bool (*delete_node)(node *);
-    bool (*free_tree)(node *);
-    int (*get_string_asci)(string);
-    bool (*create_tree)(node *, token_t *, validity);
+    bool (*insert)(node *,token_t *, unsigned int);
+    void (*delete_node)(node *);
+    bool (*delete_tree)(node *);
+    int (*get_unique_id)(node *);
+    node * (*create_tree)(token_t *, unsigned int);
+    node * (*create_node)(node *, token_t *);
 
 };
