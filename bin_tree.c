@@ -43,8 +43,9 @@ static void print_tree() {
  * @param
  * @return
  */
-static int get_string_asci(string str)
+static int get_string_asci(char *str)
 {
+    printf("%c",str);
     return 0;
 }
 

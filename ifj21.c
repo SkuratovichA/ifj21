@@ -31,15 +31,10 @@
 #include "progfile.h"
 
 int main() {
+
+    tree_testing();
+
     printf("Hello!\n");
-
-    /* bin tree debug */
-    Tree.print_tree();
-    node *tree = NULL;
-
-    /**/
-
-
 
     progfile_t *pfile;
 
@@ -60,4 +55,9 @@ int main() {
     Progfile.free(pfile);
     Errors.return_error(42);
     return 0;
+}
+
+int tree_testing(){
+    char *s = "hovno";
+    Tree.get_string_asci(s);
 }
