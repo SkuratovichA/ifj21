@@ -24,9 +24,6 @@
  *  @author Jakub Kuzník
  */
 
-// WAAAAAAAAAAAAAAAAAARRRRRRRRRRRRRNIIIIIIIIIIIIIIIINGGGGGGGGGGG
-// SAŠO NEIMPLEMENTUJ NIC :SMRCKABAT:
-
 
 #pragma once
 
@@ -41,7 +38,6 @@
 #include <math.h>
 #include <stdint.h>
 #include "debug.h"
-#include "sym_table_macros.h"
 #include "scanner.h"
 #include "errors.h"
 //
@@ -87,10 +83,10 @@ extern const struct tree_op_struct Tree;
 struct tree_op_struct {
     void (*print_tree)();
     bool (*insert)(node *,token_t *, unsigned int);
+    void (*delete_tree)(node *);
     void (*delete_node)(node *);
-    bool (*delete_tree)(node *);
     int (*get_unique_id)(node *);
     node * (*create_tree)(token_t *, unsigned int);
-    node * (*create_node)(node *, token_t *);
+    node * (*create_node)(token_t *);
 
 };

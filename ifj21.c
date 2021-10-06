@@ -33,7 +33,6 @@ int tree_testing();
 int main() {
 
     tree_testing();
-    return 0;
     printf("Hello!\n");
 
     progfile_t *pfile;
@@ -71,13 +70,10 @@ int tree_testing(){
 
     struct node *t_one = NULL;
     t_one = Tree.create_tree(&token, 0);
+    Tree.insert(t_one, &token, 0);
+    Tree.insert(t_one, &token, 0);
 
     printf("%s", t_one->data->i_name);
-    Tree.delete_node(t_one);
-
-
-
-
+    Tree.delete_tree(t_one);
     return 0;
-
 }
