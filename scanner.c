@@ -868,11 +868,12 @@ int MAIN(const int argc, const char **argv) {
     //********************************************************************//
     //****************************** NUMBERS *****************************//
     printf("Test 1 - float numbers, good\n");
-    progfile_t *pfile = Progfile.getfile("tests/ok_numbers_f.tl", "r");
+
+    // floats ok
+    progfile_t *pfile = Progfile.getfile("../tests/number_ok.tl", "r");
     if (!pfile) {
         goto nexttest;
     }
-    // integers
     for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
         if (token.type != TOKEN_NUM_F) {
             Tests.failed("expected: got: with attribute:\n");
@@ -886,14 +887,13 @@ int MAIN(const int argc, const char **argv) {
     }
     Progfile.free(pfile);
 
-
-    pfile = Progfile.getfile("tests/bad_numbers_float.tl", "r");
+    // floats bad
+    pfile = Progfile.getfile("../tests/number_bad.tl", "r");
     if (!pfile) {
         goto nexttest2;
     }
-    // integers
     for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type != TOKEN_NUM_F) {
+        if (token.type == TOKEN_NUM_F) {
             Tests.failed("expected: got: with attribute:\n");
         } else {
             Tests.passed("%d\n", nu);
@@ -903,10 +903,12 @@ int MAIN(const int argc, const char **argv) {
         nexttest2:
         Tests.failed("Cannot open the file!\n");
     }
+
+
     Progfile.free(pfile);
     //********************************************************************//
     //********************************************************************//
 
-    // todo add mere tests
+    // todo add more tests
     return 0;
 }
