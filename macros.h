@@ -68,13 +68,3 @@
 
 #define case_alnum \
     case_alpha: case_digit \
-
-#define soft_assert(cond) \
-do { \
-    if (!(cond)) { \
-        fprintf(stderr, "(soft)assertion failed: "); \
-        fprintf(stderr, #cond); \
-        fprintf(stderr, "\n"); \
-        exit(-1); \
-    } \
-} while (0)

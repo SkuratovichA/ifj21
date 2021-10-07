@@ -1,6 +1,6 @@
 /********************************************
  * Project name: IFJ - projekt
- * File: dynstring.c
+ * File: dynstring_t.c
  * Date: 23. 09. 2021
  * Last change: 23. 09. 2021
  * Team: TODO
@@ -10,128 +10,164 @@
  *           Jakub Kuzník
  *******************************************/
 /**
- * This file can create dynamic size strings. If the string is short, it is created on stack else it is created on heap.
+ * This file can create dynamic len strings. If the dynstring_t is short, it is created on stack else it is created on heap.
  *
- *  @package dynstring
- *  @file dynstring.c
- *  @brief Contain function for operations with string. String is represented by data union str.
+ *  @package dynstring_t
+ *  @file dynstring_t.c
+ *  @brief Contain function for operations with dynstring_t. String is represented by data union str->
  *
  *
  *
- *  @author Aliaksandr Skuratovich
- *  @author Evgeny Torbin - move dynstring to the heap
+ *  @author Aliaksandr Skuratovich - move dynstring_t to the heap
+ *  @author Evgeny Torbin - move dynstring_t to the heap - unsuccessfully :-(
  */
 
 
 #include "dynstring.h"
 #include <stdlib.h>
-#include "assert.h"
-#include "macros.h"
+#include "errors.h"
 
 
+#define STRSIZE 42
 
 /**
- * @brief Create a string from a char *
- *
- * @param str Output string. str is data struct defined in dynstring.h
- * @param s Char that we want to convert to string.
- *
- */
-static void Str_create(string *str, const char *s) {
+   * @brief Create a dynstring_t from a c_string, with length(@param str + STRSIZE)
+   *
+   * @param s static c dynstring_t.
+   * @param s Char that to convert to dynstring_t.
+   * @return pointer to the dynstring_t object.
+   */
+static dynstring_t Str_create(const char *s) {
+    soft_assert(s, ERROR_INTERNAL); // dont deal with NULLptr
+
     size_t length = strlen(s);
-    str = calloc(1, sizeof(string) + length + 1);
-    soft_assert(str);
-    strcpy(str->heap_str, s);
-    str->size = length;
-    str->allocated_size = length + 1;
+    dynstring_t str = {
+            .len = length,
+            .allocated_size = length + STRSIZE - 1,
+            .str = calloc(1, sizeof(dynstring_t) + length + STRSIZE),
+    };
+    soft_assert(str.str, ERROR_INTERNAL);
+
+    strcpy(str.str, s);
+    debug_msg("Create dynstring: { .len = %zu .size = %zu .str = '%s'\n", str.len, str.allocated_size, str.str);
+    return str;
 }
 
 /**
- * @brief Get char * (c string ending with '\0') from string.
+ * @brief Get char * (c dynstring_t ending with '\0') from dynstring_t.
  *
  * @param str
- * @return Pointer to char. Could be on heap or stack.
+ * @return c dynstring_t representation.
  */
-static char *Str_c_str(string *str) {
-    return str->heap_str;
+static char *Str_c_str(dynstring_t str) {
+    soft_assert(str.str, ERROR_INTERNAL);
+    return str.str;
 }
 
 /**
- * @brief Return length of given string.
+ * @brief Return length of given dynstring_t.
  *
  * @param str
- * @return size of string
+ * @return len of dynstring_t
  */
-static size_t Str_length(const string *str) {
-    return str->size;
+static size_t Str_length(dynstring_t *str) {
+    soft_assert(str->str, ERROR_INTERNAL);
+    return str->len;
 }
 
 /**
- * @brief Call free() on string if string was allocated on the heap.
- *
- * @param str
- * @return void
- */
-static void Str_free(string *str) {
-    free(str);
+* @brief Clears the dynstring. Set everything to 0 except allocated_size.
+*
+* @param str string to clear.
+*/
+static void Str_clear(dynstring_t *str) {
+    soft_assert(str->str, ERROR_INTERNAL);
+    str->str[0] = '\0';
+    str->len = 0;
 }
 
 /**
- * @brief Appends given character to end of string.
+ * @brief Frees memory.
  *
- * @param str
- * @param ch Character that we'll be appending.
- * @return true when xxx
+ * @param str dynstring_t to free.
  */
-static void Str_append_char(string *str, char ch) {
-    // new_char + null byte = 2
-    if (str->size + 2 > str->allocated_size) {
+static void Str_free(dynstring_t *str) {
+    soft_assert(str->str, ERROR_INTERNAL);
+    str->allocated_size = 0;
+    str->len = 0;
+    free(str->str);
+}
+
+/**
+ * @brief Appends a character shrunk.
+ *
+ * @param str dynstring_t heap structure.
+ * @param ch char to append.
+ */
+static void Str_append_char(dynstring_t *str, char ch) {
+    soft_assert(str->str, ERROR_INTERNAL);
+    if (str->len + 1 >= str->allocated_size) {
         str->allocated_size *= 2;
-        void *tmp = realloc(str, str->allocated_size);
-        soft_assert(tmp);
-        str = tmp;
+        void *tmp = realloc(str->str, str->allocated_size);
+        soft_assert(tmp, ERROR_INTERNAL);
+        str->str = tmp;
     }
-    str->heap_str[str->size++] = ch;
-    str->heap_str[str->size] = '\0';
+    str->str[str->len++] = ch;
+    str->str[str->len] = '\0';
+    debug_msg("Append char: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->allocated_size, str->str);
 }
 
 /**
- * @brief Allocate string on heap.
- *
- * @param str
- * @return True if success. If given pointer is NULL return false. If Calloc failed the program ends.
- */
-static void Str_create_onheap(string *str) {
-    str = calloc(1, sizeof(string) + 42); // here's the answer ...
-    soft_assert(str);
-    str->allocated_size = 42;
-    str->size = 0;
-}
-
-/**
- * @brief Compare dynstring and char* using strcmp
+ * @brief Compare dynstring_t and char* using strcmp.
  *
  * @param s
  * @param s1
- * @return -1, 0, 1 depends on lexicographical ordering of two strings.
+ * @returns -1, 0, 1 depends on lexicographical ordering of two strings.
  */
-static int Str_cmp(string s, const char *s1) {
-    return strcmp(Str_c_str(&s), s1);
+static int Str_cmp(dynstring_t s1, dynstring_t s2) {
+    soft_assert(s2.str, ERROR_INTERNAL);
+    soft_assert(s1.str, ERROR_INTERNAL);
+    debug_msg("compare %s with %s gives %d\n", s1.str, s2.str, strcmp(s1.str, s2.str));
+
+    return strcmp(s1.str, s2.str);
 }
 
-// TODO: implement functions Str_concat{str, dynstr}
+/**
+ * @brief Concatenate two dynstrings in the not very efficient way.
+ *
+ * @param s1
+ * @param s2
+ * @returns new dysntring, which is product of s1 and s2.
+ */
+static dynstring_t Str_cat(dynstring_t *s1, dynstring_t *s2) {
+    soft_assert(s2->str, ERROR_INTERNAL);
+    soft_assert(s1->str, ERROR_INTERNAL);
+
+    dynstring_t new = Str_create(s1->str);
+
+    size_t diff = new.allocated_size - s1->len;
+    if (diff <= 1) {
+        new.allocated_size *= 2;
+        void *tmp = realloc(new.str, new.allocated_size);
+        soft_assert(tmp, ERROR_INTERNAL);
+        new.str = tmp;
+    }
+    strcat(new.str, s1->str);
+
+    return new;
+}
 
 /**
  * Interface to use when dealing with strings.
  * Functions are in struct so we can use them in different files.
  */
-const struct string_op_struct_t Dynstring = {
+const dynstring_interface Dynstring = {
         /*@{*/
-        .create         = Str_create,        // create a string from a char *
+        .create         = Str_create,
         .length         = Str_length,
-        .c_str          = Str_c_str,         // get char * from string
+        .c_str          = Str_c_str,
         .append_char    = Str_append_char,
         .free           = Str_free,
-        .create_onheap  = Str_create_onheap,
         .cmp            = Str_cmp,
+        .cat            = Str_cat,
 };

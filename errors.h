@@ -25,6 +25,20 @@
  */
 #pragma once
 
+#include "debug.h"
+
+#define soft_assert(cond, err) \
+do { \
+    if (!(cond)) {             \
+        debug_msg_s("\n "); \
+        debug_msg(" "); \
+        fprintf(stderr, "(soft)assertion failed: "); \
+        fprintf(stderr, #cond); \
+        fprintf(stderr, "\n"); \
+        exit((err)); \
+    } \
+} while (0)
+
 /**
  * All error codes.
  */

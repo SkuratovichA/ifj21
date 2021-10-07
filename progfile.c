@@ -22,15 +22,12 @@
 
 
 #include "progfile.h"
-
-#include "progfile.h"
-#include "macros.h"
-#include <assert.h>
+#include "errors.h"
 
 // opaque structure
 struct c_progfile {
     bool allocated;
-    size_t size; // File size
+    size_t size; // File len
     size_t pos;  // position in file
     char tape[];
 };
@@ -44,7 +41,7 @@ struct c_progfile {
  * @return pfile->tape[pos+step] if empty char* or out of bounds return EOF.
  */
 static char Peek_at(progfile_t *pfile, size_t step) {  //MAYBE RENAME TO MOVE_FILE_POINTER
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
 
     size_t newpos = pfile->pos + step;
 
@@ -54,7 +51,7 @@ static char Peek_at(progfile_t *pfile, size_t step) {  //MAYBE RENAME TO MOVE_FI
         return EOF;
     }
 
-    //return (newpos < pfile->size) ? pfile->tape[newpos] : EOF;
+    //return (newpos < pfile->len) ? pfile->tape[newpos] : EOF;
 }
 
 /**
@@ -64,7 +61,7 @@ static char Peek_at(progfile_t *pfile, size_t step) {  //MAYBE RENAME TO MOVE_FI
  * @return Actual character. If end or empty return EOF.
  */
 static int Getc(progfile_t *pfile) {
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
     if (pfile->pos < pfile->size) {
         return pfile->tape[pfile->pos++];
     } else {
@@ -81,7 +78,7 @@ static int Getc(progfile_t *pfile) {
  * @return character before or EOF
  */
 static int Ungetc(progfile_t *pfile) {
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
     return (pfile->pos > 0) ? pfile->tape[--pfile->pos] : EOF;
 }
 
@@ -92,7 +89,7 @@ static int Ungetc(progfile_t *pfile) {
  * @return void
  */
 static void Free(progfile_t *pfile) {
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
     pfile->size = 0;
     pfile->pos = 0;
     // pfile->tape = 0; // not sure about it
@@ -109,7 +106,7 @@ static void Free(progfile_t *pfile) {
  * @return pfile->tape
  */
 static char *Get_tape(progfile_t *pfile) {
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
     return pfile->tape;
 }
 
@@ -120,7 +117,7 @@ static char *Get_tape(progfile_t *pfile) {
  * @return pfile->tape + pfile->pos
  */
 static char *Get_tape_current(progfile_t *pfile) {
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
     return (pfile->tape + pfile->pos);
 }
 
@@ -135,7 +132,7 @@ static char *Get_tape_current(progfile_t *pfile) {
  *
  */
 static void Set_tape(progfile_t *pfile, char *tape) {
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
 
     size_t diff = tape - pfile->tape;
     if (diff > 0 && diff < pfile->size - 1) {

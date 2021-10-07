@@ -26,6 +26,7 @@
 
 static int error;
 
+
 static int Get_error() {
     return error;
 }
@@ -64,7 +65,7 @@ static void Set_error(int errcode) {
             errmsg = "Wrong number of parameters/return values!";
             break;
         case ERROR_SEMANTICS_TYPE_INCOMPATABLE:
-            // 6 - semantic error of type compatibility in arithmetic, string and relation operators.
+            // 6 - semantic error of type compatibility in arithmetic, dynstring_t and relation operators.
             errmsg = "Type incompatibility error!";
             break;
         case ERROR_SEMANTICS_OTHER:

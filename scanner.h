@@ -61,7 +61,7 @@ typedef enum token_type {
     TOKEN(ID), // variable name
     TOKEN(NUM_I), // integer number
     TOKEN(NUM_F), // floating pointer number
-    TOKEN(STR), //  c string
+    TOKEN(STR), //  c dynstring_t
     TOKEN(NE), // '~='
     TOKEN(EQ), // '=='
     TOKEN(LT), // '<'
@@ -137,8 +137,8 @@ enum states {
 /**
  * Token attributes.
  */
-typedef union token_attribute {
-    string id;       /**< if token == string || token == identifer  */
+typedef union attribute {
+    dynstring_t id;       /**< if token == dynstring_t || token == identifer  */
     uint64_t num_i;  /**< if token == number_int */
     double num_f;    /**< number_float */
 } attribute_t;
@@ -164,10 +164,6 @@ struct scanner_op_struct {
     progfile_t *(*initialize)(void);
 
     token_t (*get_next_token)(progfile_t *);
-
-    token_t (*get_prev_token)(void);
-
-    token_t (*get_curr_token)(void);
 
     char *(*to_string)(const int);
 
