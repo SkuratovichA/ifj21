@@ -12,4 +12,5 @@ add_executable(ifj21
         dynstring.c dynstring.h
         macros.h
         progfile.c progfile.h
-        dynstring.c dynstring.h)
+        dynstring.c dynstring.h
+        bin_tree.c bin_tree.h)

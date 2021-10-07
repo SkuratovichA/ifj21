@@ -27,9 +27,11 @@
 #include "errors.h"
 #include "progfile.h"
 #include "scanner.h"
+#include "bin_tree.h"
 #include "progfile.h"
-
+int tree_testing();
 int main() {
+
     printf("Hello!\n");
 
     progfile_t *pfile;
@@ -52,3 +54,4 @@ int main() {
     Errors.return_error(42);
     return 0;
 }
+
