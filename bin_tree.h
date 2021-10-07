@@ -82,11 +82,11 @@ extern const struct tree_op_struct Tree;
 
 struct tree_op_struct {
     void (*print_tree)();
-    bool (*insert)(node *,token_t *, unsigned int);
     void (*delete_tree)(node *);
     void (*delete_node)(node *);
     int (*get_unique_id)(node *);
+    bool (*insert)(node *,token_t *, unsigned int);
     node * (*create_tree)(token_t *, unsigned int);
     node * (*create_node)(token_t *);
-
+    node * (*find_node)(node *, string);
 };

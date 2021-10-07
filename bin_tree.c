@@ -43,6 +43,40 @@ static void print_tree() {
 /**
  * @brief Create binare tree allocate space on heap for first(root) node.
  *
+ * @param tree Pointer to first node of tree.
+ * @param token name that we are looking for.
+ *
+ * @return Pointer to node or NULL if not find.
+ */
+static node * find_node(node * tree, string name){
+    struct node *help_var = tree;
+    char *c = Dynstring.c_str(&name);
+
+    while(true){ //Break if leaf level reached
+        if((strcmp(help_var->data->i_name, Dynstring.c_str(&name))) == 0){
+            return help_var; //FINDED
+        }else if ((strcmp(help_var->data->i_name, Dynstring.c_str(&name)) > 0)){
+            if(help_var->l_child == NULL){
+                break; //not in tree
+            }
+            else{
+                help_var = help_var->l_child;
+            }
+        }else{
+            if(help_var->r_child == NULL){
+                break; //Not in tree
+            }else{
+                help_var = help_var->r_child;
+            }
+        }
+    }
+    return NULL;
+}
+
+
+/**
+ * @brief Create binare tree allocate space on heap for first(root) node.
+ *
  * @param root Pointer to first node.
  * @param token Token generated from lexical analysis.
  * @param validity Information used to find identificator validity level.
@@ -182,6 +216,7 @@ static bool insert(node *node, token_t *token, unsigned int validity) {
  * Tree interface.
  */
 const struct tree_op_struct Tree = {
+        .find_node       = find_node,
         .print_tree      = print_tree,
         .insert          = insert,
         .delete_node     = delete_node,
