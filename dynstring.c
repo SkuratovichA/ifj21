@@ -19,12 +19,14 @@
  *
  *
  *  @author Aliaksandr Skuratovich
+ *  @author Evgeny Torbin - move dynstring to the heap
  */
 
 
 #include "dynstring.h"
 #include <stdlib.h>
 #include "assert.h"
+#include "macros.h"
 
 
 
@@ -33,20 +35,15 @@
  *
  * @param str Output string. str is data struct defined in dynstring.h
  * @param s Char that we want to convert to string.
- * @return true when successfully converted. False when Calloc error.
  *
  */
-static bool Str_create(string *str, const char *s) {
+static void Str_create(string *str, const char *s) {
     size_t length = strlen(s);
-    str->heap_str = (char *) calloc(length + 1, 1);
-    if (!str->heap_str) {
-        return false;
-    }
+    str = calloc(1, sizeof(string) + length + 1);
+    soft_assert(str);
     strcpy(str->heap_str, s);
     str->size = length;
     str->allocated_size = length + 1;
-
-    return true;
 }
 
 /**
@@ -76,9 +73,7 @@ static size_t Str_length(const string *str) {
  * @return void
  */
 static void Str_free(string *str) {
-    if (str != NULL) {
-        free(str->heap_str);
-    }
+    free(str);
 }
 
 /**
@@ -88,21 +83,16 @@ static void Str_free(string *str) {
  * @param ch Character that we'll be appending.
  * @return true when xxx
  */
-static bool Str_append_char(string *str, char ch) {
+static void Str_append_char(string *str, char ch) {
     // new_char + null byte = 2
     if (str->size + 2 > str->allocated_size) {
         str->allocated_size *= 2;
-        void *tmp = realloc(str->heap_str, str->allocated_size);
-        if (!tmp) {
-            free(str->heap_str);
-            return false;
-        }
-        str->heap_str = tmp;
+        void *tmp = realloc(str, str->allocated_size);
+        soft_assert(tmp);
+        str = tmp;
     }
     str->heap_str[str->size++] = ch;
     str->heap_str[str->size] = '\0';
-
-    return true;
 }
 
 /**
@@ -111,17 +101,11 @@ static bool Str_append_char(string *str, char ch) {
  * @param str
  * @return True if success. If given pointer is NULL return false. If Calloc failed the program ends.
  */
-static bool Str_create_onheap(string *str) {
-    if (!str) {
-        return false;
-    }
-
-    str->heap_str = calloc(1, (str->allocated_size = 42)); // here's the answer ...
+static void Str_create_onheap(string *str) {
+    str = calloc(1, sizeof(string) + 42); // here's the answer ...
+    soft_assert(str);
+    str->allocated_size = 42;
     str->size = 0;
-    // I believe this is never happens
-//    assert((bool) NULL == false && "NULL must be false");
-//    assert((bool) !NULL == true && "!NULL must be true");
-    return (bool) str->heap_str; // NULL == 0 == false
 }
 
 /**

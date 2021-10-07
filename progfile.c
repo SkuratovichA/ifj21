@@ -19,12 +19,6 @@
  *  @author Aliaksandr Skuratovich
  */
 
-// todo: add soft_assert to the functions
-#define sort_assert(msg) \
-do { \
-    fpritnf(stderr, msg);\
-    exit(-1);\
-} while (0)
 
 
 #include "progfile.h"
@@ -32,17 +26,6 @@ do { \
 #include "progfile.h"
 #include "macros.h"
 #include <assert.h>
-//#include "dynstring.h"
-
-#define soft_assert(cond) \
-do { \
-    if (!(cond)) { \
-        fprintf(stderr, "(soft)assertion failed: "); \
-        fprintf(stderr, #cond); \
-        fprintf(stderr, "\n"); \
-        exit(-1); \
-    } \
-} while (0)
 
 // opaque structure
 struct c_progfile {

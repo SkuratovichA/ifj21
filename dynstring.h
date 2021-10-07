@@ -18,6 +18,7 @@
  *
  *
  *  @author Aliaksandr Skuratovich
+ *  @author Evgeny Torbin - move dynstring to the heap
  */
 
 #pragma once
@@ -34,12 +35,9 @@
  * A structure represented string
  */
 struct string_t {
-    /**
-     * Create a string on heap
-     */
-    char *heap_str;
-    size_t allocated_size;    /**< Allocated size on heap*/
-    size_t size: _SIZE_BITS;  /**< String length */
+    size_t allocated_size;    /**< Allocated size on heap */
+    size_t size;              /**< String length */
+    char heap_str[];
 };
 
 typedef struct string_t string;
@@ -48,12 +46,12 @@ typedef struct string_t string;
  * A structure that store pointers to all the functions from dynstring.c. So we can use them in different files as interface.
  */
 struct string_op_struct_t {
-    bool (*create)(string *, const char *);
-    bool (*append_char)(string *, char);
+    void (*create)(string *, const char *);
+    void (*append_char)(string *, char);
     size_t (*length)(const string *);
     char *(*c_str)(string *);
     void (*free)(string *);
-    bool (*create_onheap)(string *);
+    void (*create_onheap)(string *);
 
     int (*cmp)(string, const char *);
 };
