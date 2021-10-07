@@ -32,7 +32,6 @@
 int tree_testing();
 int main() {
 
-    tree_testing();
     printf("Hello!\n");
 
     progfile_t *pfile;
@@ -56,41 +55,3 @@ int main() {
     return 0;
 }
 
-int tree_testing(){
-
-    char *c2 = "ggg";
-    char *c = "Function_name";
-    union string_t s_c;
-    union string_t s_c2;
-
-
-    Dynstring.create(&s_c, c);
-    Dynstring.create(&s_c2, c2);
-
-    token_t token;
-    token_t token2;
-
-    token.type = TOKEN(ID);
-    token.attribute.id = s_c;
-
-    token2.type = TOKEN(ID);
-    token2.attribute.id = s_c2;
-
-    struct node *t_one = NULL;
-    t_one = Tree.create_tree(&token, 0);
-    Tree.insert(t_one, &token, 0);
-    Tree.insert(t_one, &token, 0);
-
-
-    printf("%s\n", t_one->data->i_name);
-    printf("%p\n",Tree.find_node(t_one, token2.attribute.id));
-    printf("%p\n",Tree.find_node(t_one, token.attribute.id));
-
-    Tree.insert(t_one, &token2, 0);
-    printf("%p\n",Tree.find_node(t_one, token2.attribute.id));
-
-    Tree.delete_tree(t_one);
-
-
-    return 0;
-}
