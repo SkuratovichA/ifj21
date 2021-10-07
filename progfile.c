@@ -19,14 +19,6 @@
  *  @author Aliaksandr Skuratovich
  */
 
-// todo: add soft_assert to the functions
-#define sort_assert(msg) \
-do { \
-    fpritnf(stderr, msg);\
-    exit(-1);\
-} while (0)
-
-
 #include "progfile.h"
 
 #include "progfile.h"
@@ -34,15 +26,7 @@ do { \
 #include <assert.h>
 #include "dynstring.h"
 
-#define soft_assert(cond) \
-do { \
-    if (!(cond)) { \
-        fprintf(stderr, "(soft)assertion failed: "); \
-        fprintf(stderr, #cond); \
-        fprintf(stderr, "\n"); \
-        exit(-1); \
-    } \
-} while (0)
+
 
 // opaque structure
 struct c_progfile {
@@ -61,7 +45,7 @@ struct c_progfile {
  * @return pfile->tape[pos+step] if empty char* or out of bounds return EOF.
  */
 static char Peek_at(progfile_t *pfile, size_t step) {  //MAYBE RENAME TO MOVE_FILE_POINTER
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
 
     size_t newpos = pfile->pos + step;
 
@@ -81,7 +65,7 @@ static char Peek_at(progfile_t *pfile, size_t step) {  //MAYBE RENAME TO MOVE_FI
  * @return Actual character. If end or empty return EOF.
  */
 static int Getc(progfile_t *pfile) {
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
     if (pfile->pos < pfile->size) {
         return pfile->tape[pfile->pos++];
     } else {
@@ -98,7 +82,7 @@ static int Getc(progfile_t *pfile) {
  * @return character before or EOF
  */
 static int Ungetc(progfile_t *pfile) {
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
     return (pfile->pos > 0) ? pfile->tape[--pfile->pos] : EOF;
 }
 
@@ -109,7 +93,7 @@ static int Ungetc(progfile_t *pfile) {
  * @return void
  */
 static void Free(progfile_t *pfile) {
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
     pfile->size = 0;
     pfile->pos = 0;
     // pfile->tape = 0; // not sure about it
@@ -126,7 +110,7 @@ static void Free(progfile_t *pfile) {
  * @return pfile->tape
  */
 static char *Get_tape(progfile_t *pfile) {
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
     return pfile->tape;
 }
 
@@ -137,7 +121,7 @@ static char *Get_tape(progfile_t *pfile) {
  * @return pfile->tape + pfile->pos
  */
 static char *Get_tape_current(progfile_t *pfile) {
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
     return (pfile->tape + pfile->pos);
 }
 
@@ -152,7 +136,7 @@ static char *Get_tape_current(progfile_t *pfile) {
  *
  */
 static void Set_tape(progfile_t *pfile, char *tape) {
-    soft_assert(pfile != NULL);
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
 
     size_t diff = tape - pfile->tape;
     if (diff > 0 && diff < pfile->size - 1) {
@@ -163,15 +147,10 @@ static void Set_tape(progfile_t *pfile, char *tape) {
 /**
  * @brief Reads a file from stdin to progfile structure.
  *
- * @return File stored in pfile structure. If error return NULL.
+ * @return File stored in pfile structure. If error_interface return NULL.
  */
 static progfile_t *Getfile_stdin() {
     progfile_t *pfile;
-
-    string filetape;
-    if (!Dynstring.create_onheap(&filetape)) {
-        return false;
-    }
 
     int ch;
     size_t allocated, alloc_step = allocated = 128;
@@ -205,7 +184,7 @@ static progfile_t *Getfile_stdin() {
  *
  * @param filename
  * @param mode File opening mode.
- * @return pfile where file is stored. If error returns NULL.
+ * @return pfile where file is stored. If error_interface returns NULL.
  */
 static progfile_t *Getfile(const char *filename, const char *mode) {
     progfile_t *pfile;
@@ -246,7 +225,7 @@ static progfile_t *Getfile(const char *filename, const char *mode) {
 /**
  * Progfile interface.
  */
-const struct progfile_op_struct_t Progfile = {
+const struct progfile_interface Progfile = {
         .getfile = Getfile,
         .getfile_stdin  = Getfile_stdin,
         .free = Free,

@@ -40,8 +40,15 @@ do { \
 
 #define EXPECTED(p) \
 do { \
-    if( Scanner.get_curr_token().type == (p)) { \
-      Scanner.get_next_token(pfile); \
+    token_t tok__ = Scanner.get_curr_token(); \
+    if (tok__.type == (p)) { \
+        if (tok__.type == TOKEN_ID) { \
+            debug_msg("\tid = { '%s' }\n", Dynstring.c_str(tok__.attribute.id)); \
+        } else \
+        if (tok__.type == TOKEN_STR) { \
+            debug_msg("\tstr = { '%s' }\n", Dynstring.c_str(tok__.attribute.id)); \
+        } \
+        Scanner.get_next_token(pfile); \
     } else { \
         expected_err((p)); \
     } \
@@ -76,7 +83,7 @@ static bool fun_body(progfile_t *pfile);
  * !rule <expr> -> <TODO>
  *
  * @param pfile @param pfile structure representing the program filethe input program file
- * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error message otherwise
+ * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error_interface message otherwise
  */
 static bool expr(progfile_t *pfile) {
     debug_msg_s("<expr> -> \n");
@@ -93,7 +100,7 @@ static bool expr(progfile_t *pfile) {
  * !rule <unmatched_part> -> else <fun_body> | elseif <cond_stmt> | e
  *
  * @param pfile structure representing the program filethe input program file
- * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error message otherwise
+ * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error_interface message otherwise
  */
 static bool unmatched_part(progfile_t *pfile) {
     debug_msg_s("<unmatched_part> -> \n");
@@ -127,7 +134,7 @@ static bool unmatched_part(progfile_t *pfile) {
  * !rule <cond_stmt> -> expr then <fun_body> <unmatched_part>
  *
  * @param pfile structure representing the program filethe input program file
- * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error message otherwise
+ * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error_interface message otherwise
  */
 static bool cond_stmt(progfile_t *pfile) {
     debug_msg_s("<cond_stmt> -> \n");
@@ -325,7 +332,7 @@ static bool datatype_list(progfile_t *pfile) {
  * !rule <other_funcreturns> -> e | , <datatype> <other_funrets>
  *
  * @param pfile structure representing the program file the input program file
- * @return true iff rule derives its production successfully else false  with an error message otherwise
+ * @return true iff rule derives its production successfully else false  with an error_interface message otherwise
  */
 static bool other_funrets(progfile_t *pfile) {
     debug_msg("<other_funrets> -> \n");
@@ -387,8 +394,6 @@ static bool stmt(progfile_t *pfile) {
 
             // function name
             EXPECTED(TOKEN_ID);
-            tok = Scanner.get_curr_token();
-            debug_msg("\tid { token.attribute.id = %s }\n", Dynstring.c_str(&tok.attribute.id));
 
             // :
             EXPECTED(TOKEN_COLON);
@@ -423,8 +428,6 @@ static bool stmt(progfile_t *pfile) {
 
             // id
             EXPECTED(TOKEN_ID);
-            tok = Scanner.get_curr_token();
-            debug_msg("\tid { token.attribute.id = %s }\n", Dynstring.c_str(&tok.attribute.id));
 
             // (
             EXPECTED(TOKEN_LPAREN);
@@ -452,7 +455,7 @@ static bool stmt(progfile_t *pfile) {
             break;
 
         default:
-            debug_todo("Add more <stmt> derivations, if there are so. Otherwise return an error message\n");
+            debug_todo("Add more <stmt> derivations, if there are so. Otherwise return an error_interface message\n");
             debug_msg("Got token: %s\n", Scanner.to_string(Scanner.get_curr_token().type));
             debug_msg("Line: %zu, position: %zu\n", Scanner.get_line(), Scanner.get_charpos());
             Errors.set_error(42);
@@ -487,7 +490,7 @@ static bool stmt_list(progfile_t *pfile) {
  * @return true if rule derives its production successfully based on the production rule(described above)
  */
 static bool program(progfile_t *pfile) {
-    const static char *prolog_str = "ifj21";
+    dynstring_t prolog_str = Dynstring.create("ifj21");
     debug_msg("<program> ->\n");
 
     // require keyword
@@ -507,6 +510,7 @@ static bool program(progfile_t *pfile) {
     debug_msg("\t\"ifj21\"\n");
 
     // <stmt_list>
+    Dynstring.free(&prolog_str);
     return stmt_list(pfile);
 }
 
@@ -516,7 +520,7 @@ static bool program(progfile_t *pfile) {
  * Syntax analysis is based on LL(1) grammar.
  *
  * @param pfile structure representing program file
- * @return appropriate return code, viz error.c, errror.h
+ * @return appropriate return code, viz error_interface.c, errror.h
  */
 static bool Analyse() {
     progfile_t *pfile;
@@ -538,7 +542,7 @@ static bool Analyse() {
     Scanner.free(pfile);
 
     // todo: i guess it wants more clearly solution because there will
-    //  be semantics controls in the parser so every function probably has to set the error code global variable up
+    //  be semantics controls in the parser so every function probably has to set the error_interface code global variable up
     return res;
 }
 

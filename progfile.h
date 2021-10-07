@@ -14,7 +14,7 @@
  *
  *  @package progfile
  *  @file progfile.c
- *  @brief Contain enum of all the error codes.
+ *  @brief Contain enum of all the error_interface codes.
  *
  *
  *
@@ -38,25 +38,25 @@
  */
 typedef struct c_progfile progfile_t;
 
-extern const struct progfile_op_struct_t Progfile;
+extern const struct progfile_interface Progfile;
 
 /**
  * Interface to use when dealing with file.
  */
-struct progfile_op_struct_t {
+struct progfile_interface {
     /**
      * @brief Store file to progfile structure.
      *
      * @param filename
      * @param mode File opening mode.
-     * @return pfile where file is stored. If error returns NULL.
+     * @return pfile where file is stored. If error_interface returns NULL.
      */
     progfile_t *(*getfile)(const char *, const char *);
 
     /**
      * @brief Reads a file from stdin to progfile structure.
      *
-     * @return File stored in pfile structure. If error return NULL.
+     * @return File stored in pfile structure. If error_interface return NULL.
      */
     progfile_t *(*getfile_stdin)(void);
 

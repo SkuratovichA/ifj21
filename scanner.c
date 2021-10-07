@@ -170,9 +170,7 @@ static token_t lex_string(progfile_t *pfile) {
     int ch;
     uint8_t escaped_char;
     bool accepted = false;
-    token_t token = { .type = TOKEN_STR };
-
-    Dynstring.create_empty(&token.attribute.id);
+    token_t token = {.type = TOKEN_STR, .attribute.id = Dynstring.create("")};
 
     while (!accepted && ch != EOF) {
         ch = Progfile.pgetc(pfile);
@@ -312,10 +310,10 @@ static token_t lex_identif(progfile_t *pfile) {
     debug_msg(DEBUG_SEP);
 
     state = STATE_ID_INIT;
-    token_t token = { .type = TOKEN_ID };
-    Dynstring.create_empty(&token.attribute.id);
     int ch;
     bool accepted = false;
+
+    token_t token = {.type = TOKEN_ID, .attribute.id = Dynstring.create("")};
 
     while (!accepted && ch != EOF) {
         ch = Progfile.pgetc(pfile);
@@ -351,7 +349,7 @@ static token_t lex_identif(progfile_t *pfile) {
 
     debug_msg("identif: %s", Dynstring.c_str(&token.attribute.id));
     // this 2 lines of code make parsing much more easier
-    if ((token.type = to_keyword(Dynstring.c_str(&token.attribute.id))) != TOKEN_ID) {
+    if ((token.type = to_keyword(Dynstring.c_str(token.attribute.id))) != TOKEN_ID) {
         Dynstring.free(&token.attribute.id);
         debug_msg_s("- keyword!\n");
     } else {
@@ -478,8 +476,7 @@ static token_t lex_relate_op(progfile_t *pfile) {
 static token_t lex_number(progfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     state = STATE_NUM_INIT;
-    string ascii_num;
-    Dynstring.create_empty(&ascii_num);
+    dynstring_t ascii_num = Dynstring.create(""); // create an empty string
 
     bool is_fp = false;
     int ch;
@@ -502,7 +499,7 @@ static token_t lex_number(progfile_t *pfile) {
                 break;
 
             case STATE_NUM_INT: // final
-                if (isdigit(ch)) { ;; // append char is after the statemet, so an empty statement is here.
+                if (isdigit(ch)) { ;; // append char is after the statement, so an empty statement is here.
                 } else if (ch == '.') {
                     state = STATE_NUM_F_DOT;
                 } else if (ch == 'e' || ch == 'E') {
@@ -619,10 +616,10 @@ static token_t lex_number(progfile_t *pfile) {
 
     if (is_fp) {
         token.type = TOKEN_NUM_F;
-        token.attribute.num_f = strtod(Dynstring.c_str(&ascii_num), NULL);
+        token.attribute.num_f = strtod(Dynstring.c_str(ascii_num), NULL);
     } else {
         token.type = TOKEN_NUM_I;
-        token.attribute.num_i = strtoull(Dynstring.c_str(&ascii_num), NULL, 10);
+        token.attribute.num_i = strtoull(Dynstring.c_str(ascii_num), NULL, 10);
     }
     Dynstring.free(&ascii_num);
 
@@ -630,7 +627,7 @@ static token_t lex_number(progfile_t *pfile) {
 }
 
 /**
- * @brief returns one token, in case of a lexical error returned token is TOKEN_DEAD
+ * @brief returns one token, in case of a lexical error_interface returned token is TOKEN_DEAD
  *
  * @param pfile
  * @return token
@@ -836,11 +833,12 @@ static size_t Get_charpos() {
  */
 // ==============================================
 static void Free_scanner(progfile_t *pfile) {
-    debug_msg("Scanner freed:\n");
-    Dynstring.free(&prev.attribute.id);
-    debug_msg("\tprev.attribute.id freed\n");
-    Dynstring.free(&curr.attribute.id);
-    debug_msg("\tcurr.attribute.id freed\n");
+    if (prev.type == TOKEN_ID || prev.type == TOKEN_STR) {
+        Dynstring.free(&prev.attribute.id);
+    }
+    if (curr.type == TOKEN_ID || curr.type == TOKEN_STR) {
+        Dynstring.free(&curr.attribute.id);
+    }
     Progfile.free(pfile);
     debug_msg("\tprogfile freed\n");
 }
@@ -849,7 +847,7 @@ static void Free_scanner(progfile_t *pfile) {
  *
  * Scanner interface.
  */
-const struct scanner_op_struct Scanner = {
+const struct scanner_interface Scanner = {
         .free = Free_scanner,
         .get_next_token = Get_next_token,
         .get_prev_token = Get_prev_token,
