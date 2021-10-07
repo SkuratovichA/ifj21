@@ -214,9 +214,11 @@ static bool fun_body(progfile_t *pfile) {
  * @return true if token is datatype.
  */
 static inline bool datatype(progfile_t *pfile) {
+    debug_msg("<datatype> ->\n");
+
     switch (Scanner.get_curr_token().type) {
         case_4(KEYWORD_string, KEYWORD_boolean, KEYWORD_integer, KEYWORD_number):
-            debug_msg("\t%s\n", Scanner.to_string(Scanner.get_curr_token().type));
+            debug_msg("\t<datatype> { %s }\n", Scanner.to_string(Scanner.get_curr_token().type));
             // no need to get next token here
             break;
         default:
@@ -238,23 +240,22 @@ static inline bool datatype(progfile_t *pfile) {
 static bool other_funparams(progfile_t *pfile) {
     debug_msg("<other_funparam> ->\n");
 
-    // ( |
+    // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
+
+    // ,
+    EXPECTED(TOKEN_COMMA);
+    debug_msg("\t,\n");
 
     // <datatype> here datatype is expected
     if (!datatype(pfile)) {
         return false;
     }
-    debug_msg("\t<datatype>\n");
 
     EXPECTED(TOKEN_ID);
     debug_msg("\tid\n");
 
-    if (!other_funparams(pfile)) {
-        return false;
-    }
-    debug_msg("\t<other_funparams>\n");
-    return true;
+    return other_funparams(pfile);
 }
 
 /**
@@ -274,19 +275,13 @@ static bool funparam_def_list(progfile_t *pfile) {
     if (!datatype(pfile)) {
         return false;
     }
-    debug_msg("\tdatatype { .keyword = %s }\n", Scanner.to_string(Scanner.get_curr_token().type));
 
     // id
     EXPECTED(TOKEN_ID);
     debug_msg("\tid\n");
 
     // <other_funparams>
-    if (!other_funparams(pfile)) {
-        return false;
-    }
-    debug_msg("\t<other_funparams>\n");
-
-    return true;
+    return other_funparams(pfile);
 }
 
 /**
@@ -303,19 +298,8 @@ static bool other_datatypes(progfile_t *pfile) {
     EXPECTED_OPT(TOKEN_RPAREN);
 
     EXPECTED(TOKEN_COMMA);
-    // <datatype>
-    if (!datatype(pfile)) {
-        return false;
-    }
-    debug_msg("\t<datatype>\n");
 
-    // <other_datatypes> it is better to tail recurse this function
-    if (!other_datatypes(pfile)) {
-        return false;
-    }
-    debug_msg("\t<other_datatypes>\n");
-
-    return true;
+    return datatype(pfile) && other_datatypes(pfile);
 }
 
 /**
@@ -331,24 +315,34 @@ static bool datatype_list(progfile_t *pfile) {
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
-    // <datatype>
-    if (!datatype(pfile)) {
-        return false;
-    }
-    debug_msg("\t<datatype> { %s }\n", Scanner.to_string(Scanner.get_curr_token().type));
-
-    // <other_datatypes>
-    if (!other_datatypes(pfile)) {
-        return false;
-    }
-    debug_msg("\t<other_datatypes>\n");
-
-    return true;
+    //<datatype> && <other_datatypes>
+    return datatype(pfile) && other_datatypes(pfile);
 }
 
 /**
  * @brief
- * !rule <funretopt> -> e | : <datatype> <other_datatypes>
+ *
+ * !rule <other_funcreturns> -> e | , <datatype> <other_funrets>
+ *
+ * @param pfile structure representing the program file the input program file
+ * @return true iff rule derives its production successfully else false  with an error message otherwise
+ */
+static bool other_funrets(progfile_t *pfile) {
+    debug_msg("<other_funrets> -> \n");
+
+    if (Scanner.get_curr_token().type != TOKEN_COMMA) {
+        debug_msg("\te\n");
+        return true;
+    }
+    EXPECTED(TOKEN_COMMA);
+
+    return datatype(pfile) && other_funrets(pfile);
+}
+
+
+/**
+ * @brief
+ * !rule <funretopt> -> e | : <datatype> <other_funrets>
  *
  * @param pfile structure representing the input program file
  * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
@@ -356,29 +350,17 @@ static bool datatype_list(progfile_t *pfile) {
 static bool funretopt(progfile_t *pfile) {
     debug_msg("<funretopt> ->\n");
 
-    // e
+    // e |
     if (Scanner.get_curr_token().type != TOKEN_COLON) {
         debug_msg("\t\te\n");
         return true;
     }
-
     // :
     EXPECTED(TOKEN_COLON);
     debug_msg("\t:\n");
 
-    // <datatype>. There must be at least one datatype.
-    if (!datatype(pfile)) {
-        return false;
-    }
-    debug_msg("\t<datatype> { %s }\n", Scanner.to_string(Scanner.get_curr_token().type));
-
-    // <other_datatypes>
-    if (!other_datatypes(pfile)) {
-        return false;
-    }
-    debug_msg("\t<datatype_list>\n");
-
-    return true;
+    // <<datatype> <other_funrets>
+    return datatype(pfile) && other_funrets(pfile);
 }
 
 /**
@@ -420,13 +402,13 @@ static bool stmt(progfile_t *pfile) {
             EXPECTED(TOKEN_LPAREN);
             debug_msg("\t(\n");
 
-            // <funparam_decl_list> // can be empty
+            // <funparam_decl_list>
             if (!datatype_list(pfile)) {
                 return false;
             }
             debug_msg("\t<func_decl_list>\n");
 
-            // <funretopt>
+            // <funretopt> can be empty
             if (!funretopt(pfile)) {
                 return false;
             }
@@ -471,7 +453,8 @@ static bool stmt(progfile_t *pfile) {
 
         default:
             debug_todo("Add more <stmt> derivations, if there are so. Otherwise return an error message\n");
-            debug_msg_s("Got token: %s", Scanner.to_string(Scanner.get_curr_token().type));
+            debug_msg("Got token: %s\n", Scanner.to_string(Scanner.get_curr_token().type));
+            debug_msg("Line: %zu, position: %zu\n", Scanner.get_line(), Scanner.get_charpos());
             Errors.set_error(42);
             return false;
     }
@@ -488,22 +471,12 @@ static bool stmt(progfile_t *pfile) {
  */
 static bool stmt_list(progfile_t *pfile) {
     debug_msg("<stmt_list> ->\n");
+
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
 
-    // <stmt>
-    if (!stmt(pfile)) {
-        return false;
-    }
-    debug_msg("\t<stmt>\n");
-
     // <stmt_list>
-    if (!stmt_list(pfile)) {
-        return false;
-    }
-    debug_msg("\t<stmt_list>\n");
-
-    return true;
+    return stmt(pfile) && stmt_list(pfile);
 }
 
 /**
@@ -534,12 +507,7 @@ static bool program(progfile_t *pfile) {
     debug_msg("\t\"ifj21\"\n");
 
     // <stmt_list>
-    if (!stmt_list(pfile)) {
-        return false;
-    }
-    debug_msg("\t<stmt_list>\n");
-
-    return true;
+    return stmt_list(pfile);
 }
 
 /**
