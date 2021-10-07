@@ -39,10 +39,25 @@ do { \
 } while (0)
 
 #define EXPECTED(p) \
+do { \
     if( Scanner.get_curr_token().type == (p)) { \
       Scanner.get_next_token(pfile); \
-    } else \
-        expected_err((p))
+    } else { \
+        expected_err((p)); \
+    } \
+} while(0)
+
+
+#define EXPECTED_OPT(toktype) \
+do { \
+    if (Scanner.get_curr_token().type == (toktype)) { \
+        /* OR use Scanner.get_next_token, but let it be clear in case we want */ \
+        /* to change Scanner.get_next_token or add debug messages. */ \
+        EXPECTED((toktype)); \
+        debug_msg("\t%s\n", Scanner.to_string(toktype)); \
+        return true; \
+    } \
+} while(0)
 // ***************************************************************************** //
 // ***************************************************************************** //
 // ***************************************************************************** //
@@ -140,7 +155,6 @@ static bool cond_stmt(progfile_t *pfile) {
     return true;
 }
 
-
 /**
  * @brief Statement inside the function
  * rule <fun_body> -> return expression //todo
@@ -158,7 +172,7 @@ static bool cond_stmt(progfile_t *pfile) {
  * !rule <fun_body> -> if <cond_stmt> end
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
+ * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
  */
 static bool fun_body(progfile_t *pfile) {
     debug_msg("<fun_body> ->\n");
@@ -175,6 +189,8 @@ static bool fun_body(progfile_t *pfile) {
             EXPECTED(KEYWORD_end);
             break;
 
+            //TODO; implement me
+
         default:
             debug_msg("\te\n");
             return true;
@@ -190,47 +206,45 @@ static bool fun_body(progfile_t *pfile) {
 
 
 /**
- * @brief Datatype. It is not a rule actually, but a "macro". TODO: ask meduna or krivka about it
+ * @brief Datatype.
  *
  * !rule <datatype> -> string | integer | boolean | number
  *
  * @param pfile structure representing the input program file
  * @return true if token is datatype.
  */
-static inline bool datatype() {
+static inline bool datatype(progfile_t *pfile) {
     switch (Scanner.get_curr_token().type) {
         case_4(KEYWORD_string, KEYWORD_boolean, KEYWORD_integer, KEYWORD_number):
             debug_msg("\t%s\n", Scanner.to_string(Scanner.get_curr_token().type));
             // no need to get next token here
             break;
         default:
+            print_expected_err("datatype", Scanner.to_string(Scanner.get_curr_token().type));
+            Errors.set_error(ERROR_SYNTAX);
             return false;
     }
+    Scanner.get_next_token(pfile);
     return true;
 }
 
 /**
  * @brief
- * !rule <other_funparams> -> e | , <datatype> id <other_funparams>
+ * !rule <other_funparams> -> ) | , <datatype> id <other_funparams>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
+ * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
  */
 static bool other_funparams(progfile_t *pfile) {
-    debug_msg("<funparam_def_list> ->\n");
-    // e | , ...
-    if (Scanner.get_curr_token().type != TOKEN_COMMA) {
-        debug_msg("\te\n");
-        return true;
-    }
+    debug_msg("<other_funparam> ->\n");
+
+    // ( |
+    EXPECTED_OPT(TOKEN_RPAREN);
 
     // <datatype> here datatype is expected
-    if (!datatype()) {
-        Errors.set_error(ERROR_SYNTAX);
-        print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
+    if (!datatype(pfile)) {
         return false;
     }
-    Scanner.get_next_token(pfile);
     debug_msg("\t<datatype>\n");
 
     EXPECTED(TOKEN_ID);
@@ -243,21 +257,24 @@ static bool other_funparams(progfile_t *pfile) {
     return true;
 }
 
-
 /**
  * @brief
- * !rule <funparam_def_list> -> e | <datatype> id <other_funparams>
+ * !rule <funparam_def_list> -> ) | <datatype> id <other_funparams>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
+ * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
  */
 static bool funparam_def_list(progfile_t *pfile) {
     debug_msg("funparam_def_list ->\n");
-    // <datatype> | e
-    if (!datatype()) {
-        debug_msg("\te\n");
-        return true;
+
+    // ) |
+    EXPECTED_OPT(TOKEN_RPAREN);
+
+    // <datatype>
+    if (!datatype(pfile)) {
+        return false;
     }
+    debug_msg("\tdatatype { .keyword = %s }\n", Scanner.to_string(Scanner.get_curr_token().type));
 
     // id
     EXPECTED(TOKEN_ID);
@@ -274,27 +291,22 @@ static bool funparam_def_list(progfile_t *pfile) {
 
 /**
  * @brief Other datatypes can be an e, or <datatype> <other datatypes> followed by a comma
- * !rule <other_datatypes> -> e | , <datatype> <other_datatypes>
+ * !rule <other_datatypes> -> ) | , <datatype> <other_datatypes>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
+ * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
  */
 static bool other_datatypes(progfile_t *pfile) {
     debug_msg("<other_datatypes> ->\n");
-    // e
-    if (Scanner.get_curr_token().type != TOKEN_COMMA) {
-        debug_msg("\te\n");
-        return true;
-    }
-    EXPECTED(TOKEN_COMMA);
 
+    // ) |
+    EXPECTED_OPT(TOKEN_RPAREN);
+
+    EXPECTED(TOKEN_COMMA);
     // <datatype>
-    if (!datatype()) {
-        Errors.set_error(ERROR_SYNTAX);
-        print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
+    if (!datatype(pfile)) {
         return false;
     }
-    Scanner.get_next_token(pfile);
     debug_msg("\t<datatype>\n");
 
     // <other_datatypes> it is better to tail recurse this function
@@ -308,20 +320,22 @@ static bool other_datatypes(progfile_t *pfile) {
 
 /**
  * @brief datatype_list: List of datatypes separated by a comma.
- * !rule <dataype_list> -> <datatype> <other_datatypes>
+ * !rule <dataype_list> -> <datatype> <other_datatypes> | )
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
+ * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
  */
 static bool datatype_list(progfile_t *pfile) {
     debug_msg("<datatype_list> ->\n");
-    // <datatype> | e
-    if (!datatype()) {
-        debug_msg("\te\n");
-        return true;
+
+    // ) |
+    EXPECTED_OPT(TOKEN_RPAREN);
+
+    // <datatype>
+    if (!datatype(pfile)) {
+        return false;
     }
     debug_msg("\t<datatype> { %s }\n", Scanner.to_string(Scanner.get_curr_token().type));
-    Scanner.get_next_token(pfile);
 
     // <other_datatypes>
     if (!other_datatypes(pfile)) {
@@ -332,12 +346,12 @@ static bool datatype_list(progfile_t *pfile) {
     return true;
 }
 
-/** //fixme decide fhat to do with this e production, because datatype list can have an error(i guess)
+/**
  * @brief
  * !rule <funretopt> -> e | : <datatype> <other_datatypes>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
+ * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
  */
 static bool funretopt(progfile_t *pfile) {
     debug_msg("<funretopt> ->\n");
@@ -353,13 +367,10 @@ static bool funretopt(progfile_t *pfile) {
     debug_msg("\t:\n");
 
     // <datatype>. There must be at least one datatype.
-    if (!datatype()) {
-        print_expected_err("Datatype", Scanner.to_string(Scanner.get_curr_token().type));
-        Errors.set_error(ERROR_SYNTAX);
+    if (!datatype(pfile)) {
         return false;
     }
     debug_msg("\t<datatype> { %s }\n", Scanner.to_string(Scanner.get_curr_token().type));
-    Scanner.get_next_token(pfile);
 
     // <other_datatypes>
     if (!other_datatypes(pfile)) {
@@ -374,19 +385,19 @@ static bool funretopt(progfile_t *pfile) {
  *
  * @brief Statement(global statement) rule.
  *
- * function declaration: !rule <stmt> -> global id : function ( <datatype_list> ) <funcretopt>
- * function definition: !rule <stmt> -> function id ( <funparam_def_list> ) <funretopt>
+ * function declaration: !rule <stmt> -> global id : function ( <datatype_list> <funcretopt>
+ * function definition: !rule <stmt> -> function id ( <funparam_def_list> <funretopt>
  *
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production succesfully based onsuccessfully based on the production rule(described above)
+ * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
  */
 static bool stmt(progfile_t *pfile) {
     debug_msg("<stmt> ->\n");
     token_t tok; // for debug
 
     switch (Scanner.get_curr_token().type) {
-        // function declaration: global id : function ( <datatype_list> ) <funcretopt>
+        // function declaration: global id : function ( <datatype_list> <funcretopt>
         case KEYWORD_global:
             // global
             EXPECTED(KEYWORD_global);
@@ -415,10 +426,6 @@ static bool stmt(progfile_t *pfile) {
             }
             debug_msg("\t<func_decl_list>\n");
 
-            // )
-            EXPECTED(TOKEN_RPAREN);
-            debug_msg("\t)\n");
-
             // <funretopt>
             if (!funretopt(pfile)) {
                 return false;
@@ -426,7 +433,7 @@ static bool stmt(progfile_t *pfile) {
             debug_msg("\t<funretopt>\n");
             break;
 
-            // function definition: function id ( <funparam_def_list> ) <funretopt> <fun_body> end
+            // function definition: function id ( <funparam_def_list> <funretopt> <fun_body> end
         case KEYWORD_function:
             // function
             EXPECTED(KEYWORD_function);
@@ -447,10 +454,7 @@ static bool stmt(progfile_t *pfile) {
             }
             debug_msg("\t<funparam_def_list>\n");
 
-            // )
-            EXPECTED(TOKEN_RPAREN);
-            debug_msg("\t)\n");
-
+            // <funcretopt>
             if (!funretopt(pfile)) {
                 return false;
             }
@@ -471,24 +475,21 @@ static bool stmt(progfile_t *pfile) {
             Errors.set_error(42);
             return false;
     }
-
     return true;
 }
 
 /**
  *
  * @brief List of global statements: function calls, function declarations, function definitions.
- * !rule <stmt_list> -> <stmt> <stmt_list>
+ * !rule <stmt_list> -> <stmt> <stmt_list> | EOF
  *
  * @param pfile structure representing the input program file
  * @return true if rule derives its production successfully
  */
 static bool stmt_list(progfile_t *pfile) {
     debug_msg("<stmt_list> ->\n");
-    if (Scanner.get_curr_token().type == TOKEN_EOFILE) {
-        debug_msg("\te\n");
-        return true;
-    }
+    // EOF |
+    EXPECTED_OPT(TOKEN_EOFILE);
 
     // <stmt>
     if (!stmt(pfile)) {
@@ -507,7 +508,7 @@ static bool stmt_list(progfile_t *pfile) {
 
 /**
  * @brief Program(start) rule.
- * !rule <program> -> require "ifj21" <stmt_list> EOF
+ * !rule <program> -> require "ifj21" <stmt_list>
  *
  * @param pfile structure representing the input program file
  * @return true if rule derives its production successfully based on the production rule(described above)
@@ -530,7 +531,6 @@ static bool program(progfile_t *pfile) {
         return false;
     }
     EXPECTED(TOKEN_STR);
-
     debug_msg("\t\"ifj21\"\n");
 
     // <stmt_list>
@@ -538,10 +538,6 @@ static bool program(progfile_t *pfile) {
         return false;
     }
     debug_msg("\t<stmt_list>\n");
-
-    // EOF
-    EXPECTED(TOKEN_EOFILE);
-    debug_msg("\tEOF\n");
 
     return true;
 }
