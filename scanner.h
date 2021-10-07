@@ -138,7 +138,7 @@ enum states {
  * Token attributes.
  */
 typedef union token_attribute {
-    string id;       /**< if token == string || token == identifer  */
+    dynstring_t id;   /**< if token == string || token == identifier  */
     uint64_t num_i;  /**< if token == number_int */
     double num_f;    /**< number_float */
 } attribute_t;
@@ -156,9 +156,9 @@ typedef struct token {
 /**
  * An interface to access scanner functions
  */
-extern const struct scanner_op_struct Scanner;
+extern const struct scanner_interface Scanner;
 
-struct scanner_op_struct {
+struct scanner_interface {
     void (*free)(progfile_t *);
 
     progfile_t *(*initialize)(void);
@@ -175,15 +175,6 @@ struct scanner_op_struct {
 
     size_t (*get_charpos)(void);
 };
-//
-
-
-
-//// keyword pair. name e.g "else" and kwd e.g KEYWORD_else
-//typedef struct kypair {
-//    const char *nam;
-//    int kwd;
-//} kpar_t;
 //
 
 

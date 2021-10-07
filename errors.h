@@ -14,7 +14,7 @@
  *
  *  @package errors
  *  @file errors.h
- *  @brief Contain enum of all the error codes.
+ *  @brief Contain enum of all the error_interface codes.
  *
  *
  *
@@ -25,8 +25,21 @@
  */
 #pragma once
 
+// assert a condition and exit with an error_interface code if condition is false
+#define soft_assert(cond, err) \
+do { \
+    if (!(cond)) { \
+        debug_msg_s("\n "); \
+        debug_msg(" "); \
+        fprintf(stderr, "(soft)assertion failed: "); \
+        fprintf(stderr, #cond); \
+        fprintf(stderr, "\n"); \
+        exit((err)); \
+    } \
+} while (0)
+
 /**
- * All error codes.
+ * All error_interface codes.
  */
 enum errors {
     ERROR_LEXICAL = 1,
@@ -40,18 +53,18 @@ enum errors {
     ERROR_RUNTIME_DIV_BY_ZERO,
     ERROR_INTERNAL = 99
 };
-// todo: shall we create functinos like get_error(), which returns an error code and prints a message?
+// todo: shall we create functinos like get_error(), which returns an error_interface code and prints a message?
 
 
 
 /**
  * A structure that store pointers to all the functions from errors.c. So we can use them in different files.
  */
-struct error {
+struct error_interface {
     void (*set_error)(int);
 
     int (*get_error)(void);
 };
 
-extern const struct error Errors;
+extern const struct error_interface Errors;
 
