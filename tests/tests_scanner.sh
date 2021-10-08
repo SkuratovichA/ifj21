@@ -16,38 +16,36 @@ fi
 echo
 echo
 
-rm failed.txt
+test_type="scanner"
+output_file="failed_scanner.txt"
 
-. ./tests_scanner_lib.sh
+rm "$output_file"
 
-echo "Starting..." >> failed.txt
+. ./tests_lib.sh
+
+echo "Starting scanner tests..." >> "$output_file"
+
+# Return code 0 - success
+# Return code 1 - lexical analysis error
+# Return code 2 - syntactic analysis error
 
 declare -i num_name=0 # name of the file to be tested
 
 echo
-echo "Test 1 - float numbers, good"
-test_one_file "./number_ok.tl" 0
+#echo "Test 1 - float numbers, good"
+#test_one_file "./number_ok.tl" 0 "$test_type"
 
-echo "Test 2 - float numbers, bad"
-test_one_file "./number_bad.tl" 1
+#echo "Test 2 - integer numbers, good"
+#test_one_file "./integer_ok.tl" 0 "$test_type"
 
-echo "Test 3 - integer numbers, good"
-test_one_file "./integer_ok.tl" 0
+#echo "Test 3 - identifiers, good"
+#test_one_file "./identif_ok.tl" 0 "$test_type"
 
-echo "Test 4 - integer numbers, bad"
-test_one_file "./integer_bad.tl" 1
+#echo "Test 4 - strings, good"
+#test_one_file "./string_ok.tl" 0 "$test_type"
 
-echo "Test 5 - identifiers, good"
-test_one_file "./identif_ok.tl" 0
-
-echo "Test 6 - identifiers, bad"
-test_one_file "./identif_bad.tl" 1
-
-echo "Test 7 - strings, good"
-test_one_file "./string_ok.tl" 0
-
-echo "Test 8 - strings, bad"
-test_one_file "./string_bad.tl" 1
+echo "Test 5 - invalid tokens"
+test_one_file "./tokens_invalid.tl" 1 "$test_type"
 
 echo ""
-echo "Finished." >> failed.txt
+echo "Finished." >> "$output_file"
