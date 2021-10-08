@@ -53,7 +53,7 @@ static char *state_tostring(const int s) {
         STATES(X)
         #undef X
         default:
-            assert(!"No such state...");
+            soft_assert(false, ERROR_INTERNAL);
     }
 }
 
@@ -287,7 +287,7 @@ static token_t lex_string(progfile_t *pfile) {
                 break;
 
             default:
-                assert(!"This statement mustn't occur!");
+                soft_assert(false && "there's an unrecognized state\n", ERROR_LEXICAL);
                 break;
         }
     }
@@ -419,7 +419,7 @@ static bool process_comment(progfile_t *pfile) {
                 break;
 
             default:
-                assert(!"This statement must not occur!");
+                soft_assert(false && "there's an unrecognized state\n", ERROR_LEXICAL);
                 break;
         }
     }
@@ -461,7 +461,7 @@ static token_t lex_relate_op(progfile_t *pfile) {
                 return Progfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_EQ} : (Progfile.ungetc(
                         pfile), (token_t) {.type = TOKEN_DEAD});
             default:
-                assert(!"Statement must not occur!");
+                soft_assert(false && "there's an unrecognized state\n", ERROR_LEXICAL);
         }
     }
     return (token_t) {.type = TOKEN_DEAD};
@@ -603,7 +603,7 @@ static token_t lex_number(progfile_t *pfile) {
                 break;
 
             default:
-                debug_assert(!"Error in dead state while lexing number!!!!");
+                soft_assert(false && "there's an unrecognized state\n", ERROR_LEXICAL);
                 break;
         }
     }
@@ -740,9 +740,7 @@ static token_t scanner(progfile_t *pfile) {
             break;
     }
 
-    if (token.type == TOKEN_DEAD) {
-        assert(!"Handle errors"); // todo: handle errors
-    }
+    soft_assert(token.type != TOKEN_DEAD, ERROR_LEXICAL);
 
     return token;
 }
