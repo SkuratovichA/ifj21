@@ -17,10 +17,10 @@ fn_test_status() {
 # fn_test_run test_expression return_code_expected output_file
 fn_test_run() {
       status_expected=$2
-			status=$?
 
 			../cmake-build-debug/ifj21 <$1 &>/dev/null # >/dev/null 2>/dev/null
 
+			status=$?
 			if [ $status -ne $status_expected ]; then
 			  echo "" >> $3
 				echo -e "\nExit status: " "$status" ", expected " "$status_expected" " when testing the file " "$1" >> $3
