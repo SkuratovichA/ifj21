@@ -1,30 +1,3 @@
-/********************************************
- * Project name: IFJ - projekt
- * File: macros.h
- * Date: 23. 09. 2021
- * Last change: 23. 09. 2021
- * Team: TODO
- * Authors:  Aliaksandr Skuratovich
- *           Evgeny Torbin
- *           Lucie Svobodová
- *           Jakub Kuzník
- *******************************************/
-/**
- *
- *
- *  @package macros
- *  @file macros.h
- *  @brief File contain macros for regex.
- *
- *
- *
- *  @author Aliaksandr Skuratovich
- *  @author Evgeny Torbin
- *  @author Lucie Svobodová
- *  @author Jakub Kuzník
- */
-
-
 #pragma once
 
 #define _cat_2_(a, b) a##_##b

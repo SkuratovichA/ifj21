@@ -1,36 +1,6 @@
-/********************************************
- * Project name: IFJ - projekt
- * File: scanner.h
- * Date: 23. 09. 2021
- * Last change: 23. 09. 2021
- * Team: TODO
- * Authors:  Aliaksandr Skuratovich
- *           Evgeny Torbin
- *           Lucie Svobodová
- *           Jakub Kuzník
- *******************************************/
-/**
- *
- *
- *  @package scanner
- *  @file scanner.h
- *  @brief Header for scanner.c with structures and macros.
- *
- *
- *
- *  @author Aliaksandr Skuratovich
- *  @author Evgeny Torbin
- *  @author Lucie Svobodová
- *  @author Jakub Kuzník
- */
-
 #pragma once
 
 //============================================
-// DEBUG
-#ifndef DEBUG_SCANNER
-#undef DEBUG
-#endif
 
 
 //============================================
@@ -52,6 +22,43 @@
 #include "debug.h"
 //
 
+// States of the scanner automaton
+#define TOKEN(name) _cat_2_(TOKEN, name)
+/**
+ * Tokens enum. What does each token represent.
+ */
+typedef enum token_type {
+    // tokens
+    TOKEN(EOFILE) = EOF, // to be compatible with EOF
+    // dead token == NULL
+    TOKEN(DEAD) = 0,
+    // normal tokens
+    TOKEN(WS), // ' '
+    TOKEN(EOL), // '\n'
+    TOKEN(ID), // variable name
+    TOKEN(NUM_I), // integer number
+    TOKEN(NUM_F), // floating pointer number
+    TOKEN(STR), //  c string
+    TOKEN(NE), // '~='
+    TOKEN(EQ), // '=='
+    TOKEN(LT), // '<'
+    TOKEN(LE), // '<='
+    TOKEN(GT), // '>'
+    TOKEN(GE), // '>='
+    TOKEN(ASSIGN), // '='
+    TOKEN(MUL), // '*'
+    TOKEN(DIV_I), // '/'
+    TOKEN(DIV_F), // '//'
+    TOKEN(ADD), // '+'
+    TOKEN(SUB), // '-'
+    TOKEN(LPAREN), // '('
+    TOKEN(RPAREN),  // ')'
+    TOKEN(COMMA), // ','
+//    TOKEN(SEMICOLON), // ';' // deprecated
+    TOKEN(STRCAT),  // ..
+    TOKEN(COLON),  // :
+} token_type_t;
+//
 
 //============================================
 // States of the scanner automaton
@@ -100,55 +107,13 @@ enum states {
 };
 //
 
-
-//============================================
-#define TOKEN(name) _cat_2_(TOKEN, name)
-/**
- * Tokens enum. What does each token represent.
- */
-typedef enum token_type {
-    // tokens
-    TOKEN(EOFILE) = EOF, // to be compatible with EOF
-    // dead token == NULL
-    TOKEN(DEAD) = 0,
-    // normal tokens
-    TOKEN(WS), // ' '
-    TOKEN(EOL), // '\n'
-    TOKEN(ID), // variable name
-    TOKEN(NUM_I), // integer number
-    TOKEN(NUM_F), // floating pointer number
-    TOKEN(STR), //  c string
-    TOKEN(NE), // '~='
-    TOKEN(EQ), // '=='
-    TOKEN(LT), // '<'
-    TOKEN(LE), // '<='
-    TOKEN(GT), // '>'
-    TOKEN(GE), // '>='
-    TOKEN(ASSIGN), // '='
-    TOKEN(MUL), // '*'
-    TOKEN(DIV_I), // '/'
-    TOKEN(DIV_F), // '//'
-    TOKEN(ADD), // '+'
-    TOKEN(SUB), // '-'
-    TOKEN(LBRACE), // '{'
-    TOKEN(RBRACE), // '}'
-    TOKEN(LPAREN), // '('
-    TOKEN(RPAREN),  // ')'
-    TOKEN(COMMA), // ','
-    TOKEN(SEMICOLON), // ';'
-    TOKEN(STRCAT),  // ..
-    TOKEN(COLON),  // ..
-} token_type_t;
-//
-
-
 //===========================================
 // Token and itt attribute
 /**
  * Token attributes.
  */
 typedef union token_attribute {
-    string id;       /**< if token == string || token == identifer  */
+    dynstring_t id;   /**< if token == string || token == identifier  */
     uint64_t num_i;  /**< if token == number_int */
     double num_f;    /**< number_float */
 } attribute_t;
@@ -166,33 +131,45 @@ typedef struct token {
 /**
  * An interface to access scanner functions
  */
-extern const struct scanner_op_struct Scanner;
+extern const struct scanner_interface Scanner;
 
-struct scanner_op_struct {
-    void (*free)(progfile_t *);
-    progfile_t *(*initialize)();
+struct scanner_interface {
+    void (*free)(pfile_t *);
 
-    token_t (*get_next_token)(progfile_t *);
+    pfile_t *(*initialize)(void);
 
-    token_t (*get_prev_token)();
+    token_t (*get_next_token)(pfile_t *);
 
-    token_t (*get_curr_token)();
+    token_t (*get_prev_token)(void);
+
+    token_t (*get_curr_token)(void);
 
     char *(*to_string)(const int);
+
+    size_t (*get_line)(void);
+
+    size_t (*get_charpos)(void);
 };
 //
 
 
-
-
-// =====================================
 #define KEYWORD(name) _cat_2_(KEYWORD, name)
 
 #define KEYWORDS(X) \
     X(do) \
+    X(string) \
+    X(boolean) \
+    X(number) \
+    X(integer) \
+    X(true) \
+    X(false) \
     X(if) \
     X(return) \
     X(else) \
+    X(repeat) \
+    X(until) \
+    X(break) \
+    X(elseif) \
     X(local) \
     X(then) \
     X(end) \
@@ -202,7 +179,8 @@ struct scanner_op_struct {
     X(read) \
     X(write) \
     X(global) \
-    X(require) \
+    X(require)
+
 
 typedef enum keywords {
     dummy_keyword = 666,
