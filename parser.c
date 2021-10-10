@@ -105,7 +105,7 @@ static bool unmatched_part(pfile_t *pfile) {
 }
 
 /**
- * @brief // TODO: description what the function does
+ * @brief conditional statement that follows terminal(token) IF
  *
  * !rule <cond_stmt> -> expr then <fun_body> <unmatched_part>
  *

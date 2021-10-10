@@ -23,7 +23,7 @@ add_compile_options(-DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno
 
 
 
-# todo: what i want to do?
+# todo: needs merge with Tests
 # create test_part of the project files, in which there will be
 # MAIN functoins, which become main because of -DSELFTEST flag.
 # So there's need to create separate compile options for different targets(e.g test_scanner, test_parser and so

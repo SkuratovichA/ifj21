@@ -64,9 +64,6 @@ typedef enum token_type {
 // States of the scanner automaton
 #define STATE(name) _cat_2_(STATE, name)
 
-/**
- * TODO Explain
- */
 #define STATES(X) \
     X(INIT) \
     X(STR_INIT) \
