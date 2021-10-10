@@ -295,7 +295,7 @@ static token_t lex_identif(progfile_t *pfile) {
     while (!accepted && ch != EOF) {
         ch = Progfile.pgetc(pfile);
         charpos++;
-        switch (state) {
+        switch (state) { // an e transition between INIT and STATE_IT_INIT, because it have to be in the separate function
             case STATE_ID_INIT:
                 if (isalpha(ch) || ch == '_') {
                     Dynstring.append_char(&token.attribute.id, (char) ch);
@@ -305,7 +305,7 @@ static token_t lex_identif(progfile_t *pfile) {
                 }
                 break;
 
-            case STATE_ID_FINAL:
+            case STATE_ID_FINAL: // so actually there has to be only one identifier state in the dfa
                 if (isalnum(ch) || ch == '_') {
                     Dynstring.append_char(&token.attribute.id, (char) ch);
                 } else {
