@@ -3,7 +3,7 @@
 #include "progfile.h"
 
 struct expr_interface {
-    bool (*parse)(progfile_t *);
+    bool (*parse)(pfile_t *);
 };
 
 extern const struct expr_interface Expr;

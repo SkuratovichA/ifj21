@@ -134,11 +134,11 @@ typedef struct token {
 extern const struct scanner_interface Scanner;
 
 struct scanner_interface {
-    void (*free)(progfile_t *);
+    void (*free)(pfile_t *);
 
-    progfile_t *(*initialize)(void);
+    pfile_t *(*initialize)(void);
 
-    token_t (*get_next_token)(progfile_t *);
+    token_t (*get_next_token)(pfile_t *);
 
     token_t (*get_prev_token)(void);
 

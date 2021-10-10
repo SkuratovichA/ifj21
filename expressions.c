@@ -1,7 +1,7 @@
 #include "expressions.h"
 #include "stdbool.h"
 
-static bool Parse_expression(progfile_t *pfile) {
+static bool Parse_expression(pfile_t *pfile) {
     return false;
 }
 

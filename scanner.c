@@ -103,18 +103,12 @@ static char *To_string(const int t) {
             return "+";
         case TOKEN_SUB:
             return "-";
-        case TOKEN_LBRACE:
-            return "}";
-        case TOKEN_RBRACE:
-            return "{";
         case TOKEN_LPAREN:
             return "(";
         case TOKEN_RPAREN:
             return ")";
         case TOKEN_COMMA:
             return ",";
-//        case TOKEN_SEMICOLON:
-//            return ";";
         case TOKEN_STRCAT:
             return "..";
         case TOKEN_COLON:
@@ -141,7 +135,7 @@ static size_t charpos;
  * @param pfile
  * @return token. If STATE!= STATE_STR_FINAL returns TOKEN_DEAD.
  */
-static token_t lex_string(progfile_t *pfile) {
+static token_t lex_string(pfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     state = STATE_STR_INIT;
     int ch;
@@ -150,7 +144,7 @@ static token_t lex_string(progfile_t *pfile) {
     token_t token = {.type = TOKEN_STR, .attribute.id = Dynstring.create("")};
 
     while (!accepted && ch != EOF) {
-        ch = Progfile.pgetc(pfile);
+        ch = Pfile.pgetc(pfile);
         charpos++;
         debug_msg("GOT: %c in state %s\n", ch, state_tostring(state));
         switch (state) {
@@ -283,7 +277,7 @@ static token_t lex_string(progfile_t *pfile) {
  * @param pfile
  * @return token. If state != STATE_ID_FINAL return TOKEN_DEAD
  */
-static token_t lex_identif(progfile_t *pfile) {
+static token_t lex_identif(pfile_t *pfile) {
     debug_msg(DEBUG_SEP);
 
     state = STATE_ID_INIT;
@@ -293,7 +287,7 @@ static token_t lex_identif(progfile_t *pfile) {
     token_t token = {.type = TOKEN_ID, .attribute.id = Dynstring.create("")};
 
     while (!accepted && ch != EOF) {
-        ch = Progfile.pgetc(pfile);
+        ch = Pfile.pgetc(pfile);
         charpos++;
         switch (state) { // an e transition between INIT and STATE_IT_INIT, because it have to be in the separate function
             case STATE_ID_INIT:
@@ -310,7 +304,7 @@ static token_t lex_identif(progfile_t *pfile) {
                     Dynstring.append_char(&token.attribute.id, (char) ch);
                 } else {
                     accepted = true;
-                    Progfile.ungetc(pfile);
+                    Pfile.ungetc(pfile);
                 }
                 break;
 
@@ -343,7 +337,7 @@ static token_t lex_identif(progfile_t *pfile) {
  * @param pfile
  * @return false if comment is wrong
  */
-static bool process_comment(progfile_t *pfile) {
+static bool process_comment(pfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     state = STATE_COMMENT_INIT;
     bool accepted = false;
@@ -351,7 +345,7 @@ static bool process_comment(progfile_t *pfile) {
 
     // != EOF is not a true "DFA" way of thinking, but it is more clearly
     while (!accepted && ch != EOF) {
-        ch = Progfile.pgetc(pfile);
+        ch = Pfile.pgetc(pfile);
         charpos++;
         if (ch == '\n') {
             lines++;
@@ -391,7 +385,7 @@ static bool process_comment(progfile_t *pfile) {
                 break;
 
             case STATE_COMMENT_FINAL: // more clear way of creating an automaton
-                Progfile.ungetc(pfile);
+                Pfile.ungetc(pfile);
                 accepted = true;
                 break;
 
@@ -411,31 +405,31 @@ static bool process_comment(progfile_t *pfile) {
  * @param pfile
  * @return (token_t) (.type = actual_state)
  */
-static token_t lex_relate_op(progfile_t *pfile) {
+static token_t lex_relate_op(pfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     token_t token;
     bool accepted = false;
     int ch;
 
     while (!accepted) {
-        ch = Progfile.pgetc(pfile);
+        ch = Pfile.pgetc(pfile);
         charpos++;
         switch (ch) {
             case '>':
                 charpos++;
-                return Progfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_GE} : (Progfile.ungetc(
+                return Pfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_GE} : (Pfile.ungetc(
                         pfile), (token_t) {.type = TOKEN_GT});
             case '<':
                 charpos++;
-                return Progfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_LE} : (Progfile.ungetc(
+                return Pfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_LE} : (Pfile.ungetc(
                         pfile), (token_t) {.type = TOKEN_LT});
             case '=':
                 charpos++;
-                return Progfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_EQ} : (Progfile.ungetc(
+                return Pfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_EQ} : (Pfile.ungetc(
                         pfile), (token_t) {.type = TOKEN_ASSIGN});
             case '~':
                 charpos++;
-                return Progfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_EQ} : (Progfile.ungetc(
+                return Pfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_EQ} : (Pfile.ungetc(
                         pfile), (token_t) {.type = TOKEN_DEAD});
             default:
                 soft_assert(false && "there's an unrecognized state\n", ERROR_LEXICAL);
@@ -450,7 +444,7 @@ static token_t lex_relate_op(progfile_t *pfile) {
  * @param pfile
  * @return token
  */
-static token_t lex_number(progfile_t *pfile) {
+static token_t lex_number(pfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     state = STATE_NUM_INIT;
     dynstring_t ascii_num = Dynstring.create(""); // create an empty string
@@ -460,7 +454,7 @@ static token_t lex_number(progfile_t *pfile) {
     bool accepted = false;
 
     while (!accepted && ch != EOF) {
-        ch = Progfile.pgetc(pfile);
+        ch = Pfile.pgetc(pfile);
         charpos++;
         switch (state) {
             case STATE_NUM_INIT:
@@ -609,14 +603,14 @@ static token_t lex_number(progfile_t *pfile) {
  * @param pfile
  * @return token
  */
-static token_t scanner(progfile_t *pfile) {
+static token_t scanner(pfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     int ch;
-    token_t token = {0, };
+    token_t token = {0,};
 
     next_lexeme:
     state = STATE_INIT;
-    ch = Progfile.pgetc(pfile);
+    ch = Pfile.pgetc(pfile);
     charpos++;
 
     switch (ch) {
@@ -633,18 +627,18 @@ static token_t scanner(progfile_t *pfile) {
 
         case_alpha:
         case '_': // alpha and underscore
-            Progfile.ungetc(pfile);
+            Pfile.ungetc(pfile);
             token = lex_identif(pfile);
             break;
 
         case_digit:
-            Progfile.ungetc(pfile);
+            Pfile.ungetc(pfile);
             token = lex_number(pfile);
             break;
 
         case '-':
-            if (Progfile.peek_at(pfile, 0) == '-') {
-                Progfile.pgetc(pfile);
+            if (Pfile.peek_at(pfile, 0) == '-') {
+                Pfile.pgetc(pfile);
                 charpos++;
                 if (!process_comment(pfile)) {
                     return (token_t) {.type = TOKEN_DEAD};
@@ -656,15 +650,15 @@ static token_t scanner(progfile_t *pfile) {
 
         case '/':
             token.type = TOKEN_DIV_F;
-            if (Progfile.peek_at(pfile, 0) == '/') {
-                Progfile.pgetc(pfile);
+            if (Pfile.peek_at(pfile, 0) == '/') {
+                Pfile.pgetc(pfile);
                 charpos++;
                 token.type = TOKEN_DIV_I;
             }
             break;
 
         case_4('>', '<', '=', '~'):
-            Progfile.ungetc(pfile); // move tape back to call a function to process an operator.
+            Pfile.ungetc(pfile); // move tape back to call a function to process an operator.
             token = lex_relate_op(pfile);
             break;
 
@@ -691,7 +685,7 @@ static token_t scanner(progfile_t *pfile) {
             break;
         case '.':
             token.type = TOKEN_DEAD;
-            if (Progfile.pgetc(pfile) == '.') {
+            if (Pfile.pgetc(pfile) == '.') {
                 charpos++;
                 token.type = TOKEN_STRCAT;
             }
@@ -715,15 +709,7 @@ static token_t scanner(progfile_t *pfile) {
 
 
 // ==============================================
-/**
- * @brief Initialize scanner
- *
- * @param
- * @return File
- */
-static progfile_t *Initialize_scanner() {
-    return Progfile.getfile_stdin();
-}
+
 
 /**
  * @brief Free token.
@@ -748,7 +734,7 @@ static token_t prev, curr;
  * @param pfile
  * @return token
  */
-static token_t Get_next_token(progfile_t *pfile) {
+static token_t Get_next_token(pfile_t *pfile) {
     Free_token(&prev); // need to free string
     prev = curr;
     curr = scanner(pfile);
@@ -798,14 +784,14 @@ static size_t Get_charpos() {
  * @return void
  */
 // ==============================================
-static void Free_scanner(progfile_t *pfile) {
+static void Free_scanner(pfile_t *pfile) {
     if (prev.type == TOKEN_ID || prev.type == TOKEN_STR) {
         Dynstring.free(&prev.attribute.id);
     }
     if (curr.type == TOKEN_ID || curr.type == TOKEN_STR) {
         Dynstring.free(&curr.attribute.id);
     }
-    Progfile.free(pfile);
+    Pfile.free(pfile);
     debug_msg("\tprogfile freed\n");
 }
 
@@ -817,7 +803,6 @@ const struct scanner_interface Scanner = {
         .free = Free_scanner,
         .get_next_token = Get_next_token,
         .get_prev_token = Get_prev_token,
-        .initialize = Initialize_scanner,
         .get_curr_token = Get_curr,
         .to_string = To_string,
         .get_line = Get_line,
@@ -835,7 +820,7 @@ int MAIN(const int argc, const char **argv) {
     // floats ok
     printf("Test 1 - float numbers, good\n");
 
-    progfile_t *pfile = Progfile.getfile("../tests/number_ok.tl", "r");
+    pfile_t *pfile = Pfile.getfile("../tests/number_ok.tl", "r");
     if (!pfile) {
         goto nexttest;
     }
@@ -850,13 +835,13 @@ int MAIN(const int argc, const char **argv) {
         nexttest:
         Tests.failed("Cannot open the file!\n");
     }
-    Progfile.free(pfile);
+    Pfile.free(pfile);
 
     /*
     // floats bad
     printf("Test 2 - float numbers, bad\n");
 
-    pfile = Progfile.getfile("../tests/number_bad.tl", "r");
+    pfile = Pfile.getfile("../tests/number_bad.tl", "r");
     if (!pfile) {
         goto nexttest2;
     }
@@ -871,12 +856,12 @@ int MAIN(const int argc, const char **argv) {
         nexttest2:
         Tests.failed("Cannot open the file!\n");
     }
-     Progfile.free(pfile);
+     Pfile.free(pfile);
     */
 
     // integer ok
     printf("Test 3 - integer numbers, good\n");
-    pfile = Progfile.getfile("../tests/integer_ok.tl", "r");
+    pfile = Pfile.getfile("../tests/integer_ok.tl", "r");
     if (!pfile) {
         goto nexttest3;
     }
@@ -891,12 +876,12 @@ int MAIN(const int argc, const char **argv) {
         nexttest3:
         Tests.failed("Cannot open the file!\n");
     }
-    Progfile.free(pfile);
+    Pfile.free(pfile);
 
     /*
     // integer bad
     printf("Test 4 - integer numbers, bad\n");
-    pfile = Progfile.getfile("../tests/integer_bad.tl", "r");
+    pfile = Pfile.getfile("../tests/integer_bad.tl", "r");
     if (!pfile) {
         goto nexttest4;
     }
@@ -911,12 +896,12 @@ int MAIN(const int argc, const char **argv) {
         nexttest4:
         Tests.failed("Cannot open the file!\n");
     }
-     Progfile.free(pfile);
+     Pfile.free(pfile);
     */
 
     // identifier ok
     printf("Test 5 - identifiers, good\n");
-    pfile = Progfile.getfile("../tests/identif_ok.tl", "r");
+    pfile = Pfile.getfile("../tests/identif_ok.tl", "r");
     if (!pfile) {
         goto nexttest5;
     }
@@ -931,12 +916,12 @@ int MAIN(const int argc, const char **argv) {
         nexttest5:
         Tests.failed("Cannot open the file!\n");
     }
-    Progfile.free(pfile);
+    Pfile.free(pfile);
 
     /*
     // identifier bad
     printf("Test 6 - identifiers, bad\n");
-    pfile = Progfile.getfile("../tests/identif_bad.tl", "r");
+    pfile = Pfile.getfile("../tests/identif_bad.tl", "r");
     if (!pfile) {
         goto nexttest6;
     }
@@ -951,12 +936,12 @@ int MAIN(const int argc, const char **argv) {
         nexttest6:
         Tests.failed("Cannot open the file!\n");
     }
-     Progfile.free(pfile);
+     Pfile.free(pfile);
     */
 
     // strings good
     printf("Test 7 - strings, good\n");
-    pfile = Progfile.getfile("../tests/string_ok.tl", "r");
+    pfile = Pfile.getfile("../tests/string_ok.tl", "r");
     if (!pfile) {
         goto nexttest7;
     }
@@ -971,12 +956,12 @@ int MAIN(const int argc, const char **argv) {
         nexttest7:
         Tests.failed("Cannot open the file!\n");
     }
-    Progfile.free(pfile);
+    Pfile.free(pfile);
 
     /*
     // strings bad
     printf("Test 8 - strings, bad\n");
-    pfile = Progfile.getfile("../tests/string_bad.tl", "r");
+    pfile = Pfile.getfile("../tests/string_bad.tl", "r");
     if (!pfile) {
         goto nexttest8;
     }
@@ -991,7 +976,7 @@ int MAIN(const int argc, const char **argv) {
         nexttest8:
         Tests.failed("Cannot open the file!\n");
     }
-     Progfile.free(pfile);
+     Pfile.free(pfile);
     */
 
     //********************************************************************//

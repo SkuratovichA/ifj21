@@ -47,11 +47,11 @@ do { \
 // ***************************************************************************** //
 
 
-static bool unmatched_part(progfile_t *);
+static bool unmatched_part(pfile_t *);
 
-static bool cond_stmt(progfile_t *);
+static bool cond_stmt(pfile_t *);
 
-static bool fun_body(progfile_t *pfile);
+static bool fun_body(pfile_t *pfile);
 
 /**
  * @brief Expression rules. TODO
@@ -61,7 +61,7 @@ static bool fun_body(progfile_t *pfile);
  * @param pfile @param pfile structure representing the program filethe input program file
  * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error_interface message otherwise
  */
-static bool expr(progfile_t *pfile) {
+static bool expr(pfile_t *pfile) {
     debug_msg_s("<expr> -> \n");
 
     EXPECTED(KEYWORD_1); // true is 0 here, funny enough...
@@ -78,7 +78,7 @@ static bool expr(progfile_t *pfile) {
  * @param pfile structure representing the program filethe input program file
  * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error_interface message otherwise
  */
-static bool unmatched_part(progfile_t *pfile) {
+static bool unmatched_part(pfile_t *pfile) {
     debug_msg_s("<unmatched_part> -> \n");
 
     switch (Scanner.get_curr_token().type) {
@@ -112,7 +112,7 @@ static bool unmatched_part(progfile_t *pfile) {
  * @param pfile structure representing the program filethe input program file
  * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error_interface message otherwise
  */
-static bool cond_stmt(progfile_t *pfile) {
+static bool cond_stmt(pfile_t *pfile) {
     debug_msg_s("<cond_stmt> -> \n");
 
     if (!expr(pfile)) {
@@ -157,7 +157,7 @@ static bool cond_stmt(progfile_t *pfile) {
  * @param pfile structure representing the input program file
  * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
  */
-static bool fun_body(progfile_t *pfile) {
+static bool fun_body(pfile_t *pfile) {
     debug_msg("<fun_body> ->\n");
 
     switch (Scanner.get_curr_token().type) {
@@ -196,7 +196,7 @@ static bool fun_body(progfile_t *pfile) {
  * @param pfile structure representing the input program file
  * @return true if token is datatype.
  */
-static inline bool datatype(progfile_t *pfile) {
+static inline bool datatype(pfile_t *pfile) {
     debug_msg("<datatype> ->\n");
 
     switch (Scanner.get_curr_token().type) {
@@ -220,7 +220,7 @@ static inline bool datatype(progfile_t *pfile) {
  * @param pfile structure representing the input program file
  * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
  */
-static bool other_funparams(progfile_t *pfile) {
+static bool other_funparams(pfile_t *pfile) {
     debug_msg("<other_funparam> ->\n");
 
     // ) |
@@ -248,7 +248,7 @@ static bool other_funparams(progfile_t *pfile) {
  * @param pfile structure representing the input program file
  * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
  */
-static bool funparam_def_list(progfile_t *pfile) {
+static bool funparam_def_list(pfile_t *pfile) {
     debug_msg("funparam_def_list ->\n");
 
     // ) |
@@ -274,7 +274,7 @@ static bool funparam_def_list(progfile_t *pfile) {
  * @param pfile structure representing the input program file
  * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
  */
-static bool other_datatypes(progfile_t *pfile) {
+static bool other_datatypes(pfile_t *pfile) {
     debug_msg("<other_datatypes> ->\n");
 
     // ) |
@@ -292,7 +292,7 @@ static bool other_datatypes(progfile_t *pfile) {
  * @param pfile structure representing the input program file
  * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
  */
-static bool datatype_list(progfile_t *pfile) {
+static bool datatype_list(pfile_t *pfile) {
     debug_msg("<datatype_list> ->\n");
 
     // ) |
@@ -310,7 +310,7 @@ static bool datatype_list(progfile_t *pfile) {
  * @param pfile structure representing the program file the input program file
  * @return true iff rule derives its production successfully else false  with an error_interface message otherwise
  */
-static bool other_funrets(progfile_t *pfile) {
+static bool other_funrets(pfile_t *pfile) {
     debug_msg("<other_funrets> -> \n");
 
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
@@ -330,7 +330,7 @@ static bool other_funrets(progfile_t *pfile) {
  * @param pfile structure representing the input program file
  * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
  */
-static bool funretopt(progfile_t *pfile) {
+static bool funretopt(pfile_t *pfile) {
     debug_msg("<funretopt> ->\n");
 
     // e |
@@ -357,7 +357,7 @@ static bool funretopt(progfile_t *pfile) {
  * @param pfile structure representing the input program file
  * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
  */
-static bool stmt(progfile_t *pfile) {
+static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
     token_t tok; // for debug
 
@@ -448,7 +448,7 @@ static bool stmt(progfile_t *pfile) {
  * @param pfile structure representing the input program file
  * @return true if rule derives its production successfully
  */
-static bool stmt_list(progfile_t *pfile) {
+static bool stmt_list(pfile_t *pfile) {
     debug_msg("<stmt_list> ->\n");
 
     // EOF |
@@ -465,7 +465,7 @@ static bool stmt_list(progfile_t *pfile) {
  * @param pfile structure representing the input program file
  * @return true if rule derives its production successfully based on the production rule(described above)
  */
-static bool program(progfile_t *pfile) {
+static bool program(pfile_t *pfile) {
     dynstring_t prolog_str = Dynstring.create("ifj21");
     debug_msg("<program> ->\n");
 
@@ -498,14 +498,12 @@ static bool program(progfile_t *pfile) {
  * @param pfile structure representing program file
  * @return appropriate return code, viz error_interface.c, errror.h
  */
-static bool Analyse() {
-    progfile_t *pfile;
-    bool res = false;
-
-    if (!(pfile = Scanner.initialize())) {
+static bool Analyse(pfile_t *pfile) {
+    if (!pfile) {
         Errors.set_error(ERROR_INTERNAL);
-        return res;
+        return NULL;
     }
+    bool res = false;
 
     // get first token to get start
     Scanner.get_next_token(pfile);
