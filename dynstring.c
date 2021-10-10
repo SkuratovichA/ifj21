@@ -1,28 +1,3 @@
-/********************************************
- * Project name: IFJ - projekt
- * File: dynstring_t.c
- * Date: 23. 09. 2021
- * Last change: 23. 09. 2021
- * Team: TODO
- * Authors:  Aliaksandr Skuratovich
- *           Evgeny Torbin
- *           Lucie Svobodová
- *           Jakub Kuzník
- *******************************************/
-/**
- * This file can create dynamic len strings. If the dynstring_t is short, it is created on stack else it is created on heap.
- *
- *  @package dynstring_t
- *  @file dynstring_t.c
- *  @brief Contain function for operations with dynstring_t. String is represented by data union str->
- *
- *
- *
- *  @author Aliaksandr Skuratovich - move dynstring_t to the heap
- *  @author Evgeny Torbin - move dynstring_t to the heap - unsuccessfully :-(
- */
-
-
 #include "dynstring.h"
 #include <stdlib.h>
 #include "errors.h"

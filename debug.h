@@ -1,23 +1,3 @@
-/********************************************
- * Project name: IFJ - projekt
- * File: debug.h
- * Date: 23. 09. 2021
- * Last change: 23. 09. 2021
- * Team: TODO
- * Authors:  Aliaksandr Skuratovich
- *           Evgeny Torbin
- *           Lucie Svobodová
- *           Jakub Kuzník
- *******************************************/
-/**
- * Debug MACROS
- *
- *  @package debug
- *  @file debug.h
- *  @brief This file our advanced Macroc for debuging. So we don't have to use print.
- *
- *  @author Aliaksandr Skuratovich
- */
 #pragma once
 
 #ifndef __APPLE__

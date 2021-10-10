@@ -1,24 +1,3 @@
-/********************************************
- * Project name: IFJ - projekt
- * File: progfile.c
- * Date: 23. 09. 2021
- * Last change: 23. 09. 2021
- * Team: TODO
- * Authors:  Aliaksandr Skuratovich
- *           Evgeny Torbin
- *           Lucie Svobodová
- *           Jakub Kuzník
- *******************************************/
-/**
- *
- *  @package progfile
- *  @file progfile.c
- *  @brief Program file - buffered binary file representation.
- *
- *
- *  @author Aliaksandr Skuratovich
- */
-
 #include "progfile.h"
 
 #include "progfile.h"
@@ -76,7 +55,7 @@ static int Getc(progfile_t *pfile) {
 }
 
 /**
- * @brief Get to character before.
+ * @brief move tape head one character backward, and return a current character
  *
  * @param pfile
  * @return character before or EOF

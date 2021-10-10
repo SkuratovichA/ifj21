@@ -1,27 +1,3 @@
-/********************************************
- * Project name: IFJ - projekt
- * File: parser
- * Date: 23. 09. 2021
- * Last change: 23. 09. 2021
- * Team: TODO
- * Authors:  Aliaksandr Skuratovich
- *           Evgeny Torbin
- *           Lucie Svobodová
- *           Jakub Kuzník
- *******************************************/
-/**
- *
- *
- *  @package parser
- *  @file parser.c
- *  @brief // TODO info about file
- *
- *
- *
- *  @author Aliaksandr Skuratovich
- */
-
-
 #include "parser.h"
 #include "scanner.h"
 #include "errors.h"

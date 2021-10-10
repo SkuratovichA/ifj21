@@ -1,26 +1,3 @@
-/********************************************
- * Project name: IFJ - projekt
- * File: scanner.h
- * Date: 23. 09. 2021
- * Last change: 23. 09. 2021
- * Team: TODO
- * Authors:  Aliaksandr Skuratovich
- *           Evgeny Torbin
- *           Lucie Svobodová
- *           Jakub Kuzník
- *******************************************/
-/**
- *
- *
- *  @package scanner
- *  @file scanner.h
- *  @brief Header for scanner.c with structures and macros.
- *
- *
- *
- *  @author Aliaksandr Skuratovich
- */
-
 #pragma once
 
 //============================================

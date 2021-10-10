@@ -1,28 +1,3 @@
-/********************************************
- * Project name: IFJ - projekt
- * File: errors.h
- * Date: 23. 09. 2021
- * Last change: 23. 09. 2021
- * Team: TODO
- * Authors:  Aliaksandr Skuratovich
- *           Evgeny Torbin
- *           Lucie Svobodová
- *           Jakub Kuzník
- *******************************************/
-/**
- *
- *
- *  @package errors
- *  @file errors.h
- *  @brief Contain enum of all the error_interface codes.
- *
- *
- *
- *  @author Aliaksandr Skuratovich
- *  @author Evgeny Torbin
- *  @author Lucie Svobodová
- *  @author Jakub Kuzník
- */
 #pragma once
 
 // assert a condition and exit with an error_interface code if condition is false
@@ -53,8 +28,6 @@ enum errors {
     ERROR_RUNTIME_DIV_BY_ZERO,
     ERROR_INTERNAL = 99
 };
-// todo: shall we create functinos like get_error(), which returns an error_interface code and prints a message?
-
 
 
 /**

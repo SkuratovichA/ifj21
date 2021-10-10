@@ -1,26 +1,3 @@
-/********************************************
- * Project name: IFJ - projekt
- * File: scanner.c
- * Date: 23. 09. 2021
- * Last change: 23. 09. 2021
- * Team: TODO
- * Authors:  Aliaksandr Skuratovich
- *           Evgeny Torbin
- *           Lucie Svobodová
- *           Jakub Kuzník
- *******************************************/
-/**
- *
- *
- *  @package scanner
- *  @file scanner.c
- *  @brief Scanner creates valid tokens for Parser. And check if all the inputs characters are language alphabet.
- *
- *
- *
- *  @author Aliaksandr Skuratovich
- */
-
 #include "scanner.h"
 #include "tests/tests.h"
 

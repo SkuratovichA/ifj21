@@ -1,25 +1,3 @@
-/********************************************
- * Project name: IFJ - projekt
- * File: errors.c
- * Date: 23. 09. 2021
- * Last change: 23. 09. 2021
- * Team: TODO
- * Authors:  Aliaksandr Skuratovich
- *           Evgeny Torbin
- *           Lucie Svobodová
- *           Jakub Kuzník
- *******************************************/
-/**
- *
- *
- *  @package errors
- *  @file errors.c
- *  @brief File has switch with all the errors and their codes. Errors codes are defined in errors.h
- *
- *
- *
- *  @author Aliaksandr Skuratovich
- */
 
 #include "errors.h"
 #include <stdio.h>
