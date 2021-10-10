@@ -1,26 +1,3 @@
-/********************************************
- * Project name: IFJ - projekt
- * File: dynstring_t.h
- * Date: 23. 09. 2021
- * Last change: 23. 09. 2021
- * Team: TODO
- * Authors:  Aliaksandr Skuratovich
- *           Evgeny Torbin
- *           Lucie Svobodová
- *           Jakub Kuzník
- *******************************************/
-/**
- * //GENERAL INFO
- *
- *  @package dynstring_t
- *  @file dynstring_t.h
- *  @brief Header file for dynstring_t.c with data types definitions.
- *
- *
- *  @author Aliaksandr Skuratovich
- *  @author Evgeny Torbin - move dynstring_t to the heap
- */
-
 #pragma once
 
 #include <stdint.h>
