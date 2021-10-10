@@ -872,8 +872,9 @@ int MAIN(const int argc, const char **argv) {
         goto nexttest;
     }
     for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
+        printf("Token: %g\n", token.attribute.num_f);
         if (token.type != TOKEN_NUM_F) {
-            Tests.failed("expected: got: with attribute:\n");
+            Tests.failed("expected: got: with attribute: \n");
         } else {
             Tests.passed("%d\n", nu);
         }
@@ -893,6 +894,7 @@ int MAIN(const int argc, const char **argv) {
         goto nexttest2;
     }
     for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
+        printf("Token: %g\n", token.attribute.num_f);
         if (token.type == TOKEN_NUM_F) {
             Tests.failed("expected: got: with attribute:\n");
         } else {
@@ -913,6 +915,7 @@ int MAIN(const int argc, const char **argv) {
         goto nexttest3;
     }
     for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
+        printf("Token: %lu\n", token.attribute.num_i);
         if (token.type != TOKEN_NUM_I) {
             Tests.failed("expected: got: with attribute:\n");
         } else {
@@ -953,6 +956,7 @@ int MAIN(const int argc, const char **argv) {
         goto nexttest5;
     }
     for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
+        printf("Token: %s\n", token.attribute.id.str);
         if (token.type != TOKEN_ID) {
             Tests.failed("expected: got: with attribute:\n");
         } else {
@@ -993,6 +997,7 @@ int MAIN(const int argc, const char **argv) {
         goto nexttest7;
     }
     for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
+        printf("Token: %s\n", token.attribute.id.str);
         if (token.type != TOKEN_STR) {
             Tests.failed("expected: got: with attribute:\n");
         } else {
