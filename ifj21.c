@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include "errors.h"
 #include "parser.h"
-#include "progfile.h"
 
+#include "progfile.h"
+int tree_testing();
 int main() {
+
     printf("Hello!\n");
 
     pfile_t *pfile;
@@ -18,3 +20,4 @@ int main() {
 
     return 0;
 }
+
