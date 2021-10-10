@@ -703,12 +703,6 @@ static token_t scanner(progfile_t *pfile) {
         case '+':
             token.type = TOKEN_ADD;
             break;
-        case '{':
-            token.type = TOKEN_LBRACE;
-            break;
-        case '}':
-            token.type = TOKEN_RBRACE;
-            break;
         case '(':
             token.type = TOKEN_LPAREN;
             break;
@@ -718,9 +712,6 @@ static token_t scanner(progfile_t *pfile) {
         case ',':
             token.type = TOKEN_COMMA;
             break;
-//        case ';': //not supported
-//            token.type = TOKEN_SEMICOLON;
-//            break;
         case '.':
             token.type = TOKEN_DEAD;
             if (Progfile.pgetc(pfile) == '.') {
