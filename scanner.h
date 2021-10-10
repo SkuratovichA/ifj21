@@ -51,8 +51,6 @@ typedef enum token_type {
     TOKEN(DIV_F), // '//'
     TOKEN(ADD), // '+'
     TOKEN(SUB), // '-'
-    TOKEN(LBRACE), // '{'
-    TOKEN(RBRACE), // '}'
     TOKEN(LPAREN), // '('
     TOKEN(RPAREN),  // ')'
     TOKEN(COMMA), // ','
