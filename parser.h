@@ -18,8 +18,8 @@
 #include "debug.h"
 
 
-extern const struct parser_op_struct Parser;
+extern const struct parser_interface_i Parser;
 
-struct parser_op_struct {
+struct parser_interface_i {
     bool (*analyse)(pfile_t *);
 };
