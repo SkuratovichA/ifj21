@@ -18,6 +18,6 @@ static bool Parse_expression(pfile_t *pfile) {
 /**
  * Functions are in struct so we can use them in different files.
  */
-const struct expr_interface Expr = {
+const struct expr_interface_i Expr = {
         .parse = Parse_expression,
 };
