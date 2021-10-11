@@ -5,7 +5,7 @@
 /**
  * @brief Expression parsing driven by a precedence table.
  *
- * !rule <expr> -> your mother
+ * !rule <expr> -> // TODO
  *
  * @param pifle program file to pass in to scanner.
  * @return true or false.
