@@ -10,29 +10,7 @@ global baz:function(string)
 global bar:function(string, integer)
 global arst:function(string, integer, number, number, integer, string)
 ---
-global foo
-:
-function()    
----
-global baz
-:
-function(string)
----
-global bar
-:
-function(string, integer)
----
-global arst
-:
-function(string,
-         integer,
-         number, 
-         number, 
-         integer,
-         string
-        )
 ------------------------------------------
-
 
 -- functions with one return:
 global foo : function() : string
