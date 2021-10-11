@@ -16,6 +16,12 @@ struct c_progfile {
     char tape[];
 };
 
+/**
+ * @brief Pfile constructor. Create a pfile object using memcpy from a char *. FIts for tests.
+ *
+ * @param pfile char array which become a tape.
+ * @return new pfile object.
+ */
 static pfile_t *Ctor(char *tape) {
     pfile_t *pfile;
     if (!tape) {
