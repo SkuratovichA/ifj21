@@ -613,8 +613,6 @@ static bool Analyse(pfile_t *pfile) {
     // dont forget to free
     Scanner.free();
 
-    // todo: i guess it wants more clearly solution because there will
-    //  be semantics controls in the parser so every function probably has to set the error_interface code global variable up
     return res;
 }
 
