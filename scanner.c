@@ -617,7 +617,7 @@ static token_t scanner(pfile_t *pfile) {
         case '\n':
             lines++;
             charpos = 0;
-            goto next_lexeme;
+            token = (token_t) {.type = TOKEN_EOL};
             break;
 
         case_2('\t', ' '):
@@ -641,7 +641,8 @@ static token_t scanner(pfile_t *pfile) {
                 Pfile.pgetc(pfile);
                 charpos++;
                 if (!process_comment(pfile)) {
-                    return (token_t) {.type = TOKEN_DEAD};
+                    token = (token_t) {.type = TOKEN_DEAD};
+                    break;
                 }
                 goto next_lexeme;
             }
@@ -784,15 +785,13 @@ static size_t Get_charpos() {
  * @return void
  */
 // ==============================================
-static void Free_scanner(pfile_t *pfile) {
+static void Free_scanner() {
     if (prev.type == TOKEN_ID || prev.type == TOKEN_STR) {
         Dynstring.free(&prev.attribute.id);
     }
     if (curr.type == TOKEN_ID || curr.type == TOKEN_STR) {
         Dynstring.free(&curr.attribute.id);
     }
-    Pfile.free(pfile);
-    debug_msg("\tprogfile freed\n");
 }
 
 /**

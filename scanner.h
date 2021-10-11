@@ -134,7 +134,7 @@ typedef struct token {
 extern const struct scanner_interface Scanner;
 
 struct scanner_interface {
-    void (*free)(pfile_t *);
+    void (*free)();
 
     pfile_t *(*initialize)(void);
 
