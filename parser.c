@@ -237,7 +237,7 @@ static bool repeat_body(pfile_t *pfile) {
  * !rule <fun_body> -> if <cond_stmt> end
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
+ * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
  */
 static bool fun_body(pfile_t *pfile) {
     debug_msg("<fun_body> ->\n");
@@ -346,7 +346,8 @@ static bool other_funparams(pfile_t *pfile) {
 }
 
 /**
- * @brief
+ * @brief List with function parameters in the function definition.
+ *
  * !rule <funparam_def_list> -> ) | <datatype> id <other_funparams>
  *
  * @param pfile structure representing the input program file
@@ -375,7 +376,7 @@ static bool funparam_def_list(pfile_t *pfile) {
  * !rule <other_datatypes> -> ) | , <datatype> <other_datatypes>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
+ * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
  */
 static bool other_datatypes(pfile_t *pfile) {
     debug_msg("<other_datatypes> ->\n");
@@ -393,7 +394,7 @@ static bool other_datatypes(pfile_t *pfile) {
  * !rule <dataype_list> -> <datatype> <other_datatypes> | )
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
+ * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
  */
 static bool datatype_list(pfile_t *pfile) {
     debug_msg("<datatype_list> ->\n");
@@ -411,7 +412,7 @@ static bool datatype_list(pfile_t *pfile) {
  * !rule <other_funcreturns> -> e | , <datatype> <other_funrets>
  *
  * @param pfile structure representing the program file the input program file
- * @return true iff rule derives its production successfully else false  with an error_interface message otherwise
+ * @return true if rule derives its production successfully else false  with an error_interface message otherwise
  */
 static bool other_funrets(pfile_t *pfile) {
     debug_msg("<other_funrets> -> \n");
@@ -433,7 +434,7 @@ static bool other_funrets(pfile_t *pfile) {
  * !rule <funretopt> -> e | : <datatype> <other_funrets>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
+ * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
  */
 static bool funretopt(pfile_t *pfile) {
     debug_msg("<funretopt> ->\n");
@@ -459,7 +460,7 @@ static bool funretopt(pfile_t *pfile) {
  * function calling: !rule <stmt> -> id ( <expr_list>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based onsuccessfully based on the production rule(described above)
+ * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
  */
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");

@@ -9,12 +9,12 @@
 #endif // DEBUG_DYNSTIRNG
 
 /**
-   * @brief Create a dynstring_t from a c_string, with length(@param str + STRSIZE)
-   *
-   * @param s static c dynstring_t.
-   * @param s Char that to convert to dynstring_t.
-   * @return pointer to the dynstring_t object.
-   */
+ * @brief Create a dynstring_t from a c_string, with length(@param str + STRSIZE)
+ *
+ * @param s static c dynstring_t.
+ * @param s Char that to convert to dynstring_t.
+ * @return pointer to the dynstring_t object.
+ */
 static dynstring_t Str_create(const char *s) {
     soft_assert(s, ERROR_INTERNAL); // dont deal with NULLptr
 

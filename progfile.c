@@ -7,6 +7,9 @@
 
 
 // opaque structure
+/**
+ * An opaque structure representing a file.
+ */
 struct c_progfile {
     size_t size; // File size
     size_t pos;  // position in file
