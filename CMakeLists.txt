@@ -15,7 +15,8 @@ add_executable(ifj21
         dynstring.c dynstring.h
         parser.c parser.h
         tests/tests.c tests/tests.h
-        expressions.c expressions.h)
+        expressions.c expressions.h
+        )
 
 add_compile_options(-DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
 #add_compile_options(-DDEBUG_SCANNER)
@@ -34,3 +35,4 @@ add_executable(test_scanner
         progfile.c progfile.h
         tests/tests.c tests/tests.h
         )
+
