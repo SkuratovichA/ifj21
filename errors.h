@@ -1,6 +1,6 @@
 #pragma once
 
-// assert a condition and exit with an error_interface code if condition is false
+// assert a condition and exit with an error code if condition is false
 #define soft_assert(cond, err) \
 do { \
     if (!(cond)) { \
@@ -14,7 +14,7 @@ do { \
 } while (0)
 
 /**
- * All error_interface codes.
+ * All error codes.
  */
 enum errors {
     ERROR_LEXICAL = 1,
