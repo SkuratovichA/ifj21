@@ -573,6 +573,7 @@ static bool program(pfile_t *pfile) {
     debug_msg("<program> ->\n");
 
     // require keyword
+    EXPECTED(KEYWORD_require);
 
     // "ifj21" which is a prolog string after require keyword
     if (Scanner.get_curr_token().type != TOKEN_STR) {
