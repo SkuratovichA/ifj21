@@ -21,7 +21,7 @@
 /**
  * @brief Covert state to string.
  *
- * @param s
+ * @param s state
  * @return String that represent state.
  */
 static char *state_tostring(const int s) {
