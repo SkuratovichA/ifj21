@@ -618,7 +618,7 @@ static token_t scanner(pfile_t *pfile) {
             lines++;
             charpos = 0;
             goto next_lexeme;
-            token = (token_t) {.type = TOKEN_EOL};
+            // token = (token_t) {.type = TOKEN_EOL};
             break;
 
         case_2('\t', ' '):
@@ -790,6 +790,7 @@ static size_t Get_charpos() {
  */
 // ==============================================
 static void Free_scanner() {
+
     if (prev.type == TOKEN_ID || prev.type == TOKEN_STR) {
         Dynstring.free(&prev.attribute.id);
     }
@@ -859,6 +860,7 @@ int MAIN(const int argc, const char **argv) {
     }
     Pfile.free(pfile);
 
+
     // identifier ok
     printf("Test 5 - identifiers, good\n");
     pfile = Pfile.getfile("../tests/identif_ok.tl", "r");
@@ -896,6 +898,7 @@ int MAIN(const int argc, const char **argv) {
         Tests.failed("Cannot open the file!\n");
     }
     Pfile.free(pfile);
+
 
     //********************************************************************//
     //********************************************************************//

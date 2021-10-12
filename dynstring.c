@@ -139,7 +139,7 @@ static dynstring_t Str_cat(dynstring_t *s1, dynstring_t *s2) {
  * Interface to use when dealing with dynstrings.
  * Functions are in struct so we can use them in different files.
  */
-const struct dynstring_interface_i Dynstring = {
+const struct dynstring_interface_t Dynstring = {
         /*@{*/
         .create         = Str_create,
         .length         = Str_length,

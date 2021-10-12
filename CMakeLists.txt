@@ -22,6 +22,7 @@ add_compile_options(-DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno
 #add_compile_options(-DDEBUG_SCANNER)
 
 
+
 add_compile_options(-DSELFTEST -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
 add_executable(test_scanner
         scanner.c scanner.h

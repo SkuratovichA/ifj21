@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "scanner.h"
 #include "errors.h"
+
 #include "expressions.h"
 
 static void print_expected_err(const char *a, const char *b) {
@@ -219,7 +220,6 @@ static bool repeat_body(pfile_t *pfile) {
     //fun_body(pfile);
 }
 
-
 /**
  * @brief Statement inside the function
  * rule <fun_body> -> return expression //todo
@@ -341,6 +341,7 @@ static bool other_funparams(pfile_t *pfile) {
     }
 
     EXPECTED(TOKEN_ID);
+
 
     return other_funparams(pfile);
 }
@@ -472,6 +473,7 @@ static bool stmt(pfile_t *pfile) {
             // global
             EXPECTED(KEYWORD_global);
 
+
             // function name
             EXPECTED(TOKEN_ID);
 
@@ -570,7 +572,6 @@ static bool program(pfile_t *pfile) {
     debug_msg("<program> ->\n");
 
     // require keyword
-    EXPECTED(KEYWORD_require);
 
     // "ifj21" which is a prolog string after require keyword
     if (Scanner.get_curr_token().type != TOKEN_STR) {
@@ -611,6 +612,7 @@ static bool Analyse(pfile_t *pfile) {
     res = program(pfile);
 
     // dont forget to free
+
     Scanner.free();
 
     return res;
@@ -619,6 +621,6 @@ static bool Analyse(pfile_t *pfile) {
 /**
  * parser interface.
  */
-const struct parser_interface_i Parser = {
+const struct parser_interface_t Parser = {
         .analyse = Analyse
 };

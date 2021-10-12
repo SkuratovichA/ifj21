@@ -6,7 +6,7 @@ static int error;
 
 /**
  * @brief Error getter.
- *
+
  * @return return errorcode defined in error.h, which has been set or 0.
  */
 static int Get_error() {
@@ -23,17 +23,17 @@ static void Set_error(int errcode) {
     char *errmsg = "BLASPHEMOUS RUMORS!";
     switch (errcode) {
         case ERROR_LEXICAL:
-            // 1 - lexical error
-            errmsg = "Lexical error";
+            // 1 - lexical error_interface
+            errmsg = "Lexical error_interface";
             break;
         case ERROR_SYNTAX:
-            // 2 - syntactic error
-            errmsg = "Syntax error";
+            // 2 - syntactic error_interface
+            errmsg = "Syntax error_interface";
             break;
         case ERROR_UNDEF_FUN_OR_VAR:
-            // todo: does it want to add more error messages? i.e undefined function, undefined variable ...
+            // todo: does it want to add more error_interface messages? i.e undefined function, undefined variable ...
             // case ERROR_UNDEFINED_FUNCTION:
-            // 3 - semantic error in the program - undefined function/variable, attempt of redefining the variable,. ..
+            // 3 - semantic error_interface in the program - undefined function/variable, attempt of redefining the variable,. ..
             errmsg = "Undefined function/variable!";
             break;
         case ERROR_TYPE_MISSMATCH:
@@ -41,28 +41,28 @@ static void Set_error(int errcode) {
             errmsg = "Type missmatch!";
             break;
         case ERROR_SEMANTICS_NUMBER_PARAMETERS:
-            // 5 - semantic error - wrong number/type of parameters(function calling/return) or return values
+            // 5 - semantic error_interface - wrong number/type of parameters(function calling/return) or return values
             errmsg = "Wrong number of parameters/return values!";
             break;
         case ERROR_SEMANTICS_TYPE_INCOMPATABLE:
-            // 6 - semantic error of type compatibility in arithmetic, string and relation operators.
-            errmsg = "Type incompatibility error!";
+            // 6 - semantic error_interface of type compatibility in arithmetic, string and relation operators.
+            errmsg = "Type incompatibility error_interface!";
             break;
         case ERROR_SEMANTICS_OTHER:
             // 7 - other semantic errors.
-            errmsg = "Semantic error!";
+            errmsg = "Semantic error_interface!";
             break;
         case ERROR_RUNTIME_NIL:
-            // 8 - runtime error while working with nil constant.
-            errmsg = "nil assignment error!";
+            // 8 - runtime error_interface while working with nil constant.
+            errmsg = "nil assignment error_interface!";
             break;
         case ERROR_RUNTIME_DIV_BY_ZERO:
-            // 9 - runtime error of division by 0.
-            errmsg = "Division by zero error";
+            // 9 - runtime error_interface of division by 0.
+            errmsg = "Division by zero error_interface";
             break;
         case ERROR_INTERNAL:
-            // 99 - internal compiler error - not affected by program input (memory management error, ...).
-            errmsg = "Internal error";
+            // 99 - internal compiler error_interface - not affected by program input (memory management error_interface, ...).
+            errmsg = "Internal error_interface";
             break;
         default:
             break;

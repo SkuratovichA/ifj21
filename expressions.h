@@ -2,8 +2,8 @@
 
 #include "progfile.h"
 
-struct expr_interface_i {
+struct expr_interface_t {
     bool (*parse)(pfile_t *);
 };
 
-extern const struct expr_interface_i Expr;
+extern const struct expr_interface_t Expr;

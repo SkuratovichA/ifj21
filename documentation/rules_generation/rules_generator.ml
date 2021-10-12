@@ -13,7 +13,7 @@ let term = "[a-zA-Z_]+[0-9]*[a-zA-Z_]*"
 let nonterm = "<" ^ term ^ ">"
 let r_nonterm = regexp nonterm
 let deriv = "->"
-let todo = "TODO"
+
 
 let rec merge list1 list2 =
     match list1, list2 with

@@ -20,7 +20,8 @@ typedef struct dynstring {
 /**
  * A structure that store pointers to all the functions from dynstring_t.c. So we can use them in different files as interface.
  */
-struct dynstring_interface_i {
+struct dynstring_interface_t {
+
     /**
      * @brief Create a dynstring_t from a c_string, with length(@param str + STRSIZE).
      *
@@ -89,4 +90,4 @@ struct dynstring_interface_i {
 
 
 // Functions from dynstring_t.c will be visible in different file under Dynstring name.
-extern const struct dynstring_interface_i Dynstring;
+extern const struct dynstring_interface_t Dynstring;

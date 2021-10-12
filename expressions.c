@@ -11,13 +11,12 @@
  * @return true or false.
  */
 static bool Parse_expression(pfile_t *pfile) {
-
     return false;
 }
 
 /**
  * Functions are in struct so we can use them in different files.
  */
-const struct expr_interface_i Expr = {
+const struct expr_interface_t Expr = {
         .parse = Parse_expression,
 };

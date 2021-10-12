@@ -14,7 +14,7 @@ do { \
 } while (0)
 
 /**
- * All error codes.
+ * All error_interface codes.
  */
 enum errors {
     ERROR_LEXICAL = 1,
