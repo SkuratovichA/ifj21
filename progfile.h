@@ -15,12 +15,12 @@
 typedef struct c_progfile pfile_t;
 
 
-extern const struct pfile_interface Pfile;
+extern const struct pfile_interface_t Pfile;
 
 /**
  * Interface to use when dealing with file.
  */
-struct pfile_interface {
+struct pfile_interface_t {
     /**
      * @brief Store file to progfile structure.
      *

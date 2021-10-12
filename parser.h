@@ -20,6 +20,6 @@
 
 extern const struct parser_interface_t Parser;
 
-struct parser_interface_i {
+struct parser_interface_t {
     bool (*analyse)(pfile_t *);
 };

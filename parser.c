@@ -218,6 +218,7 @@ static bool repeat_body(pfile_t *pfile) {
 
     // TODO: see TODO(q) for more information.
     //fun_body(pfile);
+    return false;
 }
 
 /**
