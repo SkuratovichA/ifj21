@@ -163,13 +163,13 @@ static inline bool datatype(pfile_t *pfile) {
 
     switch (Scanner.get_curr_token().type) {
         case KEYWORD_string:
-            EXPECTED(KEYWORD_number);
+            EXPECTED(KEYWORD_string);
             break;
         case KEYWORD_boolean:
-            EXPECTED(KEYWORD_number);
+            EXPECTED(KEYWORD_boolean);
             break;
         case KEYWORD_integer:
-            EXPECTED(KEYWORD_number);
+            EXPECTED(KEYWORD_integer);
             break;
         case KEYWORD_number:
             EXPECTED(KEYWORD_number);
