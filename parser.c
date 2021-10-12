@@ -32,6 +32,7 @@ do { \
 } while(0)
 
 
+// if there's a condition of type '<a> -> b | c', you have to add EXPECTED_OPT(b) in the function.
 #define EXPECTED_OPT(toktype) \
 do { \
     if (Scanner.get_curr_token().type == (toktype)) { \
@@ -83,13 +84,13 @@ static bool other_expr(pfile_t *pfile) {
 /**
  * @brief Expression list. TODO: probably this rule will be the part of Expr.parse().
  *
- * !rule <expr_list> -> ) | expr <other_expr>
+ * !rule <list_expr> -> ) | expr <other_expr>
  *
  * @param pfile structure representing the program.
  * @return true iff rule derives its production successfully else  false with with an error message otherwise.
  */
-static bool expr_list(pfile_t *pfile) {
-    debug_msg_s("<expr_list> -> \n");
+static bool list_expr(pfile_t *pfile) {
+    debug_msg_s("<list_expr> -> \n");
 
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
@@ -195,10 +196,9 @@ static bool fun_stmt(pfile_t *);
 static bool repeat_body(pfile_t *pfile) {
     debug_msg_s("<repeat_body> -> \n");
 
+    // until |
     EXPECTED_OPT(KEYWORD_until);
 
-    // TODO: see TODO(q) for more information.
-    //fun_body(pfile);
 
     // a new solution which doesnt have to cause problems. But not tested yet, so i dont know.
     return fun_stmt(pfile) && repeat_body(pfile);
@@ -230,37 +230,79 @@ static bool assignment(pfile_t *pfile) {
     return true;
 }
 
+/**
+ * @brief Other identifiers followed by a comma. Ends with =.
+ *
+ * !rule <other_identifiers> -> = | , id <other_identifiers>
+ *
+ * @param pfile @param pfile structure representing the program filethe input program file
+ * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error message otherwise
+ */
+static bool other_identifiers(pfile_t *pfile) {
+    debug_msg_s("<other_identifiers> -> \n");
+
+    // '=' |
+    EXPECTED_OPT(TOKEN_ASSIGN);
+
+    // ,
+    EXPECTED(TOKEN_COMMA);
+
+    // id
+    EXPECTED(TOKEN_ID);
+
+    // <other_identifiers>
+    return other_identifiers(pfile);
+}
+
+/**
+ * @brief Start the list with identifiers.
+ *
+ * !rule <list_identif> -> id <other_identifiers>
+ *
+ * @param pfile input file for a scanner to get next token.
+ * @return true or false.
+ */
+static bool list_identif(pfile_t *pfile) {
+    debug_msg_s("<list_identif> -> \n");
+
+    // id
+    EXPECTED(TOKEN_ID);
+
+    // <other_identifiers>
+    return other_identifiers(pfile);
+}
 
 /**
  * @brief Statement inside the function.
  *
- *** The easiest statements.
+ *** The easiest statements:
  * !rule <fun_stmt> -> e
- * !rule <fun_stmt> -> return expression
+ * !rule <fun_stmt> -> return <list_expr>
  * !rule <fun_stmt> -> local id : <datatype> <assignment>
  *
  *
  *
- *** Cycles
+ *** Cycles:
  ** A basic assignment.
  * !rule <fun_stmt> -> while <expr> do <fun_body>
  ** A premium part.
- * // todo: deal with <repeat_body> somehow, because there must not be 'end' at the end.
  * !rule <fun_stmt> -> repeat <repeat_body>
  * // for i = 1, i < 10 do ... end
  * !rule <fun_stmt> -> for id = expression, expression do <fun_body>
-
  *
- * // statements
+ *
+ *
+ *** Statements:
  * // if cond_stmt which is <cond_stmt> -> else <fun_body> end | <elseif> <fun_body> end | <fun_body> end
  * !rule <fun_stmt> -> if <cond_stmt>
  *
  *
  *
- * // expressions: function calling, assignment.
- * todo:  deal with the same terminals on the lhs of the rhs of the rule
- * rule <fun_stmt> -> expr // todo e.g x = fun(a + b, c + d, fun()) or a = b or fun(a, b, c)
- * rule <fun_stmt> -> expr <more_expressions> = expression // todo x = fun(a, b)
+ *** Expressions: function calling, assignments, conditions.
+ * rule <fun_stmt> -> <expr_list> = <list_expr> todo: or something like that
+ * just function calls, e.g. f + foo(baz(bar())) or soo(qua())
+ *
+ *
  *
  * @param pfile structure representing the input file for Scanner.
  * @return true iff rule derives its production successfully else false with setting an error variable via Error.set_error()
@@ -291,11 +333,11 @@ static bool fun_stmt(pfile_t *pfile) {
             assignment(pfile); // assignment
             break;
 
-            // return <expr_list>
+            // return <list_expr>
         case KEYWORD_return:
             EXPECTED(KEYWORD_return);
             // return expr, expr, expr.
-            if (!expr_list(pfile)) {
+            if (!list_expr(pfile)) {
                 return false;
             }
             break;
@@ -316,11 +358,9 @@ static bool fun_stmt(pfile_t *pfile) {
             }
             break;
 
+            // repeat <some_body> until expression
         case KEYWORD_repeat:
             EXPECTED(KEYWORD_repeat);
-            if (!repeat_body(pfile)) {
-                return false;
-            }
 
             // TODO:
             // I am not sure about it.
@@ -329,6 +369,9 @@ static bool fun_stmt(pfile_t *pfile) {
             // we will need to perfom semantic analysis and AST generation, so I am really not sure how to do this.
             // Why ? because in a function there is easy to understand what is added to the symtable, while
             // in the current implementation it probably can be more complicated to understand what will be added to the adt.
+            if (!repeat_body(pfile)) {
+                return false;
+            }
 
             // expression represent a condition after an until keyword.
             if (!Expr.parse(pfile)) {
@@ -336,6 +379,37 @@ static bool fun_stmt(pfile_t *pfile) {
             }
             break;
 
+            // rule <fun_stmt> -> for id = expression, expression do <fun_body>
+        case KEYWORD_for:
+            EXPECTED(KEYWORD_for); // for
+
+            // a, b, c.
+            // TODO: so prodbably we can use rule from function statements, e.g.
+            // a, b, c, d = function()
+            // a, b, c, d = b, d, c, a
+            if (!list_identif(pfile)) {
+                return false;
+            }
+
+            // '='
+            EXPECTED(TOKEN_ASSIGN);
+
+            // <list_expr>
+            if (!list_expr(pfile)) {
+                return false;
+            }
+
+            // do
+            EXPECTED(KEYWORD_do);
+
+            // <fun_body>, which ends with 'end'
+            if (!fun_body(pfile)) {
+                return false;
+            }
+            break;
+
+
+            // todo: add expressions.
         default:
             // at the end try to parse an expression, because actually recursive descent parser know nothing
             // about them so there "probably" can be an expression here.
@@ -353,7 +427,7 @@ static bool fun_stmt(pfile_t *pfile) {
  * !rule <fun_body> -> <fun_stmt> <fun_body>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
+ * @return true or true or false.
  */
 static bool fun_body(pfile_t *pfile) {
     debug_msg("<fun_body> ->\n");
@@ -370,7 +444,7 @@ static bool fun_body(pfile_t *pfile) {
  * !rule <other_funparams> -> ) | , <datatype> id <other_funparams>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
+ * @return You know.
  */
 static bool other_funparams(pfile_t *pfile) {
     debug_msg("<other_funparam> ->\n");
@@ -398,7 +472,7 @@ static bool other_funparams(pfile_t *pfile) {
  * !rule <funparam_def_list> -> ) | <datatype> id <other_funparams>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
+ * @return this is not an autogenerated comment.
  */
 static bool funparam_def_list(pfile_t *pfile) {
     debug_msg("funparam_def_list ->\n");
@@ -423,7 +497,7 @@ static bool funparam_def_list(pfile_t *pfile) {
  * !rule <other_datatypes> -> ) | , <datatype> <other_datatypes>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
+ * @return bool.
  */
 static bool other_datatypes(pfile_t *pfile) {
     debug_msg("<other_datatypes> ->\n");
@@ -441,7 +515,7 @@ static bool other_datatypes(pfile_t *pfile) {
  * !rule <dataype_list> -> <datatype> <other_datatypes> | )
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
+ * @return Some x
  */
 static bool datatype_list(pfile_t *pfile) {
     debug_msg("<datatype_list> ->\n");
@@ -481,7 +555,7 @@ static bool other_funrets(pfile_t *pfile) {
  * !rule <funretopt> -> e | : <datatype> <other_funrets>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
+ * @return back to Belarus is you dont implement expressions :(.
  */
 static bool funretopt(pfile_t *pfile) {
     debug_msg("<funretopt> ->\n");
@@ -504,14 +578,13 @@ static bool funretopt(pfile_t *pfile) {
  *
  * function declaration: !rule <stmt> -> global id : function ( <datatype_list> <funcretopt>
  * function definition: !rule <stmt> -> function id ( <funparam_def_list> <funretopt>
- * function calling: !rule <stmt> -> id ( <expr_list>
+ * function calling: !rule <stmt> -> id ( <list_expr>
  *
  * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
+ * @return false true.
  */
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
-    token_t tok; // for debug
 
     switch (Scanner.get_curr_token().type) {
         // function declaration: global id : function ( <datatype_list> <funcretopt>
@@ -563,26 +636,27 @@ static bool stmt(pfile_t *pfile) {
                 return false;
             }
 
+            // <fun_body>
             if (!fun_body(pfile)) {
                 return false;
             }
-
             break;
 
-        default:
-            // function call:
-            // <stmt> -> id ( expr_list
-            if (Scanner.get_curr_token().type == TOKEN_ID) {
-                EXPECTED(TOKEN_ID);
-                return expr_list(pfile);
-            } else {
-                debug_todo(
-                        "Add more <stmt> derivations, if there are so. Otherwise return an error_interface message\n");
-                debug_msg("Got token: %s\n", Scanner.to_string(Scanner.get_curr_token().type));
-                debug_msg("Line: %zu, position: %zu\n", Scanner.get_line(), Scanner.get_charpos());
-                Errors.set_error(ERROR_SYNTAX);
+            // function calling: id ( <list_expr> )
+        case TOKEN_ID:
+            EXPECTED(TOKEN_ID);
+            // <list_expr>
+            if (!list_expr(pfile)) {
                 return false;
             }
+            break;
+        default:
+            debug_todo(
+                    "Add more <stmt> derivations, if there are so. Otherwise return an error_interface message\n");
+            debug_msg("Got token: %s\n", Scanner.to_string(Scanner.get_curr_token().type));
+            debug_msg("Line: %zu, position: %zu\n", Scanner.get_line(), Scanner.get_charpos());
+            Errors.set_error(ERROR_SYNTAX);
+            return false;
     }
     return true;
 }
@@ -609,8 +683,8 @@ static bool stmt_list(pfile_t *pfile) {
  * @brief Program(start) rule.
  * !rule <program> -> require "ifj21" <stmt_list>
  *
- * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based on the production rule(described above)
+ * @param pfile structure representing the input program.
+ * @return paobably true. Or false.
  */
 static bool program(pfile_t *pfile) {
     dynstring_t prolog_str = Dynstring.create("ifj21");

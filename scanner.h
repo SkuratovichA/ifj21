@@ -189,7 +189,8 @@ struct scanner_interface {
     X(read) \
     X(write) \
     X(global) \
-    X(require)
+    X(require) \
+    X(for)
 
 
 typedef enum keywords {
