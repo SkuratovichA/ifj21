@@ -4,16 +4,19 @@
 
 static int error;
 
+/**
+ * @brief Error getter.
+
+ * @return return errorcode defined in error.h, which has been set or 0.
+ */
 static int Get_error() {
     return error;
 }
 
 /**
- * @brief Print error_interface message to stderr.
+ * @brief Error setter.
  *
- * @param errcode Errors codes are defined in errors.h
- * @return return errorcode number that is specified in macros.h
- *
+ * @param errcode Errors codes are defined in errors.h.
  */
 static void Set_error(int errcode) {
 

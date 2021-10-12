@@ -14,6 +14,7 @@ let nonterm = "<" ^ term ^ ">"
 let r_nonterm = regexp nonterm
 let deriv = "->"
 
+
 let rec merge list1 list2 =
     match list1, list2 with
         | [], _ -> list2

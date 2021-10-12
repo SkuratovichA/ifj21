@@ -14,6 +14,7 @@
  */
 typedef struct c_progfile pfile_t;
 
+
 extern const struct pfile_interface Pfile;
 
 /**
@@ -105,5 +106,5 @@ struct pfile_interface {
      * @return pointer on pfile_t or NULL
      */
     pfile_t *(*ctor)(char *);
-
 };
+

@@ -9,20 +9,20 @@
 #endif // DEBUG_DYNSTIRNG
 
 /**
-   * @brief Create a dynstring_t from a c_string, with length(@param str + STRSIZE)
-   *
-   * @param s static c dynstring_t.
-   * @param s Char that to convert to dynstring_t.
-   * @return pointer to the dynstring_t object.
-   */
+ * @brief Create a dynstring_t from a c_string, with length(@param str) + STRSIZE
+ *
+ * @param s static c dynstring_t.
+ * @param s Char that to convert to dynstring_t.
+ * @return pointer to the dynstring_t object.
+ */
 static dynstring_t Str_create(const char *s) {
     soft_assert(s, ERROR_INTERNAL); // dont deal with NULLptr
 
     size_t length = strlen(s);
     dynstring_t str = {
             .len = length,
-            .allocated_size = length + STRSIZE - 1,
-            .str = calloc(1, sizeof(dynstring_t) + length + STRSIZE),
+            .allocated_size = length + STRSIZE - 1, // - 1 need to be here not forget about a byte for \0
+            .str = calloc(1, length + STRSIZE),
     };
     soft_assert(str.str, ERROR_INTERNAL);
 
@@ -34,7 +34,7 @@ static dynstring_t Str_create(const char *s) {
 /**
  * @brief Get char * (c dynstring_t ending with '\0') from dynstring_t.
  *
- * @param str
+ * @param str dynstring_t object.
  * @return c dynstring_t representation.
  */
 static char *Str_c_str(dynstring_t str) {
@@ -45,7 +45,7 @@ static char *Str_c_str(dynstring_t str) {
 /**
  * @brief Return length of given dynstring_t.
  *
- * @param str
+ * @param str dynstring_t object.
  * @return len of dynstring_t
  */
 static size_t Str_length(dynstring_t *str) {
@@ -98,8 +98,8 @@ static void Str_append_char(dynstring_t *str, char ch) {
 /**
  * @brief Compare dynstring_t and char* using strcmp.
  *
- * @param s
- * @param s1
+ * @param s1 dynstring_t object.
+ * @param s2 dynstring_t object.
  * @returns -1, 0, 1 depends on lexicographical ordering of two strings.
  */
 static int Str_cmp(dynstring_t s1, dynstring_t s2) {
@@ -113,8 +113,8 @@ static int Str_cmp(dynstring_t s1, dynstring_t s2) {
 /**
  * @brief Concatenate two dynstrings in the not very efficient way.
  *
- * @param s1
- * @param s2
+ * @param s1 dynstring_t object.
+ * @param s2 dynstring_t object.
  * @returns new dysntring, which is product of s1 and s2.
  */
 static dynstring_t Str_cat(dynstring_t *s1, dynstring_t *s2) {
@@ -139,7 +139,7 @@ static dynstring_t Str_cat(dynstring_t *s1, dynstring_t *s2) {
  * Interface to use when dealing with dynstrings.
  * Functions are in struct so we can use them in different files.
  */
-const dynstring_interface Dynstring = {
+const struct dynstring_interface_t Dynstring = {
         /*@{*/
         .create         = Str_create,
         .length         = Str_length,

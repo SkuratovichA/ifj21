@@ -7,12 +7,42 @@
 
 
 // opaque structure
+/**
+ * An opaque structure representing a file.
+ */
 struct c_progfile {
     size_t size; // File size
     size_t pos;  // position in file
     char tape[];
 };
 
+static pfile_t *Ctor(char *tape) {
+    pfile_t *pfile;
+    if (!tape) {
+        goto err0;
+    }
+    size_t len = strlen(tape);
+
+    pfile = calloc(1, len + 1 + sizeof(pfile_t));
+    if (!pfile) {
+        goto err0;
+    }
+
+    memcpy(pfile->tape, tape, len + 1);
+    pfile->size = len;
+
+    return pfile;
+    err0:
+    Errors.set_error(ERROR_INTERNAL);
+    return NULL;
+}
+
+/**
+ * @brief Pfile constructor. Create a pfile object using memcpy from a char *. FIts for tests.
+ *
+ * @param pfile char array which become a tape.
+ * @return new pfile object.
+ */
 static pfile_t *Ctor(char *tape) {
     pfile_t *pfile;
     if (!tape) {
@@ -223,7 +253,7 @@ static pfile_t *Getfile(const char *filename, const char *mode) {
 /**
  * Pfile interface.
  */
-const struct pfile_interface Pfile = {
+const struct pfile_interface_t Pfile = {
         .getfile = Getfile,
         .getfile_stdin  = Getfile_stdin,
         .free = Free,

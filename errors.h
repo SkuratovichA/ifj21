@@ -1,6 +1,6 @@
 #pragma once
 
-// assert a condition and exit with an error_interface code if condition is false
+// assert a condition and exit with an error code if condition is false
 #define soft_assert(cond, err) \
 do { \
     if (!(cond)) { \

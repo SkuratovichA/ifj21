@@ -618,6 +618,7 @@ static token_t scanner(pfile_t *pfile) {
             lines++;
             charpos = 0;
             goto next_lexeme;
+            // token = (token_t) {.type = TOKEN_EOL};
             break;
 
         case_2('\t', ' '):
@@ -641,7 +642,8 @@ static token_t scanner(pfile_t *pfile) {
                 Pfile.pgetc(pfile);
                 charpos++;
                 if (!process_comment(pfile)) {
-                    return (token_t) {.type = TOKEN_DEAD};
+                    token = (token_t) {.type = TOKEN_DEAD};
+                    break;
                 }
                 goto next_lexeme;
             }
@@ -702,7 +704,10 @@ static token_t scanner(pfile_t *pfile) {
             break;
     }
 
-    soft_assert(token.type != TOKEN_DEAD, ERROR_LEXICAL);
+    if (token.type == TOKEN_DEAD) {
+        Errors.set_error(ERROR_LEXICAL);
+        soft_assert(token.type != TOKEN_DEAD, ERROR_LEXICAL);
+    }
 
     return token;
 }
@@ -784,15 +789,14 @@ static size_t Get_charpos() {
  * @return void
  */
 // ==============================================
-static void Free_scanner(pfile_t *pfile) {
+static void Free_scanner() {
+
     if (prev.type == TOKEN_ID || prev.type == TOKEN_STR) {
         Dynstring.free(&prev.attribute.id);
     }
     if (curr.type == TOKEN_ID || curr.type == TOKEN_STR) {
         Dynstring.free(&curr.attribute.id);
     }
-    Pfile.free(pfile);
-    debug_msg("\tprogfile freed\n");
 }
 
 /**
@@ -837,28 +841,6 @@ int MAIN(const int argc, const char **argv) {
     }
     Pfile.free(pfile);
 
-    /*
-    // floats bad
-    printf("Test 2 - float numbers, bad\n");
-
-    pfile = Pfile.getfile("../tests/number_bad.tl", "r");
-    if (!pfile) {
-        goto nexttest2;
-    }
-    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type == TOKEN_NUM_F) {
-            Tests.failed("expected: got: with attribute:\n");
-        } else {
-            Tests.passed("%d\n", nu);
-        }// green [PASSED]
-    }
-    if (0) {
-        nexttest2:
-        Tests.failed("Cannot open the file!\n");
-    }
-     Pfile.free(pfile);
-    */
-
     // integer ok
     printf("Test 3 - integer numbers, good\n");
     pfile = Pfile.getfile("../tests/integer_ok.tl", "r");
@@ -878,26 +860,6 @@ int MAIN(const int argc, const char **argv) {
     }
     Pfile.free(pfile);
 
-    /*
-    // integer bad
-    printf("Test 4 - integer numbers, bad\n");
-    pfile = Pfile.getfile("../tests/integer_bad.tl", "r");
-    if (!pfile) {
-        goto nexttest4;
-    }
-    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type == TOKEN_NUM_I) {
-            Tests.failed("expected: got: with attribute:\n");
-        } else {
-            Tests.passed("%d\n", nu);
-        }// green [PASSED]
-    }
-    if (0) {
-        nexttest4:
-        Tests.failed("Cannot open the file!\n");
-    }
-     Pfile.free(pfile);
-    */
 
     // identifier ok
     printf("Test 5 - identifiers, good\n");
@@ -918,27 +880,6 @@ int MAIN(const int argc, const char **argv) {
     }
     Pfile.free(pfile);
 
-    /*
-    // identifier bad
-    printf("Test 6 - identifiers, bad\n");
-    pfile = Pfile.getfile("../tests/identif_bad.tl", "r");
-    if (!pfile) {
-        goto nexttest6;
-    }
-    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type == TOKEN_ID) {
-            Tests.failed("expected: got: with attribute:\n");
-        } else {
-            Tests.passed("%d\n", nu);
-        }// green [PASSED]
-    }
-    if (0) {
-        nexttest6:
-        Tests.failed("Cannot open the file!\n");
-    }
-     Pfile.free(pfile);
-    */
-
     // strings good
     printf("Test 7 - strings, good\n");
     pfile = Pfile.getfile("../tests/string_ok.tl", "r");
@@ -958,26 +899,6 @@ int MAIN(const int argc, const char **argv) {
     }
     Pfile.free(pfile);
 
-    /*
-    // strings bad
-    printf("Test 8 - strings, bad\n");
-    pfile = Pfile.getfile("../tests/string_bad.tl", "r");
-    if (!pfile) {
-        goto nexttest8;
-    }
-    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type == TOKEN_STR) {
-            Tests.failed("expected: got: with attribute:\n");
-        } else {
-            Tests.passed("%d\n", nu);
-        }// green [PASSED]
-    }
-    if (0) {
-        nexttest8:
-        Tests.failed("Cannot open the file!\n");
-    }
-     Pfile.free(pfile);
-    */
 
     //********************************************************************//
     //********************************************************************//
