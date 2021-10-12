@@ -617,6 +617,7 @@ static token_t scanner(pfile_t *pfile) {
         case '\n':
             lines++;
             charpos = 0;
+            goto next_lexeme;
             token = (token_t) {.type = TOKEN_EOL};
             break;
 
@@ -703,7 +704,10 @@ static token_t scanner(pfile_t *pfile) {
             break;
     }
 
-    soft_assert(token.type != TOKEN_DEAD, ERROR_LEXICAL);
+    if (token.type == TOKEN_DEAD) {
+        Errors.set_error(ERROR_LEXICAL);
+        soft_assert(token.type != TOKEN_DEAD, ERROR_LEXICAL);
+    }
 
     return token;
 }
