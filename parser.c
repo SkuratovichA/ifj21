@@ -104,48 +104,39 @@ static bool expr_list(pfile_t *pfile) {
 }
 
 
-/** // FIXME viz TODO(q) for more info
- * @brief Unmatched part of a conditional statement. Can be empty(premium assignment),
- * else <fun_body>  or elseif <cond_stmt>.
+/**
+ * @brief Conditional expression body implemented with an extension. Contains statements.
+ * !rule <cond_body> -> else <fun_stmt> <cond_body>
+ * !rule <cond_body> -> elseif <cond_stmt>
  *
- * !rule <unmatched_part> -> else <fun_body> | elseif <cond_stmt> | e
+ * // todo: im not really sure about this rule.
+ * !rule <cond_body> -> <fun_body>
  *
- * @param pfile structure representing the program filethe input program file
- * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error_interface message otherwise
+ * @param pfile structure representing the program the input program.
+ * @return true iff rule derives its production successfully else set an error code and false.
  */
-static bool unmatched_part(pfile_t *pfile) {
-    debug_msg_s("<unmatched_part> -> \n");
+static bool cond_body(pfile_t *pfile) {
+    debug_msg_s("<cond_body> -> \n");
 
-    switch (Scanner.get_curr_token().type) {
-        // else <fun_body>
-        case KEYWORD_else:
-            EXPECTED(KEYWORD_else);
-            if (!fun_body(pfile)) {
-                return false;
-            }
-            break;
-            // elseif <cond_stmt>
-        case KEYWORD_elseif:
-            EXPECTED(KEYWORD_elseif);
-            if (!cond_stmt(pfile)) {
-                return false;
-            }
-            break;
-
-            // e
-        default:
-            break;
+    // else
+    if (Scanner.get_curr_token().type == KEYWORD_else) {
+        return fun_body(pfile);
     }
-    return true;
+    // elseif expression then
+    if (Scanner.get_curr_token().type == KEYWORD_elseif) {
+        return cond_stmt(pfile);
+    }
+
+    return fun_body(pfile);
 }
 
 /**
- * @brief // FIXME reimplement me without e rules
+ * @brief Conditional(if or elseif statement). Contains an expression and body.
  *
- * !rule <cond_stmt> -> expr then <fun_body> <unmatched_part>
+ * !rule <cond_stmt> -> expr then <cond_body>
  *
- * @param pfile structure representing the program filethe input program file
- * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error_interface message otherwise
+ * @param pfile structure representing the input file.
+ * @return true iff rule derives its production successfully false with Errors.set_error() otherwise.
  */
 static bool cond_stmt(pfile_t *pfile) {
     debug_msg_s("<cond_stmt> -> \n");
@@ -155,21 +146,8 @@ static bool cond_stmt(pfile_t *pfile) {
     }
 
     EXPECTED(KEYWORD_then);
-//    // TODO(q): i dont know yet how to deal with statment inside if body...
-//    // why dont i know? because I have no idea where to find a terminal for breaking the recursion.
-//    // it's however possible to use obvious solution - e transition. But e transitions will only complicate parsing...
-//    // also <fun_body> has transition: <fun_body> -> end and it makes no sense in this case.
-//    //
-//    if (!fun_body(pfile)) {
-//        return false;
-//    }
 
-    // unmathed part can either be e(perhaps?) or else/else if ... end
-    if (!unmatched_part(pfile)) {
-        return false;
-    }
-
-    return true;
+    return cond_body(pfile);
 }
 
 /**
@@ -203,13 +181,16 @@ static inline bool datatype(pfile_t *pfile) {
     return true;
 }
 
+static bool fun_stmt(pfile_t *);
+
 /**
- * @brief
+ * @brief Repeat body - function represent body of a repeat-until cycle.
+ * Function terminates when a keyword until is found on the input.
  *
- * !rule <repeat_body> -> until | <fun_body>
+ * !rule <repeat_body> -> until | <fun_stmt> <repeat_body>
  *
  * @param pfile for scanner.
- * @return true or false with Errors.set_error()
+ * @return true if success or false with Errors.set_error().
  */
 static bool repeat_body(pfile_t *pfile) {
     debug_msg_s("<repeat_body> -> \n");
@@ -218,30 +199,74 @@ static bool repeat_body(pfile_t *pfile) {
 
     // TODO: see TODO(q) for more information.
     //fun_body(pfile);
-    return false;
+
+    // a new solution which doesnt have to cause problems. But not tested yet, so i dont know.
+    return fun_stmt(pfile) && repeat_body(pfile);
 }
 
+
 /**
- * @brief Statement inside the function
- * rule <fun_body> -> return expression //todo
- * rule <fun_body> -> local id : <datatype> //todo
+ * @brief Optional assignment after a local variable declaration.
  *
- * todo:  deal with the same terminals on the lhs of the rhs of the rule
- * rule <fun_body> -> expr // todo e.g x = fun(a + b, c + d, fun()) or a = b or fun(a, b, c)
- * rule <fun_body> -> expr <more_expressions> = <expression> // todo x = fun(a, b)
+ * !rule <assignment> -> e | = expression
  *
- * // cycles
- * rule <fun_body> -> repeat <repeat_body> // todo
- * rule <body> -> while <expr> do <cycle_body>
+ * @param pfile stucture with an input file to feed it to Scanner.
+ * @return Success or an error.
+ */
+static bool assignment(pfile_t *pfile) {
+    debug_msg_s("<assignment> -> \n");
+
+    // e |
+    if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
+        return true;
+    }
+    EXPECTED(TOKEN_ASSIGN);
+
+    // expression
+    if (!Expr.parse(pfile)) {
+        return false;
+    }
+
+    return true;
+}
+
+
+/**
+ * @brief Statement inside the function.
+ *
+ *** The easiest statements.
+ * !rule <fun_stmt> -> e
+ * !rule <fun_stmt> -> return expression
+ * !rule <fun_stmt> -> local id : <datatype> <assignment>
+ *
+ *
+ *
+ *** Cycles
+ ** A basic assignment.
+ * !rule <fun_stmt> -> while <expr> do <fun_body>
+ ** A premium part.
+ * // todo: deal with <repeat_body> somehow, because there must not be 'end' at the end.
+ * !rule <fun_stmt> -> repeat <repeat_body>
+ * // for i = 1, i < 10 do ... end
+ * !rule <fun_stmt> -> for id = expression, expression do <fun_body>
+
  *
  * // statements
- * !rule <fun_body> -> if <cond_stmt> end
+ * // if cond_stmt which is <cond_stmt> -> else <fun_body> end | <elseif> <fun_body> end | <fun_body> end
+ * !rule <fun_stmt> -> if <cond_stmt>
  *
- * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
+ *
+ *
+ * // expressions: function calling, assignment.
+ * todo:  deal with the same terminals on the lhs of the rhs of the rule
+ * rule <fun_stmt> -> expr // todo e.g x = fun(a + b, c + d, fun()) or a = b or fun(a, b, c)
+ * rule <fun_stmt> -> expr <more_expressions> = expression // todo x = fun(a, b)
+ *
+ * @param pfile structure representing the input file for Scanner.
+ * @return true iff rule derives its production successfully else false with setting an error variable via Error.set_error()
  */
-static bool fun_body(pfile_t *pfile) {
-    debug_msg("<fun_body> ->\n");
+static bool fun_stmt(pfile_t *pfile) {
+    debug_msg_s("<fun_stmt> -> \n");
 
     switch (Scanner.get_curr_token().type) {
         // if <cond_stmt>
@@ -253,15 +278,39 @@ static bool fun_body(pfile_t *pfile) {
             }
             break;
 
-            // while <expr> do <body>
+            // local id : <datatype>
+        case KEYWORD_local:
+            EXPECTED(KEYWORD_local); // local
+            EXPECTED(TOKEN_ID); // id
+            EXPECTED(TOKEN_COLON); // :
+            if (!datatype(pfile)) { // <datatype>
+                return false;
+            }
+
+            // = expr, but can also be an empty statement.
+            assignment(pfile); // assignment
+            break;
+
+            // return <expr_list>
+        case KEYWORD_return:
+            EXPECTED(KEYWORD_return);
+            // return expr, expr, expr.
+            if (!expr_list(pfile)) {
+                return false;
+            }
+            break;
+
+            // while <expr> do <fun_body> end
         case KEYWORD_while:
             EXPECTED(KEYWORD_while);
+
+            // parse expressions
             if (Expr.parse(pfile)) {
                 return false;
             }
             EXPECTED(KEYWORD_do);
-            //  there's no problem with while statements, because they end with 'end' keyword,
-            // so we can just use <fun_body> for while body, because we get <end> as a recursion break.
+
+            // get a body('end' at the end)
             if (!fun_body(pfile)) {
                 return false;
             }
@@ -280,33 +329,12 @@ static bool fun_body(pfile_t *pfile) {
             // we will need to perfom semantic analysis and AST generation, so I am really not sure how to do this.
             // Why ? because in a function there is easy to understand what is added to the symtable, while
             // in the current implementation it probably can be more complicated to understand what will be added to the adt.
+
+            // expression represent a condition after an until keyword.
             if (!Expr.parse(pfile)) {
                 return false;
             }
             break;
-
-            // local id : <datatype>
-        case KEYWORD_local:
-            EXPECTED(KEYWORD_local); // local
-            EXPECTED(TOKEN_ID); // id
-            EXPECTED(TOKEN_COLON); // :
-            if (!datatype(pfile)) { // <datatype>
-                return false;
-            }
-            break;
-
-            // return expr_list
-        case KEYWORD_return:
-            EXPECTED(KEYWORD_return);
-            if (!expr_list(pfile)) {
-                return false;
-            }
-            break;
-
-            // end of the function
-        case KEYWORD_end:
-            EXPECTED(KEYWORD_end);
-            return true;
 
         default:
             // at the end try to parse an expression, because actually recursive descent parser know nothing
@@ -316,7 +344,24 @@ static bool fun_body(pfile_t *pfile) {
             }
     }
 
-    return fun_body(pfile);
+    return true;
+}
+
+
+/**
+ * @brief Statements inside the function
+ * !rule <fun_body> -> <fun_stmt> <fun_body>
+ *
+ * @param pfile structure representing the input program file
+ * @return true if rule derives its production successfully based unsuccessfully based on the production rule(described above)
+ */
+static bool fun_body(pfile_t *pfile) {
+    debug_msg("<fun_body> ->\n");
+
+    // end |
+    EXPECTED_OPT(KEYWORD_end);
+
+    return fun_stmt(pfile) && fun_body(pfile);
 }
 
 
@@ -473,7 +518,6 @@ static bool stmt(pfile_t *pfile) {
         case KEYWORD_global:
             // global
             EXPECTED(KEYWORD_global);
-
 
             // function name
             EXPECTED(TOKEN_ID);
