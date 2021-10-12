@@ -24,12 +24,22 @@
 
 // States of the scanner automaton
 #define TOKEN(name) _cat_2_(TOKEN, name)
+
+#define SINGLE_CHAR_TOKENS(X) \
+    X(EOFILE)                   \
+    X(LPAREN)                   \
+    X(RPAREN)                   \
+    X(ADD)                   \
+    X(MUL)                   \
+    X(HASH)                   \
+    X(COLON)                   \
+    X(COMMA)                   \
+
+
 /**
  * Tokens enum. What does each token represent.
  */
 typedef enum token_type {
-    // tokens
-    TOKEN(EOFILE) = EOF, // to be compatible with EOF
     // dead token == NULL
     TOKEN(DEAD) = 0,
     // normal tokens
@@ -46,17 +56,20 @@ typedef enum token_type {
     TOKEN(GT), // '>'
     TOKEN(GE), // '>='
     TOKEN(ASSIGN), // '='
-    TOKEN(MUL), // '*'
     TOKEN(DIV_I), // '/'
     TOKEN(DIV_F), // '//'
-    TOKEN(ADD), // '+'
     TOKEN(SUB), // '-'
-    TOKEN(LPAREN), // '('
-    TOKEN(RPAREN),  // ')'
-    TOKEN(COMMA), // ','
-//    TOKEN(SEMICOLON), // ';' // deprecated
     TOKEN(STRCAT),  // ..
-    TOKEN(COLON),  // :
+
+    // to make single tokens compatible with their ascii values
+    TOKEN(EOFILE) = EOF,
+    TOKEN(LPAREN) = '(',
+    TOKEN(RPAREN) = ')',
+    TOKEN(ADD) = '+',
+    TOKEN(MUL) = '*',
+    TOKEN(HASH) = '#',
+    TOKEN(COLON) = ':',
+    TOKEN(COMMA) = ','
 } token_type_t;
 //
 
