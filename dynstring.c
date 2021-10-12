@@ -9,7 +9,7 @@
 #endif // DEBUG_DYNSTIRNG
 
 /**
- * @brief Create a dynstring_t from a c_string, with length(@param str + STRSIZE)
+ * @brief Create a dynstring_t from a c_string, with length(@param str) + STRSIZE
  *
  * @param s static c dynstring_t.
  * @param s Char that to convert to dynstring_t.
@@ -21,8 +21,8 @@ static dynstring_t Str_create(const char *s) {
     size_t length = strlen(s);
     dynstring_t str = {
             .len = length,
-            .allocated_size = length + STRSIZE - 1,
-            .str = calloc(1, sizeof(dynstring_t) + length + STRSIZE),
+            .allocated_size = length + STRSIZE - 1, // - 1 need to be here not forget about a byte for \0
+            .str = calloc(1, length + STRSIZE),
     };
     soft_assert(str.str, ERROR_INTERNAL);
 
