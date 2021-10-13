@@ -1,7 +1,22 @@
-(* human: grammar rules in ascending order(from 1)
- * in .c  program comment write rule in EBNF form:
- * !rule <rule> -> productions
+(***human: grammar rules(parser) in ascending order for latex(nonterminals are bold) and everything else.
+ * Rules start from 1.(first to last), but the first rule in latex == the last rule in the program.
+ *
+ * Latex comment generated, too. But you can comment those lines.(they are below). It's a trash, I know, but it works.
+
+ ***Usage:
+ * in .c  program comment write rule in EBNF form, e.g.
+ * // some documentation. Im gonna get an oznuk.
+ * // !rule <rule> -> derivations
+ *
+ **NOTE: !rule <rule> -> smth | <arstoien> will become
+ *  <rule> -> smth
+ *  <rule> -> <arstoien>
+ *
+ *
+ *
+ * P.S: yea, I know, the code is the peace of shit, but only god can judge me.(and disciplinarni komise)
  * *)
+
 open Str
 
 let input_line_opt ic =
@@ -9,7 +24,7 @@ let input_line_opt ic =
   with End_of_file -> None
 
  
-let term = "[a-zA-Z_]+[0-9]*[a-zA-Z_]*"
+let term = "[a-zA-Z_]+[0-9a-zA-Z_]*"
 let nonterm = "<" ^ term ^ ">"
 let r_nonterm = regexp nonterm
 let deriv = "->"
@@ -75,9 +90,33 @@ let get_filenames arr =
 let () =
   let lines = List.fold_left (fun acc x -> merge (lines_of_file x) acc) [] (get_filenames Sys.argv) in
 
-  (* let lines = List.fold_left (fun x acc -> merge (lines_of_file x) acc) [] (get_filenames Sys.argv) in *)
 
-  List.iteri (fun i x -> Printf.printf "%d: %s\n" (i + 1) x) (List.rev lines)
+  (* just a latex version *) 
+  Printf.printf "\\begin{enumerate}\n"; (* because we want to create an automatic enumeration. Even if we dont need to... *) 
+  let latexarrow = "\\rightarrow" in     (* just '->' if you want to output in terminal *) 
+  let normarrow = "->" in
+  let item = "\\item" in (* \\item  *)
+  (* Iterate through every element in the list. *) 
+  List.iter (fun x -> (Printf.printf "\t\\item $%s$\n" (* print \\item and a string itself, but... *) 
+                        (global_replace (regexp " ") "\\ "              (* get rid of ws *)
+                         (global_replace (regexp ">") "\\rangle{}$}"      (* same as before *)
+                          (global_replace (regexp "<") "\\mbox{\\boldmath$\\langle{}"     (* latex doesn't like <, too *)
+                           (global_replace (regexp "_") "\\_"           (* then kill undercores*)
+                             (replace_first (regexp "->") latexarrow x) (* firstly get rid of the first arrow *)
+                           )
+                          )
+                         )
+                       )
+                      ) 
+            ) (List.rev lines); (* they are our lines. but prolog is below(suppose). *)
+  Printf.printf "\\end{enumerate}\n";
+  Printf.printf "\n\n\n";
+
+
+  (* just a commandline vesion. (The easiest one. :^) *)
+  List.iteri (fun i x -> Printf.fprintf stderr "%d: %s\n" (i + 1) x) (List.rev lines)
+
+
 
 
 

@@ -21,7 +21,7 @@
 /**
  * @brief Covert state to string.
  *
- * @param s
+ * @param s state
  * @return String that represent state.
  */
 static char *state_tostring(const int s) {
@@ -614,6 +614,10 @@ static token_t scanner(pfile_t *pfile) {
     charpos++;
 
     switch (ch) {
+        #define X(a) case TOKEN(a): charpos++; token.type = TOKEN(a); break;
+        SINGLE_CHAR_TOKENS(X)
+        #undef X
+
         case '\n':
             lines++;
             charpos = 0;
@@ -622,6 +626,7 @@ static token_t scanner(pfile_t *pfile) {
             break;
 
         case_2('\t', ' '):
+            charpos++;
             goto next_lexeme;
             //    token.type = TOKEN_WS;
             break;
@@ -664,27 +669,10 @@ static token_t scanner(pfile_t *pfile) {
             token = lex_relate_op(pfile);
             break;
 
-        case '#':
-            token.type = TOKEN_STRCAT;
-            break;
         case '\"':
             token = lex_string(pfile);
             break;
-        case '*':
-            token.type = TOKEN_MUL;
-            break;
-        case '+':
-            token.type = TOKEN_ADD;
-            break;
-        case '(':
-            token.type = TOKEN_LPAREN;
-            break;
-        case ')':
-            token.type = TOKEN_RPAREN;
-            break;
-        case ',':
-            token.type = TOKEN_COMMA;
-            break;
+
         case '.':
             token.type = TOKEN_DEAD;
             if (Pfile.pgetc(pfile) == '.') {
@@ -692,12 +680,7 @@ static token_t scanner(pfile_t *pfile) {
                 token.type = TOKEN_STRCAT;
             }
             break;
-        case ':':
-            token.type = TOKEN_COLON;
-            break;
-        case EOF:
-            token.type = TOKEN_EOFILE;
-            break;
+
         default:
             debug_msg("UNKNOWN CHARACTER: %c\n", ch);
             token.type = TOKEN_DEAD;
