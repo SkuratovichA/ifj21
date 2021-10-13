@@ -234,7 +234,7 @@ static bool assignment(pfile_t *pfile) {
  *
  * !rule <other_identifiers> -> = | , id <other_identifiers>
  *
- * @param pfile @param pfile structure representing the program filethe input program file
+ * @param pfile structure representing the input file
  * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error message otherwise
  */
 static bool other_identifiers(pfile_t *pfile) {
