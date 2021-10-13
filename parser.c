@@ -60,8 +60,8 @@ static bool fun_stmt(pfile_t *);
  *
  * !rule <other_expr> -> ) | , expr <other_expr>
  *
- * @param pfile program file to pass in to scanner.
- * @return true or false. If false, set an appropriate error code.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool other_expr(pfile_t *pfile) {
     debug_msg_s("<other_expr> -> \n");
@@ -86,8 +86,8 @@ static bool other_expr(pfile_t *pfile) {
  *
  * !rule <list_expr> -> ) | expr <other_expr>
  *
- * @param pfile structure representing the program.
- * @return true iff rule derives its production successfully else  false with with an error message otherwise.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool list_expr(pfile_t *pfile) {
     debug_msg_s("<list_expr> -> \n");
@@ -113,8 +113,8 @@ static bool list_expr(pfile_t *pfile) {
  * // todo: im not really sure about this rule.
  * !rule <cond_body> -> <fun_body>
  *
- * @param pfile structure representing the the input program.
- * @return true iff rule derives its production successfully else set an error code and false.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool cond_body(pfile_t *pfile) {
     debug_msg_s("<cond_body> -> \n");
@@ -136,8 +136,8 @@ static bool cond_body(pfile_t *pfile) {
  *
  * !rule <cond_stmt> -> expr then <cond_body>
  *
- * @param pfile structure representing the input file.
- * @return true iff rule derives its production successfully false with Errors.set_error() otherwise.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool cond_stmt(pfile_t *pfile) {
     debug_msg_s("<cond_stmt> -> \n");
@@ -156,8 +156,8 @@ static bool cond_stmt(pfile_t *pfile) {
  *
  * !rule <datatype> -> string | integer | boolean | number
  *
- * @param pfile structure representing the input program file
- * @return true if token is datatype.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static inline bool datatype(pfile_t *pfile) {
     debug_msg("<datatype> ->\n");
@@ -189,8 +189,8 @@ static inline bool datatype(pfile_t *pfile) {
  *
  * !rule <repeat_body> -> until | <fun_stmt> <repeat_body>
  *
- * @param pfile for scanner.
- * @return true if success or false with Errors.set_error().
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool repeat_body(pfile_t *pfile) {
     debug_msg_s("<repeat_body> -> \n");
@@ -209,8 +209,8 @@ static bool repeat_body(pfile_t *pfile) {
  *
  * !rule <assignment> -> e | = expression
  *
- * @param pfile stucture with an input file to feed it to Scanner.
- * @return Success or an error.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool assignment(pfile_t *pfile) {
     debug_msg_s("<assignment> -> \n");
@@ -234,8 +234,8 @@ static bool assignment(pfile_t *pfile) {
  *
  * !rule <other_identifiers> -> = | , id <other_identifiers>
  *
- * @param pfile structure representing the input file
- * @return true iff rule derives its production successfully else wishfalse wisothfalse with an error message otherwise
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool other_identifiers(pfile_t *pfile) {
     debug_msg_s("<other_identifiers> -> \n");
@@ -258,8 +258,8 @@ static bool other_identifiers(pfile_t *pfile) {
  *
  * !rule <list_identif> -> id <other_identifiers>
  *
- * @param pfile input file for a scanner to get next token.
- * @return true or false.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool list_identif(pfile_t *pfile) {
     debug_msg_s("<list_identif> -> \n");
@@ -303,8 +303,8 @@ static bool list_identif(pfile_t *pfile) {
  *
  *
  *
- * @param pfile structure representing the input file for Scanner.
- * @return true iff rule derives its production successfully else false with setting an error variable via Error.set_error()
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool fun_stmt(pfile_t *pfile) {
     debug_msg_s("<fun_stmt> -> \n");
@@ -425,8 +425,8 @@ static bool fun_stmt(pfile_t *pfile) {
  * @brief Statements inside the function
  * !rule <fun_body> -> <fun_stmt> <fun_body>
  *
- * @param pfile structure representing the input program file
- * @return true or true or false.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool fun_body(pfile_t *pfile) {
     debug_msg("<fun_body> ->\n");
@@ -442,8 +442,8 @@ static bool fun_body(pfile_t *pfile) {
  * @brief
  * !rule <other_funparams> -> ) | , <datatype> id <other_funparams>
  *
- * @param pfile structure representing the input program file
- * @return You know.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool other_funparams(pfile_t *pfile) {
     debug_msg("<other_funparam> ->\n");
@@ -470,8 +470,8 @@ static bool other_funparams(pfile_t *pfile) {
  *
  * !rule <funparam_def_list> -> ) | <datatype> id <other_funparams>
  *
- * @param pfile structure representing the input program file
- * @return this is not an autogenerated comment.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool funparam_def_list(pfile_t *pfile) {
     debug_msg("funparam_def_list ->\n");
@@ -495,7 +495,7 @@ static bool funparam_def_list(pfile_t *pfile) {
  * @brief Other datatypes can be an e, or <datatype> <other datatypes> followed by a comma
  * !rule <other_datatypes> -> ) | , <datatype> <other_datatypes>
  *
- * @param pfile structure representing the input program file
+ * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
 static bool other_datatypes(pfile_t *pfile) {
@@ -513,8 +513,8 @@ static bool other_datatypes(pfile_t *pfile) {
  * @brief datatype_list: List of datatypes separated by a comma.
  * !rule <dataype_list> -> <datatype> <other_datatypes> | )
  *
- * @param pfile structure representing the input program file
- * @return Some x
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool datatype_list(pfile_t *pfile) {
     debug_msg("<datatype_list> ->\n");
@@ -531,8 +531,8 @@ static bool datatype_list(pfile_t *pfile) {
  *
  * !rule <other_funcreturns> -> e | , <datatype> <other_funrets>
  *
- * @param pfile structure representing the program file the input program file
- * @return true if rule derives its production successfully else false  with an error_interface message otherwise
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool other_funrets(pfile_t *pfile) {
     debug_msg("<other_funrets> -> \n");
@@ -553,8 +553,8 @@ static bool other_funrets(pfile_t *pfile) {
  * @brief
  * !rule <funretopt> -> e | : <datatype> <other_funrets>
  *
- * @param pfile structure representing the input program file
- * @return back to Belarus is you dont implement expressions :(.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool funretopt(pfile_t *pfile) {
     debug_msg("<funretopt> ->\n");
@@ -579,8 +579,8 @@ static bool funretopt(pfile_t *pfile) {
  * function definition: !rule <stmt> -> function id ( <funparam_def_list> <funretopt>
  * function calling: !rule <stmt> -> id ( <list_expr>
  *
- * @param pfile structure representing the input program file
- * @return false with Error.set_error() or true.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
@@ -665,8 +665,8 @@ static bool stmt(pfile_t *pfile) {
  * @brief List of global statements: function calls, function declarations, function definitions.
  * !rule <stmt_list> -> <stmt> <stmt_list> | EOF
  *
- * @param pfile structure representing the input program file
- * @return true if rule derives its production successfully
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool stmt_list(pfile_t *pfile) {
     debug_msg("<stmt_list> ->\n");
@@ -682,8 +682,8 @@ static bool stmt_list(pfile_t *pfile) {
  * @brief Program(start) rule.
  * !rule <program> -> require "ifj21" <stmt_list>
  *
- * @param pfile structure representing the input program.
- * @return false with Errors.set_error() or true.
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool program(pfile_t *pfile) {
     dynstring_t prolog_str = Dynstring.create("ifj21");
@@ -713,8 +713,8 @@ static bool program(pfile_t *pfile) {
  * recursive descent method for everything except expressions and bottom-up precedence parsing method for expressions.
  * Syntax analysis is based on LL(1) grammar.
  *
- * @param pfile structure representing program file
- * @return appropriate return code, viz error_interface.c, errror.h
+ * @param pfile input file for Scanner.get_next_token().
+ * @return bool.
  */
 static bool Analyse(pfile_t *pfile) {
     if (!pfile) {
