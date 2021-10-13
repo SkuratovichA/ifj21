@@ -48,11 +48,11 @@ do { \
 // ***************************************************************************** //
 
 
-static bool unmatched_part(pfile_t *);
-
 static bool cond_stmt(pfile_t *);
 
-static bool fun_body(pfile_t *pfile);
+static bool fun_body(pfile_t *);
+
+static bool fun_stmt(pfile_t *);
 
 
 /**
@@ -113,7 +113,7 @@ static bool list_expr(pfile_t *pfile) {
  * // todo: im not really sure about this rule.
  * !rule <cond_body> -> <fun_body>
  *
- * @param pfile structure representing the program the input program.
+ * @param pfile structure representing the the input program.
  * @return true iff rule derives its production successfully else set an error code and false.
  */
 static bool cond_body(pfile_t *pfile) {
@@ -182,7 +182,6 @@ static inline bool datatype(pfile_t *pfile) {
     return true;
 }
 
-static bool fun_stmt(pfile_t *);
 
 /**
  * @brief Repeat body - function represent body of a repeat-until cycle.
@@ -581,7 +580,7 @@ static bool funretopt(pfile_t *pfile) {
  * function calling: !rule <stmt> -> id ( <list_expr>
  *
  * @param pfile structure representing the input program file
- * @return false true.
+ * @return false with Error.set_error() or true.
  */
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
