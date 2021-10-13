@@ -684,7 +684,7 @@ static bool stmt_list(pfile_t *pfile) {
  * !rule <program> -> require "ifj21" <stmt_list>
  *
  * @param pfile structure representing the input program.
- * @return paobably true. Or false.
+ * @return false with Errors.set_error() or true.
  */
 static bool program(pfile_t *pfile) {
     dynstring_t prolog_str = Dynstring.create("ifj21");
