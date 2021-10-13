@@ -24,7 +24,7 @@ let input_line_opt ic =
   with End_of_file -> None
 
  
-let term = "[a-zA-Z_]+[0-9]*[a-zA-Z_]*"
+let term = "[a-zA-Z_]+[0-9a-zA-Z_]*"
 let nonterm = "<" ^ term ^ ">"
 let r_nonterm = regexp nonterm
 let deriv = "->"
