@@ -18,13 +18,12 @@ fn_test_status() {
 fn_test_run() {
       status_expected=$2
 
-			../cmake-build-debug/ifj21 <$1 &>/dev/null # >/dev/null 2>/dev/null
+			../cmake-build-debug/ifj21 <"$1" &>/dev/null # >/dev/null 2>/dev/null
 
 			status=$?
 			if [ $status -ne $status_expected ]; then
-			  echo "" >> $3
-				echo -e "\nExit status: " "$status" ", expected " "$status_expected" " when testing the file " "$1" >> $3
-				cat < "$1" >> $3
+			  { echo "" ; echo -e "\nExit status: " "$status" ", expected " "$status_expected" " when testing the file " "$1"; } >> $3
+				cat < "$1" >> "$3"
       else
         rm "$1"
 			fi
@@ -59,5 +58,5 @@ test_one_file() {
           #fn_test_run "$expr" "$stat_expected"   # could be used in the case the compiler can be run: ./run < "expression"
           num_name=$(( num_name + 1 ))
       done;
-  done < $1
+  done < "$1"
 }

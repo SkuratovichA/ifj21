@@ -2,9 +2,9 @@
 # Format of test app names: test_<structure>_<tested routines>
 
 echo "Building tests...."
-cd ../cmake-build-debug
+cd ../cmake-build-debug || exit
 make
-cd ../tests
+cd ../tests || exit
 
 status=$? # exit status of the last command
 if [ "$status" != "0" ]
