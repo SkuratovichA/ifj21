@@ -15,7 +15,7 @@ add_executable(ifj21
         parser.c parser.h
         tests/tests.c tests/tests.h
         expressions.c expressions.h
-        )
+        bintree.c bintree.h)
 
 add_compile_options(-DSELFTEST -DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
 add_executable(test_scanner
@@ -25,5 +25,5 @@ add_executable(test_scanner
         dynstring.c dynstring.h
         progfile.c progfile.h
         tests/tests.c tests/tests.h
-        )
+        bintree.c bintree.h)
 ##################################################3
