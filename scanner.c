@@ -258,7 +258,7 @@ static token_t lex_string(pfile_t *pfile) {
                 break;
 
             default:
-                soft_assert(false && "there's an unrecognized state\n", ERROR_LEXICAL);
+                accepted = true;
                 break;
         }
     }
@@ -390,7 +390,7 @@ static bool process_comment(pfile_t *pfile) {
                 break;
 
             default:
-                soft_assert(false && "there's an unrecognized state\n", ERROR_LEXICAL);
+                accepted = true;
                 break;
         }
     }
@@ -432,7 +432,7 @@ static token_t lex_relate_op(pfile_t *pfile) {
                 return Pfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_EQ} : (Pfile.ungetc(
                         pfile), (token_t) {.type = TOKEN_DEAD});
             default:
-                soft_assert(false && "there's an unrecognized state\n", ERROR_LEXICAL);
+                break;
         }
     }
     return (token_t) {.type = TOKEN_DEAD};
@@ -574,7 +574,6 @@ static token_t lex_number(pfile_t *pfile) {
                 break;
 
             default:
-                soft_assert(false && "there's an unrecognized state\n", ERROR_LEXICAL);
                 break;
         }
     }
@@ -689,7 +688,6 @@ static token_t scanner(pfile_t *pfile) {
 
     if (token.type == TOKEN_DEAD) {
         Errors.set_error(ERROR_LEXICAL);
-        soft_assert(token.type != TOKEN_DEAD, ERROR_LEXICAL);
     }
 
     return token;
