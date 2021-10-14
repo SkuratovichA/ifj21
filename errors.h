@@ -36,6 +36,8 @@ enum errors {
 struct error_interface {
     void (*set_error)(int);
 
+    char *(*get_errmsg)(void);
+
     int (*get_error)(void);
 };
 

@@ -1,6 +1,7 @@
 #include "dynstring.h"
 #include <stdlib.h>
 #include "errors.h"
+#include <stdio.h>
 
 
 #define STRSIZE 42

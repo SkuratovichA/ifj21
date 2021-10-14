@@ -26,6 +26,7 @@ static void Failed(const char *fmt, ...) {
     va_end(args);
 }
 
+
 /**
  * Tests interface.
  */

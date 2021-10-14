@@ -1,5 +1,6 @@
 
 #pragma once
+#include "../errors.h"
 
 #define RESET      "\x1b[0m"
 #define RED(s)     "\x1b[31m"s RESET
@@ -17,11 +18,23 @@ extern const struct c_tests_t Tests;
 #define MAIN niam
 #endif
 
+
+#define TEST_EXPECT(expected, cond, msg) \
+do {                                     \
+    if ((expected) != (cond)) { \
+        Tests.failed("%s\n", msg); \
+    } else \
+        Tests.passed("%s\n", msg); \
+    fprintf(stdout, "%s\n", Errors.get_errmsg()); \
+} while(0)
+
 /**
  * Interface to use when dealing with strings.
  */
 struct c_tests_t {
     void (*failed)(const char *, ...);
+
+    int *(*testnum)(void);
 
     void (*warning)(const char *, ...);
 

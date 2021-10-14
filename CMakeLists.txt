@@ -4,7 +4,6 @@ project(ifj21 C)
 set(CMAKE_C_STANDARD 11)
 
 add_compile_options(-DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
-
 add_executable(ifj21
         ifj21.c scanner.c
         errors.c errors.h
@@ -18,17 +17,13 @@ add_executable(ifj21
         expressions.c expressions.h
         )
 
-add_compile_options(-DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
-#add_compile_options(-DDEBUG_SCANNER)
-
-
-
-add_compile_options(-DSELFTEST -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
+add_compile_options(-DSELFTEST -DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
 add_executable(test_scanner
+        errors.c errors.h
         scanner.c scanner.h
         debug.h macros.h
         dynstring.c dynstring.h
         progfile.c progfile.h
         tests/tests.c tests/tests.h
         )
-
+##################################################3
