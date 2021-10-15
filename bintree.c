@@ -2,36 +2,24 @@
 
 
 /**
- * @brief print whole tree
- *
- * @param
- * @return
- */
-static void print_tree() {
-    printf("I am tree.");
-
-}
-
-
-/**
- * @brief Create binare tree allocate space on heap for first(root) node.
+ * @brief Finds node in tree. Function uses string to find node.
  *
  * @param tree Pointer to first node of tree.
- * @param token name that we are looking for.
+ * @param token string name that we are looking for.
  *
- * @return Pointer to node or NULL if not find.
+ * @return Pointer to node or NULL if can not find.
  */
-static node *find_node(node *tree, dynstring_t name) {
+static node * find_node(node *tree, dynstring_t name) {
     struct node *help_var = tree;
-    char *c = Dynstring.c_str(name);
 
-    while (true) { //Break if leaf level reached
+    // Breaks when leaf level is reached.
+    while (true) {
         int res = Dynstring.cmp(help_var->data->i_name, name);
         if (!res) {
-            return help_var; //FINDED
+            return help_var; //node found
         } else if (res > 0) {
             if (help_var->l_child == NULL) {
-                break; //not in tree
+                break; // not in tree
             } else {
                 help_var = help_var->l_child;
             }
@@ -48,10 +36,10 @@ static node *find_node(node *tree, dynstring_t name) {
 
 
 /**
- * @brief Create binare tree allocate space on heap for first(root) node.
+ * @brief Create binare tree on heap. Tree is created when we create first node.
  *
- * @param root Pointer to first node.
- * @param token Token generated from lexical analysis.
+ * @param root Pointer to first node, also pointer to whole tree.
+ * @param token Token generated from lexical analysis. There are data that ll be stored.
  * @param validity Information used to find identificator validity level.
  *
  * @return Pointer to first bin. tree node. If allocation failed return NULL
@@ -60,12 +48,12 @@ static node *create_tree(token_t *token, unsigned int validity) {
 
     struct node *root = calloc(1, sizeof(struct node));
     if (root == NULL) {
-        goto error1;
+        goto error_calloc;
     }
 
     root->data = calloc(1, sizeof(struct data));
     if (root->data == NULL) {
-        goto error1;
+        goto error_calloc_data;
     }
 
     /******** Set given values */
@@ -73,17 +61,21 @@ static node *create_tree(token_t *token, unsigned int validity) {
     root->r_child = NULL;
     root->l_child = NULL;
 
-    root->data->type = token->type; //TODO VARIABLE OF FUNCTION
-    root->data->i_name = token->attribute.id;
+    root->data->type = token->type;
+    root->data->i_name = Dynstring.create(token->attribute.id.str);
     /***********/
 
     return root;
 
-    /*** Calloc error */
-    error1:
-    fprintf(stderr, "calloc() error");
+error_calloc_data:
+    free(root);
+
+error_calloc:
+    fprintf(stderr, "calloc() error\n");
     Errors.set_error(ERROR_INTERNAL);
     return NULL;
+
+
 }
 
 /**
@@ -120,21 +112,21 @@ static void delete_tree(node *root) {
 }
 
 /**
- * @brief Allocate space for node and write data to it and returns it.
+ * @brief Allocate space for node, write data to it, and returns it.
  *
- * @param
+ * @param token is structure that store data.
  * @return pointer to node that can be stored to tree.
  */
 static node *create_node(token_t *token) {
 
     node *node = calloc(1, sizeof(struct node));
     if (node == NULL) {
-        goto error1;
+        goto error_calloc;
     }
 
     node->data = calloc(1, sizeof(struct data));
     if (node->data == NULL) {
-        goto error1;
+        goto error_calloc_data;
     }
 
     /**  Writes data */
@@ -142,13 +134,17 @@ static node *create_node(token_t *token) {
     node->l_child = NULL;
 
     node->data->type = token->type;
-    node->data->i_name = Dynstring.create(Dynstring.c_str(token->attribute.id));
+    node->data->i_name = Dynstring.create(token->attribute.id.str);
     /*******/
+
     return node;
 
-    /** Calloc error */
-    error1:
-    fprintf(stderr, "calloc() error");
+
+error_calloc_data:
+    free(node);
+
+error_calloc:
+    fprintf(stderr, "calloc() error\n");
     Errors.set_error(ERROR_INTERNAL);
     return NULL;
 }
@@ -156,30 +152,30 @@ static node *create_node(token_t *token) {
 /**
  * @brief It insert node to binary tree. If string value of node is smaller go left else go right till reach leaf level.
  *
- * @param node Defines in what tree.
+ * @param root_node Defines tree we are searching in.
  * @param token Data that ll be stored.
  * @param validity Validity level of data (scope hiearchy)
  * @return false if validity doesn´t match given tree, else return true.
  */
-static bool insert(node *node, token_t *token, unsigned int validity) {
+static bool insert(node *root_node, token_t *token, unsigned int validity) {
 
-    if (node->validity_field != validity) {
+    if (root_node->validity_field != validity) {
         return false;
     }
 
-    struct node *help_var = node;
-    char *c = Dynstring.c_str(token->attribute.id);
+    struct node *help_var = root_node;
 
-    while (true) { //Break if pointer reach leaf level so node can be inserted.
+    // Break if pointer reach leaf level so node can be inserted.
+    while (true) {
         int res = Dynstring.cmp(help_var->data->i_name, token->attribute.id);
-        if (res > 0) {
+        if (res > 0) { // Store as left child
             if (help_var->l_child != NULL) {
                 help_var = help_var->l_child;
             } else {
                 help_var->l_child = create_node(token);
                 break;
             }
-        } else {
+        } else { // store as right child.
             if (help_var->r_child != NULL) {
                 help_var = help_var->r_child;
             } else {
@@ -191,14 +187,11 @@ static bool insert(node *node, token_t *token, unsigned int validity) {
     return true;
 }
 
-
 /**
- *
  * Tree interface.
  */
 const struct tree_op_struct Tree = {
         .find_node       = find_node,
-        .print_tree      = print_tree,
         .insert          = insert,
         .delete_node     = delete_node,
         .delete_tree     = delete_tree,
