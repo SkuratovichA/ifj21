@@ -24,7 +24,7 @@ static void list_init(list_t *list) {
  * @param data Data to insert.
  */
 static void insert_first(list_t *list, void *data) {
-    list_item_t  *new_item = malloc(sizeof(list_item_t));
+    list_item_t *new_item = calloc(1, sizeof(list_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
 
     new_item->data = data;
@@ -62,7 +62,7 @@ static void delete_list(list_t *list) {
  */
 static void insert_behind(list_item_t *reference_item, void *data) {
     soft_assert(reference_item, ERROR_INTERNAL);
-    list_item_t *new_item = malloc(sizeof(list_item_t));
+    list_item_t *new_item = calloc(1, sizeof(list_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
 
     new_item->data = data;
