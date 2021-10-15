@@ -76,6 +76,17 @@ static void insert_behind(list_item_t *reference_item, void *data) {
 }
 
 /**
+ * @brief Returns the first item's data via data pointer.
+ *
+ * @param list singly linked list
+ */
+static void *read_first(list_t *list) {
+    if (!list->head)
+        return NULL;
+    return list->head->data;
+}
+
+/**
  * Interface to use when dealing with singly linked list.
  * Functions are in struct so we can use them in different files.
  */
@@ -85,5 +96,6 @@ const struct list_interface_t List = {
         .delete_first = delete_first,
         .delete_list = delete_list,
         .insert_behind = insert_behind,
+        .read_first = read_first,
         .copy_data = NULL,
 };
