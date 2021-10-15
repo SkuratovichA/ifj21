@@ -27,7 +27,11 @@ static void insert_first(list_t *list, void *data) {
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
 
-    new_item->data = data;
+    if (List.copy_data != NULL) {
+        List.copy_data(new_item, data);
+    } else {
+        new_item->data = data;
+    }
     new_item->next = list->head;
     list->head = new_item;
 }
@@ -49,7 +53,7 @@ static void delete_first(list_t *list) {
  * @param list singly linked list
  */
 static void delete_list(list_t *list) {
-    while (!(list->head)) {
+    while (list->head) {
         delete_first(list);
     }
 }
@@ -80,5 +84,6 @@ const struct list_interface_t List = {
         .insert_first = insert_first,
         .delete_first = delete_first,
         .delete_list = delete_list,
-        .insert_behind = insert_behind
+        .insert_behind = insert_behind,
+        .copy_data = NULL,
 };

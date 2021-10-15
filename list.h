@@ -59,6 +59,14 @@ struct list_interface_t {
      * @param data New item's data.
      */
     void (*insert_behind)(list_item_t *reference_item, void *data);
+
+    /**
+    * @brief copy data to the list item element.
+    *
+    * @param dst Destination item to copy the data to.
+    * @param src Source to copy the data from.
+    */
+    void (*copy_data)(lsit_item_t *dst, void *src);
 };
 
 /**
