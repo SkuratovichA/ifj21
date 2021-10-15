@@ -66,7 +66,7 @@ struct list_interface_t {
     * @param dst Destination item to copy the data to.
     * @param src Source to copy the data from.
     */
-    void (*copy_data)(lsit_item_t *dst, void *src);
+    void (*copy_data)(list_item_t *dst, void *src);
 };
 
 /**
