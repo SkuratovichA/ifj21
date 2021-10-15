@@ -24,7 +24,7 @@ typedef struct list_item list_item_t;
  */
 struct list_interface_t {
     /**
-     * @brief List initialiser.
+     * @brief List initializer.
      *
      * @param list Singly linked list to initialise.
      */
