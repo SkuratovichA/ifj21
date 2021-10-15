@@ -9,7 +9,7 @@ struct list_item {
 };
 
 /**
- * @brief List initialiser.
+ * @brief List initializer.
  *
  * @param list Singly linked list to initialise.
  */
