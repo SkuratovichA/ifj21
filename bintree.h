@@ -27,8 +27,8 @@
  */
 typedef struct data {
     dynstring_t i_name;          /**< Identificator name. Could be name of function or variable.*/
-    //   unsigned int i_name_num;  /**< Int identificator. This value defines how we store data. Means name in numbers. */
     char type;              /**< Type of identificator could be FUNCTION or VARIABLE */
+    // unsigned int i_name_num;  /**< Int identificator. This value defines how we store data. Means name in numbers. */
 } data;
 
 
@@ -54,7 +54,6 @@ typedef struct node {
 extern const struct tree_op_struct Tree;
 
 struct tree_op_struct {
-    void (*print_tree)();
 
     void (*delete_tree)(node *);
 
