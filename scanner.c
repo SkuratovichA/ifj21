@@ -2,7 +2,6 @@
 #include "tests/tests.h"
 
 
-
 #ifndef DEBUG_SCANNER
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmacro-redefined"
@@ -363,20 +362,23 @@ static bool process_comment(pfile_t *pfile) {
                 break;
 
             case STATE_COMMENT_SLINE:
-                if (ch == '\n')
-                    state = STATE_COMMENT_FINAL; // comment end
+                if (ch == '\n') {
+                    state = STATE_COMMENT_FINAL;
+                } // comment end
                 break;
 
             case STATE_COMMENT_BLOCK_1:
-                if (ch == '[')
+                if (ch == '[') {
                     state = STATE_COMMENT_BLOCK_2;
-                else
-                    state = STATE_COMMENT_SLINE; // an order comment
+                } else {
+                    state = STATE_COMMENT_SLINE;
+                } // an order comment
                 break;
 
             case STATE_COMMENT_BLOCK_2:
-                if (ch == ']')
-                    state = STATE_COMMENT_BLOCK_END; // end block comment 1.
+                if (ch == ']') {
+                    state = STATE_COMMENT_BLOCK_END;
+                } // end block comment 1.
                 break;
 
             case STATE_COMMENT_BLOCK_END:
@@ -449,7 +451,7 @@ static token_t lex_number(pfile_t *pfile) {
     state = STATE_NUM_INIT;
     dynstring_t ascii_num = Dynstring.create(""); // create an empty string
 
-    bool is_fp = false;
+    bool is_fp = true; // suppose it is true.
     int ch;
     bool accepted = false;
 
@@ -459,9 +461,9 @@ static token_t lex_number(pfile_t *pfile) {
         switch (state) {
             case STATE_NUM_INIT:
                 if (ch == '0') {
-                    state = STATE_NUM_ZERO;
+                    state = STATE_NUM_1;
                 } else if (isdigit(ch)) {
-                    state = STATE_NUM_INT;
+                    state = STATE_NUM_2;
                 } else {
                     accepted = true;
                     break;
@@ -469,108 +471,120 @@ static token_t lex_number(pfile_t *pfile) {
                 Dynstring.append_char(&ascii_num, (char) ch);
                 break;
 
-            case STATE_NUM_INT: // final
-                if (isdigit(ch)) { ;; // append char is after the statement, so an empty statement is here.
+                // we got here from number init state and there was 0.
+                // final, got 0.
+            case STATE_NUM_1:
+                // append char is after the statement, so an empty statement is here.
+                if (isdigit(ch)) {
+                    state = STATE_NUM_3;
+                    Dynstring.append_char(&ascii_num, (char) ch);
                 } else if (ch == '.') {
-                    state = STATE_NUM_F_DOT;
+                    state = STATE_NUM_7;
+                    Dynstring.append_char(&ascii_num, (char) ch);
+                } else {
+                    // null has been accepted, so it is a legit integer.
+                    is_fp = false;
+                    accepted = true;
+                    state = STATE_NUM_FINAL;
+                }
+                break;
+
+                // 1-9 has been accepted, so is is an integer now.
+            case STATE_NUM_2:
+                if (isdigit(ch)) {
+                    // append character after if statement.
+                    ;;
+                } else if (ch == '.') {
+                    state = STATE_NUM_7;
                 } else if (ch == 'e' || ch == 'E') {
-                    state = STATE_NUM_EXP;
-                } else { // integer number has been taken
-                    state = STATE_NUM_FINAL;
-                    accepted = true;
-                    break;
-                }
-                Dynstring.append_char(&ascii_num, (char) ch);
-                break;
-
-            case STATE_NUM_ZERO:
-                if (ch == '0') {
-                    state = STATE_NUM_ZERO_TRANSITION;
-                } else if (ch == '.') {
-                    state = STATE_NUM_F_DOT;
-                } else { // can get zero here , e.g '0'
-                    state = STATE_NUM_FINAL;
-                    accepted = true;
-                    break;
-                }
-                Dynstring.append_char(&ascii_num, (char) ch);
-                break;
-
-            case STATE_NUM_ZERO_TRANSITION: // final - number can be 00, and it is an integer. Otherwise 8ing for fp part
-                if (isdigit(ch)) {
-                    state = STATE_NUM_ZERO_ZERO;
-                } else if (ch == '.') {
-                    state = STATE_NUM_F_DOT;
+                    state = STATE_NUM_5;
                 } else {
-                    state = STATE_NUM_FINAL;
+                    is_fp = false;
                     accepted = true;
+                    state = STATE_NUM_FINAL;
+                    break;
                 }
                 Dynstring.append_char(&ascii_num, (char) ch);
                 break;
 
-            case STATE_NUM_F_DOT:
+                // tro zeros have been accepted.
+            case STATE_NUM_3:
                 if (isdigit(ch)) {
-                    state = STATE_NUM_F_PART;
+                    state = STATE_NUM_4;
+                } else if (ch == '.') {
+                    state = STATE_NUM_7;
+                } else {
+                    is_fp = false;
+                    state = STATE_NUM_FINAL;
+                    accepted = true;
+                    break;
+                }
+                Dynstring.append_char(&ascii_num, (char) ch);
+                break;
+
+            case STATE_NUM_4:
+                if (isdigit(ch)) { ;;
+                } else if (ch == '.') {
+                    state = STATE_NUM_7;
+                } else if (ch == 'e' || ch == 'E') {
+                    // got an exponent
+                    state = STATE_NUM_5;
+                } else {
+                    accepted = true;
+                    break;
+                }
+                Dynstring.append_char(&ascii_num, (char) ch);
+                break;
+
+            case STATE_NUM_5:
+                if (isdigit(ch)) {
+                    state = STATE_NUM_9;
+                    Dynstring.append_char(&ascii_num, (char) ch);
+                } else if (ch == '+' || ch == '-') {
+                    state = STATE_NUM_6;
                     Dynstring.append_char(&ascii_num, (char) ch);
                 } else {
                     accepted = true;
                 }
                 break;
 
-            case STATE_NUM_F_PART: // final
-                is_fp = true;
-                if (isdigit(ch)) {}
-                else if (ch == 'e' || ch == 'E') {
-                    state = STATE_NUM_EXP;
-                } else { // now we got a character which signifies that there will be no more 'numberness'
-                    state = STATE_NUM_FINAL;
-                    accepted = true;
-                    break;
-                }
-                Dynstring.append_char(&ascii_num, (char) ch);
-                break;
-
-            case STATE_NUM_EXP:
-                is_fp = true;
+            case STATE_NUM_6:
                 if (isdigit(ch)) {
-                    state = STATE_NUM_DOUBLE;
-                } else if (ch == '-' || ch == '+') {
-                    state = STATE_NUM_EXP_SIGN;
-                } else {
-                    accepted = true;
-                    break;
-                }
-                Dynstring.append_char(&ascii_num, (char) ch);
-                break;
-            case STATE_NUM_EXP_SIGN:
-                is_fp = true;
-                if (isdigit(ch)) {
-                    state = STATE_NUM_EXP_SIGN;
+                    state = STATE_NUM_9;
                     Dynstring.append_char(&ascii_num, (char) ch);
                 } else {
                     accepted = true;
                 }
                 break;
-            case STATE_NUM_DOUBLE: // final
-                is_fp = true;
-                if (isdigit(ch)) {}
-                else {
-                    state = STATE_NUM_FINAL;
-                    accepted = true;
-                }
-                Dynstring.append_char(&ascii_num, (char) ch);
-                break;
 
-            case STATE_NUM_ZERO_ZERO:
-                is_fp = true;
-                if (isdigit(ch)) {}
-                else if (ch == '.') {
-                    state = STATE_NUM_F_PART;
+            case STATE_NUM_7:
+                if (isdigit(ch)) {
+                    state = STATE_NUM_8;
+                    Dynstring.append_char(&ascii_num, (char) ch);
                 } else {
                     accepted = true;
-                    break;
                 }
-                Dynstring.append_char(&ascii_num, (char) ch);
+                break;
+
+            case STATE_NUM_8:
+                if (isdigit(ch)) {
+                    Dynstring.append_char(&ascii_num, (char) ch);
+                } else if (ch == 'e' || ch == 'E') {
+                    Dynstring.append_char(&ascii_num, (char) ch);
+                    state = STATE_NUM_5;
+                } else {
+                    accepted = true;
+                    state = STATE_NUM_FINAL;
+                }
+                break;
+
+            case STATE_NUM_9:
+                if (isdigit(ch)) {
+                    Dynstring.append_char(&ascii_num, (char) ch);
+                } else {
+                    accepted = true;
+                    state = STATE_NUM_FINAL;
+                }
                 break;
 
             default:
@@ -584,6 +598,7 @@ static token_t lex_number(pfile_t *pfile) {
 
     token_t token;
 
+    // TODO: actually we can get rid of it and left number as string but with market that its an integer or a float.
     if (is_fp) {
         token.type = TOKEN_NUM_F;
         token.attribute.num_f = strtod(Dynstring.c_str(ascii_num), NULL);
