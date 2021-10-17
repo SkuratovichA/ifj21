@@ -2,7 +2,7 @@
 
 
 /**
- * @brief Finds node in tree. Function uses string to find node.
+ * @brief Finds a node in a tree. The function uses a string to find the node.
  *
  * @param tree Pointer to first node of tree.
  * @param token string name that we are looking for.
