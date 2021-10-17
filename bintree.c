@@ -111,7 +111,7 @@ static void delete_tree(node *root) {
 }
 
 /**
- * @brief Allocate space for node, write data to it, and returns it.
+ * @brief Create new node on heap.
  *
  * @param token is structure that store data.
  * @return pointer to node that can be stored to tree.
