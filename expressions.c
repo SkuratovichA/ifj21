@@ -3,6 +3,20 @@
 #include "stdbool.h"
 
 /**
+ * Precedence functions.
+ */
+
+/**
+ * f - represent rows of the precedence table.
+ */
+static int f[10] = {8, 0, 8, 6, 6, 4, 2, 1, 0, 0};
+
+/**
+ * g - represent columns.
+ */
+static int g[10] = {7, 7, 0, 7, 5, 1, 3, 7, 0, 0};
+
+/**
  * @brief
  *
  * Return operator from the precedence table
