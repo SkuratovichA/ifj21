@@ -10,7 +10,7 @@
 #define OP(name) _cat_2_(OP, name)
 
 /**
- * List of operators from precedence table
+ * List of operators from the precedence table
  */
 enum op_list {
     OP(ID),
