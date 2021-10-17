@@ -113,8 +113,8 @@ static void delete_tree(node *root) {
 /**
  * @brief Create new node on heap.
  *
- * @param token is structure that store data.
- * @return pointer to node that can be stored to tree.
+ * @param token is structure that stores data.
+ * @return pointer to the node that can be stored to tree.
  */
 static node *create_node(token_t *token) {
 
@@ -149,12 +149,12 @@ error_calloc:
 }
 
 /**
- * @brief It insert node to binary tree. If string value of node is smaller go left else go right till reach leaf level.
+ * @brief It inserts a node into binary tree. If the string value of the node is smaller go left else go right till reach leaf level.
  *
  * @param root_node Defines tree we are searching in.
- * @param token Data that ll be stored.
+ * @param token Data that will be stored.
  * @param validity Validity level of data (scope hiearchy)
- * @return false if validity doesn´t match given tree, else return true.
+ * @return false if validity doesn't match given tree, else return true.
  */
 static bool insert(node *root_node, token_t *token, unsigned int validity) {
 
