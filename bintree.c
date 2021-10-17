@@ -39,7 +39,7 @@ static node * find_node(node *tree, dynstring_t name) {
  * @brief Create binare tree on heap. Tree is created when we create first node.
  *
  * @param root Pointer to first node, also pointer to whole tree.
- * @param token Token generated from lexical analysis. There are data that ll be stored.
+ * @param token Token generated from lexical analysis. 
  * @param validity Information used to find identificator validity level.
  *
  * @return Pointer to first bin. tree node. If allocation failed return NULL
