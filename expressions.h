@@ -5,12 +5,12 @@
 #include "list.h"
 
 /**
- * Add prefix before operator name
+ * Add prefix before operator name.
  */
 #define OP(name) _cat_2_(OP, name)
 
 /**
- * List of operators from the precedence table
+ * List of operators from the precedence table.
  */
 enum op_list {
     OP(ID),
