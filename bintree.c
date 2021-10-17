@@ -82,7 +82,6 @@ error_calloc:
  * @brief Delete given node from binary tree. Do not check if node is on leaf level. Free allocated space.
  *
  * @param node Pointer to one of tree nodes, that will be deleted.
- * @return void
  */
 static void delete_node(node *node) {
     if (node == NULL) {
@@ -98,7 +97,6 @@ static void delete_node(node *node) {
  * @brief Recursive function that deletes all nodes in tree. Free allocated space.
  *
  * @param node root node from tree that we want to allocate.
- * @return void
  */
 static void delete_tree(node *root) {
     if (root == NULL) {
