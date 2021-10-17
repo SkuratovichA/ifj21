@@ -105,7 +105,7 @@ static void delete_tree(node *root) {
     delete_tree(root->r_child);
     delete_tree(root->l_child);
 
-    free(root->data->i_name);
+    Dynstring.free(&root->data->i_name);
     free(root->data);
     free(root);
 }
