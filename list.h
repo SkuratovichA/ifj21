@@ -65,7 +65,7 @@ struct list_interface_t {
      *
      * @param list singly linked list
      */
-    void (**read_first)(list_t *list);
+    void *(*read_first)(list_t *list);
 
     /**
      * @brief copy data to the list item element.
@@ -80,7 +80,7 @@ struct list_interface_t {
     *
     * @return Pointer to the allocated memory.
     */
-    list_t (**list_ctor)(void);
+    list_t *(*list_ctor)(void);
 
     /**
     * @brief List destructor.

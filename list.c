@@ -24,7 +24,7 @@ static list_t *list_ctor(void) {
  *
  * @param list Singly linked list to initialise.
  */
-static void *list_init(list_t *list) {
+static void list_init(list_t *list) {
     list->head = NULL;
 }
 
