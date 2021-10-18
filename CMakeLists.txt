@@ -16,7 +16,7 @@ add_executable(ifj21
         tests/tests.c tests/tests.h
         expressions.c expressions.h
         list.c list.h
-        )
+        list.h list.c stack.c stack.h)
 
 add_compile_options(-DSELFTEST -DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
 add_executable(test_scanner
