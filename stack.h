@@ -7,12 +7,6 @@
  * So we can use them in different files as interface.
  */
 struct stack_interface_t {
-    /**
-     * @brief Stack initializer.
-     *
-     * @param stack Stack to initialise.
-     */
-    void (*stack_init)(list_t *stack);
 
     /**
      * @brief Pushes new item to the stack.
@@ -42,7 +36,7 @@ struct stack_interface_t {
      *
      * @param stack
      */
-    void (*empty_stack)(list_t *stack);
+    void (*clear)(list_t *stack);
 
     /**
      * @brief Returns data on the top of the stack.
@@ -56,14 +50,14 @@ struct stack_interface_t {
      *
      * @return  Pointer to the stack.
      */
-    list_t *(*stack_ctor)(void);
+    list_t *(*ctor)(void);
 
     /**
      * @brief Stack destructor.
      *
      * @param stack Stack to be destructed.
      */
-    void (*stack_dtor)(list_t *stack);
+    void (*dtor)(list_t *stack);
     };
 
 /**

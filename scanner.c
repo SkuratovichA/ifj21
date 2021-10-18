@@ -811,7 +811,13 @@ const struct scanner_interface Scanner = {
 };
 
 
-int MAIN(const int argc, const char **argv) {
+#ifdef SELFTEST_SCANNER
+#define MAIN main
+#else
+#define MAIN SCANNER_MAIN
+#endif
+
+int MAIN() {
     token_t token;
 
     //********************************************************************//
@@ -894,10 +900,6 @@ int MAIN(const int argc, const char **argv) {
         Tests.failed("Cannot open the file!\n");
     }
     Pfile.free(pfile);
-
-
-    //********************************************************************//
-    //********************************************************************//
 
     return 0;
 }

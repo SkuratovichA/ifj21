@@ -1,13 +1,5 @@
 #include "stack.h"
 
-/**
- * @brief Stack initializer.
- *
- * @param stack Stack to initialise.
- */
-static void stack_init(list_t *stack) {
-    List.list_init(stack);
-}
 
 /**
  * @brief Pushes new item to the stack.
@@ -15,8 +7,8 @@ static void stack_init(list_t *stack) {
  * @param stack
  * @param data Data to push to the stack.
  */
-static void push(list_t *stack, void *data) {
-    List.insert_first(stack, data);
+static void Push(list_t *stack, void *data) {
+    List.prepend(stack, data);
 }
 
 /**
@@ -24,7 +16,7 @@ static void push(list_t *stack, void *data) {
  *
  * @param stack
  */
-static void pop(list_t *stack) {
+static void Pop(list_t *stack) {
     List.delete_first(stack);
 }
 
@@ -34,7 +26,7 @@ static void pop(list_t *stack) {
  * @param stack
  * @return true if the stack is empty else false.
  */
-static bool is_empty(list_t *stack) {
+static bool Is_empty(list_t *stack) {
     soft_assert(stack, ERROR_INTERNAL);
     return !(stack->head);
 }
@@ -44,7 +36,7 @@ static bool is_empty(list_t *stack) {
  *
  * @param stack
  */
-static void empty_stack(list_t *stack) {
+static void Clear(list_t *stack) {
     List.delete_list(stack);
 }
 
@@ -53,8 +45,8 @@ static void empty_stack(list_t *stack) {
  *
  * @param stack
  */
-static void *peek(list_t *stack) {
-    return List.read_first(stack);
+static void *Peek(list_t *stack) {
+    return List.gethead(stack);
 }
 
 /**
@@ -62,8 +54,8 @@ static void *peek(list_t *stack) {
  *
  * @return  Pointer to the stack.
  */
-static list_t *stack_ctor(void) {
-    return List.list_ctor();
+static list_t *Ctor(void) {
+    return List.ctor();
 }
 
 /**
@@ -71,8 +63,8 @@ static list_t *stack_ctor(void) {
  *
  * @param stack Stack to be destructed.
  */
-static void stack_dtor(list_t *stack) {
-    List.list_dtor(stack);
+static void Dtor(list_t *stack) {
+    List.dtor(stack);
 }
 
 /**
@@ -80,12 +72,23 @@ static void stack_dtor(list_t *stack) {
  * Functions are in struct so we can use them in different files.
  */
 const struct stack_interface_t Stack = {
-        .stack_init = stack_init,
-        .push = push,
-        .pop = pop,
-        .is_empty = is_empty,
-        .empty_stack = empty_stack,
-        .peek = peek,
-        .stack_ctor = stack_ctor,
-        .stack_dtor = stack_dtor
+        .push = Push,
+        .pop = Pop,
+        .is_empty = Is_empty,
+        .clear = Clear,
+        .peek = Peek,
+        .ctor = Ctor,
+        .dtor = Dtor
 };
+
+#ifdef SELFTEST_STACK
+#define MAIN main
+#else
+#define MAIN STACK_MAIN
+#endif
+
+int MAIN() {
+    printf("Selfdebug: %s\n", __FILE__);
+
+    return 0;
+}

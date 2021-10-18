@@ -24,12 +24,6 @@ typedef struct list_item list_item_t;
  * So we can use them in different files as interface.
  */
 struct list_interface_t {
-    /**
-     * @brief List initializer.
-     *
-     * @param list Singly linked list to initialise.
-     */
-    void (*list_init)(list_t *list);
 
     /**
      * @brief Insert first element to a list.
@@ -37,7 +31,7 @@ struct list_interface_t {
      * @param list Singly linked list.
      * @param data Data to insert.
      */
-    void (*insert_first)(list_t *list, void *data);
+    void (*prepend)(list_t *list, void *data);
 
     /**
      * @brief Delete the first item in list.
@@ -59,14 +53,14 @@ struct list_interface_t {
      * @param reference_item Item, behind that the new item will be inserted.
      * @param data New item's data.
      */
-    void (*insert_behind)(list_item_t *reference_item, void *data);
+    void (*insert)(list_item_t *reference_item, void *data);
 
     /**
      * @brief Returns data in the first item in list.
      *
      * @param list singly linked list
      */
-    void *(*read_first)(list_t *list);
+    void *(*gethead)(list_t *list);
 
     /**
      * @brief copy data to the list item element.
@@ -81,14 +75,14 @@ struct list_interface_t {
     *
     * @return Pointer to the allocated memory.
     */
-    list_t *(*list_ctor)(void);
+    list_t *(*ctor)(void);
 
     /**
     * @brief List destructor.
     *
     * @param list the list to be destructed.
     */
-    void (*list_dtor)(list_t *list);
+    void (*dtor)(list_t *list);
 };
 
 /**

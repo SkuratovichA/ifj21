@@ -13,17 +13,8 @@ struct list_item {
  *
  * @return Pointer to the allocated memory.
  */
-static list_t *list_ctor(void) {
+static list_t *Ctor(void) {
     return calloc(1, sizeof(list_t));
-}
-
-/**
- * @brief List initializer.
- *
- * @param list Singly linked list to initialise.
- */
-static void list_init(list_t *list) {
-    list->head = NULL;
 }
 
 /**
@@ -32,7 +23,7 @@ static void list_init(list_t *list) {
  * @param list Singly linked list.
  * @param data Data to insert.
  */
-static void insert_first(list_t *list, void *data) {
+static void Prepend(list_t *list, void *data) {
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
 
@@ -50,7 +41,7 @@ static void insert_first(list_t *list, void *data) {
  *
  * @param list singly linked list.
  */
-static void delete_first(list_t *list) {
+static void Delete_first(list_t *list) {
     soft_assert(list, ERROR_INTERNAL);
     list_item_t *tmp = list->head;
     list->head = list->head->next;
@@ -62,9 +53,9 @@ static void delete_first(list_t *list) {
  *
  * @param list singly linked list
  */
-static void delete_list(list_t *list) {
+static void Clear(list_t *list) {
     while (list->head) {
-        delete_first(list);
+        Delete_first(list);
     }
 }
 
@@ -73,8 +64,8 @@ static void delete_list(list_t *list) {
  *
  * @param list List to be destructed.
  */
-static void list_dtor(list_t *list) {
-    delete_list(list);
+static void Dtor(list_t *list) {
+    Clear(list);
     free(list);
 }
 
@@ -84,13 +75,13 @@ static void list_dtor(list_t *list) {
  * @param reference_item Item, behind that the new item will be inserted.
  * @param data New item's data.
  */
-static void insert_behind(list_item_t *reference_item, void *data) {
+static void Insert(list_item_t *reference_item, void *data) {
     soft_assert(reference_item, ERROR_INTERNAL);
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
 
     new_item->data = data;
-    list_item_t  *tmp = reference_item->next;
+    list_item_t *tmp = reference_item->next;
     reference_item->next = new_item;
     new_item->next = tmp;
 }
@@ -100,9 +91,10 @@ static void insert_behind(list_item_t *reference_item, void *data) {
  *
  * @param list singly linked list
  */
-static void *read_first(list_t *list) {
-    if (!list->head)
+static void *Gethead(list_t *list) {
+    if (!list->head) {
         return NULL;
+    }
     return list->head->data;
 }
 
@@ -111,13 +103,24 @@ static void *read_first(list_t *list) {
  * Functions are in struct so we can use them in different files.
  */
 const struct list_interface_t List = {
-        .list_init =  list_init,
-        .insert_first = insert_first,
-        .delete_first = delete_first,
-        .delete_list = delete_list,
-        .insert_behind = insert_behind,
-        .read_first = read_first,
+        .prepend = Prepend,
+        .delete_list = Clear,
+        .delete_first = Delete_first,
+        .insert = Insert,
+        .gethead = Gethead,
         .copy_data = NULL,
-        .list_ctor = list_ctor,
-        .list_dtor = list_dtor
+        .ctor = Ctor,
+        .dtor = Dtor
 };
+
+#ifdef SELFTEST_LIST
+#define MAIN main
+#else
+#define MAIN LIST_MAIN
+#endif
+
+int MAIN() {
+    printf("Selfdebug: %s\n", __FILE__);
+
+    return 0;
+}
