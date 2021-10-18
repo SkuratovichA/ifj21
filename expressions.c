@@ -23,9 +23,9 @@ static int g[10] = {7, 7, 0, 7, 5, 1, 3, 7, 0, 0};
  * using token information.
  *
  * @param token
- * @return int.
+ * @return op_list_t.
  */
-static int get_op (token_t token) {
+static op_list_t get_op (token_t token) {
     switch (token.type) {
         case TOKEN_ID:      return OP_ID;
         case TOKEN_LPAREN:  return OP_LPAREN;
@@ -42,6 +42,18 @@ static int get_op (token_t token) {
         // TODO: detect if identifier is a function
         default: return OP_FUNC;
     }
+}
+
+/**
+ * @brief Compare two operators using precedence functions.
+ *
+ * @param first_op first operator.
+ * @param second_op second operator.
+ * @return int. >0 if first_op has a higher precedence,
+ * else if has a lower precedence.
+ */
+static int precedence_cmp (op_list_t first_op, op_list_t second_op) {
+    return f[first_op] - g[second_op];
 }
 
 /**
