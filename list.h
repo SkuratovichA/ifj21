@@ -24,7 +24,7 @@ typedef struct list_item list_item_t;
  */
 struct list_interface_t {
     /**
-     * @brief List initialiser.
+     * @brief List initializer.
      *
      * @param list Singly linked list to initialise.
      */
@@ -59,6 +59,21 @@ struct list_interface_t {
      * @param data New item's data.
      */
     void (*insert_behind)(list_item_t *reference_item, void *data);
+
+    /**
+     * @brief Returns data in the first item in list.
+     *
+     * @param list singly linked list
+     */
+    void (**read_first)(list_t *list);
+
+    /**
+     * @brief copy data to the list item element.
+     *
+     * @param dst Destination item to copy the data to.
+     * @param src Source to copy the data from.
+     */
+    void (*copy_data)(list_item_t *dst, void *src);
 };
 
 /**
