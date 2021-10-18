@@ -35,6 +35,7 @@ static void pop(list_t *stack) {
  * @return true if the stack is empty else false.
  */
 static bool is_empty(list_t *stack) {
+    soft_assert(stack, ERROR_INTERNAL);
     return !(stack->head);
 }
 
@@ -57,6 +58,24 @@ static void *peek(list_t *stack) {
 }
 
 /**
+ * @brief Stack constructor.
+ *
+ * @return  Pointer to the stack.
+ */
+static list_t *stack_ctor(void) {
+    return List.list_ctor();
+}
+
+/**
+ * @brief Stack destructor.
+ *
+ * @param stack Stack to be destructed.
+ */
+static void stack_dtor(list_t *stack) {
+    List.list_dtor(stack);
+}
+
+/**
  * Interface to use when dealing with stack.
  * Functions are in struct so we can use them in different files.
  */
@@ -66,5 +85,7 @@ const struct stack_interface_t Stack = {
         .pop = pop,
         .is_empty = is_empty,
         .empty_stack = empty_stack,
-        .peek = peek
+        .peek = peek,
+        .stack_ctor = stack_ctor,
+        .stack_dtor = stack_dtor
 };
