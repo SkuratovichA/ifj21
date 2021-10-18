@@ -14,9 +14,7 @@ struct list_item {
  * @return Pointer to the allocated memory.
  */
 static list_t *list_ctor(void) {
-    list_t *list = calloc(1, sizeof(list_t));
-    soft_assert(list, ERROR_INTERNAL);
-    return list;
+    return calloc(1, sizeof(list_t));
 }
 
 /**
