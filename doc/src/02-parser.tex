@@ -1,0 +1,61 @@
+\section{Parser}
+
+\begin{text}
+    //todo: Add a LL table, first, follow sets.\newline
+    Expressions are parsed using Bottom-Up precedence analysis driven by a precedence table.
+    Every other statement is parsed using Top-down recursive descent analysis.
+    
+\end{text}
+
+\begin{text}
+    Grammar below contains syntactic rules is LL(1).
+\end{text}
+
+    \begin{enumerate}
+	\item $\mbox{\boldmath$\langle{}program\rangle{}$}\ \rightarrow\ require\ "ifj21"\ \mbox{\boldmath$\langle{}stmt\_list\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}stmt\_list\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}stmt\rangle{}$}\ \mbox{\boldmath$\langle{}stmt\_list\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}stmt\_list\rangle{}$}\ \rightarrow\ EOF$
+	\item $\mbox{\boldmath$\langle{}stmt\rangle{}$}\ \rightarrow\ id\ (\ \mbox{\boldmath$\langle{}list\_expr\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}stmt\rangle{}$}\ \rightarrow\ function\ id\ (\ \mbox{\boldmath$\langle{}funparam\_def\_list\rangle{}$}\ \mbox{\boldmath$\langle{}funretopt\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}stmt\rangle{}$}\ \rightarrow\ global\ id\ :\ function\ (\ \mbox{\boldmath$\langle{}datatype\_list\rangle{}$}\ \mbox{\boldmath$\langle{}funcretopt\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}funretopt\rangle{}$}\ \rightarrow\ e$
+	\item $\mbox{\boldmath$\langle{}funretopt\rangle{}$}\ \rightarrow\ :\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ \mbox{\boldmath$\langle{}other\_funrets\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}other\_funcreturns\rangle{}$}\ \rightarrow\ e$
+	\item $\mbox{\boldmath$\langle{}other\_funcreturns\rangle{}$}\ \rightarrow\ ,\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ \mbox{\boldmath$\langle{}other\_funrets\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}dataype\_list\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ \mbox{\boldmath$\langle{}other\_datatypes\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}dataype\_list\rangle{}$}\ \rightarrow\ )$
+	\item $\mbox{\boldmath$\langle{}other\_datatypes\rangle{}$}\ \rightarrow\ )$
+	\item $\mbox{\boldmath$\langle{}other\_datatypes\rangle{}$}\ \rightarrow\ ,\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ \mbox{\boldmath$\langle{}other\_datatypes\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}funparam\_def\_list\rangle{}$}\ \rightarrow\ )$
+	\item $\mbox{\boldmath$\langle{}funparam\_def\_list\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ id\ \mbox{\boldmath$\langle{}other\_funparams\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}other\_funparams\rangle{}$}\ \rightarrow\ )$
+	\item $\mbox{\boldmath$\langle{}other\_funparams\rangle{}$}\ \rightarrow\ ,\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ id\ \mbox{\boldmath$\langle{}other\_funparams\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_body\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \mbox{\boldmath$\langle{}fun\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ if\ \mbox{\boldmath$\langle{}cond\_stmt\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ for\ id\ =\ expression,\ expression\ do\ \mbox{\boldmath$\langle{}fun\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ repeat\ \mbox{\boldmath$\langle{}repeat\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ while\ \mbox{\boldmath$\langle{}expr\rangle{}$}\ do\ \mbox{\boldmath$\langle{}fun\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ local\ id\ :\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ \mbox{\boldmath$\langle{}assignment\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ return\ \mbox{\boldmath$\langle{}list\_expr\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ e$
+	\item $\mbox{\boldmath$\langle{}list\_identif\rangle{}$}\ \rightarrow\ id\ \mbox{\boldmath$\langle{}other\_identifiers\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}other\_identifiers\rangle{}$}\ \rightarrow\ =$
+	\item $\mbox{\boldmath$\langle{}other\_identifiers\rangle{}$}\ \rightarrow\ ,\ id\ \mbox{\boldmath$\langle{}other\_identifiers\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}assignment\rangle{}$}\ \rightarrow\ e$
+	\item $\mbox{\boldmath$\langle{}assignment\rangle{}$}\ \rightarrow\ =\ expression$
+	\item $\mbox{\boldmath$\langle{}repeat\_body\rangle{}$}\ \rightarrow\ until$
+	\item $\mbox{\boldmath$\langle{}repeat\_body\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \mbox{\boldmath$\langle{}repeat\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}datatype\rangle{}$}\ \rightarrow\ string$
+	\item $\mbox{\boldmath$\langle{}datatype\rangle{}$}\ \rightarrow\ integer$
+	\item $\mbox{\boldmath$\langle{}datatype\rangle{}$}\ \rightarrow\ boolean$
+	\item $\mbox{\boldmath$\langle{}datatype\rangle{}$}\ \rightarrow\ number$
+	\item $\mbox{\boldmath$\langle{}cond\_stmt\rangle{}$}\ \rightarrow\ expr\ then\ \mbox{\boldmath$\langle{}cond\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}cond\_body\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}fun\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}cond\_body\rangle{}$}\ \rightarrow\ elseif\ \mbox{\boldmath$\langle{}cond\_stmt\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}cond\_body\rangle{}$}\ \rightarrow\ else\ \mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \mbox{\boldmath$\langle{}cond\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}list\_expr\rangle{}$}\ \rightarrow\ )$
+	\item $\mbox{\boldmath$\langle{}list\_expr\rangle{}$}\ \rightarrow\ expr\ \mbox{\boldmath$\langle{}other\_expr\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}other\_expr\rangle{}$}\ \rightarrow\ )$
+	\item $\mbox{\boldmath$\langle{}other\_expr\rangle{}$}\ \rightarrow\ ,\ expr\ \mbox{\boldmath$\langle{}other\_expr\rangle{}$}$
+\end{enumerate}
+
