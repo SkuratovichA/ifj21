@@ -49,14 +49,14 @@ struct stack_interface_t {
      *
      * @param stack
      */
-    void (**peek)(list_t *stack);
+    void *(*peek)(list_t *stack);
 
     /**
      * @brief Stack constructor.
      *
      * @return  Pointer to the stack.
      */
-    list_t (**stack_ctor)(void);
+    list_t *(*stack_ctor)(void);
 
     /**
      * @brief Stack destructor.
