@@ -12,7 +12,7 @@
 /**
  * List of operators from the precedence table.
  */
-enum op_list {
+typedef enum op_list {
     OP(ID),
     OP(LPAREN),
     OP(RPAREN),
@@ -23,7 +23,7 @@ enum op_list {
     OP(FUNC),
     OP(COMMA),
     OP(DOLLAR)
-};
+} op_list_t;
 
 struct expr_interface_t {
     bool (*parse)(pfile_t *);
