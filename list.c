@@ -9,11 +9,22 @@ struct list_item {
 };
 
 /**
+ * @brief List constructor.
+ *
+ * @return Pointer to the allocated memory.
+ */
+static list_t *list_ctor(void) {
+    list_t *list = calloc(1, sizeof(list_t));
+    soft_assert(list, ERROR_INTERNAL);
+    return list;
+}
+
+/**
  * @brief List initializer.
  *
  * @param list Singly linked list to initialise.
  */
-static void list_init(list_t *list) {
+static void *list_init(list_t *list) {
     list->head = NULL;
 }
 
@@ -42,6 +53,7 @@ static void insert_first(list_t *list, void *data) {
  * @param list singly linked list.
  */
 static void delete_first(list_t *list) {
+    soft_assert(list, ERROR_INTERNAL);
     list_item_t *tmp = list->head;
     list->head = list->head->next;
     free(tmp);
@@ -56,6 +68,16 @@ static void delete_list(list_t *list) {
     while (list->head) {
         delete_first(list);
     }
+}
+
+/**
+ * @brief List destructor.
+ *
+ * @param list List to be destructed.
+ */
+static void list_dtor(list_t *list) {
+    delete_list(list);
+    free(list);
 }
 
 /**
@@ -98,4 +120,6 @@ const struct list_interface_t List = {
         .insert_behind = insert_behind,
         .read_first = read_first,
         .copy_data = NULL,
+        .list_ctor = list_ctor,
+        .list_dtor = list_dtor
 };

@@ -74,6 +74,20 @@ struct list_interface_t {
      * @param src Source to copy the data from.
      */
     void (*copy_data)(list_item_t *dst, void *src);
+
+    /**
+    * @brief List constructor.
+    *
+    * @return Pointer to the allocated memory.
+    */
+    list_t (**list_ctor)(void);
+
+    /**
+    * @brief List destructor.
+    *
+    * @param list the list to be destructed.
+    */
+    void (*list_dtor)(list_t *list);
 };
 
 /**
