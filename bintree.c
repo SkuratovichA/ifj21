@@ -42,7 +42,7 @@ static node * find_node(node *tree, dynstring_t name) {
  * @param token Token generated from lexical analysis. 
  * @param validity Information used to find identificator validity level.
  *
- * @return Pointer to first bin. tree node. If allocation failed return NULL
+ * @return Pointer to the first bin. tree node. If allocation failed return NULL
  */
 static node *create_tree(token_t *token, unsigned int validity) {
 
