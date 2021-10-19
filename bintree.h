@@ -18,7 +18,7 @@
 /**
  * In binary tree we store table of symbols.
  * Each identifier has field of validity.
- *      GTS - global table of symbols - has highest priority
+ *      GTS - global table of symbols - has the highest priority
  *                                    - It is for Global variables and functions
  *      LTS - local table of symbols - each function, a conditional statement, or a loop has this. 
  *
