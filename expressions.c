@@ -45,15 +45,63 @@ static op_list_t get_op (token_t token) {
 }
 
 /**
+ * @brief Precedence functions error handling.
+ * Check existence of relation between two operators.
+ *
+ * @param first_op first operator.
+ * @param second_op second operator.
+ * @return bool.
+ */
+static bool precedence_check (op_list_t first_op, op_list_t second_op) {
+    switch (first_op) {
+        case_2(OP_ID, OP_RPAREN):
+            switch (second_op) {
+                case_3(OP_ID, OP_LPAREN, OP_FUNC):
+                    return false;
+            }
+            break;
+        case_2(OP_LPAREN, OP_COMMA):
+            if (second_op == OP_DOLLAR) {
+                return false;
+            }
+            break;
+        case OP_FUNC:
+            switch (second_op) {
+                case_2(OP_LPAREN, OP_COMMA):
+                    break;
+                default:
+                    return false;
+            }
+            break;
+        case OP_DOLLAR:
+            switch (second_op) {
+                case_3(OP_RPAREN, OP_COMMA, OP_DOLLAR):
+                    return false;
+            }
+            break;
+    }
+
+    return true;
+}
+
+/**
  * @brief Compare two operators using precedence functions.
  *
  * @param first_op first operator.
  * @param second_op second operator.
- * @return int. >0 if first_op has a higher precedence,
- * else if has a lower precedence.
+ * @param cmp result of comparison.
+ * >0 if first_op has a higher precedence,
+ * =0 if operators have a similar precedence,
+ * <0 if first_op has a lower precedence.
+ * @return bool.
  */
-static int precedence_cmp (op_list_t first_op, op_list_t second_op) {
-    return f[first_op] - g[second_op];
+static bool precedence_cmp (op_list_t first_op, op_list_t second_op, int *cmp) {
+    if (precedence_check(first_op, second_op)) {
+        *cmp = f[first_op] - g[second_op];
+        return true;
+    }
+
+    return false;
 }
 
 /**
