@@ -78,18 +78,22 @@ error_calloc:
 
 }
 
+
 /**
- * @brief Delete given node from binary tree. Do not check if node is on leaf level. Free allocated space.
+ * @brief Delete given node from binary tree. Also deletes all the childs.
  *
  * @param node Pointer to one of tree nodes, that will be deleted.
+ * @return void
  */
 static void delete_node(node *node) {
     if (node == NULL) {
         return;
     }
-    if (node->data != NULL) {
-        free(node->data);
-    }
+    delete_node(node->r_child);
+    delete_node(node->l_child);
+
+    Dynstring.free(&node->data->i_name);
+    free(node->data);
     free(node);
 }
 
