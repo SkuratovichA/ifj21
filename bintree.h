@@ -27,7 +27,7 @@
  */
 typedef struct data {
     dynstring_t i_name;          /**< identifier name. can be name of function or variable.*/
-    char type;              /**< Type of identifier can be FUNCTION or VARIABLE */
+    char type;                   /**< Type of identifier can be FUNCTION or VARIABLE */
     // unsigned int i_name_num;  /**< Int identifier. This value defines how we store data. Means name in numbers. */
 } data;
 
@@ -41,9 +41,9 @@ typedef struct data {
  * .data has to be less than .right child .data
  */
 typedef struct node {
-    struct data *data;   /**< Data stored in node.   */
-    struct node *l_child;       /**< Pointer to left side child.  */
-    struct node *r_child;       /**< Pointer to right side child. */
+    struct data *data;           /**< Data stored in node.   */
+    struct node *l_child;        /**< Pointer to left child.  */
+    struct node *r_child;        /**< Pointer to right child. */
     unsigned int validity_field; /**< We are creating trees for each validity field */
 } node;
 
