@@ -12,12 +12,6 @@
 
 extern const struct c_tests_t Tests;
 
-#ifdef SELFTEST
-#define MAIN main
-#else
-#define MAIN niam
-#endif
-
 
 #define TEST_EXPECT(expected, cond, msg) \
 do {                                     \

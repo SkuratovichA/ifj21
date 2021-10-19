@@ -96,18 +96,17 @@ typedef enum token_type {
     X(COMMENT_BLOCK_2) \
     X(COMMENT_BLOCK_END) \
     X(COMMENT_FINAL) \
+    X(NUM_1) \
+    X(NUM_2) \
+    X(NUM_3) \
+    X(NUM_4) \
+    X(NUM_5) \
+    X(NUM_6) \
+    X(NUM_7) \
+    X(NUM_8) \
+    X(NUM_9) \
     X(NUM_INIT) \
-    X(NUM_ZERO) \
-    X(NUM_ZERO_ZERO) \
-    X(NUM_ZERO_TRANSITION) \
-    X(NUM_DOT) \
-    X(NUM_INT) \
-    X(NUM_F_PART) \
-    X(NUM_F_DOT) \
-    X(NUM_EXP) \
     X(NUM_FINAL) \
-    X(NUM_EXP_SIGN) \
-    X(NUM_DOUBLE) \
 
 
 enum states {

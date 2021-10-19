@@ -31,7 +31,6 @@ do { \
     } \
 } while(0)
 
-
 // if there's a condition of type '<a> -> b | c', you have to add EXPECTED_OPT(b) in the function.
 #define EXPECTED_OPT(toktype) \
 do { \
@@ -42,18 +41,10 @@ do { \
         return true; \
     } \
 } while(0)
-// ***************************************************************************** //
-// ***************************************************************************** //
-// ***************************************************************************** //
-// ***************************************************************************** //
-
 
 static bool cond_stmt(pfile_t *);
-
 static bool fun_body(pfile_t *);
-
 static bool fun_stmt(pfile_t *);
-
 
 /**
  * @brief List of expressont.

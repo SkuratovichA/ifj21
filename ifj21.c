@@ -16,7 +16,7 @@ int main() {
         Pfile.free(pf1);
         // tests
         pfile_t *pf2 = Pfile.ctor("1234.er require \"ifj21\"\n");
-        TEST_EXPECT(Parser.analyse(pf2), false, "First test.");
+        TEST_EXPECT(Parser.analyse(pf2), false, "Second test.");
         Pfile.free(pf2);
     }
 
