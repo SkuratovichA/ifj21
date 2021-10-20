@@ -567,7 +567,7 @@ static bool funretopt(pfile_t *pfile) {
  * @brief Statement(global statement) rule.
  *
  * function declaration: !rule <stmt> -> global id : function ( <datatype_list> <funcretopt>
- * function definition: !rule <stmt> -> function id ( <funparam_def_list> <funretopt>
+ * function definition: !rule <stmt> -> function id ( <funparam_def_list> <funretopt> <fun_body>
  * function calling: !rule <stmt> -> id ( <list_expr>
  *
  * @param pfile input file for Scanner.get_next_token().
@@ -665,7 +665,7 @@ static bool stmt_list(pfile_t *pfile) {
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
 
-    // <stmt_list>
+    // <stmt> <stmt_list>
     return stmt(pfile) && stmt_list(pfile);
 }
 
@@ -677,7 +677,7 @@ static bool stmt_list(pfile_t *pfile) {
  * @return bool.
  */
 static bool program(pfile_t *pfile) {
-    dynstring_t prolog_str = Dynstring.create("ifj21");
+    dynstring_t prolog_str = Dynstring.ctor("ifj21");
     debug_msg("<program> ->\n");
 
     // require keyword
@@ -695,7 +695,7 @@ static bool program(pfile_t *pfile) {
     EXPECTED(TOKEN_STR);
 
     // <stmt_list>
-    Dynstring.free(&prolog_str);
+    Dynstring.dtor(&prolog_str);
     return stmt_list(pfile);
 }
 
@@ -716,12 +716,13 @@ static bool Analyse(pfile_t *pfile) {
 
     // get first token to get start
     Scanner.get_next_token(pfile);
+    // todo add assert.
     debug_msg("Start parser.\n");
 
     // perfom a syntax analysis
     res = program(pfile);
 
-    // dont forget to free
+    // dont forget to dtor
 
     Scanner.free();
 
