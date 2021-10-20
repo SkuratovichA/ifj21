@@ -140,7 +140,7 @@ static token_t lex_string(pfile_t *pfile) {
     int ch;
     uint8_t escaped_char;
     bool accepted = false;
-    token_t token = {.type = TOKEN_STR, .attribute.id = Dynstring.create("")};
+    token_t token = {.type = TOKEN_STR, .attribute.id = Dynstring.ctor("")};
 
     while (!accepted && ch != EOF) {
         ch = Pfile.pgetc(pfile);
@@ -159,7 +159,7 @@ static token_t lex_string(pfile_t *pfile) {
                     case '\n':
                         accepted = true;
                     default:
-                        Dynstring.append_char(&token.attribute.id, (char) ch);
+                        Dynstring.append(&token.attribute.id, (char) ch);
                         break;
                 }
                 break;
@@ -177,15 +177,15 @@ static token_t lex_string(pfile_t *pfile) {
                         state = STATE_STR_DEC_0_2;
                         break;
                     case 't':
-                        Dynstring.append_char(&token.attribute.id, '\n');
+                        Dynstring.append(&token.attribute.id, '\n');
                         state = STATE_STR_INIT;
                         break;
                     case 'n':
-                        Dynstring.append_char(&token.attribute.id, '\t');
+                        Dynstring.append(&token.attribute.id, '\t');
                         state = STATE_STR_INIT;
                         break;
                     case_2('\\', '\"'):
-                        Dynstring.append_char(&token.attribute.id, (char) ch);
+                        Dynstring.append(&token.attribute.id, (char) ch);
                         state = STATE_STR_INIT;
                         break;
                     default:
@@ -233,7 +233,7 @@ static token_t lex_string(pfile_t *pfile) {
                     accepted = true;
                 }
                 escaped_char += (ch - '0');
-                Dynstring.append_char(&token.attribute.id, (char) escaped_char);
+                Dynstring.append(&token.attribute.id, (char) escaped_char);
                 break;
 
             case STATE_STR_DEC_1_1:
@@ -243,7 +243,7 @@ static token_t lex_string(pfile_t *pfile) {
                     accepted = true;
                 }
                 escaped_char += (ch - '0');
-                Dynstring.append_char(&token.attribute.id, (char) escaped_char);
+                Dynstring.append(&token.attribute.id, (char) escaped_char);
                 break;
 
             case STATE_STR_DEC_1_2:
@@ -253,7 +253,7 @@ static token_t lex_string(pfile_t *pfile) {
                     accepted = true;
                 }
                 escaped_char += (ch - '0');
-                Dynstring.append_char(&token.attribute.id, (char) escaped_char);
+                Dynstring.append(&token.attribute.id, (char) escaped_char);
                 break;
 
             default:
@@ -264,7 +264,7 @@ static token_t lex_string(pfile_t *pfile) {
     debug_msg("GOT STRING: %s\n", Dynstring.c_str(&token.attribute.id));
     if (state != STATE_STR_FINAL) {
         token.type = TOKEN_DEAD;
-        Dynstring.free(&token.attribute.id);
+        Dynstring.dtor(&token.attribute.id);
         debug_msg_stderr("ERROR while lexing a string\n");
     }
 
@@ -283,7 +283,7 @@ static token_t lex_identif(pfile_t *pfile) {
     int ch;
     bool accepted = false;
 
-    token_t token = {.type = TOKEN_ID, .attribute.id = Dynstring.create("")};
+    token_t token = {.type = TOKEN_ID, .attribute.id = Dynstring.ctor("")};
 
     while (!accepted && ch != EOF) {
         ch = Pfile.pgetc(pfile);
@@ -291,7 +291,7 @@ static token_t lex_identif(pfile_t *pfile) {
         switch (state) { // an e transition between INIT and STATE_IT_INIT, because it have to be in the separate function
             case STATE_ID_INIT:
                 if (isalpha(ch) || ch == '_') {
-                    Dynstring.append_char(&token.attribute.id, (char) ch);
+                    Dynstring.append(&token.attribute.id, (char) ch);
                     state = STATE_ID_FINAL;
                 } else {
                     accepted = true;
@@ -300,7 +300,7 @@ static token_t lex_identif(pfile_t *pfile) {
 
             case STATE_ID_FINAL: // so actually there has to be only one identifier state in the dfa
                 if (isalnum(ch) || ch == '_') {
-                    Dynstring.append_char(&token.attribute.id, (char) ch);
+                    Dynstring.append(&token.attribute.id, (char) ch);
                 } else {
                     accepted = true;
                     Pfile.ungetc(pfile);
@@ -313,14 +313,14 @@ static token_t lex_identif(pfile_t *pfile) {
     }
 
     if (state != STATE_ID_FINAL) {
-        Dynstring.free(&token.attribute.id);
+        Dynstring.dtor(&token.attribute.id);
         token.type = TOKEN_DEAD;
     }
 
     debug_msg("identif: %s", Dynstring.c_str(&token.attribute.id));
     // this 2 lines of code make parsing much more easier
     if ((token.type = to_keyword(Dynstring.c_str(token.attribute.id))) != TOKEN_ID) {
-        Dynstring.free(&token.attribute.id);
+        Dynstring.dtor(&token.attribute.id);
         debug_msg_s("- keyword!\n");
     } else {
         debug_msg_s("\n");
@@ -409,7 +409,6 @@ static bool process_comment(pfile_t *pfile) {
  */
 static token_t lex_relate_op(pfile_t *pfile) {
     debug_msg(DEBUG_SEP);
-    token_t token;
     bool accepted = false;
     int ch;
 
@@ -449,7 +448,7 @@ static token_t lex_relate_op(pfile_t *pfile) {
 static token_t lex_number(pfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     state = STATE_NUM_INIT;
-    dynstring_t ascii_num = Dynstring.create(""); // create an empty string
+    dynstring_t ascii_num = Dynstring.ctor(""); // ctor an empty string
 
     bool is_fp = true; // suppose it is true.
     int ch;
@@ -468,7 +467,7 @@ static token_t lex_number(pfile_t *pfile) {
                     accepted = true;
                     break;
                 }
-                Dynstring.append_char(&ascii_num, (char) ch);
+                Dynstring.append(&ascii_num, (char) ch);
                 break;
 
                 // we got here from number init state and there was 0.
@@ -477,10 +476,10 @@ static token_t lex_number(pfile_t *pfile) {
                 // append char is after the statement, so an empty statement is here.
                 if (isdigit(ch)) {
                     state = STATE_NUM_3;
-                    Dynstring.append_char(&ascii_num, (char) ch);
+                    Dynstring.append(&ascii_num, (char) ch);
                 } else if (ch == '.') {
                     state = STATE_NUM_7;
-                    Dynstring.append_char(&ascii_num, (char) ch);
+                    Dynstring.append(&ascii_num, (char) ch);
                 } else {
                     // null has been accepted, so it is a legit integer.
                     is_fp = false;
@@ -504,7 +503,7 @@ static token_t lex_number(pfile_t *pfile) {
                     state = STATE_NUM_FINAL;
                     break;
                 }
-                Dynstring.append_char(&ascii_num, (char) ch);
+                Dynstring.append(&ascii_num, (char) ch);
                 break;
 
                 // tro zeros have been accepted.
@@ -519,7 +518,7 @@ static token_t lex_number(pfile_t *pfile) {
                     accepted = true;
                     break;
                 }
-                Dynstring.append_char(&ascii_num, (char) ch);
+                Dynstring.append(&ascii_num, (char) ch);
                 break;
 
             case STATE_NUM_4:
@@ -533,16 +532,16 @@ static token_t lex_number(pfile_t *pfile) {
                     accepted = true;
                     break;
                 }
-                Dynstring.append_char(&ascii_num, (char) ch);
+                Dynstring.append(&ascii_num, (char) ch);
                 break;
 
             case STATE_NUM_5:
                 if (isdigit(ch)) {
                     state = STATE_NUM_9;
-                    Dynstring.append_char(&ascii_num, (char) ch);
+                    Dynstring.append(&ascii_num, (char) ch);
                 } else if (ch == '+' || ch == '-') {
                     state = STATE_NUM_6;
-                    Dynstring.append_char(&ascii_num, (char) ch);
+                    Dynstring.append(&ascii_num, (char) ch);
                 } else {
                     accepted = true;
                 }
@@ -551,7 +550,7 @@ static token_t lex_number(pfile_t *pfile) {
             case STATE_NUM_6:
                 if (isdigit(ch)) {
                     state = STATE_NUM_9;
-                    Dynstring.append_char(&ascii_num, (char) ch);
+                    Dynstring.append(&ascii_num, (char) ch);
                 } else {
                     accepted = true;
                 }
@@ -560,7 +559,7 @@ static token_t lex_number(pfile_t *pfile) {
             case STATE_NUM_7:
                 if (isdigit(ch)) {
                     state = STATE_NUM_8;
-                    Dynstring.append_char(&ascii_num, (char) ch);
+                    Dynstring.append(&ascii_num, (char) ch);
                 } else {
                     accepted = true;
                 }
@@ -568,9 +567,9 @@ static token_t lex_number(pfile_t *pfile) {
 
             case STATE_NUM_8:
                 if (isdigit(ch)) {
-                    Dynstring.append_char(&ascii_num, (char) ch);
+                    Dynstring.append(&ascii_num, (char) ch);
                 } else if (ch == 'e' || ch == 'E') {
-                    Dynstring.append_char(&ascii_num, (char) ch);
+                    Dynstring.append(&ascii_num, (char) ch);
                     state = STATE_NUM_5;
                 } else {
                     accepted = true;
@@ -580,7 +579,7 @@ static token_t lex_number(pfile_t *pfile) {
 
             case STATE_NUM_9:
                 if (isdigit(ch)) {
-                    Dynstring.append_char(&ascii_num, (char) ch);
+                    Dynstring.append(&ascii_num, (char) ch);
                 } else {
                     accepted = true;
                     state = STATE_NUM_FINAL;
@@ -592,7 +591,7 @@ static token_t lex_number(pfile_t *pfile) {
         }
     }
     if (state != STATE_NUM_FINAL) {
-        Dynstring.free(&ascii_num);
+        Dynstring.dtor(&ascii_num);
         return (token_t) {.type = TOKEN_DEAD};
     }
 
@@ -606,7 +605,7 @@ static token_t lex_number(pfile_t *pfile) {
         token.type = TOKEN_NUM_I;
         token.attribute.num_i = strtoull(Dynstring.c_str(ascii_num), NULL, 10);
     }
-    Dynstring.free(&ascii_num);
+    Dynstring.dtor(&ascii_num);
 
     return token;
 }
@@ -720,7 +719,7 @@ static token_t scanner(pfile_t *pfile) {
  */
 static void Free_token(token_t *token) {
     if (token->type == TOKEN_ID || token->type == TOKEN_STR) {
-        Dynstring.free(&token->attribute.id);
+        Dynstring.dtor(&token->attribute.id);
     }
 }
 
@@ -736,7 +735,7 @@ static token_t prev, curr;
  * @return token
  */
 static token_t Get_next_token(pfile_t *pfile) {
-    Free_token(&prev); // need to free string
+    Free_token(&prev); // need to dtor string
     prev = curr;
     curr = scanner(pfile);
     return curr;
@@ -788,10 +787,10 @@ static size_t Get_charpos() {
 static void Free_scanner() {
 
     if (prev.type == TOKEN_ID || prev.type == TOKEN_STR) {
-        Dynstring.free(&prev.attribute.id);
+        Dynstring.dtor(&prev.attribute.id);
     }
     if (curr.type == TOKEN_ID || curr.type == TOKEN_STR) {
-        Dynstring.free(&curr.attribute.id);
+        Dynstring.dtor(&curr.attribute.id);
     }
 }
 
@@ -812,12 +811,8 @@ const struct scanner_interface Scanner = {
 
 
 #ifdef SELFTEST_SCANNER
-#define MAIN main
-#else
-#define MAIN SCANNER_MAIN
-#endif
 
-int MAIN() {
+int main() {
     token_t token;
 
     //********************************************************************//
@@ -841,7 +836,7 @@ int MAIN() {
         nexttest:
         Tests.failed("Cannot open the file!\n");
     }
-    Pfile.free(pfile);
+    Pfile.dtor(pfile);
 
     // integer ok
     printf("Test 3 - integer numbers, good\n");
@@ -860,7 +855,7 @@ int MAIN() {
         nexttest3:
         Tests.failed("Cannot open the file!\n");
     }
-    Pfile.free(pfile);
+    Pfile.dtor(pfile);
 
 
     // identifier ok
@@ -880,7 +875,7 @@ int MAIN() {
         nexttest5:
         Tests.failed("Cannot open the file!\n");
     }
-    Pfile.free(pfile);
+    Pfile.dtor(pfile);
 
     // strings good
     printf("Test 7 - strings, good\n");
@@ -899,7 +894,9 @@ int MAIN() {
         nexttest7:
         Tests.failed("Cannot open the file!\n");
     }
-    Pfile.free(pfile);
+    Pfile.dtor(pfile);
 
     return 0;
 }
+
+#endif

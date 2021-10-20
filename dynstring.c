@@ -22,13 +22,13 @@
 #endif
 
 /**
- * @brief Create a dynstring_t from a c_string, with length(@param str) + STRSIZE
+ * @brief Create a dynstring_t from a c_string, with len(@param str) + STRSIZE
  *
  * @param s static c dynstring_t.
  * @param s Char that to convert to dynstring_t.
  * @return pointer to the dynstring_t object.
  */
-static dynstring_t Str_create(const char *s) {
+static dynstring_t Str_ctor(const char *s) {
     soft_assert(s, ERROR_INTERNAL); // dont deal with NULLptr
 
     size_t length = strlen(s);
@@ -56,7 +56,7 @@ static char *Str_c_str(dynstring_t str) {
 }
 
 /**
- * @brief Return length of given dynstring_t.
+ * @brief Return len of given dynstring_t.
  *
  * @param str dynstring_t object.
  * @return len of dynstring_t
@@ -80,7 +80,7 @@ static void Str_clear(dynstring_t *str) {
 /**
  * @brief Frees memory.
  *
- * @param str dynstring_t to free.
+ * @param str dynstring_t to dtor.
  */
 static void Str_free(dynstring_t *str) {
     soft_assert(str->str, ERROR_INTERNAL);
@@ -95,7 +95,7 @@ static void Str_free(dynstring_t *str) {
  * @param str dynstring_t heap structure.
  * @param ch char to append.
  */
-static void Str_append_char(dynstring_t *str, char ch) {
+static void Str_append(dynstring_t *str, char ch) {
     soft_assert(str->str, ERROR_INTERNAL);
     if (str->len + 1 >= str->allocated_size) {
         str->allocated_size *= 2;
@@ -134,7 +134,7 @@ static dynstring_t Str_cat(dynstring_t *s1, dynstring_t *s2) {
     soft_assert(s2->str, ERROR_INTERNAL);
     soft_assert(s1->str, ERROR_INTERNAL);
 
-    dynstring_t new = Str_create(s1->str);
+    dynstring_t new = Str_ctor(s1->str);
 
     size_t diff = new.allocated_size - s1->len;
     if (diff <= 1) {
@@ -154,12 +154,12 @@ static dynstring_t Str_cat(dynstring_t *s1, dynstring_t *s2) {
  */
 const struct dynstring_interface_t Dynstring = {
         /*@{*/
-        .create         = Str_create,
-        .length         = Str_length,
-        .c_str          = Str_c_str,
-        .append_char    = Str_append_char,
-        .free           = Str_free,
-        .cmp            = Str_cmp,
-        .cat            = Str_cat,
+        .ctor = Str_ctor,
+        .len = Str_length,
+        .c_str = Str_c_str,
+        .append = Str_append,
+        .dtor = Str_free,
+        .cmp = Str_cmp,
+        .cat = Str_cat,
 };
 
