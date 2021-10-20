@@ -77,7 +77,7 @@ static char *Get_error_msg() {
  * Functions are in struct so we can use them in different files.
  */
 const struct error_interface Errors = {
-        .get_errmsg =  Get_error_msg,
+        .get_errmsg = Get_error_msg,
         .set_error = Set_error,
         .get_error = Get_error,
 };

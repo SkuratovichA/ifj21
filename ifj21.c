@@ -13,11 +13,11 @@ int main() {
         // tests
         pfile_t *pf1 = Pfile.ctor("require \"ifj21\"\n");
         TEST_EXPECT(Parser.analyse(pf1), true, "First test.");
-        Pfile.free(pf1);
+        Pfile.dtor(pf1);
         // tests
         pfile_t *pf2 = Pfile.ctor("1234.er require \"ifj21\"\n");
         TEST_EXPECT(Parser.analyse(pf2), false, "Second test.");
-        Pfile.free(pf2);
+        Pfile.dtor(pf2);
     }
 
     //=====
