@@ -27,7 +27,7 @@
 typedef struct dynstring {
     size_t allocated_size;    /**< Allocated len on heap. */
     size_t len;              /**< String length. */
-    char str[];              /**< String as a flexible array member.*/
+    char *str;
 } dynstring_t;
 
 /**
@@ -43,11 +43,13 @@ static dynstring_t *Str_ctor(const char *s) {
     size_t length = strlen(s);
     size_t alloc = length + STRSIZE + 1;
 
-    dynstring_t *str = calloc(1, sizeof(dynstring_t) + alloc);
+    dynstring_t *str = calloc(1, sizeof(dynstring_t));
     soft_assert(str, ERROR_INTERNAL);
     str->allocated_size = alloc;
     str->len = length;
 
+    str->str = calloc(1, alloc);
+    soft_assert(str->str, ERROR_INTERNAL);
     strcpy(str->str, s);
     debug_msg("Create dynstring: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->allocated_size, str->str);
     return str;
@@ -93,6 +95,7 @@ static void Str_clear(dynstring_t *str) {
  */
 static void Str_free(dynstring_t *str) {
     soft_assert(str, ERROR_INTERNAL);
+    free(str->str);
     free(str);
 }
 
@@ -106,9 +109,9 @@ static void Str_append(dynstring_t *str, char ch) {
     soft_assert(str, ERROR_INTERNAL);
     if (str->len + 1 >= str->allocated_size) {
         size_t nsiz = str->allocated_size *= 2;
-        void *tmp = realloc(str, nsiz + sizeof(dynstring_t));
+        char *tmp = realloc(str->str, nsiz + sizeof(dynstring_t));
         soft_assert(tmp, ERROR_INTERNAL);
-        str = tmp;
+        str->str = tmp;
     }
     str->str[str->len++] = ch;
     str->str[str->len] = '\0';
@@ -146,9 +149,9 @@ static dynstring_t *Str_cat(dynstring_t *s1, dynstring_t *s2) {
     size_t diff = new->allocated_size - s1->len;
     if (diff <= 1) {
         size_t nsiz = new->allocated_size *= 2;
-        void *tmp = realloc(new, nsiz + sizeof(dynstring_t));
+        char *tmp = realloc(new->str, nsiz + sizeof(dynstring_t));
         soft_assert(tmp, ERROR_INTERNAL);
-        new = tmp;
+        new->str = tmp;
     }
     strcat(new->str, s1->str);
 
