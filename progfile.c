@@ -235,7 +235,7 @@ static pfile_t *Getfile(const char *filename, const char *mode) {
 const struct pfile_interface_t Pfile = {
         .getfile = Getfile,
         .getfile_stdin  = Getfile_stdin,
-        .free = Free,
+        .dtor = Free,
         .pgetc = Getc,
         .ungetc = Ungetc,
         .get_tape = Get_tape,
