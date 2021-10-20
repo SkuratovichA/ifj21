@@ -12,7 +12,7 @@
  */
 typedef struct dynstring {
     size_t allocated_size;    /**< Allocated len on heap */
-    size_t len;              /**< String length */
+    size_t len;              /**< String len */
     char *str;
 } dynstring_t;
 
@@ -23,13 +23,13 @@ typedef struct dynstring {
 struct dynstring_interface_t {
 
     /**
-     * @brief Create a dynstring_t from a c_string, with length(@param str + STRSIZE).
+     * @brief Create a dynstring_t from a c_string, with len(@param str + STRSIZE).
      *
      * @param str Output dynstring_t. str is data struct defined in dynstring_t.h
      * @param s Char that we want to convert to dynstring_t.
      * @return non-null pointer to dynstring_t object.
      */
-    dynstring_t (*create)(const char *);
+    dynstring_t (*ctor)(const char *);
 
     /**
      * @brief Appends a character shrunk.
@@ -37,7 +37,7 @@ struct dynstring_interface_t {
      * @param str dynstring_t heap structure.
      * @param ch char to append.
      */
-    void (*append_char)(dynstring_t *, char);
+    void (*append)(dynstring_t *, char);
 
     /**
      * @brief Compares two dynstrings.
@@ -49,19 +49,19 @@ struct dynstring_interface_t {
     int (*cmp)(dynstring_t, dynstring_t);
 
     /**
-     * @brief Return length of given dynstring_t.
+     * @brief Return len of given dynstring_t.
      *
      * @param str
      * @return len of dynstring_t
      */
-    size_t (*length)(dynstring_t *);
+    size_t (*len)(dynstring_t *);
 
     /**
      * @brief Frees memory.
      *
-     * @param str dynstring_t to free.
+     * @param str dynstring_t to dtor.
      */
-    void (*free)(dynstring_t *);
+    void (*dtor)(dynstring_t *);
 
     /**
      * @brief Get char * (c dynstring_t ending with '\0') from dynstring_t.
