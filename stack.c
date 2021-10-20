@@ -81,7 +81,7 @@ const struct stack_interface_t Stack = {
         .dtor = Dtor
 };
 
-#ifdef SELFTEST_STACK
+#ifdef SELFTEST_stack
 #include "tests/tests.h"
 #include "dynstring.h"
 
