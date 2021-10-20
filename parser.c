@@ -724,7 +724,11 @@ static bool Analyse(pfile_t *pfile) {
 
     // dont forget to dtor
 
+    // Free scanner
     Scanner.free();
+
+    // Dtor pfile
+    Pfile.dtor(pfile);
 
     return res;
 }
