@@ -43,7 +43,7 @@ struct pfile_interface_t {
      * @param pfile struct that will be freed
      * @return void
      */
-    void (*free)(pfile_t *);
+    void (*dtor)(pfile_t *);
 
     /**
      * @brief move tape head one character backward, and return a current character
