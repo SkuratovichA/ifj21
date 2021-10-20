@@ -28,8 +28,6 @@ do {                                     \
 struct c_tests_t {
     void (*failed)(const char *, ...);
 
-    int *(*testnum)(void);
-
     void (*warning)(const char *, ...);
 
     void (*passed)(const char *, ...);
