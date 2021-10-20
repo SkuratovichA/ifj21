@@ -58,7 +58,10 @@ struct stack_interface_t {
      * @param stack Stack to be destructed.
      */
     void (*dtor)(list_t *stack);
-    };
+};
+
+// Dont change. On apple macos it doesnt wrk because there's already a stack structure.
+typedef list_t sstack_t;
 
 /**
  * Functions from stack.c will be visible in different files under Stack name.
