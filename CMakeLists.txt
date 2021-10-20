@@ -1,13 +1,17 @@
 cmake_minimum_required(VERSION 3.19)
 project(ifj21 C)
-
 set(CMAKE_C_STANDARD 11)
+set(PROJECT_NAME ifj21)
 
+# definitions of cmake variables.
 set(UTILS_SOURCES
         macros.h
         debug.h
-        tests/tests.c
         errors.c
+        progfile.c
+        scanner.c
+        tests/tests.c
+        parser.c expressions.c
         )
 set(DATASTRUCTURES
         bintree.c
@@ -15,53 +19,62 @@ set(DATASTRUCTURES
         stack.c
         dynstring.c
         )
-set(PROJ_FILES ${DATASTRUCTURES} ${UTILS_SOURCES})
-
-set(PARSER parser.c expressions.c)
-
-
-# Compile options for a project.
+set(PROJ_FILES
+        ${DATASTRUCTURES} ${UTILS_SOURCES}
+        )
+set(DEVELOP_FLAGS
+        -Wno-unused-parameter -Wno-unused-function -DDEBUG
+        )
 add_compile_options(
         -Wall -Wextra -pedantic -g
-        -DDEBUG
+        ${DEVELOP_FLAGS}
 )
 
+#adding targets
 # The project itself.
-add_executable(ifj21
+add_executable(${PROJECT_NAME}
         ifj21.c
         ${PROJ_FILES}
-        ${PARSER}
-        progfile.c
-        scanner.c
         )
+message(STATUS ${PROJECT_NAME} " execucumber compiled.")
 
-## Tests for scanner.
-add_executable(test_scanner
+# todo somehow make it more general
+#scanner tests
+set(ATTRIBUTE scanner)
+add_executable(test_${ATTRIBUTE}
         ${PROJ_FILES}
-        progfile.c
-        scanner.c
         )
-target_compile_options(test_scanner PRIVATE -DSELFTEST_SCANNER)
+target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE})
+message(STATUS ${ATTRIBUTE} " execucumber compiled.")
 
-# Stack tests.
-add_executable(test_stack
+#stack tests
+set(ATTRIBUTE stack)
+add_executable(test_${ATTRIBUTE}
         ${PROJ_FILES}
-        list.c
-        stack.c
         )
-target_compile_options(test_stack PUBLIC -DSELFTEST_STACK)
+target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE})
+message(STATUS ${ATTRIBUTE} " execucumber compiled.")
 
-# List tests.
-add_executable(test_list
+#list tests
+set(ATTRIBUTE list)
+add_executable(test_${ATTRIBUTE}
         ${PROJ_FILES}
-        list.c
         )
-target_compile_options(test_list PRIVATE -DSELFTEST_LIST)
+target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE})
+message(STATUS ${ATTRIBUTE} " execucumber compiled.")
 
-#binary tree tests.
-add_executable(test_bintree
+#dynstring tests.
+set(ATTRIBUTE dynstring)
+add_executable(test_${ATTRIBUTE}
         ${PROJ_FILES}
-        bintree.c
         )
-target_compile_options(test_bintree PRIVATE -DSELFTEST_BINTREE)
+target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE})
+message(STATUS ${ATTRIBUTE} " execucumber compiled.")
 
+#bintree tests
+set(ATTRIBUTE bintree)
+add_executable(test_${ATTRIBUTE}
+        ${PROJ_FILES}
+        )
+target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE})
+message(STATUS ${ATTRIBUTE} " execucumber compiled.")
