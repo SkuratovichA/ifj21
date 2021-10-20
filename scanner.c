@@ -142,8 +142,7 @@ static token_t lex_string(pfile_t *pfile) {
     bool accepted = false;
     token_t token = {.type = TOKEN_STR, .attribute.id = Dynstring.ctor("")};
 
-    while (!accepted && ch != EOF) {
-        ch = Pfile.pgetc(pfile);
+    while (!accepted && (ch = Pfile.pgetc(pfile)) != EOF) {
         charpos++;
         debug_msg("GOT: %c in state %s\n", ch, state_tostring(state));
         switch (state) {
@@ -285,8 +284,7 @@ static token_t lex_identif(pfile_t *pfile) {
 
     token_t token = {.type = TOKEN_ID, .attribute.id = Dynstring.ctor("")};
 
-    while (!accepted && ch != EOF) {
-        ch = Pfile.pgetc(pfile);
+    while (!accepted && (ch = Pfile.pgetc(pfile)) != EOF) {
         charpos++;
         switch (state) { // an e transition between INIT and STATE_IT_INIT, because it have to be in the separate function
             case STATE_ID_INIT:
@@ -343,8 +341,7 @@ static bool process_comment(pfile_t *pfile) {
     int ch;
 
     // != EOF is not a true "DFA" way of thinking, but it is more clearly
-    while (!accepted && ch != EOF) {
-        ch = Pfile.pgetc(pfile);
+    while (!accepted && (ch = Pfile.pgetc(pfile)) != EOF) {
         charpos++;
         if (ch == '\n') {
             lines++;
@@ -454,8 +451,7 @@ static token_t lex_number(pfile_t *pfile) {
     int ch;
     bool accepted = false;
 
-    while (!accepted && ch != EOF) {
-        ch = Pfile.pgetc(pfile);
+    while (!accepted && (ch = Pfile.pgetc(pfile)) != EOF) {
         charpos++;
         switch (state) {
             case STATE_NUM_INIT:
