@@ -22,25 +22,34 @@
 #endif
 
 /**
+ * A structure represented dynstring_t
+ */
+typedef struct dynstring {
+    size_t allocated_size;    /**< Allocated len on heap. */
+    size_t len;              /**< String length. */
+    char str[];              /**< String as a flexible array member.*/
+} dynstring_t;
+
+/**
  * @brief Create a dynstring_t from a c_string, with len(@param str) + STRSIZE
  *
  * @param s static c dynstring_t.
  * @param s Char that to convert to dynstring_t.
  * @return pointer to the dynstring_t object.
  */
-static dynstring_t Str_ctor(const char *s) {
+static dynstring_t *Str_ctor(const char *s) {
     soft_assert(s, ERROR_INTERNAL); // dont deal with NULLptr
 
     size_t length = strlen(s);
-    dynstring_t str = {
-            .len = length,
-            .allocated_size = length + STRSIZE - 1, // - 1 need to be here not forget about a byte for \0
-            .str = calloc(1, length + STRSIZE),
-    };
-    soft_assert(str.str, ERROR_INTERNAL);
+    size_t alloc = length + STRSIZE + 1;
 
-    strcpy(str.str, s);
-    debug_msg("Create dynstring: { .len = %zu .size = %zu .str = '%s'\n", str.len, str.allocated_size, str.str);
+    dynstring_t *str = calloc(1, sizeof(dynstring_t) + alloc);
+    soft_assert(str, ERROR_INTERNAL);
+    str->allocated_size = alloc;
+    str->len = length;
+
+    strcpy(str->str, s);
+    debug_msg("Create dynstring: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->allocated_size, str->str);
     return str;
 }
 
@@ -50,9 +59,9 @@ static dynstring_t Str_ctor(const char *s) {
  * @param str dynstring_t object.
  * @return c dynstring_t representation.
  */
-static char *Str_c_str(dynstring_t str) {
-    soft_assert(str.str, ERROR_INTERNAL);
-    return str.str;
+static char *Str_c_str(dynstring_t *str) {
+    soft_assert(str, ERROR_INTERNAL);
+    return str->str;
 }
 
 /**
@@ -62,7 +71,7 @@ static char *Str_c_str(dynstring_t str) {
  * @return len of dynstring_t
  */
 static size_t Str_length(dynstring_t *str) {
-    soft_assert(str->str, ERROR_INTERNAL);
+    soft_assert(str, ERROR_INTERNAL);
     return str->len;
 }
 
@@ -72,7 +81,7 @@ static size_t Str_length(dynstring_t *str) {
 * @param str string to clear.
 */
 static void Str_clear(dynstring_t *str) {
-    soft_assert(str->str, ERROR_INTERNAL);
+    soft_assert(str, ERROR_INTERNAL);
     str->str[0] = '\0';
     str->len = 0;
 }
@@ -83,10 +92,8 @@ static void Str_clear(dynstring_t *str) {
  * @param str dynstring_t to dtor.
  */
 static void Str_free(dynstring_t *str) {
-    soft_assert(str->str, ERROR_INTERNAL);
-    str->allocated_size = 0;
-    str->len = 0;
-    free(str->str);
+    soft_assert(str, ERROR_INTERNAL);
+    free(str);
 }
 
 /**
@@ -96,12 +103,12 @@ static void Str_free(dynstring_t *str) {
  * @param ch char to append.
  */
 static void Str_append(dynstring_t *str, char ch) {
-    soft_assert(str->str, ERROR_INTERNAL);
+    soft_assert(str, ERROR_INTERNAL);
     if (str->len + 1 >= str->allocated_size) {
-        str->allocated_size *= 2;
-        void *tmp = realloc(str->str, str->allocated_size);
+        size_t nsiz = str->allocated_size *= 2;
+        void *tmp = realloc(str, nsiz + sizeof(dynstring_t));
         soft_assert(tmp, ERROR_INTERNAL);
-        str->str = tmp;
+        str = tmp;
     }
     str->str[str->len++] = ch;
     str->str[str->len] = '\0';
@@ -115,12 +122,12 @@ static void Str_append(dynstring_t *str, char ch) {
  * @param s2 dynstring_t object.
  * @returns -1, 0, 1 depends on lexicographical ordering of two strings.
  */
-static int Str_cmp(dynstring_t s1, dynstring_t s2) {
-    soft_assert(s2.str, ERROR_INTERNAL);
-    soft_assert(s1.str, ERROR_INTERNAL);
-    debug_msg("compare %s with %s gives %d\n", s1.str, s2.str, strcmp(s1.str, s2.str));
+static int Str_cmp(dynstring_t *s1, dynstring_t *s2) {
+    soft_assert(s2, ERROR_INTERNAL);
+    soft_assert(s1, ERROR_INTERNAL);
+    debug_msg("compare %s with %s gives %d\n", s1->str, s2->str, strcmp(s1->str, s2->str));
 
-    return strcmp(s1.str, s2.str);
+    return strcmp(s1->str, s2->str);
 }
 
 /**
@@ -130,20 +137,20 @@ static int Str_cmp(dynstring_t s1, dynstring_t s2) {
  * @param s2 dynstring_t object.
  * @returns new dysntring, which is product of s1 and s2.
  */
-static dynstring_t Str_cat(dynstring_t *s1, dynstring_t *s2) {
-    soft_assert(s2->str, ERROR_INTERNAL);
-    soft_assert(s1->str, ERROR_INTERNAL);
+static dynstring_t *Str_cat(dynstring_t *s1, dynstring_t *s2) {
+    soft_assert(s2, ERROR_INTERNAL);
+    soft_assert(s1, ERROR_INTERNAL);
 
-    dynstring_t new = Str_ctor(s1->str);
+    dynstring_t *new = Str_ctor(s1->str);
 
-    size_t diff = new.allocated_size - s1->len;
+    size_t diff = new->allocated_size - s1->len;
     if (diff <= 1) {
-        new.allocated_size *= 2;
-        void *tmp = realloc(new.str, new.allocated_size);
+        size_t nsiz = new->allocated_size *= 2;
+        void *tmp = realloc(new, nsiz + sizeof(dynstring_t));
         soft_assert(tmp, ERROR_INTERNAL);
-        new.str = tmp;
+        new = tmp;
     }
-    strcat(new.str, s1->str);
+    strcat(new->str, s1->str);
 
     return new;
 }
@@ -163,3 +170,10 @@ const struct dynstring_interface_t Dynstring = {
         .cat = Str_cat,
 };
 
+#ifdef SELFTEST_dynstring
+int main() {
+    fprintf(stderr, "Selftests: %s\n", __FILE__);
+
+    return 0;
+}
+#endif

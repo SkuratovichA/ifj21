@@ -122,7 +122,7 @@ enum states {
  * Token attributes.
  */
 typedef union token_attribute {
-    dynstring_t id;   /**< if token == string || token == identifier  */
+    dynstring_t *id;   /**< if token == string || token == identifier  */
     uint64_t num_i;  /**< if token == number_int */
     double num_f;    /**< number_float */
 } attribute_t;

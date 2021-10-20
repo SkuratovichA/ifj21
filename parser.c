@@ -677,7 +677,7 @@ static bool stmt_list(pfile_t *pfile) {
  * @return bool.
  */
 static bool program(pfile_t *pfile) {
-    dynstring_t prolog_str = Dynstring.ctor("ifj21");
+    dynstring_t *prolog_str = Dynstring.ctor("ifj21");
     debug_msg("<program> ->\n");
 
     // require keyword
@@ -695,7 +695,7 @@ static bool program(pfile_t *pfile) {
     EXPECTED(TOKEN_STR);
 
     // <stmt_list>
-    Dynstring.dtor(&prolog_str);
+    Dynstring.dtor(prolog_str);
     return stmt_list(pfile);
 }
 

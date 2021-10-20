@@ -113,7 +113,7 @@ const struct list_interface_t List = {
         .dtor = Dtor
 };
 
-#ifdef SELFTEST_LIST
+#ifdef SELFTEST_list
 
 int main() {
     printf("Selfdebug: %s\n", __FILE__);

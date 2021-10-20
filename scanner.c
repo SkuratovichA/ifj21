@@ -159,7 +159,7 @@ static token_t lex_string(pfile_t *pfile) {
                     case '\n':
                         accepted = true;
                     default:
-                        Dynstring.append(&token.attribute.id, (char) ch);
+                        Dynstring.append(token.attribute.id, (char) ch);
                         break;
                 }
                 break;
@@ -177,15 +177,15 @@ static token_t lex_string(pfile_t *pfile) {
                         state = STATE_STR_DEC_0_2;
                         break;
                     case 't':
-                        Dynstring.append(&token.attribute.id, '\n');
+                        Dynstring.append(token.attribute.id, '\n');
                         state = STATE_STR_INIT;
                         break;
                     case 'n':
-                        Dynstring.append(&token.attribute.id, '\t');
+                        Dynstring.append(token.attribute.id, '\t');
                         state = STATE_STR_INIT;
                         break;
                     case_2('\\', '\"'):
-                        Dynstring.append(&token.attribute.id, (char) ch);
+                        Dynstring.append(token.attribute.id, (char) ch);
                         state = STATE_STR_INIT;
                         break;
                     default:
@@ -233,7 +233,7 @@ static token_t lex_string(pfile_t *pfile) {
                     accepted = true;
                 }
                 escaped_char += (ch - '0');
-                Dynstring.append(&token.attribute.id, (char) escaped_char);
+                Dynstring.append(token.attribute.id, (char) escaped_char);
                 break;
 
             case STATE_STR_DEC_1_1:
@@ -243,7 +243,7 @@ static token_t lex_string(pfile_t *pfile) {
                     accepted = true;
                 }
                 escaped_char += (ch - '0');
-                Dynstring.append(&token.attribute.id, (char) escaped_char);
+                Dynstring.append(token.attribute.id, (char) escaped_char);
                 break;
 
             case STATE_STR_DEC_1_2:
@@ -253,7 +253,7 @@ static token_t lex_string(pfile_t *pfile) {
                     accepted = true;
                 }
                 escaped_char += (ch - '0');
-                Dynstring.append(&token.attribute.id, (char) escaped_char);
+                Dynstring.append(token.attribute.id, (char) escaped_char);
                 break;
 
             default:
@@ -261,10 +261,10 @@ static token_t lex_string(pfile_t *pfile) {
                 break;
         }
     }
-    debug_msg("GOT STRING: %s\n", Dynstring.c_str(&token.attribute.id));
+    debug_msg("GOT STRING: %s\n", Dynstring.c_str(token.attribute.id));
     if (state != STATE_STR_FINAL) {
         token.type = TOKEN_DEAD;
-        Dynstring.dtor(&token.attribute.id);
+        Dynstring.dtor(token.attribute.id);
         debug_msg_stderr("ERROR while lexing a string\n");
     }
 
@@ -291,7 +291,7 @@ static token_t lex_identif(pfile_t *pfile) {
         switch (state) { // an e transition between INIT and STATE_IT_INIT, because it have to be in the separate function
             case STATE_ID_INIT:
                 if (isalpha(ch) || ch == '_') {
-                    Dynstring.append(&token.attribute.id, (char) ch);
+                    Dynstring.append(token.attribute.id, (char) ch);
                     state = STATE_ID_FINAL;
                 } else {
                     accepted = true;
@@ -300,7 +300,7 @@ static token_t lex_identif(pfile_t *pfile) {
 
             case STATE_ID_FINAL: // so actually there has to be only one identifier state in the dfa
                 if (isalnum(ch) || ch == '_') {
-                    Dynstring.append(&token.attribute.id, (char) ch);
+                    Dynstring.append(token.attribute.id, (char) ch);
                 } else {
                     accepted = true;
                     Pfile.ungetc(pfile);
@@ -313,14 +313,14 @@ static token_t lex_identif(pfile_t *pfile) {
     }
 
     if (state != STATE_ID_FINAL) {
-        Dynstring.dtor(&token.attribute.id);
+        Dynstring.dtor(token.attribute.id);
         token.type = TOKEN_DEAD;
     }
 
-    debug_msg("identif: %s", Dynstring.c_str(&token.attribute.id));
+    debug_msg("identif: %s", Dynstring.c_str(token.attribute.id));
     // this 2 lines of code make parsing much more easier
     if ((token.type = to_keyword(Dynstring.c_str(token.attribute.id))) != TOKEN_ID) {
-        Dynstring.dtor(&token.attribute.id);
+        Dynstring.dtor(token.attribute.id);
         debug_msg_s("- keyword!\n");
     } else {
         debug_msg_s("\n");
@@ -448,7 +448,7 @@ static token_t lex_relate_op(pfile_t *pfile) {
 static token_t lex_number(pfile_t *pfile) {
     debug_msg(DEBUG_SEP);
     state = STATE_NUM_INIT;
-    dynstring_t ascii_num = Dynstring.ctor(""); // ctor an empty string
+    dynstring_t *ascii_num = Dynstring.ctor(""); // ctor an empty string
 
     bool is_fp = true; // suppose it is true.
     int ch;
@@ -467,7 +467,7 @@ static token_t lex_number(pfile_t *pfile) {
                     accepted = true;
                     break;
                 }
-                Dynstring.append(&ascii_num, (char) ch);
+                Dynstring.append(ascii_num, (char) ch);
                 break;
 
                 // we got here from number init state and there was 0.
@@ -476,10 +476,10 @@ static token_t lex_number(pfile_t *pfile) {
                 // append char is after the statement, so an empty statement is here.
                 if (isdigit(ch)) {
                     state = STATE_NUM_3;
-                    Dynstring.append(&ascii_num, (char) ch);
+                    Dynstring.append(ascii_num, (char) ch);
                 } else if (ch == '.') {
                     state = STATE_NUM_7;
-                    Dynstring.append(&ascii_num, (char) ch);
+                    Dynstring.append(ascii_num, (char) ch);
                 } else {
                     // null has been accepted, so it is a legit integer.
                     is_fp = false;
@@ -503,7 +503,7 @@ static token_t lex_number(pfile_t *pfile) {
                     state = STATE_NUM_FINAL;
                     break;
                 }
-                Dynstring.append(&ascii_num, (char) ch);
+                Dynstring.append(ascii_num, (char) ch);
                 break;
 
                 // tro zeros have been accepted.
@@ -518,7 +518,7 @@ static token_t lex_number(pfile_t *pfile) {
                     accepted = true;
                     break;
                 }
-                Dynstring.append(&ascii_num, (char) ch);
+                Dynstring.append(ascii_num, (char) ch);
                 break;
 
             case STATE_NUM_4:
@@ -532,16 +532,16 @@ static token_t lex_number(pfile_t *pfile) {
                     accepted = true;
                     break;
                 }
-                Dynstring.append(&ascii_num, (char) ch);
+                Dynstring.append(ascii_num, (char) ch);
                 break;
 
             case STATE_NUM_5:
                 if (isdigit(ch)) {
                     state = STATE_NUM_9;
-                    Dynstring.append(&ascii_num, (char) ch);
+                    Dynstring.append(ascii_num, (char) ch);
                 } else if (ch == '+' || ch == '-') {
                     state = STATE_NUM_6;
-                    Dynstring.append(&ascii_num, (char) ch);
+                    Dynstring.append(ascii_num, (char) ch);
                 } else {
                     accepted = true;
                 }
@@ -550,7 +550,7 @@ static token_t lex_number(pfile_t *pfile) {
             case STATE_NUM_6:
                 if (isdigit(ch)) {
                     state = STATE_NUM_9;
-                    Dynstring.append(&ascii_num, (char) ch);
+                    Dynstring.append(ascii_num, (char) ch);
                 } else {
                     accepted = true;
                 }
@@ -559,7 +559,7 @@ static token_t lex_number(pfile_t *pfile) {
             case STATE_NUM_7:
                 if (isdigit(ch)) {
                     state = STATE_NUM_8;
-                    Dynstring.append(&ascii_num, (char) ch);
+                    Dynstring.append(ascii_num, (char) ch);
                 } else {
                     accepted = true;
                 }
@@ -567,9 +567,9 @@ static token_t lex_number(pfile_t *pfile) {
 
             case STATE_NUM_8:
                 if (isdigit(ch)) {
-                    Dynstring.append(&ascii_num, (char) ch);
+                    Dynstring.append(ascii_num, (char) ch);
                 } else if (ch == 'e' || ch == 'E') {
-                    Dynstring.append(&ascii_num, (char) ch);
+                    Dynstring.append(ascii_num, (char) ch);
                     state = STATE_NUM_5;
                 } else {
                     accepted = true;
@@ -579,7 +579,7 @@ static token_t lex_number(pfile_t *pfile) {
 
             case STATE_NUM_9:
                 if (isdigit(ch)) {
-                    Dynstring.append(&ascii_num, (char) ch);
+                    Dynstring.append(ascii_num, (char) ch);
                 } else {
                     accepted = true;
                     state = STATE_NUM_FINAL;
@@ -591,7 +591,7 @@ static token_t lex_number(pfile_t *pfile) {
         }
     }
     if (state != STATE_NUM_FINAL) {
-        Dynstring.dtor(&ascii_num);
+        Dynstring.dtor(ascii_num);
         return (token_t) {.type = TOKEN_DEAD};
     }
 
@@ -605,7 +605,7 @@ static token_t lex_number(pfile_t *pfile) {
         token.type = TOKEN_NUM_I;
         token.attribute.num_i = strtoull(Dynstring.c_str(ascii_num), NULL, 10);
     }
-    Dynstring.dtor(&ascii_num);
+    Dynstring.dtor(ascii_num);
 
     return token;
 }
@@ -719,7 +719,7 @@ static token_t scanner(pfile_t *pfile) {
  */
 static void Free_token(token_t *token) {
     if (token->type == TOKEN_ID || token->type == TOKEN_STR) {
-        Dynstring.dtor(&token->attribute.id);
+        Dynstring.dtor(token->attribute.id);
     }
 }
 
@@ -787,10 +787,10 @@ static size_t Get_charpos() {
 static void Free_scanner() {
 
     if (prev.type == TOKEN_ID || prev.type == TOKEN_STR) {
-        Dynstring.dtor(&prev.attribute.id);
+        Dynstring.dtor(prev.attribute.id);
     }
     if (curr.type == TOKEN_ID || curr.type == TOKEN_STR) {
-        Dynstring.dtor(&curr.attribute.id);
+        Dynstring.dtor(curr.attribute.id);
     }
 }
 
@@ -810,7 +810,7 @@ const struct scanner_interface Scanner = {
 };
 
 
-#ifdef SELFTEST_SCANNER
+#ifdef SELFTEST_scanner
 
 int main() {
     token_t token;

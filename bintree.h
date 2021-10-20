@@ -26,27 +26,13 @@
  *
  */
 typedef struct data {
-    dynstring_t i_name;          /**< identifier name. can be name of function or variable.*/
-    char type;                   /**< Type of identifier can be FUNCTION or VARIABLE */
+    dynstring_t *i_name;         /**< identifier name. can be name of function or variable.*/
+    int type;                   /**< Type of identifier can be FUNCTION or VARIABLE */
     // unsigned int i_name_num;  /**< Int identifier. This value defines how we store data. Means name in numbers. */
 } data;
 
 
-/**
- * Binary tree structure. each node has pointer to two child nodes left and right.
- * Each node can have 0-2 child node.
- * Each node has just one parent.
- *
- * .data has to be greater than .left child .data
- * .data has to be less than .right child .data
- */
-typedef struct node {
-    struct data *data;           /**< Data stored in node.   */
-    struct node *l_child;        /**< Pointer to left child.  */
-    struct node *r_child;        /**< Pointer to right child. */
-    unsigned int validity_field; /**< We are creating trees for each validity field */
-} node;
-
+typedef struct node node_t;
 
 /**
  * An interface to access scanner functions
@@ -54,18 +40,16 @@ typedef struct node {
 extern const struct tree_op_struct Tree;
 
 struct tree_op_struct {
+    void (*delete_tree)(node_t *);
 
-    void (*delete_tree)(node *);
 
-    void (*delete_node)(node *);
+    int (*get_unique_id)(node_t *);
 
-    int (*get_unique_id)(node *);
+    bool (*insert)(node_t *, token_t *, unsigned int);
 
-    bool (*insert)(node *, token_t *, unsigned int);
+    void (*dtor)(node_t *);
 
-    node *(*create_tree)(token_t *, unsigned int);
+    node_t *(*ctor)(token_t *);
 
-    node *(*create_node)(token_t *);
-
-    node *(*find_node)(node *, dynstring_t);
+    node_t *(*find)(node_t *, dynstring_t *);
 };

@@ -7,15 +7,7 @@
 #include "debug.h" // debug macros
 
 
-/**
- * A structure represented dynstring_t
- */
-typedef struct dynstring {
-    size_t allocated_size;    /**< Allocated len on heap */
-    size_t len;              /**< String len */
-    char *str;
-} dynstring_t;
-
+typedef struct dynstring dynstring_t;
 
 /**
  * A structure that store pointers to all the functions from dynstring_t.c. So we can use them in different files as interface.
@@ -29,7 +21,7 @@ struct dynstring_interface_t {
      * @param s Char that we want to convert to dynstring_t.
      * @return non-null pointer to dynstring_t object.
      */
-    dynstring_t (*ctor)(const char *);
+    dynstring_t *(*ctor)(const char *);
 
     /**
      * @brief Appends a character shrunk.
@@ -46,7 +38,7 @@ struct dynstring_interface_t {
      * @param s1
      * @returns -1, 0, 1 depends on lexicographical ordering of two strings.
      */
-    int (*cmp)(dynstring_t, dynstring_t);
+    int (*cmp)(dynstring_t *, dynstring_t *);
 
     /**
      * @brief Return len of given dynstring_t.
@@ -69,7 +61,7 @@ struct dynstring_interface_t {
      * @param str
      * @return c dynstring_t representation.
      */
-    char *(*c_str)(dynstring_t);
+    char *(*c_str)(dynstring_t *);
 
     /**
      * @brief Concatenate two dynstrings in the not very efficient way.
@@ -78,7 +70,7 @@ struct dynstring_interface_t {
      * @param s2
      * @returns new dysntring, which is product of s1 and s2.
      */
-    dynstring_t (*cat)(dynstring_t *, dynstring_t *);
+    dynstring_t *(*cat)(dynstring_t *, dynstring_t *);
 
     /**
     * @brief Clears the dynstring. Set everything to 0 except allocated_size.
