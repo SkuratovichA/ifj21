@@ -114,13 +114,11 @@ const struct list_interface_t List = {
 };
 
 #ifdef SELFTEST_LIST
-#define MAIN main
-#else
-#define MAIN LIST_MAIN
-#endif
 
-int MAIN() {
+int main() {
     printf("Selfdebug: %s\n", __FILE__);
 
     return 0;
 }
+
+#endif
