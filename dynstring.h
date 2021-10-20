@@ -73,7 +73,7 @@ struct dynstring_interface_t {
     dynstring_t *(*cat)(dynstring_t *, dynstring_t *);
 
     /**
-    * @brief Clears the dynstring. Set everything to 0 except allocated_size.
+    * @brief Clears the dynstring. Set everything to 0 except size.
     *
     * @param str string to clear.
     */

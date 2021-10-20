@@ -23,7 +23,9 @@ set(PROJ_FILES
         ${DATASTRUCTURES} ${UTILS_SOURCES}
         )
 set(DEVELOP_FLAGS
-        -Wno-unused-parameter -Wno-unused-function -DDEBUG
+        -Wno-unused-parameter -Wno-unused-function
+        -DDEBUG
+        -DDEBUG_DYNSTRING
         )
 add_compile_options(
         -Wall -Wextra -pedantic -g
@@ -44,7 +46,7 @@ set(ATTRIBUTE scanner)
 add_executable(test_${ATTRIBUTE}
         ${PROJ_FILES}
         )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE})
+target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
 message(STATUS ${ATTRIBUTE} " execucumber compiled.")
 
 #stack tests
@@ -52,7 +54,7 @@ set(ATTRIBUTE stack)
 add_executable(test_${ATTRIBUTE}
         ${PROJ_FILES}
         )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE})
+target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
 message(STATUS ${ATTRIBUTE} " execucumber compiled.")
 
 #list tests
@@ -60,7 +62,7 @@ set(ATTRIBUTE list)
 add_executable(test_${ATTRIBUTE}
         ${PROJ_FILES}
         )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE})
+target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
 message(STATUS ${ATTRIBUTE} " execucumber compiled.")
 
 #dynstring tests.
@@ -68,7 +70,7 @@ set(ATTRIBUTE dynstring)
 add_executable(test_${ATTRIBUTE}
         ${PROJ_FILES}
         )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE})
+target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
 message(STATUS ${ATTRIBUTE} " execucumber compiled.")
 
 #bintree tests
@@ -76,5 +78,5 @@ set(ATTRIBUTE bintree)
 add_executable(test_${ATTRIBUTE}
         ${PROJ_FILES}
         )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE})
+target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
 message(STATUS ${ATTRIBUTE} " execucumber compiled.")

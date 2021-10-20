@@ -25,7 +25,7 @@
  * A structure represented dynstring_t
  */
 typedef struct dynstring {
-    size_t allocated_size;    /**< Allocated len on heap. */
+    size_t size;    /**< Allocated len on heap. */
     size_t len;              /**< String length. */
     char str[];              /**< String as a flexible array member.*/
 } dynstring_t;
@@ -45,11 +45,11 @@ static dynstring_t *Str_ctor(const char *s) {
 
     dynstring_t *str = calloc(1, sizeof(dynstring_t) + alloc);
     soft_assert(str, ERROR_INTERNAL);
-    str->allocated_size = alloc;
+    str->size = alloc;
     str->len = length;
 
     strcpy(str->str, s);
-    debug_msg("Create dynstring: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->allocated_size, str->str);
+    debug_msg("Create dynstring: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->size, str->str);
     return str;
 }
 
@@ -76,7 +76,7 @@ static size_t Str_length(dynstring_t *str) {
 }
 
 /**
-* @brief Clears the dynstring. Set everything to 0 except allocated_size.
+* @brief Clears the dynstring. Set everything to 0 except size.
 *
 * @param str string to clear.
 */
@@ -104,15 +104,15 @@ static void Str_free(dynstring_t *str) {
  */
 static void Str_append(dynstring_t *str, char ch) {
     soft_assert(str, ERROR_INTERNAL);
-    if (str->len + 1 >= str->allocated_size) {
-        size_t nsiz = str->allocated_size *= 2;
+    if (str->len + 1 >= str->size) {
+        size_t nsiz = (str->size *= 2);
         void *tmp = realloc(str, nsiz + sizeof(dynstring_t));
         soft_assert(tmp, ERROR_INTERNAL);
         str = tmp;
     }
     str->str[str->len++] = ch;
     str->str[str->len] = '\0';
-    debug_msg("Append char: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->allocated_size, str->str);
+    //debug_msg("Append char: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->size, str->str);
 }
 
 /**
@@ -143,9 +143,9 @@ static dynstring_t *Str_cat(dynstring_t *s1, dynstring_t *s2) {
 
     dynstring_t *new = Str_ctor(s1->str);
 
-    size_t diff = new->allocated_size - s1->len;
+    size_t diff = new->size - s1->len;
     if (diff <= 1) {
-        size_t nsiz = new->allocated_size *= 2;
+        size_t nsiz = new->size *= 2;
         void *tmp = realloc(new, nsiz + sizeof(dynstring_t));
         soft_assert(tmp, ERROR_INTERNAL);
         new = tmp;
@@ -171,9 +171,27 @@ const struct dynstring_interface_t Dynstring = {
 };
 
 #ifdef SELFTEST_dynstring
+#include "tests/tests.h"
 int main() {
     fprintf(stderr, "Selftests: %s\n", __FILE__);
+    if (SELFTEST_dynstring) {
+        dynstring_t *hello = Dynstring.ctor("hello, ");
+        debug_msg("hello string created with string '%s'\n", Dynstring.c_str(hello));
+        dynstring_t *world = Dynstring.ctor("World. Aaaaaaaaaaaaaaaaaaaaaaaaa");
+        debug_msg("world string created with string '%s'\n", Dynstring.c_str(world));
+        dynstring_t *hw = Dynstring.cat(hello, world);
+        debug_msg("The 2 strings concatenated into '%s'\nsize: %zu, len: %zu\n", Dynstring.c_str(hw), hw->size, hw->len);
+        TEST_EXPECT(hw->size != 0, true, "Allocated size must not be equal 0");
 
+        for (int i = 0; i < 1000; i++) {
+             Dynstring.append(hw, (char)('A' + (i % 25)));
+        }
+        TEST_EXPECT(hw->size != 0, true, "After appending 1000 characters in hw. MUst not be equal 0");
+
+        Dynstring.dtor(hello);
+        Dynstring.dtor(world);
+        Dynstring.dtor(hw);
+    }
     return 0;
 }
 #endif
