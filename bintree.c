@@ -36,7 +36,7 @@ static node * find_node(node *tree, dynstring_t name) {
 
 
 /**
- * @brief Create binare tree on heap. Tree is created when we create first node.
+ * @brief Create binary tree on heap. Tree is created when we create first node.
  *
  * @param root Pointer to the first node, also pointer to whole tree.
  * @param token Token generated from lexical analysis. 
@@ -62,7 +62,7 @@ static node *create_tree(token_t *token, unsigned int validity) {
     root->l_child = NULL;
 
     root->data->type = token->type;
-    root->data->i_name = Dynstring.create(token->attribute.id.str);
+    root->data->i_name = Dynstring.ctor(token->attribute.id.str);
     /***********/
 
     return root;
@@ -92,7 +92,7 @@ static void delete_node(node *node) {
     delete_node(node->r_child);
     delete_node(node->l_child);
 
-    Dynstring.free(&node->data->i_name);
+    Dynstring.dtor(&node->data->i_name);
     free(node->data);
     free(node);
 }
@@ -109,7 +109,7 @@ static void delete_tree(node *root) {
     delete_tree(root->r_child);
     delete_tree(root->l_child);
 
-    Dynstring.free(&root->data->i_name);
+    Dynstring.dtor(&root->data->i_name);
     free(root->data);
     free(root);
 }
@@ -137,7 +137,7 @@ static node *create_node(token_t *token) {
     node->l_child = NULL;
 
     node->data->type = token->type;
-    node->data->i_name = Dynstring.create(token->attribute.id.str);
+    node->data->i_name = Dynstring.ctor(token->attribute.id.str);
     /*******/
 
     return node;
@@ -194,10 +194,19 @@ static bool insert(node *root_node, token_t *token, unsigned int validity) {
  * Tree interface.
  */
 const struct tree_op_struct Tree = {
-        .find_node       = find_node,
-        .insert          = insert,
-        .delete_node     = delete_node,
-        .delete_tree     = delete_tree,
-        .create_tree     = create_tree,
-        .create_node     = create_node,
+        .find_node = find_node,
+        .insert = insert,
+        .delete_node = delete_node,
+        .delete_tree = delete_tree,
+        .create_tree = create_tree,
+        .create_node = create_node,
 };
+
+
+#ifdef SELFTEST_BINTREE
+int main() {
+    printf("Selfdebug: %s\n", __FILE__);
+
+    return 0;
+}
+#endif
