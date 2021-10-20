@@ -3,49 +3,65 @@ project(ifj21 C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_compile_options(-DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
-add_executable(ifj21
-        ifj21.c scanner.c
-        errors.c errors.h
-        scanner.h debug.h
-        dynstring.c dynstring.h
+set(UTILS_SOURCES
         macros.h
-        progfile.c progfile.h
-        dynstring.c dynstring.h
-        parser.c parser.h
-        tests/tests.c tests/tests.h
-        expressions.c expressions.h
-        bintree.c bintree.h
-        list.c list.h
-        list.h list.c stack.c stack.h)
+        debug.h
+        tests/tests.c
+        errors.c
+        )
+set(DATASTRUCTURES
+        bintree.c
+        list.c
+        stack.c
+        dynstring.c
+        )
+set(PROJ_FILES ${DATASTRUCTURES} ${UTILS_SOURCES})
 
-add_compile_options(-DSELFTEST_SCANNER -DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
+set(PARSER parser.c expressions.c)
+
+
+# Compile options for a project.
+add_compile_options(
+        -Wall -Wextra -pedantic -g
+        -DDEBUG
+)
+
+# The project itself.
+add_executable(ifj21
+        ifj21.c
+        ${PROJ_FILES}
+        ${PARSER}
+        progfile.c
+        scanner.c
+        )
+
+## Tests for scanner.
 add_executable(test_scanner
-        errors.c errors.h
-        scanner.c scanner.h
-        debug.h macros.h
-        dynstring.c dynstring.h
-        progfile.c progfile.h
-        tests/tests.c tests/tests.h
-        bintree.c bintree.h
+        ${PROJ_FILES}
+        progfile.c
+        scanner.c
         )
+target_compile_options(test_scanner PRIVATE -DSELFTEST_SCANNER)
 
-add_compile_options(-DSELFTEST_LIST -DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
-add_executable(test_list
-        errors.c errors.h
-        debug.h macros.h
-        dynstring.c dynstring.h
-        progfile.c progfile.h
-        list.c list.h
-        tests/tests.c tests/tests.h
-        )
-
-add_compile_options(-DSELFTEST_STACK -DDEBUG -Wall -Wextra -pedantic -g -Wno-unused-function -Wno-unused-variable)
+# Stack tests.
 add_executable(test_stack
-        errors.c errors.h
-        debug.h macros.h
-        dynstring.c dynstring.h
-        progfile.c progfile.h
-        list.c list.h
-        tests/tests.c tests/tests.h
+        ${PROJ_FILES}
+        list.c
+        stack.c
         )
+target_compile_options(test_stack PUBLIC -DSELFTEST_STACK)
+
+# List tests.
+add_executable(test_list
+        ${PROJ_FILES}
+        list.c
+        )
+target_compile_options(test_list PRIVATE -DSELFTEST_LIST)
+
+#binary tree tests.
+add_executable(test_bintree
+        ${PROJ_FILES}
+        bintree.c
+        )
+target_compile_options(test_bintree PRIVATE -DSELFTEST_BINTREE)
+
