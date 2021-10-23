@@ -122,7 +122,7 @@ int main() {
         for (size_t i = 0; i < test_str_len; i++) {
             char *str = Stack.peek(st); // get head.
             printf("Peek at the head of the stack: '%s'\n", str);
-            Stack.pop(st); // pp an item
+            Stack.pop(st, free); // pp an item
         }
         if (Stack.is_empty(st)) {
             Tests.passed("Stack is empty.");

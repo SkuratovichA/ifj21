@@ -502,3 +502,295 @@ static bool Parse_expression(pfile_t *pfile) {
 const struct expr_interface_t Expr = {
         .parse = Parse_expression,
 };
+
+#ifdef SELFTEST_expressions
+#include "tests/tests.h"
+int main() {
+    // tests - input valid **************************************************************
+    // create test inputs.
+    pfile_t *pf1  = Pfile.ctor("a");
+    pfile_t *pf2  = Pfile.ctor("a + b - c + d - e");
+    pfile_t *pf3  = Pfile.ctor("a * b / c * a * c");
+    pfile_t *pf4  = Pfile.ctor("a + b + c + d - a - b - c - d * a * b * c * d / a / b / c / d // a // b // c // d");
+    pfile_t *pf5  = Pfile.ctor("a + c // b - d * a - d / e // f");
+
+    pfile_t *pf6  = Pfile.ctor("1 + 39 - 23 // 23881 / 23 * 1342");
+    pfile_t *pf7  = Pfile.ctor("a + 2 * 19228 - b");
+    pfile_t *pf8  = Pfile.ctor("12.3 + a - 6.3e7");
+    pfile_t *pf9  = Pfile.ctor("x // 143.11E");
+    pfile_t *pf10 = Pfile.ctor("21 + 231 - abc * z / 23 // 345.3 + 13e93");
+
+    pfile_t *pf11 = Pfile.ctor("a + (b * d * d)");
+    pfile_t *pf12 = Pfile.ctor("a + (b + (c + (d + (e + f))))");
+    pfile_t *pf13 = Pfile.ctor("a * (23 - e) / (7 * a)");
+    pfile_t *pf14 = Pfile.ctor("a + ((a // (a - a)) * (a / (a + a - a))) + a");
+    pfile_t *pf15 = Pfile.ctor("(a - (b * c))");
+
+    pfile_t *pf16 = Pfile.ctor("#a + #b");
+    pfile_t *pf17 = Pfile.ctor("a .. b + c * #d");
+    pfile_t *pf18 = Pfile.ctor("#a \"goto hell\"");
+    pfile_t *pf19 = Pfile.ctor("a + #\"hello\" - 5");
+    pfile_t *pf20 = Pfile.ctor("naaa .. bbb + a .. b");
+
+    pfile_t *pf21 = Pfile.ctor("f(a + b * c)");
+    pfile_t *pf22 = Pfile.ctor("a * c()");
+    pfile_t *pf23 = Pfile.ctor("f(g())");
+    pfile_t *pf24 = Pfile.ctor("a + f(x, y(a + b)) - z * d");
+    pfile_t *pf25 = Pfile.ctor("a(b(c(d(e, f(g, h , i()))), j(), k(l(m))))");
+
+    // tests.
+    printf("Tests - input valid\n");
+    printf("Test 1 - ids, operators +, -, *, /, //\n");
+    TEST_EXPECT(Expr.parse(pf1), true, "[1] \"a\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf2), true, "[2] \"a + b - c + d - e\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf3), true, "[3] \"a * b / c * a * c\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf5), true, "[4] \"a + b + c + d - a - b - c - d * a * b * c * d / a / b / c / d // a // b // c // d\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf4), true, "[5] \"a + c // b - d * a - d / e // f\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    printf("Test 2 - constants, id, operators +, -, *, /, //\n");
+    TEST_EXPECT(Expr.parse(pf6), true, "[6] \"1 + 39 - 23 // 23881 / 23 * 1342\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf7), true, "[7] \"a + 2 * 19228 - b\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf8), true, "[8] \"12.3 + a - 6.3e7\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf9), true, "[9] \"x // 143.11E\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf10), true, "[10] \"21 + 231 - abc * z / 23 // 345.3 + 13e93\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    printf("Test 3 - id, paren, constants, operators +, -, *, /, //\n");
+    TEST_EXPECT(Expr.parse(pf11), true, "[11] \"a + (b * d * d)\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf12), true, "[12] \"a + (b + (c + (d + (e + f))))\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf13), true, "[13] \"a * (23 - e) / (7 * a)\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf14), true, "[14] (\"a + ((a // (a - a)) * (a / (a + a - a))) + a\")");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf15), true, "[15] \"(a - (b * c))\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    printf("Test 4 - id, constants, operators +, -, *, /, //, #, ..\n");
+    TEST_EXPECT(Expr.parse(pf16), true, "[16] \"#a + #b\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf17), true, "[17] \"a .. b + c * #d\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf18), true, "[18] \"#a \\\"goto hell\\\"\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf19), true, "[19] \"a + #\\\"hello\\\" - 5\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf20), true, "[20] \"naaa .. bbb + a .. b\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    printf("Test 5 - functions, id, constants, operators +, -, *, /, //, #, ..\n");
+    TEST_EXPECT(Expr.parse(pf21), true, "[21] \"f(a + b * c)\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf22), true, "[22] \"a * c()\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf23), true, "[23] \"f(g())\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf24), true, "[24] \"a + f(x, y(a + b)) - z * d\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    TEST_EXPECT(Expr.parse(pf25), true, "[25] \"a(b(c(d(e, f(g, h , i()))), j(), k(l(m))))\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    // destructors
+    Pfile.dtor(pf1);
+    Pfile.dtor(pf2);
+    Pfile.dtor(pf3);
+    Pfile.dtor(pf4);
+    Pfile.dtor(pf5);
+    Pfile.dtor(pf6);
+    Pfile.dtor(pf7);
+    Pfile.dtor(pf8);
+    Pfile.dtor(pf9);
+    Pfile.dtor(pf10);
+    Pfile.dtor(pf11);
+    Pfile.dtor(pf12);
+    Pfile.dtor(pf13);
+    Pfile.dtor(pf14);
+    Pfile.dtor(pf15);
+    Pfile.dtor(pf16);
+    Pfile.dtor(pf17);
+    Pfile.dtor(pf18);
+    Pfile.dtor(pf19);
+    Pfile.dtor(pf20);
+    Pfile.dtor(pf21);
+    Pfile.dtor(pf22);
+    Pfile.dtor(pf23);
+    Pfile.dtor(pf24);
+    Pfile.dtor(pf25);
+
+    // tests - input invalid **************************************************************
+
+    // create test inputs.
+    pfile_t *pf26 = Pfile.ctor("a - - a");
+    pfile_t *pf27 = Pfile.ctor("a + b + / c");
+    pfile_t *pf28 = Pfile.ctor("a /");
+    pfile_t *pf29 = Pfile.ctor("// a");
+    pfile_t *pf30 = Pfile.ctor("a + c // b - d * a - d / e /// f");
+
+    pfile_t *pf31 = Pfile.ctor("1 + - 23 // 23881 /* 23 * 1342");
+    pfile_t *pf32 = Pfile.ctor("a a + 2 * 19228 b");
+    pfile_t *pf33 = Pfile.ctor("12.3 + a 3 - 6.3e7");
+    pfile_t *pf34 = Pfile.ctor("* x /*/ 143.11E");
+    pfile_t *pf35 = Pfile.ctor("21 + + + 231 - abc * z z / 23 // 345.3 + 13e93");
+
+    pfile_t *pf36 = Pfile.ctor("a + (b * d * * d)");
+    pfile_t *pf37 = Pfile.ctor("a + (b + (c + (d + (e + f)))))");
+    pfile_t *pf38 = Pfile.ctor("a * ((23 - e) / (7 * a)");
+    pfile_t *pf39 = Pfile.ctor("a + ((a // (a - a)) * (a / (a + a - a))) + a(");
+    pfile_t *pf40 = Pfile.ctor("(a - (b * c)) - ");
+
+    pfile_t *pf41 = Pfile.ctor("#a + ##b");
+    pfile_t *pf42 = Pfile.ctor("a ... b + c * #d");
+    pfile_t *pf43 = Pfile.ctor("#a hey");
+    pfile_t *pf44 = Pfile.ctor("a + \"hello\" - 5");
+    pfile_t *pf45 = Pfile.ctor("n * b .. + bbb");
+
+    pfile_t *pf46 = Pfile.ctor("f(a + b * c) g()");;
+    pfile_t *pf47 = Pfile.ctor("f(g()");
+    pfile_t *pf48 = Pfile.ctor("a * c())");
+    pfile_t *pf49 = Pfile.ctor("\"a + f f(x, y(a + b)) - z * d\"");
+    pfile_t *pf50 = Pfile.ctor("a(b(c(d(e, f(g, h , i()))), j(), k(l(m l))))");
+
+    // tests.
+    printf("Tests - input invalid\n");
+    printf("Test 6 - ids, operators +, -, *, /, //\n");
+    TEST_EXPECT(Expr.parse(pf1), true, "[26] \"a - - a\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf2), true, "[27] \"a + b + / c\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf3), true, "[28] \"a /\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a lexical error.");
+
+    TEST_EXPECT(Expr.parse(pf4), true, "[29] \"// a\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf5), true, "[30] \"a + c // b - d * a - d / e /// f\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    printf("Test 7 - constants, id, operators +, -, *, /, //\n");
+    TEST_EXPECT(Expr.parse(pf6), true, "[31] \"1 + - 23 // 23881 /* 23 * 1342\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf7), true, "[32] \"a a + 2 * 19228 b\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf8), true, "[33] \"12.3 + a 3 - 6.3e7\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf9), true, "[34] \"* x /*/ 143.11E\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf10), true, "[35] \"21 + + + 231 - abc * z z / 23 // 345.3 + 13e93\"");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    printf("Test 8 - id, paren, constants, operators +, -, *, /, //\n");
+    TEST_EXPECT(Expr.parse(pf11), true, "[36] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf12), true, "[37] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf13), true, "[38] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf14), true, "[39] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf15), true, "[40] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    printf("Test 9 - id, constants, operators +, -, *, /, //, #, ..\n");
+    TEST_EXPECT(Expr.parse(pf16), true, "[41] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf17), true, "[42] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf18), true, "[43] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf19), true, "[44] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf20), true, "[45] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    printf("Test 10 - functions, id, constants, operators +, -, *, /, //, #, ..\n");
+    TEST_EXPECT(Expr.parse(pf21), true, "[46] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf22), true, "[47] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf23), true, "[48] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf24), true, "[49] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    TEST_EXPECT(Expr.parse(pf25), true, "[50] ");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error.");
+
+    // destructors
+    Pfile.dtor(pf1);
+    Pfile.dtor(pf2);
+    Pfile.dtor(pf3);
+    Pfile.dtor(pf4);
+    Pfile.dtor(pf5);
+    Pfile.dtor(pf6);
+    Pfile.dtor(pf7);
+    Pfile.dtor(pf8);
+    Pfile.dtor(pf9);
+    Pfile.dtor(pf10);
+    Pfile.dtor(pf11);
+    Pfile.dtor(pf12);
+    Pfile.dtor(pf13);
+    Pfile.dtor(pf14);
+    Pfile.dtor(pf15);
+    Pfile.dtor(pf16);
+    Pfile.dtor(pf17);
+    Pfile.dtor(pf18);
+    Pfile.dtor(pf19);
+    Pfile.dtor(pf20);
+    Pfile.dtor(pf21);
+    Pfile.dtor(pf22);
+    Pfile.dtor(pf23);
+    Pfile.dtor(pf24);
+    Pfile.dtor(pf25);
+
+
+
+    return 0;
+}
+#endif
