@@ -17,7 +17,7 @@ do { \
 } while (0)
 
 #define EXPECTED(p) \
-do { \
+do {                \
     token_t tok__ = Scanner.get_curr_token(); \
     if (tok__.type == (p)) { \
         if (tok__.type == TOKEN_ID || tok__.type == TOKEN_STR) { \
@@ -169,7 +169,8 @@ static inline bool datatype(pfile_t *pfile) {
             EXPECTED(KEYWORD_number);
             break;
         default:
-            EXPECTED(TOKEN_DEAD);
+            print_expected_err("datatype", Scanner.to_string(Scanner.get_curr_token().type));
+            Errors.set_error(ERROR_SYNTAX);
             return false;
     }
     return true;
@@ -433,7 +434,7 @@ static bool fun_body(pfile_t *pfile) {
 
 /**
  * @brief
- * !rule <other_funparams> -> ) | , <datatype> id <other_funparams>
+ * !rule <other_funparams> -> ) | , id : <datatype> <other_funparams>
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -447,13 +448,16 @@ static bool other_funparams(pfile_t *pfile) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
+    // id
+    EXPECTED(TOKEN_ID);
+
+    // :
+    EXPECTED(TOKEN_COLON);
+
     // <datatype> here datatype is expected
     if (!datatype(pfile)) {
         return false;
     }
-
-    EXPECTED(TOKEN_ID);
-
 
     return other_funparams(pfile);
 }
@@ -461,7 +465,7 @@ static bool other_funparams(pfile_t *pfile) {
 /**
  * @brief List with function parameters in the function definition.
  *
- * !rule <funparam_def_list> -> ) | <datatype> id <other_funparams>
+ * !rule <funparam_def_list> -> ) | id : <datatype> <other_funparams>
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -472,13 +476,16 @@ static bool funparam_def_list(pfile_t *pfile) {
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
+    // id
+    EXPECTED(TOKEN_ID);
+
+    // :
+    EXPECTED(TOKEN_COLON);
+
     // <datatype>
     if (!datatype(pfile)) {
         return false;
     }
-
-    // id
-    EXPECTED(TOKEN_ID);
 
     // <other_funparams>
     return other_funparams(pfile);
