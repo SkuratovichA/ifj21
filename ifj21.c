@@ -13,11 +13,9 @@ int main() {
         // tests
         pfile_t *pf1 = Pfile.ctor("require \"ifj21\"\n");
         TEST_EXPECT(Parser.analyse(pf1), true, "First test.");
-        Pfile.dtor(pf1);
         // tests
         pfile_t *pf2 = Pfile.ctor("1234.er require \"ifj21\"\n");
         TEST_EXPECT(Parser.analyse(pf2), false, "Second test.");
-        Pfile.dtor(pf2);
     }
 
     //=====
@@ -28,7 +26,6 @@ int main() {
     if (Parser.analyse(pfile)) {
         return Errors.get_error();
     }
-
 
     return 0;
 }
