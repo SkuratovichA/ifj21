@@ -6,7 +6,7 @@
 
 #define STRSIZE 42
 
-#ifndef DEBUG_DYNSTRING
+#ifndef DEBUG_dynstring
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmacro-redefined"
 // undef debug macros

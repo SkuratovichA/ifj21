@@ -2,7 +2,7 @@
 #include "tests/tests.h"
 
 
-#ifndef DEBUG_SCANNER
+#ifndef DEBUG_scanner
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmacro-redefined"
 // undef debug macros
