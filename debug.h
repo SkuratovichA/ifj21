@@ -6,19 +6,20 @@
 
 
 #ifdef DEBUG
-    #include <assert.h>
-    #include <stdio.h>
+
+#include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
-    #define debug_msg(...) debug_print(stdout, __VA_ARGS__)
-    #define debug_msg_stderr(...) debug_print(stderr, __VA_ARGS__)
-    #define debug_msg_s(...) fprintf(stdout, __VA_ARGS__)
+#define debug_msg(...) debug_print(stderr, __VA_ARGS__)
+#define debug_msg_stdout(...) debug_print(stdout, __VA_ARGS__)
+#define debug_msg_s(...) fprintf(stderr, __VA_ARGS__)
 
-    #define DEBUG_SEP "\033[0;36m<><><><><><><><>\033[0m\n"
+#define DEBUG_SEP "\033[0;36m<><><><><><><><>\033[0m\n"
 
-    #define debug_todo(...) do{ \
+#define debug_todo(...) do{ \
         fprintf(stderr, "TODO: "); \
-        debug_msg_stderr(__VA_ARGS__); \
+        debug_msg(__VA_ARGS__); \
     } while(0)
 
 #define debug_print(_dst, ...) do { \

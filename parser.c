@@ -25,7 +25,9 @@ do { \
         } else { \
             debug_msg("\t%s\n", Scanner.to_string(tok__.type)); \
         } \
-        Scanner.get_next_token(pfile); \
+        if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) { \
+            Errors.set_error(ERROR_LEXICAL); \
+        } \
     } else { \
         expected_err((p)); \
     } \
@@ -640,6 +642,9 @@ static bool stmt(pfile_t *pfile) {
                 return false;
             }
             break;
+        case TOKEN_DEAD:
+            Errors.set_error(ERROR_LEXICAL);
+            return false;
         default:
             debug_todo(
                     "Add more <stmt> derivations, if there are so. Otherwise return an error_interface message\n");
@@ -708,27 +713,21 @@ static bool program(pfile_t *pfile) {
  * @return bool.
  */
 static bool Analyse(pfile_t *pfile) {
+    Errors.set_error(ERROR_NOERROR);
     if (!pfile) {
         Errors.set_error(ERROR_INTERNAL);
         return NULL;
     }
-    bool res = false;
+    bool res = false; // Suppose we have an error.
 
     // get first token to get start
-    Scanner.get_next_token(pfile);
-    // todo add assert.
-    debug_msg("Start parser.\n");
-
-    // perfom a syntax analysis
-    res = program(pfile);
-
-    // dont forget to dtor
-
+    if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) {
+        Errors.set_error(ERROR_LEXICAL);
+    } else {
+        res = program(pfile);
+    }
     // Free scanner
     Scanner.free();
-
-    // Dtor pfile
-    Pfile.dtor(pfile);
 
     return res;
 }
@@ -739,3 +738,88 @@ static bool Analyse(pfile_t *pfile) {
 const struct parser_interface_t Parser = {
         .analyse = Analyse
 };
+
+#ifdef SELFTEST_parser
+#include "tests/tests.h"
+int main() {
+    //1
+    pfile_t *pf1 = Pfile.ctor("require \"ifj21\"\n");
+    //2
+    pfile_t *pf2 = Pfile.ctor("1234.er require \"ifj21\"\n");
+    //3
+    Tests.warning("3: function declarations.");
+    pfile_t *pf3 = Pfile.ctor(
+        "require \"ifj21\""
+        "--[[--------------- function declarations -----------------------]]"
+        "-- functions with no returns"
+        "global foo : function()"
+        "global baz : function(string)"
+        "global bar : function(string, integer)"
+        "global arst : function(string, integer, number, number, integer, string)"
+        "global foo:function()"
+        "global baz:function(string)"
+        "global bar:function(string, integer)"
+        "global arst:function(string, integer, number, number, integer, string)"
+        "                        ---"
+        "-- functions with one return:"
+        "global foo : function() : string\n"
+        "global baz : function(string) : integer\n"
+        "global bar : function(string, integer) : number\n"
+        "global arst : function(string, integer, number) : number\n"
+        "--- functions with more returns:\n"
+        "global foo : function() : string\n"
+        "global baz : function(number) : integer, integer, integer, integer\n"
+        "global bar : function(string, integer, number) : number\n"
+        "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+        "global foo : function():string\n"
+        "global baz : function(number):integer, integer, integer, integer\n"
+        "global bar : function(string, integer, number):number\n"
+        "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+        "global bar : function(string,integer,number):number, integer\n"
+        "global bar : function(string,integer,number):number, number\n"
+        "global bar : function(string,integer,number):number, string\n"
+        "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+        "                                                                                                 ---\n"
+        "                                                                                         global foo : function()\n"
+        "global foo : function()\n"
+        "global foo : function()\n"
+        "global foo : function()\n"
+    );
+    //4
+    pfile_t *pf4 = Pfile.ctor("require \"ifj21\"\n"
+                           "global foo : function(string) : string\n"
+                           "function bar(param : string) : string\n"
+                           "    return foo (param)\n"
+                           "end\n"
+                           "function foo(param:string):string \n"
+                           "    return bar(param)\n"
+                           "end\n");
+
+
+    // tests.
+#if 0
+    Tests.warning("1: prolog only.");
+    TEST_EXPECT(Parser.analyse(pf1), true, "First test.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("2: prolog with an error..");
+    TEST_EXPECT(Parser.analyse(pf2), false, "Second test. Lixecal error handled.");
+    TEST_EXPECT(Errors.get_error() == ERROR_LEXICAL, true, "This error must be a lexical one.");
+
+    Tests.warning("3: function declarations.");
+    TEST_EXPECT(Parser.analyse(pf3), true, "Function declarations OK.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+#endif
+    Tests.warning("4: Mutually recursive functions.");
+    TEST_EXPECT(Parser.analyse(pf4), true, "Mutually recursive functions. Return statement.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+
+    // destructors
+    Pfile.dtor(pf1);
+    Pfile.dtor(pf2);
+    Pfile.dtor(pf3);
+    Pfile.dtor(pf4);
+    return 0;
+}
+#endif

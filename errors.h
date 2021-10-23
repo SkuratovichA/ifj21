@@ -17,7 +17,8 @@ do { \
  * All error_interface codes.
  */
 enum errors {
-    ERROR_LEXICAL = 1,
+    ERROR_NOERROR,
+    ERROR_LEXICAL,
     ERROR_SYNTAX,
     ERROR_UNDEF_FUN_OR_VAR,
     ERROR_TYPE_MISSMATCH,

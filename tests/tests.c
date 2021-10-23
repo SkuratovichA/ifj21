@@ -2,30 +2,47 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+static FILE *out;
+
+static void Set_out(FILE *nout) {
+    out = nout;
+}
+
 static void Passed(const char *fmt, ...) {
+    if (!out) {
+        Set_out(stdout);
+    }
     va_list args;
     va_start(args, fmt);
-    fprintf(stdout, "[" GREEN("PASSED") "] "); \
-      vfprintf(stdout, fmt, args);
+    fprintf(out, "[" GREEN("PASSED") "] ");
+    vfprintf(out, fmt, args);
+    fprintf(out, "\n");
     va_end(args);
 }
 
 static void Warning(const char *fmt, ...) {
+    if (!out) {
+        Set_out(stdout);
+    }
     va_list args;
     va_start(args, fmt);
-    fprintf(stdout, "["  YELLOW("WARNING") "] "); \
-      vfprintf(stdout, fmt, args);
+    fprintf(out, "["  YELLOW("WARNING") "] ");
+    vfprintf(out, fmt, args);
+    fprintf(out, "\n");
     va_end(args);
 }
 
 static void Failed(const char *fmt, ...) {
+    if (!out) {
+        Set_out(stdout);
+    }
     va_list args;
     va_start(args, fmt);
-    fprintf(stdout, "["  RED("FAILED") "] "); \
-      vfprintf(stdout, fmt, args);
+    fprintf(out, "["  RED("FAILED") "] ");
+    vfprintf(out, fmt, args);
+    fprintf(out, "\n");
     va_end(args);
 }
-
 
 /**
  * Tests interface.
@@ -33,5 +50,7 @@ static void Failed(const char *fmt, ...) {
 const struct c_tests_t Tests = {
         .failed = Failed,
         .passed = Passed,
-        .warning = Warning
+        .warning = Warning,
+        .set_out = Set_out,
+
 };

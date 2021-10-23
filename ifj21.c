@@ -2,30 +2,21 @@
 #include "errors.h"
 #include "parser.h"
 #include "progfile.h"
-#include "tests/tests.h"
 
-#define PARSERTEST 1
 
 int main() {
     pfile_t *pfile;
+    int ret = 0;
 
-    if (PARSERTEST) {
-        // tests
-        pfile_t *pf1 = Pfile.ctor("require \"ifj21\"\n");
-        TEST_EXPECT(Parser.analyse(pf1), true, "First test.");
-        // tests
-        pfile_t *pf2 = Pfile.ctor("1234.er require \"ifj21\"\n");
-        TEST_EXPECT(Parser.analyse(pf2), false, "Second test.");
-    }
-
-    //=====
     if (!(pfile = Pfile.getfile_stdin())) {
         return Errors.get_error();
     }
 
     if (Parser.analyse(pfile)) {
-        return Errors.get_error();
+        ret = Errors.get_error();
     }
 
-    return 0;
+    Pfile.dtor(pfile);
+
+    return ret;
 }

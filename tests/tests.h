@@ -1,5 +1,6 @@
 
 #pragma once
+#include <stdio.h>
 #include "../errors.h"
 
 #define RESET      "\x1b[0m"
@@ -29,6 +30,8 @@ struct c_tests_t {
     void (*failed)(const char *, ...);
 
     void (*warning)(const char *, ...);
+
+    void (*set_out)(FILE *);
 
     void (*passed)(const char *, ...);
 };
