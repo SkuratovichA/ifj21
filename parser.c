@@ -97,7 +97,6 @@ static bool list_expr(pfile_t *pfile) {
     return other_expr(pfile);
 }
 
-
 /**
  * @brief Conditional expression body implemented with an extension. Contains statements.
  * !rule <cond_body> -> else <fun_stmt> <cond_body>
@@ -176,7 +175,6 @@ static inline bool datatype(pfile_t *pfile) {
     return true;
 }
 
-
 /**
  * @brief Repeat body - function represent body of a repeat-until cycle.
  * Function terminates when a keyword until is found on the input.
@@ -192,11 +190,9 @@ static bool repeat_body(pfile_t *pfile) {
     // until |
     EXPECTED_OPT(KEYWORD_until);
 
-
     // a new solution which doesnt have to cause problems. But not tested yet, so i dont know.
     return fun_stmt(pfile) && repeat_body(pfile);
 }
-
 
 /**
  * @brief Optional assignment after a local variable declaration.
@@ -414,10 +410,9 @@ static bool fun_stmt(pfile_t *pfile) {
     return true;
 }
 
-
 /**
  * @brief Statements inside the function
- * !rule <fun_body> -> <fun_stmt> <fun_body>
+ * !rule <fun_body> -> <fun_stmt> <fun_body> | end
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -430,7 +425,6 @@ static bool fun_body(pfile_t *pfile) {
 
     return fun_stmt(pfile) && fun_body(pfile);
 }
-
 
 /**
  * @brief
@@ -548,7 +542,6 @@ static bool other_funrets(pfile_t *pfile) {
     return datatype(pfile) && other_funrets(pfile);
 }
 
-
 /**
  * @brief
  * !rule <funretopt> -> e | : <datatype> <other_funrets>
@@ -649,9 +642,11 @@ static bool stmt(pfile_t *pfile) {
                 return false;
             }
             break;
+
         case TOKEN_DEAD:
             Errors.set_error(ERROR_LEXICAL);
             return false;
+
         default:
             debug_todo(
                     "Add more <stmt> derivations, if there are so. Otherwise return an error_interface message\n");
