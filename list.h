@@ -38,14 +38,14 @@ struct list_interface_t {
      *
      * @param list singly linked list.
      */
-    void (*delete_first)(list_t *list);
+    void (*delete_first)(list_t *list, void (*clear_fun)(void *));
 
     /**
      * @brief Delete all items in list.
      *
      * @param list singly linked list
      */
-    void (*delete_list)(list_t *list);
+    void (*delete_list)(list_t *list, void (*clear_fun)(void *));
 
     /**
      * @brief Insert new item behind reference_item.
@@ -82,7 +82,7 @@ struct list_interface_t {
     *
     * @param list the list to be destructed.
     */
-    void (*dtor)(list_t *list);
+    void (*dtor)(list_t *list, void (*clear_fun)(void *));
 };
 
 /**

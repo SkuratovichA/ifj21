@@ -21,7 +21,7 @@ struct stack_interface_t {
      *
      * @param stack
      */
-    void (*pop)(list_t *stack);
+    void (*pop)(list_t *stack, void (*clear_fun)(void *));
 
     /**
      * @brief Checks if the stack is empty or not.
@@ -36,7 +36,7 @@ struct stack_interface_t {
      *
      * @param stack
      */
-    void (*clear)(list_t *stack);
+    void (*clear)(list_t *stack, void (*clear_fun)(void *));
 
     /**
      * @brief Returns data on the top of the stack.
@@ -57,7 +57,7 @@ struct stack_interface_t {
      *
      * @param stack Stack to be destructed.
      */
-    void (*dtor)(list_t *stack);
+    void (*dtor)(list_t *stack, void (*clear_fun)(void *));
 };
 
 // Dont change. On apple macos it doesnt wrk because there's already a stack structure.

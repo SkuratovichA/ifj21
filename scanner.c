@@ -112,6 +112,8 @@ static char *To_string(const int t) {
             return "..";
         case TOKEN_COLON:
             return ":";
+        case TOKEN_HASH:
+            return "#";
         case TOKEN_DEAD:
             return "DEAD TOKEN";
 
