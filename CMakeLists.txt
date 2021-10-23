@@ -18,6 +18,7 @@ set(DATASTRUCTURES
         list.c
         stack.c
         dynstring.c
+        symtable.c
         )
 set(PROJ_FILES
         ${DATASTRUCTURES} ${UTILS_SOURCES}

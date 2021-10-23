@@ -18,7 +18,7 @@
 #include "progfile.h"
 #include "macros.h"
 #include "dynstring.h"
-
+#include "symtable.h"
 #include "debug.h"
 //
 
@@ -43,22 +43,22 @@ typedef enum token_type {
     // dead token == NULL
     TOKEN(DEAD) = 0,
     // normal tokens
-    TOKEN(WS), // ' '
-    TOKEN(EOL), // '\n'
-    TOKEN(ID), // variable name
-    TOKEN(NUM_I), // integer number
-    TOKEN(NUM_F), // floating pointer number
-    TOKEN(STR), //  c string
-    TOKEN(NE), // '~='
-    TOKEN(EQ), // '=='
-    TOKEN(LT), // '<'
-    TOKEN(LE), // '<='
-    TOKEN(GT), // '>'
-    TOKEN(GE), // '>='
-    TOKEN(ASSIGN), // '='
-    TOKEN(DIV_I), // '/'
-    TOKEN(DIV_F), // '//'
-    TOKEN(SUB), // '-'
+    TOKEN(WS),      // ' '
+    TOKEN(EOL),     // '\n'
+    TOKEN(ID),      // variable name
+    TOKEN(NUM_I),   // integer number
+    TOKEN(NUM_F),   // floating pointer number
+    TOKEN(STR),     //  c string
+    TOKEN(NE),      // '~='
+    TOKEN(EQ),      // '=='
+    TOKEN(LT),      // '<'
+    TOKEN(LE),      // '<='
+    TOKEN(GT),      // '>'
+    TOKEN(GE),      // '>='
+    TOKEN(ASSIGN),  // '='
+    TOKEN(DIV_I),   // '/'
+    TOKEN(DIV_F),   // '//'
+    TOKEN(SUB),     // '-'
     TOKEN(STRCAT),  // ..
 
     // to make single tokens compatible with their ascii values
@@ -147,7 +147,7 @@ struct scanner_interface {
 
     pfile_t *(*initialize)(void);
 
-    token_t (*get_next_token)(pfile_t *);
+    struct token (*get_next_token)(pfile_t *);
 
     token_t (*get_prev_token)(void);
 

@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "scanner.h"
 #include "errors.h"
+#include "symtable.h"
 
 #include "expressions.h"
 
@@ -17,15 +18,16 @@ do { \
 } while (0)
 
 #define EXPECTED(p) \
-do {                \
+do {   \
     token_t tok__ = Scanner.get_curr_token(); \
     if (tok__.type == (p)) { \
         if (tok__.type == TOKEN_ID || tok__.type == TOKEN_STR) { \
+            store_to_sym_table(pfile ,tok__);        \
             debug_msg("\t%s = { '%s' }\n", Scanner.to_string(tok__.type), Dynstring.c_str(tok__.attribute.id)); \
         } else { \
             debug_msg("\t%s\n", Scanner.to_string(tok__.type)); \
         } \
-        if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) { \
+        if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) {  \
             Errors.set_error(ERROR_LEXICAL); \
         } \
     } else { \
@@ -47,6 +49,29 @@ do { \
 static bool cond_stmt(pfile_t *);
 static bool fun_body(pfile_t *);
 static bool fun_stmt(pfile_t *);
+
+
+/**
+ * @brief store_to_sym_table
+ *
+ * @param
+ * @return bool.
+ */
+static bool store_to_sym_table(pfile_t *pfile, token_t tok){
+
+    /*
+    token_t token = tok;
+    debug_msg("SYMTABLEEE: %s id: %s\n", Scanner.to_string(token.type), Dynstring.c_str(token.attribute.id));
+
+    if((token = Scanner.get_next_token) == TOKEN_LPAREN){
+        printf("g");
+        //Function id
+    }
+     */
+    return true;
+}
+
+
 
 /**
  * @brief List of expressont.
@@ -585,7 +610,13 @@ static bool funretopt(pfile_t *pfile) {
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
 
-    switch (Scanner.get_curr_token().type) {
+    token_t token = {.type = 0, .attribute.id = Dynstring.ctor("")};
+    token = Scanner.get_curr_token();
+
+    switch (token.type) {
+
+        Symtable.ctor(&token);
+
         // function declaration: global id : function ( <datatype_list> <funcretopt>
         case KEYWORD_global:
             // global
@@ -677,6 +708,7 @@ static bool stmt_list(pfile_t *pfile) {
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
 
+
     // <stmt> <stmt_list>
     return stmt(pfile) && stmt_list(pfile);
 }
@@ -735,6 +767,9 @@ static bool Analyse(pfile_t *pfile) {
     }
     // Free scanner
     Scanner.free();
+
+    // Dtor pfile
+    Pfile.dtor(pfile);
 
     return res;
 }

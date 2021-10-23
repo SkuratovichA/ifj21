@@ -14,7 +14,7 @@
 #include "progfile.h"
 #include "macros.h"
 #include "dynstring.h"
-
+#include "symtable.h"
 #include "debug.h"
 
 
