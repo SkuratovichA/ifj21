@@ -61,6 +61,9 @@ typedef enum token_type {
     TOKEN(SUB), // '-'
     TOKEN(STRCAT),  // ..
 
+    // my sweet fucking token for expression parsing
+    TOKEN(FUNC),
+
     // to make single tokens compatible with their ascii values
     TOKEN(EOFILE) = EOF,
     TOKEN(LPAREN) = '(',
@@ -69,7 +72,7 @@ typedef enum token_type {
     TOKEN(MUL) = '*',
     TOKEN(HASH) = '#',
     TOKEN(COLON) = ':',
-    TOKEN(COMMA) = ','
+    TOKEN(COMMA) = ',',
 } token_type_t;
 //
 
