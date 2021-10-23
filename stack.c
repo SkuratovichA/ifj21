@@ -16,8 +16,8 @@ static void Push(sstack_t *stack, void *data) {
  *
  * @param stack
  */
-static void Pop(sstack_t *stack) {
-    List.delete_first(stack);
+static void Pop(sstack_t *stack, void (*clear_fun)(void *)) {
+    List.delete_first(stack, clear_fun);
 }
 
 /**
@@ -36,8 +36,8 @@ static bool Is_empty(sstack_t *stack) {
  *
  * @param stack
  */
-static void Clear(sstack_t *stack) {
-    List.delete_list(stack);
+static void Clear(sstack_t *stack, void (*clear_fun)(void *)) {
+    List.delete_list(stack, clear_fun);
 }
 
 /**
@@ -63,8 +63,8 @@ static sstack_t *Ctor(void) {
  *
  * @param stack Stack to be destructed.
  */
-static void Dtor(sstack_t *stack) {
-    List.dtor(stack);
+static void Dtor(sstack_t *stack, void (*clear_fun)(void *)) {
+    List.dtor(stack, clear_fun);
 }
 
 /**
