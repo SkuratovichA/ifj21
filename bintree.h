@@ -26,7 +26,7 @@
  *
  */
 typedef struct data {
-    dynstring_t *i_name;         /**< identifier name. can be name of function or variable.*/
+    dynstring_t *i_name;        /**< identifier name. can be name of function or variable.*/
     int type;                   /**< Type of identifier can be FUNCTION or VARIABLE */
     // unsigned int i_name_num;  /**< Int identifier. This value defines how we store data. Means name in numbers. */
 } data;
@@ -37,9 +37,9 @@ typedef struct node node_t;
 /**
  * An interface to access scanner functions
  */
-extern const struct tree_op_struct Tree;
+extern const struct bintree_interface_t Tree;
 
-struct tree_op_struct {
+struct bintree_interface_t {
     void (*delete_tree)(node_t *);
 
 
