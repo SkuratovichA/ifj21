@@ -505,76 +505,77 @@ const struct expr_interface_t Expr = {
 
 #ifdef SELFTEST_expressions
 #include "tests/tests.h"
+#include "parser.h"
+
 int main() {
-    // tests - input valid **************************************************************
     // create test inputs.
-    pfile_t *pf1  = Pfile.ctor("a");
-    pfile_t *pf2  = Pfile.ctor("a + b - c + d - e");
-    pfile_t *pf3  = Pfile.ctor("a * b / c * a * c");
-    pfile_t *pf4  = Pfile.ctor("a + b + c + d - a - b - c - d * a * b * c * d / a / b / c / d // a // b // c // d");
-    pfile_t *pf5  = Pfile.ctor("a + c // b - d * a - d / e // f");
+    pfile_t *pf1  = Pfile.ctor("require \"ifj21\"\nlocal x : integer = a");
+    pfile_t *pf2  = Pfile.ctor("require \"ifj21\"\na + b - c + d - e");
+    pfile_t *pf3  = Pfile.ctor("require \"ifj21\"\na * b / c * a * c");
+    pfile_t *pf4  = Pfile.ctor("require \"ifj21\"\na + b + c + d - a - b - c - d * a * b * c * d / a / b / c / d // a // b // c // d");
+    pfile_t *pf5  = Pfile.ctor("require \"ifj21\"\na + c // b - d * a - d / e // f");
 
-    pfile_t *pf6  = Pfile.ctor("1 + 39 - 23 // 23881 / 23 * 1342");
-    pfile_t *pf7  = Pfile.ctor("a + 2 * 19228 - b");
-    pfile_t *pf8  = Pfile.ctor("12.3 + a - 6.3e7");
-    pfile_t *pf9  = Pfile.ctor("x // 143.11E");
-    pfile_t *pf10 = Pfile.ctor("21 + 231 - abc * z / 23 // 345.3 + 13e93");
+    pfile_t *pf6  = Pfile.ctor("require \"ifj21\"\n1 + 39 - 23 // 23881 / 23 * 1342");
+    pfile_t *pf7  = Pfile.ctor("require \"ifj21\"\na + 2 * 19228 - b");
+    pfile_t *pf8  = Pfile.ctor("require \"ifj21\"\n12.3 + a - 6.3e7");
+    pfile_t *pf9  = Pfile.ctor("require \"ifj21\"\nx // 143.11E");
+    pfile_t *pf10 = Pfile.ctor("require \"ifj21\"\n21 + 231 - abc * z / 23 // 345.3 + 13e93");
 
-    pfile_t *pf11 = Pfile.ctor("a + (b * d * d)");
-    pfile_t *pf12 = Pfile.ctor("a + (b + (c + (d + (e + f))))");
-    pfile_t *pf13 = Pfile.ctor("a * (23 - e) / (7 * a)");
-    pfile_t *pf14 = Pfile.ctor("a + ((a // (a - a)) * (a / (a + a - a))) + a");
-    pfile_t *pf15 = Pfile.ctor("(a - (b * c))");
+    pfile_t *pf11 = Pfile.ctor("require \"ifj21\"\na + (b * d * d)");
+    pfile_t *pf12 = Pfile.ctor("require \"ifj21\"\na + (b + (c + (d + (e + f))))");
+    pfile_t *pf13 = Pfile.ctor("require \"ifj21\"\na * (23 - e) / (7 * a)");
+    pfile_t *pf14 = Pfile.ctor("require \"ifj21\"\na + ((a // (a - a)) * (a / (a + a - a))) + a");
+    pfile_t *pf15 = Pfile.ctor("require \"ifj21\"\n(a - (b * c))");
 
-    pfile_t *pf16 = Pfile.ctor("#a + #b");
-    pfile_t *pf17 = Pfile.ctor("a .. b + c * #d");
-    pfile_t *pf18 = Pfile.ctor("#a \"goto hell\"");
-    pfile_t *pf19 = Pfile.ctor("a + #\"hello\" - 5");
-    pfile_t *pf20 = Pfile.ctor("naaa .. bbb + a .. b");
+    pfile_t *pf16 = Pfile.ctor("require \"ifj21\"\n#a + #b");
+    pfile_t *pf17 = Pfile.ctor("require \"ifj21\"\na .. b + c * #d");
+    pfile_t *pf18 = Pfile.ctor("require \"ifj21\"\n#a \"goto hell\"");
+    pfile_t *pf19 = Pfile.ctor("require \"ifj21\"\na + #\"hello\" - 5");
+    pfile_t *pf20 = Pfile.ctor("require \"ifj21\"\nnaaa .. bbb + a .. b");
 
-    pfile_t *pf21 = Pfile.ctor("f(a + b * c)");
-    pfile_t *pf22 = Pfile.ctor("a * c()");
-    pfile_t *pf23 = Pfile.ctor("f(g())");
-    pfile_t *pf24 = Pfile.ctor("a + f(x, y(a + b)) - z * d");
-    pfile_t *pf25 = Pfile.ctor("a(b(c(d(e, f(g, h , i()))), j(), k(l(m))))");
+    pfile_t *pf21 = Pfile.ctor("require \"ifj21\"\nf(a + b * c)");
+    pfile_t *pf22 = Pfile.ctor("require \"ifj21\"\na * c()");
+    pfile_t *pf23 = Pfile.ctor("require \"ifj21\"\nf(g())");
+    pfile_t *pf24 = Pfile.ctor("require \"ifj21\"\na + f(x, y(a + b)) - z * d");
+    pfile_t *pf25 = Pfile.ctor("require \"ifj21\"\na(b(c(d(e, f(g, h , i()))), j(), k(l(m))))");
 
     // tests.
     printf("\x1b[33m" "TESTS - VALID INPUT\n" "\x1b[0m");
     printf("\x1b[33m" "-------------------\n" "\x1b[0m");
-    fprintf(stdout, "Test 1 - ids, operators +, -, *, /, //\n");
-    TEST_EXPECT(Expr.parse(pf1), true, "[1] \"a\"");
-    TEST_EXPECT(Expr.parse(pf2), true, "[2] \"a + b - c + d - e\"");
-    TEST_EXPECT(Expr.parse(pf3), true, "[3] \"a * b / c * a * c\"");
-    TEST_EXPECT(Expr.parse(pf5), true, "[4] \"a + b + c + d - a - b - c - d * a * b * c * d / a / b / c / d // a // b // c // d\"");
-    TEST_EXPECT(Expr.parse(pf4), true, "[5] \"a + c // b - d * a - d / e // f\"");
+    fprintf(stdout, "Test 1 - id, operators +, -, *, /, //\n");
+    TEST_EXPECT(Parser.analyse(pf1), true, "[1] \"a\"");
+    TEST_EXPECT(Parser.analyse(pf2), true, "[2] \"a + b - c + d - e\"");
+    TEST_EXPECT(Parser.analyse(pf3), true, "[3] \"a * b / c * a * c\"");
+    TEST_EXPECT(Parser.analyse(pf5), true, "[4] \"a + b + c + d - a - b - c - d * a * b * c * d / a / b / c / d // a // b // c // d\"");
+    TEST_EXPECT(Parser.analyse(pf4), true, "[5] \"a + c // b - d * a - d / e // f\"");
 
     printf("Test 2 - constants, id, operators +, -, *, /, //\n");
-    TEST_EXPECT(Expr.parse(pf6), true, "[6] \"1 + 39 - 23 // 23881 / 23 * 1342\"");
-    TEST_EXPECT(Expr.parse(pf7), true, "[7] \"a + 2 * 19228 - b\"");
-    TEST_EXPECT(Expr.parse(pf8), true, "[8] \"12.3 + a - 6.3e7\"");
-    TEST_EXPECT(Expr.parse(pf9), true, "[9] \"x // 143.11E\"");
-    TEST_EXPECT(Expr.parse(pf10), true, "[10] \"21 + 231 - abc * z / 23 // 345.3 + 13e93\"");
+    TEST_EXPECT(Parser.analyse(pf6), true, "[6] \"1 + 39 - 23 // 23881 / 23 * 1342\"");
+    TEST_EXPECT(Parser.analyse(pf7), true, "[7] \"a + 2 * 19228 - b\"");
+    TEST_EXPECT(Parser.analyse(pf8), true, "[8] \"12.3 + a - 6.3e7\"");
+    TEST_EXPECT(Parser.analyse(pf9), true, "[9] \"x // 143.11E\"");
+    TEST_EXPECT(Parser.analyse(pf10), true, "[10] \"21 + 231 - abc * z / 23 // 345.3 + 13e93\"");
 
     printf("Test 3 - id, paren, constants, operators +, -, *, /, //\n");
-    TEST_EXPECT(Expr.parse(pf11), true, "[11] \"a + (b * d * d)\"");
-    TEST_EXPECT(Expr.parse(pf12), true, "[12] \"a + (b + (c + (d + (e + f))))\"");
-    TEST_EXPECT(Expr.parse(pf13), true, "[13] \"a * (23 - e) / (7 * a)\"");
-    TEST_EXPECT(Expr.parse(pf14), true, "[14] (\"a + ((a // (a - a)) * (a / (a + a - a))) + a\")");
-    TEST_EXPECT(Expr.parse(pf15), true, "[15] \"(a - (b * c))\"");
+    TEST_EXPECT(Parser.analyse(pf11), true, "[11] \"a + (b * d * d)\"");
+    TEST_EXPECT(Parser.analyse(pf12), true, "[12] \"a + (b + (c + (d + (e + f))))\"");
+    TEST_EXPECT(Parser.analyse(pf13), true, "[13] \"a * (23 - e) / (7 * a)\"");
+    TEST_EXPECT(Parser.analyse(pf14), true, "[14] (\"a + ((a // (a - a)) * (a / (a + a - a))) + a\")");
+    TEST_EXPECT(Parser.analyse(pf15), true, "[15] \"(a - (b * c))\"");
 
     printf("Test 4 - id, constants, operators +, -, *, /, //, #, ..\n");
-    TEST_EXPECT(Expr.parse(pf16), true, "[16] \"#a + #b\"");
-    TEST_EXPECT(Expr.parse(pf17), true, "[17] \"a .. b + c * #d\"");
-    TEST_EXPECT(Expr.parse(pf18), true, "[18] \"#a \\\"goto hell\\\"\"");
-    TEST_EXPECT(Expr.parse(pf19), true, "[19] \"a + #\\\"hello\\\" - 5\"");
-    TEST_EXPECT(Expr.parse(pf20), true, "[20] \"naaa .. bbb + a .. b\"");
+    TEST_EXPECT(Parser.analyse(pf16), true, "[16] \"#a + #b\"");
+    TEST_EXPECT(Parser.analyse(pf17), true, "[17] \"a .. b + c * #d\"");
+    TEST_EXPECT(Parser.analyse(pf18), true, "[18] \"#a \\\"goto hell\\\"\"");
+    TEST_EXPECT(Parser.analyse(pf19), true, "[19] \"a + #\\\"hello\\\" - 5\"");
+    TEST_EXPECT(Parser.analyse(pf20), true, "[20] \"naaa .. bbb + a .. b\"");
 
     printf("Test 5 - functions, id, constants, operators +, -, *, /, //, #, ..\n");
-    TEST_EXPECT(Expr.parse(pf21), true, "[21] \"f(a + b * c)\"");
-    TEST_EXPECT(Expr.parse(pf22), true, "[22] \"a * c()\"");
-    TEST_EXPECT(Expr.parse(pf23), true, "[23] \"f(g())\"");
-    TEST_EXPECT(Expr.parse(pf24), true, "[24] \"a + f(x, y(a + b)) - z * d\"");
-    TEST_EXPECT(Expr.parse(pf25), true, "[25] \"a(b(c(d(e, f(g, h , i()))), j(), k(l(m))))\"");
+    TEST_EXPECT(Parser.analyse(pf21), true, "[21] \"f(a + b * c)\"");
+    TEST_EXPECT(Parser.analyse(pf22), true, "[22] \"a * c()\"");
+    TEST_EXPECT(Parser.analyse(pf23), true, "[23] \"f(g())\"");
+    TEST_EXPECT(Parser.analyse(pf24), true, "[24] \"a + f(x, y(a + b)) - z * d\"");
+    TEST_EXPECT(Parser.analyse(pf25), true, "[25] \"a(b(c(d(e, f(g, h , i()))), j(), k(l(m))))\"");
 
     // destructors
     Pfile.dtor(pf1);
@@ -606,73 +607,73 @@ int main() {
     // tests - input invalid **************************************************************
 
     // create test inputs.
-    pfile_t *pf26 = Pfile.ctor("a - - a");
-    pfile_t *pf27 = Pfile.ctor("a + b + / c");
-    pfile_t *pf28 = Pfile.ctor("a /");
-    pfile_t *pf29 = Pfile.ctor("// a");
-    pfile_t *pf30 = Pfile.ctor("a + c // b - d * a - d / e /// f");
+    pfile_t *pf26 = Pfile.ctor("require \"ifj21\"\nlocal n1 : integer = a + b\n");
+    pfile_t *pf27 = Pfile.ctor("require \"ifj21\"\na + b + / c");
+    pfile_t *pf28 = Pfile.ctor("require \"ifj21\"\na /");
+    pfile_t *pf29 = Pfile.ctor("require \"ifj21\"\n// a");
+    pfile_t *pf30 = Pfile.ctor("require \"ifj21\"\na + c // b - d * a - d / e /// f");
 
-    pfile_t *pf31 = Pfile.ctor("1 + - 23 // 23881 /* 23 * 1342");
-    pfile_t *pf32 = Pfile.ctor("a a + 2 * 19228 b");
-    pfile_t *pf33 = Pfile.ctor("12.3 + a 3 - 6.3e7");
-    pfile_t *pf34 = Pfile.ctor("* x /*/ 143.11E");
-    pfile_t *pf35 = Pfile.ctor("21 + + + 231 - abc * z z / 23 // 345.3 + 13e93");
+    pfile_t *pf31 = Pfile.ctor("require \"ifj21\"\n1 + - 23 // 23881 /* 23 * 1342");
+    pfile_t *pf32 = Pfile.ctor("require \"ifj21\"\na a + 2 * 19228 b");
+    pfile_t *pf33 = Pfile.ctor("require \"ifj21\"\n12.3 + a 3 - 6.3e7");
+    pfile_t *pf34 = Pfile.ctor("require \"ifj21\"\n* x /*/ 143.11E");
+    pfile_t *pf35 = Pfile.ctor("require \"ifj21\"\n21 + + + 231 - abc * z z / 23 // 345.3 + 13e93");
 
-    pfile_t *pf36 = Pfile.ctor("a + (b * d * * d)");
-    pfile_t *pf37 = Pfile.ctor("a + (b + (c + (d + (e + f)))))");
-    pfile_t *pf38 = Pfile.ctor("a * ((23 - e) / (7 * a)");
-    pfile_t *pf39 = Pfile.ctor("a + ((a // (a - a)) * (a / (a + a - a))) + a(");
-    pfile_t *pf40 = Pfile.ctor("(a - (b * c)) - ");
+    pfile_t *pf36 = Pfile.ctor("require \"ifj21\"\na + (b * d * * d)");
+    pfile_t *pf37 = Pfile.ctor("require \"ifj21\"\na + (b + (c + (d + (e + f)))))");
+    pfile_t *pf38 = Pfile.ctor("require \"ifj21\"\na * ((23 - e) / (7 * a)");
+    pfile_t *pf39 = Pfile.ctor("require \"ifj21\"\na + ((a // (a - a)) * (a / (a + a - a))) + a(");
+    pfile_t *pf40 = Pfile.ctor("require \"ifj21\"\n(a - (b * c)) - ");
 
-    pfile_t *pf41 = Pfile.ctor("#a + ##b");
-    pfile_t *pf42 = Pfile.ctor("a ... b + c * #d");
-    pfile_t *pf43 = Pfile.ctor("#a hey");
-    pfile_t *pf44 = Pfile.ctor("a + \"hello\" - 5");
-    pfile_t *pf45 = Pfile.ctor("n * b .. + bbb");
+    pfile_t *pf41 = Pfile.ctor("require \"ifj21\"\n#a + ##b");
+    pfile_t *pf42 = Pfile.ctor("require \"ifj21\"\na ... b + c * #d");
+    pfile_t *pf43 = Pfile.ctor("require \"ifj21\"\n#a hey");
+    pfile_t *pf44 = Pfile.ctor("require \"ifj21\"\na + \"hello\" - 5");
+    pfile_t *pf45 = Pfile.ctor("require \"ifj21\"\nn * b .. + bbb");
 
-    pfile_t *pf46 = Pfile.ctor("f(a + b * c) g()");;
-    pfile_t *pf47 = Pfile.ctor("f(g()");
-    pfile_t *pf48 = Pfile.ctor("a * c())");
-    pfile_t *pf49 = Pfile.ctor("\"a + f f(x, y(a + b)) - z * d\"");
-    pfile_t *pf50 = Pfile.ctor("a(b(c(d(e, f(g, h , i()))), j(), k(l(m l))))");
+    pfile_t *pf46 = Pfile.ctor("require \"ifj21\"\nf(a + b * c) g()");;
+    pfile_t *pf47 = Pfile.ctor("require \"ifj21\"\nf(g()");
+    pfile_t *pf48 = Pfile.ctor("require \"ifj21\"\na * c())");
+    pfile_t *pf49 = Pfile.ctor("require \"ifj21\"\n\"a + f f(x, y(a + b)) - z * d\"");
+    pfile_t *pf50 = Pfile.ctor("require \"ifj21\"\na(b(c(d(e, f(g, h , i()))), j(), k(l(m l))))");
 
     // tests.
     printf("\x1b[33m" "TESTS - INVALID INPUT\n" "\x1b[0m");
     printf("\x1b[33m" "---------------------\n" "\x1b[0m");
     printf("Test 6 - ids, operators +, -, *, /, //\n");
-    TEST_EXPECT(Expr.parse(pf26), false, "[26] \"a - - a\"");
-    TEST_EXPECT(Expr.parse(pf27), false, "[27] \"a + b + / c\"");
-    TEST_EXPECT(Expr.parse(pf28), false, "[28] \"a /\"");
-    TEST_EXPECT(Expr.parse(pf29), false, "[29] \"// a\"");
-    TEST_EXPECT(Expr.parse(pf30), false, "[30] \"a + c // b - d * a - d / e /// f\"");
+    TEST_EXPECT(Parser.analyse(pf26), false, "[26] \"a - - a\"");
+    TEST_EXPECT(Parser.analyse(pf27), false, "[27] \"a + b + / c\"");
+    TEST_EXPECT(Parser.analyse(pf28), false, "[28] \"a /\"");
+    TEST_EXPECT(Parser.analyse(pf29), false, "[29] \"// a\"");
+    TEST_EXPECT(Parser.analyse(pf30), false, "[30] \"a + c // b - d * a - d / e /// f\"");
 
     printf("Test 7 - constants, id, operators +, -, *, /, //\n");
-    TEST_EXPECT(Expr.parse(pf31), false, "[31] \"1 + - 23 // 23881 /* 23 * 1342\"");
-    TEST_EXPECT(Expr.parse(pf32), false, "[32] \"a a + 2 * 19228 b\"");
-    TEST_EXPECT(Expr.parse(pf33), false, "[33] \"12.3 + a 3 - 6.3e7\"");
-    TEST_EXPECT(Expr.parse(pf34), false, "[34] \"* x /*/ 143.11E\"");
-    TEST_EXPECT(Expr.parse(pf35), false, "[35] \"21 + + + 231 - abc * z z / 23 // 345.3 + 13e93\"");
+    TEST_EXPECT(Parser.analyse(pf31), false, "[31] \"1 + - 23 // 23881 /* 23 * 1342\"");
+    TEST_EXPECT(Parser.analyse(pf32), false, "[32] \"a a + 2 * 19228 b\"");
+    TEST_EXPECT(Parser.analyse(pf33), false, "[33] \"12.3 + a 3 - 6.3e7\"");
+    TEST_EXPECT(Parser.analyse(pf34), false, "[34] \"* x /*/ 143.11E\"");
+    TEST_EXPECT(Parser.analyse(pf35), false, "[35] \"21 + + + 231 - abc * z z / 23 // 345.3 + 13e93\"");
 
     printf("Test 8 - id, paren, constants, operators +, -, *, /, //\n");
-    TEST_EXPECT(Expr.parse(pf36), false, "[36] \"a + (b * d * * d)\"");
-    TEST_EXPECT(Expr.parse(pf37), false, "[37] \"a + (b + (c + (d + (e + f)))))\"");
-    TEST_EXPECT(Expr.parse(pf38), false, "[38] \"a * ((23 - e) / (7 * a)\"");
-    TEST_EXPECT(Expr.parse(pf39), false, "[39] \"a + ((a // (a - a)) * (a / (a + a - a))) + a(\"");
-    TEST_EXPECT(Expr.parse(pf40), false, "[40] \"(a - (b * c)) - \"");
+    TEST_EXPECT(Parser.analyse(pf36), false, "[36] \"a + (b * d * * d)\"");
+    TEST_EXPECT(Parser.analyse(pf37), false, "[37] \"a + (b + (c + (d + (e + f)))))\"");
+    TEST_EXPECT(Parser.analyse(pf38), false, "[38] \"a * ((23 - e) / (7 * a)\"");
+    TEST_EXPECT(Parser.analyse(pf39), false, "[39] \"a + ((a // (a - a)) * (a / (a + a - a))) + a(\"");
+    TEST_EXPECT(Parser.analyse(pf40), false, "[40] \"(a - (b * c)) - \"");
 
     printf("Test 9 - id, constants, operators +, -, *, /, //, #, ..\n");
-    TEST_EXPECT(Expr.parse(pf41), false, "[41] \"#a + ##b\"");
-    TEST_EXPECT(Expr.parse(pf42), false, "[42] \"a ... b + c * #d\"");
-    TEST_EXPECT(Expr.parse(pf43), false, "[43] \"#a hey\"");
-    TEST_EXPECT(Expr.parse(pf44), false, "[44] \"a + \\\"hello\\\" - 5\"");
-    TEST_EXPECT(Expr.parse(pf45), false, "[45] \"n * b .. + bbb\"");
+    TEST_EXPECT(Parser.analyse(pf41), false, "[41] \"#a + ##b\"");
+    TEST_EXPECT(Parser.analyse(pf42), false, "[42] \"a ... b + c * #d\"");
+    TEST_EXPECT(Parser.analyse(pf43), false, "[43] \"#a hey\"");
+    TEST_EXPECT(Parser.analyse(pf44), false, "[44] \"a + \\\"hello\\\" - 5\"");
+    TEST_EXPECT(Parser.analyse(pf45), false, "[45] \"n * b .. + bbb\"");
 
     printf("Test 10 - functions, id, constants, operators +, -, *, /, //, #, ..\n");
-    TEST_EXPECT(Expr.parse(pf46), false, "[46] \"f(a + b * c) g()\"");
-    TEST_EXPECT(Expr.parse(pf47), false, "[47] \"f(g()\"");
-    TEST_EXPECT(Expr.parse(pf48), false, "[48] \"a * c())\"");
-    TEST_EXPECT(Expr.parse(pf49), false, "[49] \"\\\"a + f f(x, y(a + b)) - z * d\\\"\"");
-    TEST_EXPECT(Expr.parse(pf50), false, "[50] \"a(b(c(d(e, f(g, h , i()))), j(), k(l(m l))))\"");
+    TEST_EXPECT(Parser.analyse(pf46), false, "[46] \"f(a + b * c) g()\"");
+    TEST_EXPECT(Parser.analyse(pf47), false, "[47] \"f(g()\"");
+    TEST_EXPECT(Parser.analyse(pf48), false, "[48] \"a * c())\"");
+    TEST_EXPECT(Parser.analyse(pf49), false, "[49] \"\\\"a + f f(x, y(a + b)) - z * d\\\"\"");
+    TEST_EXPECT(Parser.analyse(pf50), false, "[50] \"a(b(c(d(e, f(g, h , i()))), j(), k(l(m l))))\"");
 
     // destructors
     Pfile.dtor(pf1);
