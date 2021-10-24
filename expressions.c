@@ -9,12 +9,12 @@
  */
 
 /**
- * f - represent rows of the precedence table.
+ * f - represents rows of the precedence table.
  */
 static int f[13] = {8, 0, 8, 6, 6, 6, 6, 4, 4, 2, 0, 0, 0};
 
 /**
- * g - represent columns.
+ * g - represents columns.
  */
 static int g[13] = {7, 0, 0, 7, 7, 7, 5, 5, 1, 3, 7, 0, 0};
 
