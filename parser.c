@@ -615,8 +615,6 @@ static bool stmt(pfile_t *pfile) {
 
     switch (token.type) {
 
-        Symtable.ctor(&token);
-
         // function declaration: global id : function ( <datatype_list> <funcretopt>
         case KEYWORD_global:
             // global

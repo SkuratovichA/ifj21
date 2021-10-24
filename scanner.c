@@ -737,11 +737,6 @@ static token_t Get_next_token(pfile_t *pfile) {
     return curr;
 }
 
-static token_t Look_to_next_token(pfile_t *pfile){
-
-}
-
-
 /**
  * @brief Get previous token.
  *
