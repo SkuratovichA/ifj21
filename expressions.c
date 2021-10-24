@@ -640,39 +640,39 @@ int main() {
     printf("\x1b[33m" "TESTS - INVALID INPUT\n" "\x1b[0m");
     printf("\x1b[33m" "---------------------\n" "\x1b[0m");
     printf("Test 6 - ids, operators +, -, *, /, //\n");
-    TEST_EXPECT(Expr.parse(pf1), true, "[26] \"a - - a\"");
-    TEST_EXPECT(Expr.parse(pf2), true, "[27] \"a + b + / c\"");
-    TEST_EXPECT(Expr.parse(pf3), true, "[28] \"a /\"");
-    TEST_EXPECT(Expr.parse(pf4), true, "[29] \"// a\"");
-    TEST_EXPECT(Expr.parse(pf5), true, "[30] \"a + c // b - d * a - d / e /// f\"");
+    TEST_EXPECT(Expr.parse(pf26), false, "[26] \"a - - a\"");
+    TEST_EXPECT(Expr.parse(pf27), false, "[27] \"a + b + / c\"");
+    TEST_EXPECT(Expr.parse(pf28), false, "[28] \"a /\"");
+    TEST_EXPECT(Expr.parse(pf29), false, "[29] \"// a\"");
+    TEST_EXPECT(Expr.parse(pf30), false, "[30] \"a + c // b - d * a - d / e /// f\"");
 
     printf("Test 7 - constants, id, operators +, -, *, /, //\n");
-    TEST_EXPECT(Expr.parse(pf6), true, "[31] \"1 + - 23 // 23881 /* 23 * 1342\"");
-    TEST_EXPECT(Expr.parse(pf7), true, "[32] \"a a + 2 * 19228 b\"");
-    TEST_EXPECT(Expr.parse(pf8), true, "[33] \"12.3 + a 3 - 6.3e7\"");
-    TEST_EXPECT(Expr.parse(pf9), true, "[34] \"* x /*/ 143.11E\"");
-    TEST_EXPECT(Expr.parse(pf10), true, "[35] \"21 + + + 231 - abc * z z / 23 // 345.3 + 13e93\"");
+    TEST_EXPECT(Expr.parse(pf31), false, "[31] \"1 + - 23 // 23881 /* 23 * 1342\"");
+    TEST_EXPECT(Expr.parse(pf32), false, "[32] \"a a + 2 * 19228 b\"");
+    TEST_EXPECT(Expr.parse(pf33), false, "[33] \"12.3 + a 3 - 6.3e7\"");
+    TEST_EXPECT(Expr.parse(pf34), false, "[34] \"* x /*/ 143.11E\"");
+    TEST_EXPECT(Expr.parse(pf35), false, "[35] \"21 + + + 231 - abc * z z / 23 // 345.3 + 13e93\"");
 
     printf("Test 8 - id, paren, constants, operators +, -, *, /, //\n");
-    TEST_EXPECT(Expr.parse(pf11), true, "[36] ");
-    TEST_EXPECT(Expr.parse(pf12), true, "[37] ");
-    TEST_EXPECT(Expr.parse(pf13), true, "[38] ");
-    TEST_EXPECT(Expr.parse(pf14), true, "[39] ");
-    TEST_EXPECT(Expr.parse(pf15), true, "[40] ");
+    TEST_EXPECT(Expr.parse(pf36), false, "[36] \"a + (b * d * * d)\"");
+    TEST_EXPECT(Expr.parse(pf37), false, "[37] \"a + (b + (c + (d + (e + f)))))\"");
+    TEST_EXPECT(Expr.parse(pf38), false, "[38] \"a * ((23 - e) / (7 * a)\"");
+    TEST_EXPECT(Expr.parse(pf39), false, "[39] \"a + ((a // (a - a)) * (a / (a + a - a))) + a(\"");
+    TEST_EXPECT(Expr.parse(pf40), false, "[40] \"(a - (b * c)) - \"");
 
     printf("Test 9 - id, constants, operators +, -, *, /, //, #, ..\n");
-    TEST_EXPECT(Expr.parse(pf16), true, "[41] ");
-    TEST_EXPECT(Expr.parse(pf17), true, "[42] ");
-    TEST_EXPECT(Expr.parse(pf18), true, "[43] ");
-    TEST_EXPECT(Expr.parse(pf19), true, "[44] ");
-    TEST_EXPECT(Expr.parse(pf20), true, "[45] ");
+    TEST_EXPECT(Expr.parse(pf41), false, "[41] \"#a + ##b\"");
+    TEST_EXPECT(Expr.parse(pf42), false, "[42] \"a ... b + c * #d\"");
+    TEST_EXPECT(Expr.parse(pf43), false, "[43] \"#a hey\"");
+    TEST_EXPECT(Expr.parse(pf44), false, "[44] \"a + \\\"hello\\\" - 5\"");
+    TEST_EXPECT(Expr.parse(pf45), false, "[45] \"n * b .. + bbb\"");
 
     printf("Test 10 - functions, id, constants, operators +, -, *, /, //, #, ..\n");
-    TEST_EXPECT(Expr.parse(pf21), true, "[46] ");
-    TEST_EXPECT(Expr.parse(pf22), true, "[47] ");
-    TEST_EXPECT(Expr.parse(pf23), true, "[48] ");
-    TEST_EXPECT(Expr.parse(pf24), true, "[49] ");
-    TEST_EXPECT(Expr.parse(pf25), true, "[50] ");
+    TEST_EXPECT(Expr.parse(pf46), false, "[46] \"f(a + b * c) g()\"");
+    TEST_EXPECT(Expr.parse(pf47), false, "[47] \"f(g()\"");
+    TEST_EXPECT(Expr.parse(pf48), false, "[48] \"a * c())\"");
+    TEST_EXPECT(Expr.parse(pf49), false, "[49] \"\\\"a + f f(x, y(a + b)) - z * d\\\"\"");
+    TEST_EXPECT(Expr.parse(pf50), false, "[50] \"a(b(c(d(e, f(g, h , i()))), j(), k(l(m l))))\"");
 
     // destructors
     Pfile.dtor(pf1);
