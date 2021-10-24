@@ -89,3 +89,11 @@ add_executable(test_${ATTRIBUTE}
         )
 target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
 message(STATUS ${ATTRIBUTE} " execucumber compiled.")
+
+#symtable tests
+set(ATTRIBUTE symtable)
+add_executable(test_${ATTRIBUTE}
+        ${PROJ_FILES}
+        )
+target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
+message(STATUS ${ATTRIBUTE} " execucumber compiled.")
