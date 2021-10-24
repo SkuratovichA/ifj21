@@ -509,35 +509,35 @@ const struct expr_interface_t Expr = {
 
 int main() {
     // create test inputs.
-    pfile_t *pf1  = Pfile.ctor("require \"ifj21\"\nlocal x : integer = a");
-    pfile_t *pf2  = Pfile.ctor("require \"ifj21\"\na + b - c + d - e");
-    pfile_t *pf3  = Pfile.ctor("require \"ifj21\"\na * b / c * a * c");
-    pfile_t *pf4  = Pfile.ctor("require \"ifj21\"\na + b + c + d - a - b - c - d * a * b * c * d / a / b / c / d // a // b // c // d");
-    pfile_t *pf5  = Pfile.ctor("require \"ifj21\"\na + c // b - d * a - d / e // f");
+    pfile_t *pf1  = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a end\n");
+    pfile_t *pf2  = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + b - c + d - e end\n");
+    pfile_t *pf3  = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a * b / c * a * c end\n");
+    pfile_t *pf4  = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + b + c + d - a - b - c - d * a * b * c * d / a / b / c / d // a // b // c // d end\n");
+    pfile_t *pf5  = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + c // b - d * a - d / e // f end\n");
 
-    pfile_t *pf6  = Pfile.ctor("require \"ifj21\"\n1 + 39 - 23 // 23881 / 23 * 1342");
-    pfile_t *pf7  = Pfile.ctor("require \"ifj21\"\na + 2 * 19228 - b");
-    pfile_t *pf8  = Pfile.ctor("require \"ifj21\"\n12.3 + a - 6.3e7");
-    pfile_t *pf9  = Pfile.ctor("require \"ifj21\"\nx // 143.11E");
-    pfile_t *pf10 = Pfile.ctor("require \"ifj21\"\n21 + 231 - abc * z / 23 // 345.3 + 13e93");
+    pfile_t *pf6  = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = 1 + 39 - 23 // 23881 / 23 * 1342 end\n");
+    pfile_t *pf7  = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + 2 * 19228 - b end\n");
+    pfile_t *pf8  = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = 12.3 + a - 6.3e7 end\n");
+    pfile_t *pf9  = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = x // 143.11E2 end\n");
+    pfile_t *pf10 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = 21 + 231 - abc * z / 23 // 345.3 + 13e93 end\n");
 
-    pfile_t *pf11 = Pfile.ctor("require \"ifj21\"\na + (b * d * d)");
-    pfile_t *pf12 = Pfile.ctor("require \"ifj21\"\na + (b + (c + (d + (e + f))))");
-    pfile_t *pf13 = Pfile.ctor("require \"ifj21\"\na * (23 - e) / (7 * a)");
-    pfile_t *pf14 = Pfile.ctor("require \"ifj21\"\na + ((a // (a - a)) * (a / (a + a - a))) + a");
-    pfile_t *pf15 = Pfile.ctor("require \"ifj21\"\n(a - (b * c))");
+    pfile_t *pf11 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + (b * d * d) end\n");
+    pfile_t *pf12 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + (b + (c + (d + (e + f)))) end\n");
+    pfile_t *pf13 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a * (23 - e) / (7 * a) end\n");
+    pfile_t *pf14 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + ((a // (a - a)) * (a / (a + a - a))) + a end\n");
+    pfile_t *pf15 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = (a - (b * c)) end\n");
 
-    pfile_t *pf16 = Pfile.ctor("require \"ifj21\"\n#a + #b");
-    pfile_t *pf17 = Pfile.ctor("require \"ifj21\"\na .. b + c * #d");
-    pfile_t *pf18 = Pfile.ctor("require \"ifj21\"\n#a \"goto hell\"");
-    pfile_t *pf19 = Pfile.ctor("require \"ifj21\"\na + #\"hello\" - 5");
-    pfile_t *pf20 = Pfile.ctor("require \"ifj21\"\nnaaa .. bbb + a .. b");
+    pfile_t *pf16 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = #a + #b");
+    pfile_t *pf17 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a .. b + c * #d end\n");
+    pfile_t *pf18 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = #a \"goto hell\" end\n");
+    pfile_t *pf19 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + #\"hello\" - 5 end\n");
+    pfile_t *pf20 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = naaa .. bbb + a .. b end\n");
 
-    pfile_t *pf21 = Pfile.ctor("require \"ifj21\"\nf(a + b * c)");
-    pfile_t *pf22 = Pfile.ctor("require \"ifj21\"\na * c()");
-    pfile_t *pf23 = Pfile.ctor("require \"ifj21\"\nf(g())");
-    pfile_t *pf24 = Pfile.ctor("require \"ifj21\"\na + f(x, y(a + b)) - z * d");
-    pfile_t *pf25 = Pfile.ctor("require \"ifj21\"\na(b(c(d(e, f(g, h , i()))), j(), k(l(m))))");
+    pfile_t *pf21 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = f(a + b * c) end\n");
+    pfile_t *pf22 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a * c() end\n");
+    pfile_t *pf23 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = f(g()) end\n");
+    pfile_t *pf24 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + f(x, y(a + b)) - z * d end\n");
+    pfile_t *pf25 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a(b(c(d(e, f(g, h , i()))), j(), k(l(m)))) end\n");
 
     // tests.
     printf("\x1b[33m" "TESTS - VALID INPUT\n" "\x1b[0m");
@@ -607,35 +607,35 @@ int main() {
     // tests - input invalid **************************************************************
 
     // create test inputs.
-    pfile_t *pf26 = Pfile.ctor("require \"ifj21\"\nlocal n1 : integer = a + b\n");
-    pfile_t *pf27 = Pfile.ctor("require \"ifj21\"\na + b + / c");
-    pfile_t *pf28 = Pfile.ctor("require \"ifj21\"\na /");
-    pfile_t *pf29 = Pfile.ctor("require \"ifj21\"\n// a");
-    pfile_t *pf30 = Pfile.ctor("require \"ifj21\"\na + c // b - d * a - d / e /// f");
+    pfile_t *pf26 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + b end\n");
+    pfile_t *pf27 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + b + / c end\n");
+    pfile_t *pf28 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = na / end\n");
+    pfile_t *pf29 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = // a end\n");
+    pfile_t *pf30 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + c // b - d * a - d / e /// f end\n");
 
-    pfile_t *pf31 = Pfile.ctor("require \"ifj21\"\n1 + - 23 // 23881 /* 23 * 1342");
-    pfile_t *pf32 = Pfile.ctor("require \"ifj21\"\na a + 2 * 19228 b");
-    pfile_t *pf33 = Pfile.ctor("require \"ifj21\"\n12.3 + a 3 - 6.3e7");
-    pfile_t *pf34 = Pfile.ctor("require \"ifj21\"\n* x /*/ 143.11E");
-    pfile_t *pf35 = Pfile.ctor("require \"ifj21\"\n21 + + + 231 - abc * z z / 23 // 345.3 + 13e93");
+    pfile_t *pf31 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = 1 + - 23 // 23881 /* 23 * 1342 end\n");
+    pfile_t *pf32 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a a + 2 * 19228 b end\n");
+    pfile_t *pf33 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = 12.3 + a 3 - 6.3e7 end\n");
+    pfile_t *pf34 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = * x /*/ 143.11E end\n");
+    pfile_t *pf35 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = 21 + + + 231 - abc * z z / 23 // 345.3 + 13e93 end\n");
 
-    pfile_t *pf36 = Pfile.ctor("require \"ifj21\"\na + (b * d * * d)");
-    pfile_t *pf37 = Pfile.ctor("require \"ifj21\"\na + (b + (c + (d + (e + f)))))");
-    pfile_t *pf38 = Pfile.ctor("require \"ifj21\"\na * ((23 - e) / (7 * a)");
-    pfile_t *pf39 = Pfile.ctor("require \"ifj21\"\na + ((a // (a - a)) * (a / (a + a - a))) + a(");
-    pfile_t *pf40 = Pfile.ctor("require \"ifj21\"\n(a - (b * c)) - ");
+    pfile_t *pf36 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + (b * d * * d) end\n");
+    pfile_t *pf37 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + (b + (c + (d + (e + f))))) end\n");
+    pfile_t *pf38 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a * ((23 - e) / (7 * a) end\n");
+    pfile_t *pf39 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + ((a // (a - a)) * (a / (a + a - a))) + a( end\n");
+    pfile_t *pf40 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = (a - (b * c)) -  end\n");
 
-    pfile_t *pf41 = Pfile.ctor("require \"ifj21\"\n#a + ##b");
-    pfile_t *pf42 = Pfile.ctor("require \"ifj21\"\na ... b + c * #d");
-    pfile_t *pf43 = Pfile.ctor("require \"ifj21\"\n#a hey");
-    pfile_t *pf44 = Pfile.ctor("require \"ifj21\"\na + \"hello\" - 5");
-    pfile_t *pf45 = Pfile.ctor("require \"ifj21\"\nn * b .. + bbb");
+    pfile_t *pf41 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = #a + ##b end\n");
+    pfile_t *pf42 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a ... b + c * #d end\n");
+    pfile_t *pf43 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = #a hey end\n");
+    pfile_t *pf44 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + \"hello\" - 5 end\n");
+    pfile_t *pf45 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = n * b .. + bbb end\n");
 
-    pfile_t *pf46 = Pfile.ctor("require \"ifj21\"\nf(a + b * c) g()");;
-    pfile_t *pf47 = Pfile.ctor("require \"ifj21\"\nf(g()");
-    pfile_t *pf48 = Pfile.ctor("require \"ifj21\"\na * c())");
-    pfile_t *pf49 = Pfile.ctor("require \"ifj21\"\n\"a + f f(x, y(a + b)) - z * d\"");
-    pfile_t *pf50 = Pfile.ctor("require \"ifj21\"\na(b(c(d(e, f(g, h , i()))), j(), k(l(m l))))");
+    pfile_t *pf46 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = f(a + b * c) g() end\n");;
+    pfile_t *pf47 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = f(g() end\n");
+    pfile_t *pf48 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a * c()) end\n");
+    pfile_t *pf49 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = \"a + f f(x, y(a + b)) - z * d\" end\n");
+    pfile_t *pf50 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a(b(c(d(e, f(g, h , i()))), j(), k(l(m l)))) end\n");
 
     // tests.
     printf("\x1b[33m" "TESTS - INVALID INPUT\n" "\x1b[0m");
@@ -701,8 +701,6 @@ int main() {
     Pfile.dtor(pf23);
     Pfile.dtor(pf24);
     Pfile.dtor(pf25);
-
-
 
     return 0;
 }
