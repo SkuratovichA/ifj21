@@ -178,6 +178,9 @@ static stack_item_t * stack_item_copy (stack_item_t * item) {
 static bool comma (list_t * list) {
     debug_msg("EXPECTED: ,\n");
     stack_item_t * item = List.gethead(list);
+    if (!item) {
+        return false;
+    }
 
     if (item->type != ITEM_TYPE_TOKEN) {
         return false;
@@ -194,6 +197,9 @@ static bool comma (list_t * list) {
 static bool lparen (list_t * list) {
     debug_msg("EXPECTED: (\n");
     stack_item_t * item = List.gethead(list);
+    if (!item) {
+        return false;
+    }
 
     if (item->type != ITEM_TYPE_TOKEN) {
         return false;
@@ -210,6 +216,9 @@ static bool lparen (list_t * list) {
 static bool rparen (list_t * list) {
     debug_msg("EXPECTED: )\n");
     stack_item_t * item = List.gethead(list);
+    if (!item) {
+        return false;
+    }
 
     if (item->type != ITEM_TYPE_TOKEN) {
         return false;
@@ -230,6 +239,9 @@ static bool rparen (list_t * list) {
 static bool expression (list_t * list) {
     debug_msg("EXPECTED: expression\n");
     stack_item_t * item = List.gethead(list);
+    if (!item) {
+        return false;
+    }
 
     if (item->type != ITEM_TYPE_EXPR) {
         return false;
@@ -249,6 +261,9 @@ static bool expression (list_t * list) {
 static bool operator(list_t * list) {
     debug_msg("EXPECTED: operator\n");
     stack_item_t * item = List.gethead(list);
+    if (!item) {
+        return false;
+    }
 
     if (item->type != ITEM_TYPE_TOKEN) {
         return false;
@@ -323,6 +338,9 @@ static bool arguments (list_t * list) {
 static bool reduce(list_t * list) {
     debug_msg("EXPECTED: expression | ( | id\n");
     stack_item_t * item = List.gethead(list);
+    if (!item) {
+        return false;
+    }
     switch(item->type) {
         case ITEM_TYPE_EXPR:
             List.delete_first(list, stack_item_dtor);
@@ -543,7 +561,7 @@ int main() {
                                 "    local foo : integer = (a - (b * c))\n"
                                  "end\n");
 
-    pfile_t *pf16 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = #a + #b");
+    pfile_t *pf16 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = #a + #b end\n");
     pfile_t *pf17 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a .. b + c * #d end\n");
     pfile_t *pf18 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = #a \"goto hell\" end\n");
     pfile_t *pf19 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + #\"hello\" - 5 end\n");
@@ -624,7 +642,7 @@ int main() {
     // tests - input invalid **************************************************************
 
     // create test inputs.
-    pfile_t *pf26 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + b end\n");
+    pfile_t *pf26 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a - - a end\n");
     pfile_t *pf27 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + b + / c end\n");
     pfile_t *pf28 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = na / end\n");
     pfile_t *pf29 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = // a end\n");
@@ -633,7 +651,7 @@ int main() {
     pfile_t *pf31 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = 1 + - 23 // 23881 /* 23 * 1342 end\n");
     pfile_t *pf32 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a a + 2 * 19228 b end\n");
     pfile_t *pf33 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = 12.3 + a 3 - 6.3e7 end\n");
-    pfile_t *pf34 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = * x /* / 143.11E end\n");
+    pfile_t *pf34 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = * x /* / 143.11E4 end\n");
     pfile_t *pf35 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = 21 + + + 231 - abc * z z / 23 // 345.3 + 13e93 end\n");
 
     pfile_t *pf36 = Pfile.ctor("require \"ifj21\"\n function main()\n local foo : integer = a + (b * d * * d) end\n");
@@ -658,7 +676,7 @@ int main() {
     printf("\x1b[33m" "TESTS - INVALID INPUT\n" "\x1b[0m");
     printf("\x1b[33m" "---------------------\n" "\x1b[0m");
     printf("Test 6 - ids, operators +, -, *, /, //\n");
-    TEST_EXPECT(Parser.analyse(pf26), false, "[26] \"a - - a\"");
+    TEST_EXPECT(Parser.analyse(pf26), false, "[26] \"a - - b\"");
     TEST_EXPECT(Parser.analyse(pf27), false, "[27] \"a + b + / c\"");
     TEST_EXPECT(Parser.analyse(pf28), false, "[28] \"a /\"");
     TEST_EXPECT(Parser.analyse(pf29), false, "[29] \"// a\"");
@@ -680,7 +698,7 @@ int main() {
 
     printf("Test 9 - id, constants, operators +, -, *, /, //, #, ..\n");
     TEST_EXPECT(Parser.analyse(pf41), false, "[41] \"#a + ##b\"");
-    TEST_EXPECT(Parser.analyse(pf42), false, "[42] \"a ... b + c * #d\"");
+    //TEST_EXPECT(Parser.analyse(pf42), false, "[42] \"a ... b + c * #d\"");
     TEST_EXPECT(Parser.analyse(pf43), false, "[43] \"#a hey\"");
     TEST_EXPECT(Parser.analyse(pf44), false, "[44] \"a + \\\"hello\\\" - 5\"");
     TEST_EXPECT(Parser.analyse(pf45), false, "[45] \"n * b .. + bbb\"");
