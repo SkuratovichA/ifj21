@@ -134,7 +134,7 @@ static bool insert(node_t *root_node, token_t *token, unsigned int validity) {
 /**
  * Tree interface.
  */
-const struct tree_op_struct Tree = {
+const struct bintree_interface_t Tree = {
         .find = Find,
         .insert = insert,
         .dtor = Dtor,

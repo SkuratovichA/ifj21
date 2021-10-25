@@ -37,9 +37,9 @@ typedef struct node node_t;
 /**
  * An interface to access scanner functions
  */
-extern const struct tree_op_struct Tree;
+extern const struct bintree_interface_t Tree;
 
-struct tree_op_struct {
+struct bintree_interface_t {
     void (*delete_tree)(node_t *);
 
 
