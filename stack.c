@@ -15,6 +15,7 @@ static void Push(sstack_t *stack, void *data) {
  * @brief Pops a top item of the stack.
  *
  * @param stack
+ * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Pop(sstack_t *stack, void (*clear_fun)(void *)) {
     List.delete_first(stack, clear_fun);
@@ -35,6 +36,7 @@ static bool Is_empty(sstack_t *stack) {
  * @brief Deletes all items in the stack.
  *
  * @param stack
+ * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Clear(sstack_t *stack, void (*clear_fun)(void *)) {
     List.delete_list(stack, clear_fun);
@@ -62,6 +64,7 @@ static sstack_t *Ctor(void) {
  * @brief Stack destructor.
  *
  * @param stack Stack to be destructed.
+ * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Dtor(sstack_t *stack, void (*clear_fun)(void *)) {
     List.dtor(stack, clear_fun);

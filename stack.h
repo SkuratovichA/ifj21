@@ -20,6 +20,7 @@ struct stack_interface_t {
      * @brief Pops a top item of the stack.
      *
      * @param stack
+     * @param clear_fun pointer to a function, which will free the list data.
      */
     void (*pop)(list_t *stack, void (*clear_fun)(void *));
 
@@ -35,6 +36,7 @@ struct stack_interface_t {
      * @brief Deletes all items in the stack.
      *
      * @param stack
+     * @param clear_fun pointer to a function, which will free the list data.
      */
     void (*clear)(list_t *stack, void (*clear_fun)(void *));
 
@@ -56,6 +58,7 @@ struct stack_interface_t {
      * @brief Stack destructor.
      *
      * @param stack Stack to be destructed.
+     * @param clear_fun pointer to a function, which will free the list data.
      */
     void (*dtor)(list_t *stack, void (*clear_fun)(void *));
 };
