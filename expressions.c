@@ -274,7 +274,7 @@ static bool operator(list_t * list) {
  * @param list
  * @return
  */
-static bool other_params (list_t * list) {
+static bool other_arguments (list_t * list) {
     debug_msg("EXPECTED: , <expr> <other_params> )\n");
 
     if (rparen(list)) {
@@ -289,7 +289,7 @@ static bool other_params (list_t * list) {
         return false;
     }
 
-    return other_params(list);
+    return other_arguments(list);
 }
 
 /**
@@ -298,11 +298,11 @@ static bool other_params (list_t * list) {
  * @param list
  * @return
  */
-static bool params (list_t * list) {
+static bool arguments (list_t * list) {
     debug_msg("EXPECTED: <expr> <other_params> | )\n");
 
     if (expression(list)) {
-        return other_params(list);
+        return other_arguments(list);
     } else {
         return rparen(list);
     }
@@ -346,7 +346,7 @@ static bool reduce(list_t * list) {
                     if (!lparen(list)) {
                         return false;
                     }
-                    return params(list);
+                    return arguments(list);
             }
             break;
         default: return false;
