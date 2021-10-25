@@ -9,14 +9,14 @@
  */
 
 /**
- * f - represent rows of the precedence table.
+ * f - represents rows of the precedence table.
  */
-static int f[13] = {8, 0, 8, 6, 6, 6, 6, 4, 4, 2, 0, 0, 0};
+static const int f[13] = {8, 0, 8, 6, 6, 6, 6, 4, 4, 2, 0, 0, 0};
 
 /**
- * g - represent columns.
+ * g - represents columns.
  */
-static int g[13] = {7, 0, 0, 7, 7, 7, 5, 5, 1, 3, 7, 0, 0};
+static const int g[13] = {7, 0, 0, 7, 7, 7, 5, 5, 1, 3, 7, 0, 0};
 
 /**
  * @brief
@@ -269,12 +269,12 @@ static bool operator(list_t * list) {
 }
 
 /**
- * !rule <other_params> -> , <expr> <other_params> | )
+ * !rule <other_arguments> -> , <expr> <other_arguments> | )
  *
  * @param list
  * @return
  */
-static bool other_params (list_t * list) {
+static bool other_arguments (list_t * list) {
     debug_msg("EXPECTED: , <expr> <other_params> )\n");
 
     if (rparen(list)) {
@@ -289,26 +289,24 @@ static bool other_params (list_t * list) {
         return false;
     }
 
-    return other_params(list);
+    return other_arguments(list);
 }
 
 /**
- * !rule <params> -> <expr> <other_params> | )
+ * !rule <arguments> -> <expr> <other_arguments> | )
  *
  * @param list
  * @return
  */
-static bool params (list_t * list) {
+static bool arguments (list_t * list) {
     debug_msg("EXPECTED: <expr> <other_params> | )\n");
 
     if (expression(list)) {
-        return other_params(list);
+        return other_arguments(list);
     } else {
         return rparen(list);
     }
 }
-
-// $<func() >
 
 /**
  * @brief
@@ -317,7 +315,7 @@ static bool params (list_t * list) {
  * !rule <expr> -> # <expr>
  * !rule <expr> -> ( <expr> )
  * !rule <expr> -> id
- * !rule <expr> -> func ( <params>
+ * !rule <expr> -> func ( <arguments>
  *
  * @param list
  * @return
@@ -348,7 +346,7 @@ static bool reduce(list_t * list) {
                     if (!lparen(list)) {
                         return false;
                     }
-                    return params(list);
+                    return arguments(list);
             }
             break;
         default: return false;

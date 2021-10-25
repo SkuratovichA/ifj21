@@ -40,6 +40,7 @@ static void Prepend(list_t *list, void *data) {
  * @brief Delete the first item in list.
  *
  * @param list singly linked list.
+ * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
     soft_assert(list, ERROR_INTERNAL);
@@ -53,6 +54,7 @@ static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
  * @brief Delete all items in list.
  *
  * @param list singly linked list
+ * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Clear(list_t *list, void (*clear_fun)(void *)) {
     while (list->head) {
@@ -64,6 +66,7 @@ static void Clear(list_t *list, void (*clear_fun)(void *)) {
  * @brief List destructor.
  *
  * @param list List to be destructed.
+ * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Dtor(list_t *list, void (*clear_fun)(void *)) {
     Clear(list, clear_fun);

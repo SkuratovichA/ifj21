@@ -37,6 +37,7 @@ struct list_interface_t {
      * @brief Delete the first item in list.
      *
      * @param list singly linked list.
+     * @param clear_fun pointer to a function, which will free the list data.
      */
     void (*delete_first)(list_t *list, void (*clear_fun)(void *));
 
@@ -44,6 +45,7 @@ struct list_interface_t {
      * @brief Delete all items in list.
      *
      * @param list singly linked list
+     * @param clear_fun pointer to a function, which will free the list data.
      */
     void (*delete_list)(list_t *list, void (*clear_fun)(void *));
 
@@ -81,6 +83,7 @@ struct list_interface_t {
     * @brief List destructor.
     *
     * @param list the list to be destructed.
+     * @param clear_fun pointer to a function, which will free the list data.
     */
     void (*dtor)(list_t *list, void (*clear_fun)(void *));
 };
