@@ -25,8 +25,8 @@ set(PROJ_FILES
         )
 set(DEVELOP_FLAGS
         -Wno-unused-parameter -Wno-unused-function
-        -DDEBUG
-        -DDEBUG_DYNSTRING
+        #-DDEBUG
+        #-DDEBUG_DYNSTRING
         )
 add_compile_options(
         -Wall -Wextra -pedantic -g
