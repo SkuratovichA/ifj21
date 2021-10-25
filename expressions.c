@@ -439,7 +439,7 @@ static bool parse(list_t * stack, pfile_t * pfile) {
 
             /* Reduce rule */
             list_t * list = List.ctor();
-            while (top->type != ITEM_TYPE_LT) {
+            while (top->type != ITEM_TYPE_LT && top->type != ITEM_TYPE_DOLLAR) {
                 List.prepend(list, (stack_item_t *) stack_item_copy(top));
                 Stack.pop(stack, stack_item_dtor);
                 top = Stack.peek(stack);
@@ -454,7 +454,9 @@ static bool parse(list_t * stack, pfile_t * pfile) {
             List.dtor(list, stack_item_dtor);
 
             /* Delete less than symbol */
-            Stack.pop(stack, stack_item_dtor);
+            if (top->type == ITEM_TYPE_LT) {
+                Stack.pop(stack, stack_item_dtor);
+            }
 
             /* Push an expression */
             Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR));
