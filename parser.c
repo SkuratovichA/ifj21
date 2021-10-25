@@ -49,32 +49,6 @@ static bool fun_body(pfile_t *);
 static bool fun_stmt(pfile_t *);
 
 /**
- * @brief List of expressont.
- *
- * !rule <other_expr> -> ) | , expr <other_expr>
- *
- * @param pfile input file for Scanner.get_next_token().
- * @return bool.
- */
-static bool other_expr(pfile_t *pfile) {
-    debug_msg("<other_expr> -> \n");
-
-    // ) |
-    EXPECTED_OPT(TOKEN_RPAREN);
-
-    // ,
-    EXPECTED(TOKEN_COMMA);
-
-    // expr
-    if (!Expr.parse(pfile)) {
-        return false;
-    }
-
-    // <other_expr>
-    return other_expr(pfile);
-}
-
-/**
  * @brief Expression list. TODO: probably this rule will be the part of Expr.parse().
  *
  * !rule <list_expr> -> ) | expr <other_expr>
@@ -85,16 +59,8 @@ static bool other_expr(pfile_t *pfile) {
 static bool list_expr(pfile_t *pfile) {
     debug_msg("<list_expr> -> \n");
 
-    // ) |
-    EXPECTED_OPT(TOKEN_RPAREN);
-
     // expr
-    if (!Expr.parse(pfile)) {
-        return false;
-    }
-
-    // <other_expr>
-    return other_expr(pfile);
+    return Expr.parse(pfile);
 }
 
 /**
@@ -794,7 +760,7 @@ int main() {
                            "    return foo (param)\n"
                            "end\n"
                            "function foo(param:string):string \n"
-                           "    return bar(param)\n"
+                           "    return x\n"
                            "end\n");
 
 
