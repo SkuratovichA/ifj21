@@ -57,7 +57,7 @@ static bool fun_stmt(pfile_t *);
  * @return bool.
  */
 static bool other_expr(pfile_t *pfile) {
-    debug_msg_s("<other_expr> -> \n");
+    debug_msg("<other_expr> -> \n");
 
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
@@ -83,7 +83,7 @@ static bool other_expr(pfile_t *pfile) {
  * @return bool.
  */
 static bool list_expr(pfile_t *pfile) {
-    debug_msg_s("<list_expr> -> \n");
+    debug_msg("<list_expr> -> \n");
 
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
@@ -297,7 +297,7 @@ static bool list_identif(pfile_t *pfile) {
  * @return bool.
  */
 static bool fun_stmt(pfile_t *pfile) {
-    debug_msg_s("<fun_stmt> -> \n");
+    debug_msg("<fun_stmt> -> \n");
 
     switch (Scanner.get_curr_token().type) {
         // if <cond_stmt>
