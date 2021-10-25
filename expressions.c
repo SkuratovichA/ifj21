@@ -11,12 +11,12 @@
 /**
  * f - represents rows of the precedence table.
  */
-static const int f[13] = {8, 0, 8, 6, 6, 6, 6, 4, 4, 2, 0, 0, 0};
+static const int f[13] = {8, 0, 8, 6, 6, 6, 6, 4, 4, 2, 1, 0, 0};
 
 /**
  * g - represents columns.
  */
-static const int g[13] = {7, 0, 0, 7, 7, 7, 5, 5, 1, 3, 7, 0, 0};
+static const int g[13] = {7, 7, 0, 7, 7, 7, 5, 5, 1, 3, 7, 0, 0};
 
 /**
  * @brief
