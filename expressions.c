@@ -1,4 +1,5 @@
 #include "expressions.h"
+#include "scanner.h"
 #include "stdbool.h"
 
 
@@ -11,7 +12,8 @@
  * @return true or false.
  */
 static bool Parse_expression(pfile_t *pfile) {
-    return false;
+    Scanner.get_next_token(pfile);
+    return true;
 }
 
 /**
