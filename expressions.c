@@ -308,8 +308,6 @@ static bool params (list_t * list) {
     }
 }
 
-// $<func() >
-
 /**
  * @brief
  *
