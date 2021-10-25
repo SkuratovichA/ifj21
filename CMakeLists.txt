@@ -11,7 +11,8 @@ set(UTILS_SOURCES
         progfile.c
         scanner.c
         tests/tests.c
-        parser.c expressions.c
+        parser.c
+        expressions.c
         )
 set(DATASTRUCTURES
         bintree.c
@@ -24,8 +25,8 @@ set(PROJ_FILES
         )
 set(DEVELOP_FLAGS
         -Wno-unused-parameter -Wno-unused-function
-        -DDEBUG
-        -DDEBUG_DYNSTRING
+        #-DDEBUG
+        #-DDEBUG_DYNSTRING
         )
 add_compile_options(
         -Wall -Wextra -pedantic -g
@@ -83,6 +84,14 @@ message(STATUS ${ATTRIBUTE} " execucumber compiled.")
 
 #bintree tests
 set(ATTRIBUTE bintree)
+add_executable(test_${ATTRIBUTE}
+        ${PROJ_FILES}
+        )
+target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
+message(STATUS ${ATTRIBUTE} " execucumber compiled.")
+
+#expressions tests
+set(ATTRIBUTE expressions)
 add_executable(test_${ATTRIBUTE}
         ${PROJ_FILES}
         )
