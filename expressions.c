@@ -269,7 +269,7 @@ static bool operator(list_t * list) {
 }
 
 /**
- * !rule <other_params> -> , <expr> <other_params> | )
+ * !rule <other_arguments> -> , <expr> <other_arguments> | )
  *
  * @param list
  * @return
@@ -293,7 +293,7 @@ static bool other_params (list_t * list) {
 }
 
 /**
- * !rule <params> -> <expr> <other_params> | )
+ * !rule <arguments> -> <expr> <other_arguments> | )
  *
  * @param list
  * @return
@@ -315,7 +315,7 @@ static bool params (list_t * list) {
  * !rule <expr> -> # <expr>
  * !rule <expr> -> ( <expr> )
  * !rule <expr> -> id
- * !rule <expr> -> func ( <params>
+ * !rule <expr> -> func ( <arguments>
  *
  * @param list
  * @return
