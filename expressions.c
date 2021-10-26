@@ -354,19 +354,13 @@ static bool reduce(sstack_t * r_stack) {
                     return expression(r_stack);
                 case OP_LPAREN:
                     Stack.pop(r_stack, stack_item_dtor);
-                    if (!expression(r_stack)) {
-                        return false;
-                    }
-                    return rparen(r_stack);
+                    return expression(r_stack) && rparen(r_stack);
                 case OP_ID:
                     Stack.pop(r_stack, stack_item_dtor);
                     return true;
                 case OP_FUNC:
                     Stack.pop(r_stack, stack_item_dtor);
-                    if (!lparen(r_stack)) {
-                        return false;
-                    }
-                    return arguments(r_stack);
+                    return lparen(r_stack) && arguments(r_stack);
             }
             break;
         default:
@@ -385,21 +379,21 @@ static bool reduce(sstack_t * r_stack) {
  */
 static bool parse(sstack_t * stack, pfile_t * pfile) {
     while (true) {
-        /* Peek item from the stack */
+        // Peek item from the stack
         stack_item_t * top = (stack_item_t *) Stack.peek(stack);
 
         debug_msg("Next: \"%s\"\n", op_to_string(get_op(Scanner.get_curr_token())));
 
-        /* Check if we have an expression on stack top */
+        // Check if we have an expression on the top of the stack
         stack_item_t * expr = NULL;
         stack_item_t * tmp;
         if (top->type == ITEM_TYPE_EXPR) {
             debug_msg("Expression popped\n");
-            /* We need to pop the expression, because we don't want to compare non-terminals */
+            // We need to pop the expression, because we don't want to compare non-terminals
             tmp = (stack_item_t *) Stack.peek(stack);
             expr = stack_item_copy(tmp);
             Stack.pop(stack, stack_item_dtor);
-            /* Update top */
+            // Update top
             top = (stack_item_t *) Stack.peek(stack);
         }
 
@@ -434,33 +428,33 @@ static bool parse(sstack_t * stack, pfile_t * pfile) {
         if (cmp <= 0) {
             debug_msg("SHIFT < | SHIFT =\n");
 
-            /* If first_op has a lower precedence, then push less than symbol */
+            // If first_op has a lower precedence, then push less than symbol
             if (cmp < 0) {
                 debug_msg("SHIFT <\n");
                 Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_LT));
             }
 
-            /* Push expression if exists */
+            // Push expression if exists
             if (expr) {
                 debug_msg("Expression pushed\n");
                 Stack.push(stack, expr);
             }
 
-            /* Push token from the input */
+            // Push token from the input
             Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_TOKEN));
 
             Scanner.get_next_token(pfile);
         } else {
             debug_msg("REDUCE >\n");
 
-            /* Push expression if exists */
+            // Push expression if exists
             if (expr) {
                 Stack.push(stack, expr);
-                /* Update top */
+                // Update top
                 top = Stack.peek(stack);
             }
 
-            /* Reduce rule */
+            // Reduce rule
             sstack_t * r_stack = Stack.ctor();
             while (top->type != ITEM_TYPE_LT && top->type != ITEM_TYPE_DOLLAR) {
                 Stack.push(r_stack, (stack_item_t *) stack_item_copy(top));
@@ -476,12 +470,12 @@ static bool parse(sstack_t * stack, pfile_t * pfile) {
 
             Stack.dtor(r_stack, stack_item_dtor);
 
-            /* Delete less than symbol */
+            // Delete less than symbol
             if (top->type == ITEM_TYPE_LT) {
                 Stack.pop(stack, stack_item_dtor);
             }
 
-            /* Push an expression */
+            // Push an expression
             Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR));
         }
         debug_msg("\n");
@@ -499,22 +493,22 @@ static bool parse(sstack_t * stack, pfile_t * pfile) {
 static bool Parse_expression(pfile_t *pfile) {
     sstack_t * stack = Stack.ctor();
 
-    /* Push $ on stack */
+    // Push $ on stack
     stack_item_t * dollar = (stack_item_t *) stack_item_ctor(ITEM_TYPE_DOLLAR);
     Stack.push(stack, dollar);
 
-    /* Parsing process */
+    // Parsing process
     bool parse_result = parse(stack, pfile);
 
-    /* If we have an error due parsing process */
+    // If we have an error due parsing process */
     if (!parse_result) {
-        /* Read the whole expression */
+        // Read the whole expression
         while (get_op(Scanner.get_curr_token()) != OP_DOLLAR) {
             Scanner.get_next_token(pfile);
         }
     }
 
-    /* Delete $ from stack */
+    // Delete $ from stack
     Stack.dtor(stack, stack_item_dtor);
     return parse_result;
 }
