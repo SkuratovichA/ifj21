@@ -319,7 +319,9 @@ static bool fun_stmt(pfile_t *pfile) {
             }
 
             // = expr, but can also be an empty statement.
-            assignment(pfile); // assignment
+            if (!assignment(pfile)) {
+                return false;
+            }
             break;
 
             // return <list_expr>
