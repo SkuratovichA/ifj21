@@ -171,9 +171,9 @@ static stack_item_t * stack_item_copy (stack_item_t * item) {
     return new_item;
 }
 
-static bool comma (list_t * list) {
+static bool comma (sstack_t * r_stack) {
     debug_msg("EXPECTED: ,\n");
-    stack_item_t * item = List.gethead(list);
+    stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
         return false;
     }
@@ -186,13 +186,13 @@ static bool comma (list_t * list) {
         return false;
     }
 
-    List.delete_first(list, stack_item_dtor);
+    Stack.pop(r_stack, stack_item_dtor);
     return true;
 }
 
-static bool lparen (list_t * list) {
+static bool lparen (sstack_t * r_stack) {
     debug_msg("EXPECTED: (\n");
-    stack_item_t * item = List.gethead(list);
+    stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
         return false;
     }
@@ -205,13 +205,13 @@ static bool lparen (list_t * list) {
         return false;
     }
 
-    List.delete_first(list, stack_item_dtor);
+    Stack.pop(r_stack, stack_item_dtor);
     return true;
 }
 
-static bool rparen (list_t * list) {
+static bool rparen (sstack_t * r_stack) {
     debug_msg("EXPECTED: )\n");
-    stack_item_t * item = List.gethead(list);
+    stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
         return false;
     }
@@ -224,7 +224,7 @@ static bool rparen (list_t * list) {
         return false;
     }
 
-    List.delete_first(list, stack_item_dtor);
+    Stack.pop(r_stack, stack_item_dtor);
     return true;
 }
 
@@ -232,9 +232,9 @@ static bool rparen (list_t * list) {
  * @param list
  * @return
  */
-static bool expression (list_t * list) {
+static bool expression (sstack_t * r_stack) {
     debug_msg("EXPECTED: expression\n");
-    stack_item_t * item = List.gethead(list);
+    stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
         return false;
     }
@@ -243,7 +243,7 @@ static bool expression (list_t * list) {
         return false;
     }
 
-    List.delete_first(list, stack_item_dtor);
+    Stack.pop(r_stack, stack_item_dtor);
     return true;
 }
 
@@ -254,9 +254,9 @@ static bool expression (list_t * list) {
  * @param list
  * @return
  */
-static bool operator(list_t * list) {
+static bool operator(sstack_t * r_stack) {
     debug_msg("EXPECTED: operator\n");
-    stack_item_t * item = List.gethead(list);
+    stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
         return false;
     }
@@ -272,8 +272,8 @@ static bool operator(list_t * list) {
         case OP_DIV_I:
         case OP_DIV_F:
         case OP_STRCAT:
-            List.delete_first(list, stack_item_dtor);
-            return expression(list);
+            Stack.pop(r_stack, stack_item_dtor);
+            return expression(r_stack);
     }
 
     return true;
@@ -285,22 +285,22 @@ static bool operator(list_t * list) {
  * @param list
  * @return
  */
-static bool other_arguments (list_t * list) {
+static bool other_arguments (sstack_t * r_stack) {
     debug_msg("EXPECTED: , <expr> <other_params> )\n");
 
-    if (rparen(list)) {
+    if (rparen(r_stack)) {
         return true;
     }
 
-    if (!comma(list)) {
+    if (!comma(r_stack)) {
         return false;
     }
 
-    if (!expression(list)) {
+    if (!expression(r_stack)) {
         return false;
     }
 
-    return other_arguments(list);
+    return other_arguments(r_stack);
 }
 
 /**
@@ -309,13 +309,13 @@ static bool other_arguments (list_t * list) {
  * @param list
  * @return
  */
-static bool arguments (list_t * list) {
+static bool arguments (sstack_t * r_stack) {
     debug_msg("EXPECTED: <expr> <other_params> | )\n");
 
-    if (expression(list)) {
-        return other_arguments(list);
+    if (expression(r_stack)) {
+        return other_arguments(r_stack);
     } else {
-        return rparen(list);
+        return rparen(r_stack);
     }
 }
 
@@ -328,39 +328,39 @@ static bool arguments (list_t * list) {
  * !rule <expr> -> id
  * !rule <expr> -> func ( <arguments>
  *
- * @param list
+ * @param r_stack
  * @return
  */
-static bool reduce(list_t * list) {
+static bool reduce(sstack_t * r_stack) {
     debug_msg("EXPECTED: expression | ( | id\n");
-    stack_item_t * item = List.gethead(list);
+    stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
         return false;
     }
     switch(item->type) {
         case ITEM_TYPE_EXPR:
-            List.delete_first(list, stack_item_dtor);
-            return operator(list);
+            Stack.pop(r_stack, stack_item_dtor);
+            return operator(r_stack);
         case ITEM_TYPE_TOKEN:
             switch(get_op(item->token)) {
                 case OP_HASH:
-                    List.delete_first(list, stack_item_dtor);
-                    return expression(list);
+                    Stack.pop(r_stack, stack_item_dtor);
+                    return expression(r_stack);
                 case OP_LPAREN:
-                    List.delete_first(list, stack_item_dtor);
-                    if (!expression(list)) {
+                    Stack.pop(r_stack, stack_item_dtor);
+                    if (!expression(r_stack)) {
                         return false;
                     }
-                    return rparen(list);
+                    return rparen(r_stack);
                 case OP_ID:
-                    List.delete_first(list, stack_item_dtor);
+                    Stack.pop(r_stack, stack_item_dtor);
                     return true;
                 case OP_FUNC:
-                    List.delete_first(list, stack_item_dtor);
-                    if (!lparen(list)) {
+                    Stack.pop(r_stack, stack_item_dtor);
+                    if (!lparen(r_stack)) {
                         return false;
                     }
-                    return arguments(list);
+                    return arguments(r_stack);
             }
             break;
         default: return false;
@@ -374,7 +374,7 @@ static bool reduce(list_t * list) {
  * @param pfile program file to pass in to scanner.
  * @return bool.
  */
-static bool parse(list_t * stack, pfile_t * pfile) {
+static bool parse(sstack_t * stack, pfile_t * pfile) {
     while (true) {
         /* Peek item from the stack */
         stack_item_t * top = (stack_item_t *) Stack.peek(stack);
@@ -452,20 +452,20 @@ static bool parse(list_t * stack, pfile_t * pfile) {
             }
 
             /* Reduce rule */
-            list_t * list = List.ctor();
+            sstack_t * r_stack = Stack.ctor();
             while (top->type != ITEM_TYPE_LT && top->type != ITEM_TYPE_DOLLAR) {
-                List.prepend(list, (stack_item_t *) stack_item_copy(top));
+                Stack.push(r_stack, (stack_item_t *) stack_item_copy(top));
                 Stack.pop(stack, stack_item_dtor);
                 top = Stack.peek(stack);
             }
 
-            if (!reduce(list) || List.gethead(list) != NULL) {
+            if (!reduce(r_stack) || Stack.peek(r_stack) != NULL) {
                 debug_msg("Reduction error!\n");
-                List.dtor(list, stack_item_dtor);
+                Stack.dtor(r_stack, stack_item_dtor);
                 return false;
             }
 
-            List.dtor(list, stack_item_dtor);
+            Stack.dtor(r_stack, stack_item_dtor);
 
             /* Delete less than symbol */
             if (top->type == ITEM_TYPE_LT) {
@@ -488,7 +488,7 @@ static bool parse(list_t * stack, pfile_t * pfile) {
  * @return bool.
  */
 static bool Parse_expression(pfile_t *pfile) {
-    list_t *stack = Stack.ctor();
+    sstack_t * stack = Stack.ctor();
 
     /* Push $ on stack */
     stack_item_t * dollar = (stack_item_t *) stack_item_ctor(ITEM_TYPE_DOLLAR);
