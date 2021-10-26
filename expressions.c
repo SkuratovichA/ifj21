@@ -54,6 +54,12 @@ static op_list_t get_op (token_t token) {
     }
 }
 
+/**
+ * @brief Convert operator to string
+ *
+ * @param op
+ * @return char *.
+ */
 static char * op_to_string(op_list_t op) {
     switch(op) {
         case OP_ID:         return "id";
@@ -79,15 +85,94 @@ static char * op_to_string(op_list_t op) {
     }
 }
 
+/**
+ * @brief Convert stack item to string.
+ * Process all items except ITEM_TYPE_TOKEN.
+ *
+ * @param type
+ * @return char *.
+ */
 static char * item_to_string(item_type_t type) {
     switch(type) {
-        case ITEM_TYPE_EXPR:     return "expr"; break;
+        case ITEM_TYPE_EXPR:     return "E"; break;
         case ITEM_TYPE_LT:       return "<"; break;
         case ITEM_TYPE_GT:       return ">"; break;
         case ITEM_TYPE_EQ:       return "="; break;
         case ITEM_TYPE_DOLLAR:   return "$"; break;
         default: return "unrecognized type";
     }
+}
+
+/**
+ * @brief Convert stack item to string.
+ * Process all items including ITEM_TYPE_TOKEN.
+ *
+ * @param item
+ * @return char *.
+ */
+static char * to_str (stack_item_t * item) {
+    return (item->type == ITEM_TYPE_TOKEN) ? op_to_string(get_op(item->token)) : item_to_string(item->type);
+}
+
+/**
+ * @brief Allocate memory for the stack item.
+ *
+ * @return stack_item_t *.
+ */
+static stack_item_t * stack_item_alloc () {
+    stack_item_t * new_item = calloc(1, sizeof(stack_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    return new_item;
+}
+
+/**
+ * @brief
+ *
+ * Create stack item with current token,
+ * if item type is equal to ITEM_TYPE_TOKEN.
+ *
+ * @param type
+ * @return stack_item_t *.
+ */
+static stack_item_t * stack_item_ctor (item_type_t type) {
+    stack_item_t * new_item = stack_item_alloc();
+    new_item->type = type;
+
+    if (type == ITEM_TYPE_TOKEN) {
+        new_item->token = Scanner.get_curr_token();
+    }
+
+    debug_msg("Created: \"%s\"\n", to_str(new_item));
+    return new_item;
+}
+
+/**
+ * @brief Copy stack item. Original item is not freed.
+ *
+ * @param type
+ * @return stack_item_t.
+ */
+static stack_item_t * stack_item_copy (stack_item_t * item) {
+    stack_item_t * new_item = stack_item_alloc();
+    new_item->type = item->type;
+
+    if (new_item->type == ITEM_TYPE_TOKEN) {
+        new_item->token = item->token;
+    }
+
+    debug_msg("Copied: \"%s\"\n", to_str(item));
+    return new_item;
+}
+
+/**
+ * @brief Free stack item.
+ *
+ * @param item
+ */
+static void stack_item_dtor (void * item) {
+    debug_msg("Deleted: \"%s\"\n", to_str(item));
+    free(item);
 }
 
 /**
@@ -144,46 +229,6 @@ static bool precedence_cmp (op_list_t first_op, op_list_t second_op, int *cmp) {
     }
 
     return false;
-}
-
-static char * to_str (stack_item_t * item) {
-    return (item->type == ITEM_TYPE_TOKEN) ? op_to_string(get_op(item->token)) : item_to_string(item->type);
-}
-
-static stack_item_t * stack_item_alloc () {
-    stack_item_t * new_item = calloc(1, sizeof(stack_item_t));
-    soft_assert(new_item, ERROR_INTERNAL);
-
-    return new_item;
-}
-
-static stack_item_t * stack_item_ctor (item_type_t type) {
-    stack_item_t * new_item = stack_item_alloc();
-    new_item->type = type;
-
-    if (type == ITEM_TYPE_TOKEN) {
-        new_item->token = Scanner.get_curr_token();
-    }
-
-    debug_msg("Created: \"%s\"\n", to_str(new_item));
-    return new_item;
-}
-
-static stack_item_t * stack_item_copy (stack_item_t * item) {
-    stack_item_t * new_item = stack_item_alloc();
-    new_item->type = item->type;
-
-    if (new_item->type == ITEM_TYPE_TOKEN) {
-        new_item->token = item->token;
-    }
-
-    debug_msg("Copied: \"%s\"\n", to_str(item));
-    return new_item;
-}
-
-static void stack_item_dtor (void * item) {
-    debug_msg("Deleted: \"%s\"\n", to_str(item));
-    free(item);
 }
 
 static bool comma (sstack_t * r_stack) {
