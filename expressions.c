@@ -542,7 +542,7 @@ int main() {
     char *req = "require \"ifj21\"\n function main()\n local foo : integer = ";
     char *end = " end\n";
     char fin[1000];
-    char *s[100];
+    char *s[200];
 
     s[0] = "a";
     s[1] = "a + b - c + d - e";
@@ -572,8 +572,16 @@ int main() {
 	s[25] = "a(b(c(d(e, f(g, h , i()))), j(), k(l(m))))";
     s[26] = "a < b";
     s[27] = "a >= b + c - d";
+    s[28] = "b / (a < b >= c) - d < e";
+    s[29] = "c <= d >= a";
+    s[30] = "#\"xyz\" > b";
+    s[31] = "a .. c > #e";
+    s[32] = "f() > g(a + b)";
+    s[33] = "2 < 5 < 8 < q";
+    s[34] = "a >= b <= 3";
 
-    unsigned num_of_tests_valid = 28; // don't forget to add 1 (bcs counting from 0)
+    unsigned num_of_tests_valid = 35; // don't forget to add 1 (bcs counting from 0)
+                    // eg. number_of_tests_valid = 11 when the last assignment is s[10]
 
     fprintf(stdout, "\x1b[33m" "TESTS - VALID INPUT\n" "\x1b[0m");
 
@@ -613,8 +621,17 @@ int main() {
     s[i+22] = "f(g()";
     s[i+23] = "a * c())";
     s[i+24] = "\"a + f f(x, y(a + b)) - z * d\"";
+    s[i+25] = "a <+ b";
+    s[i+26] = "a >< b + d";
+    s[i+27] = "a <> b";
+    s[i+28] = "a >>> b";
+    s[i+29] = "a + b <> c - d";
+    s[i+30] = "a < b # < c";
+    s[i+31] = "<";
+    s[i+32] = "< a >";
 
-    unsigned num_of_tests = num_of_tests_valid + 24;
+    unsigned num_of_tests = num_of_tests_valid + 32;    // the number in the last s[i + num_of_tests]
+                                // (eg. num_of_tests = 10 when the last s assignment is s[i + 10])
 
     fprintf(stdout, "\x1b[33m" "TESTS - INVALID INPUT\n" "\x1b[0m");
     while (i < num_of_tests + 1) {
