@@ -265,13 +265,13 @@ static bool expression (sstack_t * r_stack) {
 
 /**
  *
- * !rule <operator> -> * | / | // | + | - | ..
+ * !rule <operator> -> * | / | // | + | - | .. | < | <= | > | >= | == | ~=
  *
  * @param r_stack
  * @return
  */
 static bool operator(sstack_t * r_stack) {
-    debug_msg("EXPECTED: * | / | // | + | - | ..\n");
+    debug_msg("EXPECTED: * | / | // | + | - | .. | < | <= | > | >= | == | ~=\n");
 
     stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
