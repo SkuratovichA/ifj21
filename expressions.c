@@ -291,6 +291,8 @@ static bool operator(sstack_t * r_stack) {
         case OP_STRCAT:
             Stack.pop(r_stack, stack_item_dtor);
             return expression(r_stack);
+        default:
+            break;
     }
 
     return true;
