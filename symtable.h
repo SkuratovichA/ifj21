@@ -1,7 +1,6 @@
 #pragma once
 
-// Includes
-#include "scanner.h"
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -12,26 +11,28 @@
 #include <math.h>
 #include <stdint.h>
 #include "debug.h"
+#include "scanner.h"
 #include "errors.h"
+#include "dynstring.h"
+#include "bintree.h"
 
+typedef struct sym_table_array sym_t;
 
-extern struct token_t;
+typedef struct scope_table scope_t;
 
-typedef struct sym_table {
-    struct sym_table *parent;        /**< */
-    struct sym_table *child;         /**< */
-    struct node_t *tree;             /**< */
-    int scope_index;                 /**< */
-} sym_table;
+extern const struct symtable_interface_t Symt;
 
-typedef struct sym_table sym_t;
+struct symtable_interface_t {
 
+    sym_t *(*st_ctor)();
 
-extern const struct sym_table_op_struct Symtable;
+    scope_t *(*Ctor)(sym_t *, token_t, scope_t *);
 
-struct sym_table_op_struct {
+    scope_t *(*get_parent_scope)(scope_t *);
 
-    sym_t *(*ctor)(sym_t *, token_t *);
+    int (*get_scope_id)(scope_t *);
 
+    int (*get_parent_scope_id)(scope_t *);
 
+    void (*st_dtor)(sym_t *);
 };

@@ -22,7 +22,6 @@ do {   \
     token_t tok__ = Scanner.get_curr_token(); \
     if (tok__.type == (p)) { \
         if (tok__.type == TOKEN_ID || tok__.type == TOKEN_STR) { \
-            store_to_sym_table(pfile ,tok__);        \
             debug_msg("\t%s = { '%s' }\n", Scanner.to_string(tok__.type), Dynstring.c_str(tok__.attribute.id)); \
         } else { \
             debug_msg("\t%s\n", Scanner.to_string(tok__.type)); \
@@ -266,6 +265,7 @@ static bool other_identifiers(pfile_t *pfile) {
     EXPECTED(TOKEN_COMMA);
 
     // id
+    // todo store to scope
     EXPECTED(TOKEN_ID);
 
     // <other_identifiers>
@@ -284,6 +284,7 @@ static bool list_identif(pfile_t *pfile) {
     debug_msg_s("<list_identif> -> \n");
 
     // id
+    // todo store to scope
     EXPECTED(TOKEN_ID);
 
     // <other_identifiers>
@@ -331,6 +332,7 @@ static bool fun_stmt(pfile_t *pfile) {
     switch (Scanner.get_curr_token().type) {
         // if <cond_stmt>
         case KEYWORD_if:
+            // todo create scope
             EXPECTED(KEYWORD_if);
             // <cond_stmt>
             if (!cond_stmt(pfile)) {
@@ -341,6 +343,7 @@ static bool fun_stmt(pfile_t *pfile) {
             // local id : <datatype>
         case KEYWORD_local:
             EXPECTED(KEYWORD_local); // local
+            // todo store to scope
             EXPECTED(TOKEN_ID); // id
             EXPECTED(TOKEN_COLON); // :
             if (!datatype(pfile)) { // <datatype>
@@ -362,6 +365,7 @@ static bool fun_stmt(pfile_t *pfile) {
 
             // while <expr> do <fun_body> end
         case KEYWORD_while:
+            // todo create scope
             EXPECTED(KEYWORD_while);
 
             // parse expressions
@@ -399,6 +403,7 @@ static bool fun_stmt(pfile_t *pfile) {
 
             // rule <fun_stmt> -> for id = expression, expression do <fun_body>
         case KEYWORD_for:
+            //todo create scope
             EXPECTED(KEYWORD_for); // for
 
             // a, b, c.
@@ -474,6 +479,7 @@ static bool other_funparams(pfile_t *pfile) {
     EXPECTED(TOKEN_COMMA);
 
     // id
+    // todo store to scope
     EXPECTED(TOKEN_ID);
 
     // :
@@ -502,6 +508,7 @@ static bool funparam_def_list(pfile_t *pfile) {
     EXPECTED_OPT(TOKEN_RPAREN);
 
     // id
+    // todo store to scope
     EXPECTED(TOKEN_ID);
 
     // :
@@ -544,7 +551,7 @@ static bool other_datatypes(pfile_t *pfile) {
 static bool datatype_list(pfile_t *pfile) {
     debug_msg("<datatype_list> ->\n");
 
-    // ) |
+    // if  ')' then return true
     EXPECTED_OPT(TOKEN_RPAREN);
 
     //<datatype> && <other_datatypes>
@@ -615,10 +622,12 @@ static bool stmt(pfile_t *pfile) {
 
     switch (token.type) {
 
-        Symtable.ctor(&token);
+        //Symtable.ctor(,&token);
 
         // function declaration: global id : function ( <datatype_list> <funcretopt>
         case KEYWORD_global:
+            // todo create scope
+
             // global
             EXPECTED(KEYWORD_global);
 
@@ -674,6 +683,7 @@ static bool stmt(pfile_t *pfile) {
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:
+            // todo store to sym_t
             EXPECTED(TOKEN_ID);
             // <list_expr>
             if (!list_expr(pfile)) {

@@ -15,10 +15,10 @@ set(UTILS_SOURCES
         )
 set(DATASTRUCTURES
         bintree.c
+        symtable.c
         list.c
         stack.c
         dynstring.c
-        symtable.c
         )
 set(PROJ_FILES
         ${DATASTRUCTURES} ${UTILS_SOURCES}
