@@ -11,12 +11,12 @@
 /**
  * f - represents rows of the precedence table.
  */
-static const int f[13] = {8, 0, 8, 6, 6, 6, 6, 4, 4, 2, 7, 0, 0};
+static const int f[19] = {10, 0, 10, 8, 8, 8, 8, 6, 6, 2, 2, 2, 2, 2, 2, 4, 9, 0, 0};
 
 /**
  * g - represents columns.
  */
-static const int g[13] = {7, 7, 0, 7, 7, 7, 5, 5, 1, 3, 7, 0, 0};
+static const int g[19] = {9, 9, 0, 9, 7, 7, 7, 3, 3, 1, 1, 1, 1, 1, 1, 5, 9, 0, 0};
 
 /**
  * @brief
@@ -41,6 +41,12 @@ static op_list_t get_op (token_t token) {
         case TOKEN_DIV_I:   return OP_DIV_I;
         case TOKEN_ADD:     return OP_ADD;
         case TOKEN_SUB:     return OP_SUB;
+        case TOKEN_LT:      return OP_LT;
+        case TOKEN_LE:      return OP_LE;
+        case TOKEN_GT:      return OP_GT;
+        case TOKEN_GE:      return OP_GE;
+        case TOKEN_EQ:      return OP_EQ;
+        case TOKEN_NE:      return OP_NE;
         case TOKEN_STRCAT:  return OP_STRCAT;
         case TOKEN_COMMA:   return OP_COMMA;
         case TOKEN_FUNC:    return OP_FUNC;
@@ -59,6 +65,12 @@ static char * op_to_string(op_list_t op) {
         case OP_DIV_F:      return "/";
         case OP_ADD:        return "+";
         case OP_SUB:        return "-";
+        case OP_LT:         return "<";
+        case OP_LE:         return "<=";
+        case OP_GT:         return ">";
+        case OP_GE:         return ">=";
+        case OP_EQ:         return "==";
+        case OP_NE:         return "~=";
         case OP_STRCAT:     return "..";
         case OP_FUNC:       return "func";
         case OP_COMMA:      return ",";
