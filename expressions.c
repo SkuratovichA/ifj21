@@ -355,28 +355,29 @@ static bool reduce(sstack_t * r_stack) {
     if (!item) {
         return false;
     }
-    switch(item->type) {
-        case ITEM_TYPE_EXPR:
-            Stack.pop(r_stack, stack_item_dtor);
-            return operator(r_stack);
-        case ITEM_TYPE_TOKEN:
-            switch(get_op(item->token)) {
-                case OP_HASH:
-                    Stack.pop(r_stack, stack_item_dtor);
-                    return expression(r_stack);
-                case OP_LPAREN:
-                    Stack.pop(r_stack, stack_item_dtor);
-                    return expression(r_stack) && rparen(r_stack);
-                case OP_ID:
-                    Stack.pop(r_stack, stack_item_dtor);
-                    return true;
-                case OP_FUNC:
-                    Stack.pop(r_stack, stack_item_dtor);
-                    return lparen(r_stack) && arguments(r_stack);
-            }
-            break;
-        default:
-            break;
+
+    if (item->type == ITEM_TYPE_EXPR) {
+        Stack.pop(r_stack, stack_item_dtor);
+        return operator(r_stack);
+    }
+
+    if (item->type == ITEM_TYPE_TOKEN) {
+        switch(get_op(item->token)) {
+            case OP_HASH:
+                Stack.pop(r_stack, stack_item_dtor);
+                return expression(r_stack);
+            case OP_LPAREN:
+                Stack.pop(r_stack, stack_item_dtor);
+                return expression(r_stack) && rparen(r_stack);
+            case OP_ID:
+                Stack.pop(r_stack, stack_item_dtor);
+                return true;
+            case OP_FUNC:
+                Stack.pop(r_stack, stack_item_dtor);
+                return lparen(r_stack) && arguments(r_stack);
+            default:
+                break;
+        }
     }
 
     return false;
