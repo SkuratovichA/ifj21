@@ -369,8 +369,11 @@ static bool reduce(sstack_t * r_stack) {
                     return arguments(r_stack);
             }
             break;
-        default: return false;
+        default:
+            break;
     }
+
+    return false;
 }
 
 /**
