@@ -150,10 +150,15 @@ static char * to_str (stack_item_t * item) {
     return (item->type == ITEM_TYPE_TOKEN) ? op_to_string(get_op(item->token)) : item_to_string(item->type);
 }
 
-static stack_item_t * stack_item_ctor (item_type_t type) {
+static stack_item_t * stack_item_alloc () {
     stack_item_t * new_item = calloc(1, sizeof(stack_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
 
+    return new_item;
+}
+
+static stack_item_t * stack_item_ctor (item_type_t type) {
+    stack_item_t * new_item = stack_item_alloc();
     new_item->type = type;
 
     if (type == ITEM_TYPE_TOKEN) {
@@ -164,23 +169,21 @@ static stack_item_t * stack_item_ctor (item_type_t type) {
     return new_item;
 }
 
-static void stack_item_dtor (void * item) {
-    debug_msg("Deleted: \"%s\"\n", to_str(item));
-    free(item);
-}
-
 static stack_item_t * stack_item_copy (stack_item_t * item) {
-    debug_msg("-- COPY --\n");
-    stack_item_t * new_item = stack_item_ctor(item->type);
+    stack_item_t * new_item = stack_item_alloc();
+    new_item->type = item->type;
 
     if (new_item->type == ITEM_TYPE_TOKEN) {
         new_item->token = item->token;
     }
 
     debug_msg("Copied: \"%s\"\n", to_str(item));
-    debug_msg("-- COPY --\n");
-
     return new_item;
+}
+
+static void stack_item_dtor (void * item) {
+    debug_msg("Deleted: \"%s\"\n", to_str(item));
+    free(item);
 }
 
 static bool comma (sstack_t * r_stack) {
