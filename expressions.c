@@ -87,32 +87,28 @@ static char * item_to_string(item_type_t type) {
  * @return bool.
  */
 static bool precedence_check (op_list_t first_op, op_list_t second_op) {
-    switch (first_op) {
-        case_2(OP_ID, OP_RPAREN):
-            switch (second_op) {
-                case_3(OP_ID, OP_LPAREN, OP_FUNC):
-                    return false;
-            }
-            break;
-        case_2(OP_LPAREN, OP_COMMA):
-            if (second_op == OP_DOLLAR) {
-                return false;
-            }
-            break;
-        case OP_FUNC:
-            switch (second_op) {
-                case_2(OP_LPAREN, OP_COMMA):
-                    break;
-                default:
-                    return false;
-            }
-            break;
-        case OP_DOLLAR:
-            switch (second_op) {
-                case_3(OP_RPAREN, OP_COMMA, OP_DOLLAR):
-                    return false;
-            }
-            break;
+    if (first_op == OP_ID || first_op == OP_RPAREN) {
+        if (second_op == OP_ID || second_op == OP_LPAREN || second_op == OP_FUNC) {
+            return false;
+        }
+    }
+
+    if (first_op == OP_LPAREN || first_op == OP_COMMA) {
+        if (second_op == OP_DOLLAR) {
+            return false;
+        }
+    }
+
+    if (first_op == OP_FUNC) {
+        if (second_op != OP_LPAREN && second_op != OP_COMMA) {
+            return false;
+        }
+    }
+
+    if (first_op == OP_DOLLAR) {
+        if (second_op == OP_LPAREN || second_op == OP_COMMA || second_op == OP_DOLLAR) {
+            return false;
+        }
     }
 
     return true;
