@@ -37,19 +37,19 @@ typedef struct node node_t;
 /**
  * An interface to access scanner functions
  */
-extern const struct tree_op_struct Tree;
+extern const struct tree_interface_t Tree;
 
-struct tree_op_struct {
+struct tree_interface_t {
     void (*delete_tree)(node_t *);
 
 
     int (*get_unique_id)(node_t *);
 
-    bool (*insert)(node_t *, token_t *, unsigned int);
+    bool (*insert)(node_t *, token_t , unsigned int);
 
-    void (*dtor)(node_t *);
+    void (*dtor)(node_t );
 
-    node_t *(*ctor)(token_t *);
+    node_t *(*ctor)(token_t );
 
     node_t *(*find)(node_t *, dynstring_t *);
 };

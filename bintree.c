@@ -71,7 +71,7 @@ static void Dtor(node_t *root) {
  * @param token is structure that stores data.
  * @return pointer to the node that can be stored to tree.
  */
-static node_t *Ctor(token_t *token) {
+static node_t *Ctor(token_t token) {
     node_t *node = calloc(1, sizeof(node_t));
     if (node == NULL) {
         goto error_calloc;
@@ -81,8 +81,8 @@ static node_t *Ctor(token_t *token) {
     node->r_child = NULL;
     node->l_child = NULL;
 
-    node->data.type = token->type;
-    node->data.i_name = token->attribute.id;
+    node->data.type = token.type;
+    node->data.i_name = token.attribute.id;
     /*******/
 
     return node;
@@ -101,7 +101,7 @@ static node_t *Ctor(token_t *token) {
  * @param validity Validity level of data (scope hiearchy)
  * @return false if validity doesn't match given tree, else return true.
  */
-static bool insert(node_t *root_node, token_t *token, unsigned int validity) {
+static bool insert(node_t *root_node, token_t token, unsigned int validity) {
 
     if (root_node->validity_field != validity) {
         return false;
@@ -111,7 +111,7 @@ static bool insert(node_t *root_node, token_t *token, unsigned int validity) {
 
     // Break if pointer reach leaf level so node can be inserted.
     while (true) {
-        int res = Dynstring.cmp(help_var->data.i_name, token->attribute.id);
+        int res = Dynstring.cmp(help_var->data.i_name, token.attribute.id);
         if (res > 0) { // Store as left child
             if (help_var->l_child != NULL) {
                 help_var = help_var->l_child;
@@ -134,7 +134,7 @@ static bool insert(node_t *root_node, token_t *token, unsigned int validity) {
 /**
  * Tree interface.
  */
-const struct tree_op_struct Tree = {
+const struct tree_interface_t Tree = {
         .find = Find,
         .insert = insert,
         .dtor = Dtor,
