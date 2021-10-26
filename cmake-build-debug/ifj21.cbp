@@ -1,0 +1,592 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="ifj21"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_bintree">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_bintree" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_bintree"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_bintree/fast">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_bintree" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_bintree/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_dynstring">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_dynstring" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_dynstring"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_dynstring/fast">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_dynstring" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_dynstring/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_list">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_list" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_list"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_list/fast">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_list" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_list/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="ifj21">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/ifj21" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 ifj21"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="ifj21/fast">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/ifj21" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 ifj21/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_parser">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_parser" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_parser"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_parser/fast">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_parser" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_parser/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_symtable">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_symtable" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_symtable"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_symtable/fast">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_symtable" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_symtable/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_scanner">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_scanner" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_scanner"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_scanner/fast">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_scanner" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_scanner/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_stack">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_stack" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_stack"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test_stack/fast">
+				<Option output="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/test_stack" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 test_stack/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/bintree.c">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/bintree.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/debug.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/dynstring.c">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/dynstring.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/errors.c">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/errors.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/expressions.c">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/expressions.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/ifj21.c">
+			<Option target="ifj21"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/list.c">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/list.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/macros.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/parser.c">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/parser.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/progfile.c">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/progfile.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/scanner.c">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/scanner.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/stack.c">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/stack.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/symtable.c">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/symtable.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/tests/tests.c">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/tests/tests.h">
+			<Option target="test_bintree"/>
+			<Option target="test_dynstring"/>
+			<Option target="test_list"/>
+			<Option target="ifj21"/>
+			<Option target="test_parser"/>
+			<Option target="test_symtable"/>
+			<Option target="test_scanner"/>
+			<Option target="test_stack"/>
+		</Unit>
+		<Unit filename="/home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

@@ -1,0 +1,12 @@
+/opt/clion-2021.2.2/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_DEPENDS_USE_COMPILER=FALSE -G "CodeBlocks - Unix Makefiles" /home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21
+-- ifj21 execucumber compiled.
+-- parser execucumber compiled.
+-- scanner execucumber compiled.
+-- stack execucumber compiled.
+-- list execucumber compiled.
+-- dynstring execucumber compiled.
+-- bintree execucumber compiled.
+-- symtable execucumber compiled.
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/kuznikos/Desktop/VUT/3.semestr/ifj/projekt/ifj21/cmake-build-debug
