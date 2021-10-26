@@ -173,6 +173,7 @@ static stack_item_t * stack_item_copy (stack_item_t * item) {
 
 static bool comma (sstack_t * r_stack) {
     debug_msg("EXPECTED: ,\n");
+
     stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
         return false;
@@ -192,6 +193,7 @@ static bool comma (sstack_t * r_stack) {
 
 static bool lparen (sstack_t * r_stack) {
     debug_msg("EXPECTED: (\n");
+
     stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
         return false;
@@ -211,6 +213,7 @@ static bool lparen (sstack_t * r_stack) {
 
 static bool rparen (sstack_t * r_stack) {
     debug_msg("EXPECTED: )\n");
+
     stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
         return false;
@@ -229,11 +232,12 @@ static bool rparen (sstack_t * r_stack) {
 }
 
 /**
- * @param list
+ * @param r_stack
  * @return
  */
 static bool expression (sstack_t * r_stack) {
     debug_msg("EXPECTED: expression\n");
+
     stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
         return false;
@@ -251,11 +255,12 @@ static bool expression (sstack_t * r_stack) {
  *
  * !rule <operator> -> * | / | // | + | - | ..
  *
- * @param list
+ * @param r_stack
  * @return
  */
 static bool operator(sstack_t * r_stack) {
-    debug_msg("EXPECTED: operator\n");
+    debug_msg("EXPECTED: * | / | // | + | - | ..\n");
+
     stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
         return false;
@@ -282,11 +287,11 @@ static bool operator(sstack_t * r_stack) {
 /**
  * !rule <other_arguments> -> , <expr> <other_arguments> | )
  *
- * @param list
+ * @param r_stack
  * @return
  */
 static bool other_arguments (sstack_t * r_stack) {
-    debug_msg("EXPECTED: , <expr> <other_params> )\n");
+    debug_msg("EXPECTED: , <expr> <other_arguments> | )\n");
 
     if (rparen(r_stack)) {
         return true;
@@ -306,11 +311,11 @@ static bool other_arguments (sstack_t * r_stack) {
 /**
  * !rule <arguments> -> <expr> <other_arguments> | )
  *
- * @param list
+ * @param r_stack
  * @return
  */
 static bool arguments (sstack_t * r_stack) {
-    debug_msg("EXPECTED: <expr> <other_params> | )\n");
+    debug_msg("EXPECTED: <expr> <other_arguments> | )\n");
 
     if (expression(r_stack)) {
         return other_arguments(r_stack);
@@ -332,7 +337,8 @@ static bool arguments (sstack_t * r_stack) {
  * @return
  */
 static bool reduce(sstack_t * r_stack) {
-    debug_msg("EXPECTED: expression | ( | id\n");
+    debug_msg("EXPECTED: <expr> | # | ( | id | func\n");
+
     stack_item_t * item = Stack.peek(r_stack);
     if (!item) {
         return false;
