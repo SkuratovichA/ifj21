@@ -508,7 +508,6 @@ static bool funparam_def_list(pfile_t *pfile) {
     EXPECTED_OPT(TOKEN_RPAREN);
 
     // id
-    // todo store to scope
     EXPECTED(TOKEN_ID);
 
     // :
@@ -622,7 +621,7 @@ static bool stmt(pfile_t *pfile) {
 
     switch (token.type) {
 
-        //Symtable.ctor(,&token);
+
 
         // function declaration: global id : function ( <datatype_list> <funcretopt>
         case KEYWORD_global:

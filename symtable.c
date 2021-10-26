@@ -1,5 +1,6 @@
 #include "symtable.h"
-
+#include "tests/tests.h"
+#include "errors.h"
 
 
 typedef struct scope_table {
@@ -113,3 +114,15 @@ const struct symtable_interface_t Symtable = {
         .get_parent_scope = get_parent_scope,
         .get_parent_scope_id = get_parent_scope_id,
 };
+
+#ifdef SELFTEST_symtable
+
+int main() {
+    debug_msg("symtable selfdebug\n");
+    token_t tok = { .type = TOKEN_STR, .attribute.id = Dynstring.ctor("\"Test name\"") };
+    Symtable.ctor(NULL, tok);
+
+    return 0;
+}
+
+#endif
