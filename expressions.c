@@ -203,7 +203,7 @@ static bool precedence_check (op_list_t first_op, op_list_t second_op) {
     }
 
     if (first_op == OP_DOLLAR) {
-        if (second_op == OP_LPAREN || second_op == OP_COMMA || second_op == OP_DOLLAR) {
+        if (second_op == OP_RPAREN || second_op == OP_COMMA || second_op == OP_DOLLAR) {
             return false;
         }
     }
