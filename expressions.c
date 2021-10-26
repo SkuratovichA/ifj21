@@ -343,7 +343,7 @@ static bool arguments (sstack_t * r_stack) {
  * !rule <expr> -> # <expr>
  * !rule <expr> -> ( <expr> )
  * !rule <expr> -> id
- * !rule <expr> -> func ( <arguments>
+ * !rule <expr> -> id ( <arguments>
  *
  * @param r_stack
  * @return
@@ -551,25 +551,25 @@ int main() {
     s[4] = "a + c // b - d * a - d / e // f";
     s[5] = "5 + (a - 3 - (3 * a // b)) - c";
     s[6] = "1 + 39 - 23 // 23881 / 23 * 1342";
-	s[7] = "a + 2 * 19228 - b";
-	s[8] = "12.3 + a - 6.3e7";
-	s[9] = "x // 143.11E2";
-	s[10] = "21 + 231 - abc * z / 23 // 345.3 + 13e93";
-	s[11] = "(a + d) ";
-	s[12] = "a + (b + (c + (d + (e + f))))";
-	s[13] = "a * (23 - e) / (7 * a)";
-	s[14] = "a + ((a // (a - a)) * (a / (a + a - a))) + a";
-	s[15] = "(a - (b * c))";
-	s[16] = "#a + #b";
-	s[17] = "a .. b + c * #d";
-	s[18] = "#a \"goto hell\"";
-	s[19] = "a + #\"hello\" - 5";
-	s[20] = "naaa .. bbb + a .. b";
-	s[21] = "f(a + b * c)";
-	s[22] = "a * c()";
-	s[23] = "f(g())";
-	s[24] = "a + f(x, y(a + b)) - z * d";
-	s[25] = "a(b(c(d(e, f(g, h , i()))), j(), k(l(m))))";
+    s[7] = "a + 2 * 19228 - b";
+    s[8] = "12.3 + a - 6.3e7";
+    s[9] = "x // 143.11E2";
+    s[10] = "21 + 231 - abc * z / 23 // 345.3 + 13e93";
+    s[11] = "(a + d) ";
+    s[12] = "a + (b + (c + (d + (e + f))))";
+    s[13] = "a * (23 - e) / (7 * a)";
+    s[14] = "a + ((a // (a - a)) * (a / (a + a - a))) + a";
+    s[15] = "(a - (b * c))";
+    s[16] = "#a + #b";
+    s[17] = "a .. b + c * #d";
+    s[18] = "#a \"goto hell\"";
+    s[19] = "a + #\"hello\" - 5";
+    s[20] = "naaa .. bbb + a .. b";
+    s[21] = "f(a + b * c)";
+    s[22] = "a * c()";
+    s[23] = "f(g())";
+    s[24] = "a + f(x, y(a + b)) - z * d";
+    s[25] = "a(b(c(d(e, f(g, h , i()))), j(), k(l(m))))";
     s[26] = "a < b";
     s[27] = "a >= b + c - d";
     s[28] = "b / (a < b >= c) - d < e";
