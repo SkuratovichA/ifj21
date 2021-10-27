@@ -417,6 +417,11 @@ static bool fun_body(pfile_t *pfile) {
     // end |
     EXPECTED_OPT(KEYWORD_end);
 
+    /*If we reach end of a block return to previous scope*/
+    if(Scanner.get_prev_token().type == KEYWORD_end){
+       active_scope = active_scope->parent;
+    }
+
     return fun_stmt(pfile) && fun_body(pfile);
 }
 
