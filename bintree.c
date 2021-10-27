@@ -13,7 +13,6 @@ struct node {
     struct data data;           /**< Data stored in node.   */
     node_t *l_child;        /**< Pointer to left child.  */
     node_t *r_child;        /**< Pointer to right child. */
-    unsigned int validity_field; /**< We are creating trees for each validity field */
 };
 
 /**
@@ -24,12 +23,12 @@ struct node {
  *
  * @return Pointer to node or NULL if can not find.
  */
-static node_t *Find(node_t *tree, dynstring_t *name) {
+static node_t *Find(node_t *tree, token_t name) {
     node_t *help_var = tree;
 
     // Breaks when leaf level is reached.
     while (true) {
-        int res = Dynstring.cmp(help_var->data.i_name, name);
+        int res = Dynstring.cmp(help_var->data.i_name, name.attribute.id);
         if (!res) {
             return help_var; //node found
         } else if (res > 0) {
@@ -98,14 +97,9 @@ static node_t *Ctor(token_t token) {
  *
  * @param root_node Defines tree we are searching in.
  * @param token Data that will be stored.
- * @param validity Validity level of data (scope hiearchy)
- * @return false if validity doesn't match given tree, else return true.
+ * @return false if failed.
  */
-static bool insert(node_t *root_node, token_t token, unsigned int validity) {
-
-    if (root_node->validity_field != validity) {
-        return false;
-    }
+static bool insert(node_t *root_node, token_t token) {
 
     node_t *help_var = root_node;
 
