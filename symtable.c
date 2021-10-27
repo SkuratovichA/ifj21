@@ -45,10 +45,62 @@ static void st_dtor(sym_t *table){
 }
 
 /**
+ * @brief the function finds id in given scope and return true if id was found.
+ * @param scope active scope.
+ * @param id Id we are looking for.
+ * @return true if id was found,
+ */
+static bool find_id_in_scope(scope_t *scope, token_t id){
+    node_t *temp = Tree.find(scope->tree, id);
+
+    if(temp == NULL){
+        return false;
+    } else{
+        return true;
+    }
+}
+
+/**
+ * @brief the function finds id in scope and its parents.
+ * @param scope active scope.
+ * @param id Id we are looking for.
+ * @return true if id was found,
+ */
+static bool find_id(scope_t* active, token_t id) {
+    // maybe i ll need to check all the parent child scopes.
+    if (find_id_in_scope(active, id) == true) {
+        return true;
+    }
+
+    scope_t *temp_scope = active->parent;
+    node_t *temp_tree = NULL;
+
+    // Go to parent try to find id, till you reach main scope.
+    while(temp_scope != NULL){
+        temp_tree = Tree.find(temp_scope->tree, id);
+        if(temp_tree != NULL)
+            return true;
+        temp_scope = temp_scope->parent;
+    }
+    return false;
+}
+
+/**
+ * @brief Store token id to given scope.
+ * @param scope where we want to store.
+ * @param id id that we want to store.
+ * @return 0 If success. -1 If there is id with same name return. -2 If allocation error return and exit the program.
+ */
+static int store_id(scope_t scope, token_t id){
+    Tree.insert(scope.tree, id);
+    return 0;
+}
+
+/**
  * @brief Create a new scope on the given symbol table. If scope doesn't have parent set parent parameter to null.
  * @param sym_t Symbol table. Array of all the scopes.
  * @param id That will be stored.
- * @param parent scope parent.
+ * @param parent scope parent. IF MAIN SCOPE ENTER NULL!!!
  * @return Pointer to scope. If fail call destructor and exit program.
  */
 static scope_t *Ctor(sym_t *sym_t, token_t id, scope_t *parent) {
@@ -113,6 +165,10 @@ const struct symtable_interface_t Symtable = {
         .get_scope_id = get_scope_id,
         .get_parent_scope = get_parent_scope,
         .get_parent_scope_id = get_parent_scope_id,
+        .find_id_in_scope = find_id_in_scope,
+        .find_id = find_id,
+        .store_id = store_id,
+
 };
 
 #ifdef SELFTEST_symtable

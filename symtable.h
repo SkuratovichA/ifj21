@@ -22,6 +22,12 @@ struct symtable_interface_t {
 
     scope_t *(*get_parent_scope)(scope_t *);
 
+    bool (*find_id)(scope_t, token_t);
+
+    bool (*find_id_in_scope)(scope_t, token_t);
+
+    int (*store_id)(scope_t, token_t);
+
     int (*get_scope_id)(scope_t *);
 
     int (*get_parent_scope_id)(scope_t *);
