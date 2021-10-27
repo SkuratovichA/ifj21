@@ -3,19 +3,6 @@
 #include "errors.h"
 
 
-typedef struct scope_table {
-    scope_t *parent;           /**< Pointer to the parent scope. Only GTS scope has NULL parent. */
-    node_t *tree;              /**< The tree where scope ids are stored. */
-    int scope_index;           /**< Scope unique id */
-} scope_t;
-
-/**
- * An array of all the scopes.
- */
-typedef struct sym_table_array {
-    scope_t **scopes;       /**< An array of all the pointer to scopes */
-    int size;               /**< Number of scopes.  */
-} sym_t;
 
 
 
@@ -37,6 +24,9 @@ static sym_t *st_ctor(){
  * @brief Sym table destructor.
  */
 static void st_dtor(sym_t *table){
+    if(table == NULL){
+        return;
+    }
     for (int i = table->size-1; i <= 0; i--){
         Tree.delete_tree(table->scopes[i]->tree);
         free(table->scopes[i]);
@@ -91,8 +81,8 @@ static bool find_id(scope_t* active, token_t id) {
  * @param id id that we want to store.
  * @return 0 If success. -1 If there is id with same name return. -2 If allocation error return and exit the program.
  */
-static int store_id(scope_t scope, token_t id){
-    Tree.insert(scope.tree, id);
+static int store_id(scope_t *scope, token_t id){
+    Tree.insert(scope->tree, id);
     return 0;
 }
 
@@ -138,8 +128,8 @@ static scope_t *get_parent_scope(scope_t * scope) {
  * @brief Function returns scope id.
  * @return scope id.
  */
-static int get_scope_id (scope_t table) {
-    return table.scope_index;
+static int get_scope_id (scope_t * table) {
+    return table->scope_index;
 
 }
 
@@ -147,9 +137,9 @@ static int get_scope_id (scope_t table) {
  * @brief Function returns parent scope id.
  * @return returns parent scope id.
  */
-static int get_parent_scope_id (scope_t table) {
-    if(table.parent != NULL){
-        return table.parent->scope_index;
+static int get_parent_scope_id (scope_t * table) {
+    if(table->parent != NULL){
+        return table->parent->scope_index;
     }
     return 0;
 }
@@ -158,16 +148,16 @@ static int get_parent_scope_id (scope_t table) {
 /**
  * Symbol table interface.
  */
-const struct symtable_interface_t Symtable = {
-        .Ctor = Ctor,
-        .st_ctor = st_ctor,
-        .st_dtor = st_dtor,
-        .get_scope_id = get_scope_id,
-        .get_parent_scope = get_parent_scope,
-        .get_parent_scope_id = get_parent_scope_id,
-        .find_id_in_scope = find_id_in_scope,
-        .find_id = find_id,
-        .store_id = store_id,
+const struct symtable_interface_t Symt = {
+        .Ctor                   = Ctor,
+        .st_ctor                = st_ctor,
+        .st_dtor                = st_dtor,
+        .get_scope_id           = get_scope_id,
+        .get_parent_scope       = get_parent_scope,
+        .get_parent_scope_id    = get_parent_scope_id,
+        .find_id_in_scope       = find_id_in_scope,
+        .find_id                = find_id,
+        .store_id               = store_id,
 
 };
 

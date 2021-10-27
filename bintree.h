@@ -27,7 +27,7 @@
  */
 typedef struct data {
     dynstring_t *i_name;        /**< identifier name. can be name of function or variable.*/
-    int type;                   /**< Type of identifier can be FUNCTION or VARIABLE */
+    int type;                   /**< Type of identifier can be FUNCTION or VARIABLE_TYPE */
     // unsigned int i_name_num;  /**< Int identifier. This value defines how we store data. Means name in numbers. */
 } data;
 

@@ -2,7 +2,7 @@
 #include "errors.h"
 #include "parser.h"
 #include "progfile.h"
-
+#include "symtable.h"
 
 int main() {
     pfile_t *pfile;
@@ -17,6 +17,8 @@ int main() {
     }
 
     Pfile.dtor(pfile);
+
+    Symt.st_dtor(symbol_tab);
 
     return ret;
 }

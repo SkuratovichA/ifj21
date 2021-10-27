@@ -1,9 +1,9 @@
 #include "parser.h"
 #include "scanner.h"
 #include "errors.h"
-#include "symtable.h"
 
 #include "expressions.h"
+
 
 static void print_expected_err(const char *a, const char *b) {
     fprintf(stderr, "line %zu, character %zu\n", Scanner.get_line(), Scanner.get_charpos());
@@ -48,27 +48,6 @@ do { \
 static bool cond_stmt(pfile_t *);
 static bool fun_body(pfile_t *);
 static bool fun_stmt(pfile_t *);
-
-
-/**
- * @brief store_to_sym_table
- *
- * @param
- * @return bool.
- */
-static bool store_to_sym_table(pfile_t *pfile, token_t tok){
-
-    /*
-    token_t token = tok;
-    debug_msg("SYMTABLEEE: %s id: %s\n", Scanner.to_string(token.type), Dynstring.c_str(token.attribute.id));
-
-    if((token = Scanner.get_next_token) == TOKEN_LPAREN){
-        printf("g");
-        //Function id
-    }
-     */
-    return true;
-}
 
 
 
@@ -622,16 +601,27 @@ static bool stmt(pfile_t *pfile) {
     switch (token.type) {
 
 
-
         // function declaration: global id : function ( <datatype_list> <funcretopt>
         case KEYWORD_global:
-            // todo create scope
 
             // global
             EXPECTED(KEYWORD_global);
 
             // function name
             EXPECTED(TOKEN_ID);
+
+            // If global scope is not create yet. Don't need to set as active. Because main is
+            // always on index 0.
+            if(symbol_tab->size == 0){
+                // Main scope doesn't have any parent so third parameter is null.
+                Symt.Ctor(symbol_tab, Scanner.get_prev_token(), NULL);
+            } else{
+                // store to main scope
+                Symt.store_id(symbol_tab->scopes[0], Scanner.get_prev_token());
+            }
+
+            //Create scope for function and set as active set main scope as parent.
+            active_scope = Symt.Ctor(symbol_tab, Scanner.get_prev_token(), symbol_tab->scopes[0]);
 
             // :
             EXPECTED(TOKEN_COLON);
@@ -718,6 +708,8 @@ static bool stmt_list(pfile_t *pfile) {
     EXPECTED_OPT(TOKEN_EOFILE);
 
 
+
+
     // <stmt> <stmt_list>
     return stmt(pfile) && stmt_list(pfile);
 }
@@ -746,6 +738,14 @@ static bool program(pfile_t *pfile) {
         return false;
     }
     EXPECTED(TOKEN_STR);
+
+    // symbol table initialization
+    symbol_tab = NULL;
+    active_scope = NULL;
+
+    // Symbol table constructor
+    symbol_tab = Symt.st_ctor();
+
 
     // <stmt_list>
     Dynstring.dtor(prolog_str);
