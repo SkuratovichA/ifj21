@@ -124,6 +124,8 @@ static bool cond_body(pfile_t *pfile) {
         return cond_stmt(pfile);
     }
 
+    // End of if statement. set active scope to parent scope.
+    active_scope = active_scope->parent;
     return fun_body(pfile);
 }
 
@@ -266,6 +268,9 @@ static bool list_identif(pfile_t *pfile) {
     // todo store to scope
     EXPECTED(TOKEN_ID);
 
+
+
+
     // <other_identifiers>
     return other_identifiers(pfile);
 }
@@ -297,7 +302,7 @@ static bool list_identif(pfile_t *pfile) {
  *
  *
  *** Expressions: function calling, assignments, conditions.
- * rule <fun_stmt> -> <expr_list> = <list_expr> todo: or something like that
+ * rule <fun_stmt> -> <expr_list> = <list_expr>
  * just function calls, e.g. f + foo(baz(bar())) or soo(qua())
  *
  *
@@ -311,19 +316,27 @@ static bool fun_stmt(pfile_t *pfile) {
     switch (Scanner.get_curr_token().type) {
         // if <cond_stmt>
         case KEYWORD_if:
-            // todo create scope
             EXPECTED(KEYWORD_if);
+
+            // Creating scope for if
+            // maybe there will be problem with if token
+            active_scope = Symt.Ctor(symbol_tab, Scanner.get_prev_token(), active_scope);
+
             // <cond_stmt>
             if (!cond_stmt(pfile)) {
                 return false;
             }
             break;
 
+
             // local id : <datatype>
         case KEYWORD_local:
             EXPECTED(KEYWORD_local); // local
-            // todo store to scope
             EXPECTED(TOKEN_ID); // id
+
+            // Store id to sym table.
+            Symt.store_id(active_scope, Scanner.get_prev_token());
+
             EXPECTED(TOKEN_COLON); // :
             if (!datatype(pfile)) { // <datatype>
                 return false;
@@ -344,8 +357,11 @@ static bool fun_stmt(pfile_t *pfile) {
 
             // while <expr> do <fun_body> end
         case KEYWORD_while:
-            // todo create scope
             EXPECTED(KEYWORD_while);
+
+            // Creating scope for if
+            // maybe there will be problem with while token
+            active_scope = Symt.Ctor(symbol_tab, Scanner.get_prev_token(), active_scope);
 
             // parse expressions
             if (Expr.parse(pfile)) {
@@ -382,8 +398,11 @@ static bool fun_stmt(pfile_t *pfile) {
 
             // rule <fun_stmt> -> for id = expression, expression do <fun_body>
         case KEYWORD_for:
-            //todo create scope
             EXPECTED(KEYWORD_for); // for
+
+            // Creating scope for if
+            // maybe there will be problem with while token
+            active_scope = Symt.Ctor(symbol_tab, Scanner.get_prev_token(), active_scope);
 
             // a, b, c.
             // TODO: so prodbably we can use rule from function statements, e.g.
@@ -457,9 +476,10 @@ static bool other_funparams(pfile_t *pfile) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    // id
-    // todo store to scope
     EXPECTED(TOKEN_ID);
+
+    // creating tempo variable token because type will be known later
+    token_t id = Scanner.get_prev_token();
 
     // :
     EXPECTED(TOKEN_COLON);
@@ -468,6 +488,18 @@ static bool other_funparams(pfile_t *pfile) {
     if (!datatype(pfile)) {
         return false;
     }
+
+    // Should be KEYWORD_string || KEYWORD_boolean || KEYWOARD_integer || KEYWOARD_number
+    // Gets id type
+    id.type = Scanner.get_prev_token().type;
+
+    // If id is already in sym table.
+    if (Symt.find_id(active_scope, id) == true){
+        Errors.set_error(ERROR_LEXICAL);  //check if valid error code pls
+        return false;
+    }
+    // Store id to scope active scope.
+    Symt.store_id(active_scope, id);
 
     return other_funparams(pfile);
 }
@@ -483,11 +515,15 @@ static bool other_funparams(pfile_t *pfile) {
 static bool funparam_def_list(pfile_t *pfile) {
     debug_msg("funparam_def_list ->\n");
 
+
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
     // id
     EXPECTED(TOKEN_ID);
+
+    // creating tempo variable token because type will be known later
+    token_t id = Scanner.get_prev_token();
 
     // :
     EXPECTED(TOKEN_COLON);
@@ -496,6 +532,19 @@ static bool funparam_def_list(pfile_t *pfile) {
     if (!datatype(pfile)) {
         return false;
     }
+
+    // Should be KEYWORD_string || KEYWORD_boolean || KEYWOARD_integer || KEYWOARD_number
+    // Gets id type
+    id.type = Scanner.get_prev_token().type;
+
+    // If id is already in sym table.
+    if (Symt.find_id(active_scope, id) == true){
+        Errors.set_error(ERROR_LEXICAL);  //check if valid error code pls
+        return false;
+    }
+
+    // Store id to scope active scope.
+    Symt.store_id(active_scope, id);
 
     // <other_funparams>
     return other_funparams(pfile);
@@ -620,9 +669,6 @@ static bool stmt(pfile_t *pfile) {
                 Symt.store_id(symbol_tab->scopes[0], Scanner.get_prev_token());
             }
 
-            //Create scope for function and set as active set main scope as parent.
-            active_scope = Symt.Ctor(symbol_tab, Scanner.get_prev_token(), symbol_tab->scopes[0]);
-
             // :
             EXPECTED(TOKEN_COLON);
 
@@ -651,6 +697,9 @@ static bool stmt(pfile_t *pfile) {
             // id
             EXPECTED(TOKEN_ID);
 
+            // Create scope for function and set as active set main scope as parent.
+            active_scope = Symt.Ctor(symbol_tab, Scanner.get_prev_token(), symbol_tab->scopes[0]);
+
             // (
             EXPECTED(TOKEN_LPAREN);
 
@@ -672,12 +721,21 @@ static bool stmt(pfile_t *pfile) {
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:
-            // todo store to sym_t
             EXPECTED(TOKEN_ID);
+
+            /*there could be check if function is not in symbol table error becaouse
+            function is not declared, but it is called */
+            /* What do you think saša?*/
+            if((Symt.find_id_in_scope(symbol_tab->scopes[0], Scanner.get_prev_token())) == true){
+                Errors.set_error(ERROR_LEXICAL);  //check if valid error code pls
+                return false;
+            }
+
             // <list_expr>
             if (!list_expr(pfile)) {
                 return false;
             }
+
             break;
         case TOKEN_DEAD:
             Errors.set_error(ERROR_LEXICAL);
