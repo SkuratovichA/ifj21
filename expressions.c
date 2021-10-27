@@ -441,6 +441,8 @@ static bool reduce(sstack_t * r_stack) {
  * @return bool.
  */
 static bool parse(sstack_t * stack, pfile_t * pfile) {
+    bool hard_reduce = false;
+
     while (true) {
         // Peek item from the stack
         stack_item_t * top = (stack_item_t *) Stack.peek(stack);
@@ -466,7 +468,8 @@ static bool parse(sstack_t * stack, pfile_t * pfile) {
         op_list_t first_op = (top->type == ITEM_TYPE_DOLLAR) ? OP_DOLLAR : get_op(top->token);
         op_list_t second_op = get_op(Scanner.get_curr_token());
 
-        if (first_op == OP_DOLLAR && second_op == OP_DOLLAR) {
+        if ((first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
+            (first_op == OP_DOLLAR && second_op == OP_ID && hard_reduce)) {
             if (expr) {
                 stack_item_dtor(expr);
             }
@@ -474,7 +477,12 @@ static bool parse(sstack_t * stack, pfile_t * pfile) {
             break;
         }
 
-        if (!precedence_cmp(first_op, second_op, &cmp)) {
+        if ((first_op == OP_RPAREN && second_op == OP_ID) ||
+            (first_op == OP_ID && second_op == OP_ID)) {
+            hard_reduce = true;
+        }
+
+        if (!precedence_cmp(first_op, second_op, &cmp) && !hard_reduce) {
             if (first_op == OP_ID && second_op == OP_LPAREN) {
                 top->token.type = TOKEN_FUNC;
                 cmp = 0;
@@ -488,7 +496,7 @@ static bool parse(sstack_t * stack, pfile_t * pfile) {
         }
 
         debug_msg("\n");
-        if (cmp <= 0) {
+        if (cmp <= 0 && !hard_reduce) {
             debug_msg("SHIFT < | SHIFT =\n");
 
             // If first_op has a lower precedence, then push less than symbol
@@ -550,7 +558,7 @@ static bool parse(sstack_t * stack, pfile_t * pfile) {
 /**
  * @brief Expression parsing driven by a precedence table.
  *
- * @param pifle program file to pass in to scanner.
+ * @param pfile program file to pass in to scanner.
  * @return bool.
  */
 static bool Parse_expression(pfile_t *pfile) {
