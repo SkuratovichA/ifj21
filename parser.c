@@ -52,32 +52,6 @@ static bool fun_stmt(pfile_t *);
 
 
 /**
- * @brief List of expressont.
- *
- * !rule <other_expr> -> ) | , expr <other_expr>
- *
- * @param pfile input file for Scanner.get_next_token().
- * @return bool.
- */
-static bool other_expr(pfile_t *pfile) {
-    debug_msg_s("<other_expr> -> \n");
-
-    // ) |
-    EXPECTED_OPT(TOKEN_RPAREN);
-
-    // ,
-    EXPECTED(TOKEN_COMMA);
-
-    // expr
-    if (!Expr.parse(pfile)) {
-        return false;
-    }
-
-    // <other_expr>
-    return other_expr(pfile);
-}
-
-/**
  * @brief Expression list. TODO: probably this rule will be the part of Expr.parse().
  *
  * !rule <list_expr> -> ) | expr <other_expr>
@@ -86,20 +60,11 @@ static bool other_expr(pfile_t *pfile) {
  * @return bool.
  */
 static bool list_expr(pfile_t *pfile) {
-    debug_msg_s("<list_expr> -> \n");
-
-    // ) |
-    EXPECTED_OPT(TOKEN_RPAREN);
+    debug_msg("<list_expr> -> \n");
 
     // expr
-    if (!Expr.parse(pfile)) {
-        return false;
-    }
-
-    // <other_expr>
-    return other_expr(pfile);
+    return Expr.parse(pfile);
 }
-
 
 /**
  * @brief Conditional expression body implemented with an extension. Contains statements.
@@ -181,7 +146,6 @@ static inline bool datatype(pfile_t *pfile) {
     return true;
 }
 
-
 /**
  * @brief Repeat body - function represent body of a repeat-until cycle.
  * Function terminates when a keyword until is found on the input.
@@ -197,11 +161,9 @@ static bool repeat_body(pfile_t *pfile) {
     // until |
     EXPECTED_OPT(KEYWORD_until);
 
-
     // a new solution which doesnt have to cause problems. But not tested yet, so i dont know.
     return fun_stmt(pfile) && repeat_body(pfile);
 }
-
 
 /**
  * @brief Optional assignment after a local variable declaration.
@@ -311,7 +273,7 @@ static bool list_identif(pfile_t *pfile) {
  * @return bool.
  */
 static bool fun_stmt(pfile_t *pfile) {
-    debug_msg_s("<fun_stmt> -> \n");
+    debug_msg("<fun_stmt> -> \n");
 
     switch (Scanner.get_curr_token().type) {
         // if <cond_stmt>
@@ -442,10 +404,9 @@ static bool fun_stmt(pfile_t *pfile) {
     return true;
 }
 
-
 /**
  * @brief Statements inside the function
- * !rule <fun_body> -> <fun_stmt> <fun_body>
+ * !rule <fun_body> -> <fun_stmt> <fun_body> | end
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -458,7 +419,6 @@ static bool fun_body(pfile_t *pfile) {
 
     return fun_stmt(pfile) && fun_body(pfile);
 }
-
 
 /**
  * @brief
@@ -607,7 +567,6 @@ static bool other_funrets(pfile_t *pfile) {
     return datatype(pfile) && other_funrets(pfile);
 }
 
-
 /**
  * @brief
  * !rule <funretopt> -> e | : <datatype> <other_funrets>
@@ -737,9 +696,11 @@ static bool stmt(pfile_t *pfile) {
             }
 
             break;
+
         case TOKEN_DEAD:
             Errors.set_error(ERROR_LEXICAL);
             return false;
+
         default:
             debug_todo(
                     "Add more <stmt> derivations, if there are so. Otherwise return an error_interface message\n");
@@ -901,7 +862,7 @@ int main() {
                            "    return foo (param)\n"
                            "end\n"
                            "function foo(param:string):string \n"
-                           "    return bar(param)\n"
+                           "    return x\n"
                            "end\n");
 
 
