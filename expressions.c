@@ -6,7 +6,7 @@
 
 /**
  * Precedence function table.
- * f, j - precedence functions.
+ * f, g - precedence functions.
  *
  * A = {*, /, //}, B = {+, -}, C = {<, <=, >, >=, ==, ~=}
  *
