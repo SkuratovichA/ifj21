@@ -5,10 +5,6 @@
 
 
 
-
-
-
-
 /**
  * @brief Symbol table constructor.
  * @return Symbol table. If failed returns NULL;
@@ -40,7 +36,7 @@ static void st_dtor(sym_t *table){
  * @param id Id we are looking for.
  * @return true if id was found,
  */
-static bool find_id_in_scope(scope_t *scope, token_t id){
+static bool find_id_in_scope(scope_t *scope, dynstring_t *id){
     node_t *temp = Tree.find(scope->tree, id);
 
     if(temp == NULL){
@@ -56,8 +52,7 @@ static bool find_id_in_scope(scope_t *scope, token_t id){
  * @param id Id we are looking for.
  * @return true if id was found,
  */
-static bool find_id(scope_t* active, token_t id) {
-    // maybe i ll need to check all the parent child scopes.
+static bool find_id(scope_t* active, dynstring_t *id) {
     if (find_id_in_scope(active, id) == true) {
         return true;
     }
@@ -79,10 +74,11 @@ static bool find_id(scope_t* active, token_t id) {
  * @brief Store token id to given scope.
  * @param scope where we want to store.
  * @param id id that we want to store.
+ * @param type id type. Could be function, if statement, int, number, string ...
  * @return 0 If success. -1 If there is id with same name return. -2 If allocation error return and exit the program.
  */
-static int store_id(scope_t *scope, token_t id){
-    Tree.insert(scope->tree, id);
+static int store_id(scope_t *scope, dynstring_t *id, int type){
+    Tree.insert(scope->tree, id, type);
     return 0;
 }
 
@@ -90,10 +86,11 @@ static int store_id(scope_t *scope, token_t id){
  * @brief Create a new scope on the given symbol table. If scope doesn't have parent set parent parameter to null.
  * @param sym_t Symbol table. Array of all the scopes.
  * @param id That will be stored.
+ * @param type id type. Could be function, if statement, int, number, string ...
  * @param parent scope parent. IF MAIN SCOPE ENTER NULL!!!
  * @return Pointer to scope. If fail call destructor and exit program.
  */
-static scope_t *Ctor(sym_t *sym_t, token_t id, scope_t *parent) {
+static scope_t *Ctor(sym_t *sym_t, dynstring_t *id, int type, scope_t *parent) {
 
     sym_t->size++;
     sym_t->scopes = realloc(sym_t->scopes, sizeof (scope_t *) * (sym_t->size+1));
@@ -111,7 +108,7 @@ static scope_t *Ctor(sym_t *sym_t, token_t id, scope_t *parent) {
     sym_t->scopes[sym_t->size-1] = table;
 
     table->parent = parent;
-    table->tree = Tree.ctor(id);
+    table->tree = Tree.ctor(id, type);
     table->scope_index = sym_t->size - 1;
     return table;
 }

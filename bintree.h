@@ -44,11 +44,11 @@ struct tree_interface_t {
 
     int (*get_unique_id)(node_t *);
 
-    bool (*insert)(node_t *, token_t);
+    bool (*insert)(node_t *, dynstring_t *, int);
 
     void (*dtor)(node_t );
 
-    node_t *(*ctor)(token_t );
+    node_t *(*ctor)(dynstring_t *, int );
 
-    node_t *(*find)(node_t *, token_t);
+    node_t *(*find)(node_t *, dynstring_t *);
 };

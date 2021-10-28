@@ -19,16 +19,16 @@ struct node {
  * @brief Finds a node in a tree. The function uses a string to find the node.
  *
  * @param tree Pointer to first node of the tree.
- * @param token string name that we are looking for.
+ * @param id string name that we are looking for.
  *
  * @return Pointer to node or NULL if can not find.
  */
-static node_t *Find(node_t *tree, token_t name) {
+static node_t *Find(node_t *tree, dynstring_t *id) {
     node_t *help_var = tree;
 
     // Breaks when leaf level is reached.
     while (true) {
-        int res = Dynstring.cmp(help_var->data.i_name, name.attribute.id);
+        int res = Dynstring.cmp(help_var->data.i_name, id);
         if (!res) {
             return help_var; //node found
         } else if (res > 0) {
@@ -67,10 +67,11 @@ static void Dtor(node_t *root) {
 /**
  * @brief Create a new node.
  *
- * @param token is structure that stores data.
+ * @param id That we store.
+ * @param type id type. Could be function, if statement, int, number, string ...
  * @return pointer to the node that can be stored to tree.
  */
-static node_t *Ctor(token_t token) {
+static node_t *Ctor(dynstring_t *id, int type) {
     node_t *node = calloc(1, sizeof(node_t));
     if (node == NULL) {
         goto error_calloc;
@@ -80,8 +81,8 @@ static node_t *Ctor(token_t token) {
     node->r_child = NULL;
     node->l_child = NULL;
 
-    node->data.type = token.type;
-    node->data.i_name = token.attribute.id;
+    node->data.type = type;
+    node->data.i_name = id ;
     /*******/
 
     return node;
@@ -96,28 +97,29 @@ static node_t *Ctor(token_t token) {
  * @brief It inserts a node into binary tree. If the string value of the node is smaller go left else go right till reach leaf level.
  *
  * @param root_node Defines tree we are searching in.
- * @param token Data that will be stored.
+ * @param id That we store.
+ * @param type id type. Could be function, if statement, int, number, string ...
  * @return false if failed.
  */
-static bool insert(node_t *root_node, token_t token) {
+static bool insert(node_t *root_node, dynstring_t *id, int type) {
 
     node_t *help_var = root_node;
 
     // Break if pointer reach leaf level so node can be inserted.
     while (true) {
-        int res = Dynstring.cmp(help_var->data.i_name, token.attribute.id);
+        int res = Dynstring.cmp(help_var->data.i_name, id);
         if (res > 0) { // Store as left child
             if (help_var->l_child != NULL) {
                 help_var = help_var->l_child;
             } else {
-                help_var->l_child = Ctor(token);
+                help_var->l_child = Ctor(id, type);
                 break;
             }
         } else { // store as right child.
             if (help_var->r_child != NULL) {
                 help_var = help_var->r_child;
             } else {
-                help_var->r_child = Ctor(token);
+                help_var->r_child = Ctor(id, type);
                 break;
             }
         }

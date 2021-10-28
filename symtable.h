@@ -40,15 +40,15 @@ struct symtable_interface_t {
 
     sym_t *(*st_ctor)();
 
-    scope_t *(*Ctor)(sym_t *, token_t, scope_t *);
+    scope_t *(*Ctor)(sym_t *, dynstring_t *, int , scope_t *);
 
     scope_t *(*get_parent_scope)(scope_t *);
 
-    bool (*find_id)(scope_t *, token_t);
+    bool (*find_id)(scope_t *, dynstring_t *);
 
-    bool (*find_id_in_scope)(scope_t *, token_t);
+    bool (*find_id_in_scope)(scope_t *, dynstring_t *);
 
-    int (*store_id)(scope_t *, token_t);
+    int (*store_id)(scope_t *, dynstring_t*, int);
 
     int (*get_scope_id)(scope_t *);
 

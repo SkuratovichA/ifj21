@@ -50,6 +50,30 @@ static bool fun_body(pfile_t *);
 static bool fun_stmt(pfile_t *);
 
 
+/**
+ * @brief Create new scope from given token. I know that function is disgusting but, it makes important code more readable.
+ *
+ * @param id_tok token that is head of scope.
+ * @param function_declaration If function declaration set true.
+ * @param function_definition If function definition set true.
+ */
+static void create_scope(token_t id_tok, bool function_declaration, bool function_definition){
+
+    if(function_declaration == true){
+        // If global scope is not create yet. Don't need to set as active. Because main is always on index 0.
+        if(symbol_tab->size == 0){
+            // Main scope doesn't have any parent so third parameter is null.
+            Symt.Ctor(symbol_tab, id_tok.attribute.id, id_tok.type, NULL);
+        } else{
+            // store to main scope
+            Symt.store_id(symbol_tab->scopes[0], id_tok.attribute.id, id_tok.type);
+        }
+    } else if(function_definition == true){
+        active_scope = Symt.Ctor(symbol_tab, id_tok.attribute.id, id_tok.type, symbol_tab->scopes[0]);
+    } else{ // while loop, for loop, if statement.
+        active_scope = Symt.Ctor(symbol_tab, id_tok.attribute.id, id_tok.type, active_scope);
+    }
+}
 
 /**
  * @brief Expression list. TODO: probably this rule will be the part of Expr.parse().
@@ -207,9 +231,9 @@ static bool other_identifiers(pfile_t *pfile) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    // id
-    // todo store to scope
     EXPECTED(TOKEN_ID);
+
+    //todo check if we can find sematic error not in symtable.
 
     // <other_identifiers>
     return other_identifiers(pfile);
@@ -226,12 +250,7 @@ static bool other_identifiers(pfile_t *pfile) {
 static bool list_identif(pfile_t *pfile) {
     debug_msg_s("<list_identif> -> \n");
 
-    // id
-    // todo store to scope
     EXPECTED(TOKEN_ID);
-
-
-
 
     // <other_identifiers>
     return other_identifiers(pfile);
@@ -253,7 +272,7 @@ static bool list_identif(pfile_t *pfile) {
  ** A premium part.
  * !rule <fun_stmt> -> repeat <repeat_body>
  * // for i = 1, i < 10 do ... end
- * !rule <fun_stmt> -> for id = expression, expression do <fun_body>
+ * !rule <fun_stmt> -> for id = expression, expression do <fun_body> // todo: Probably we have to change this rule.
  *
  *
  *
@@ -278,11 +297,11 @@ static bool fun_stmt(pfile_t *pfile) {
     switch (Scanner.get_curr_token().type) {
         // if <cond_stmt>
         case KEYWORD_if:
-            EXPECTED(KEYWORD_if);
 
-            // Creating scope for if
-            // maybe there will be problem with if token
-            active_scope = Symt.Ctor(symbol_tab, Scanner.get_prev_token(), active_scope);
+            // Creating scope for if statement
+            create_scope(Scanner.get_curr_token(), false, false);
+
+            EXPECTED(KEYWORD_if);
 
             // <cond_stmt>
             if (!cond_stmt(pfile)) {
@@ -294,15 +313,29 @@ static bool fun_stmt(pfile_t *pfile) {
             // local id : <datatype>
         case KEYWORD_local:
             EXPECTED(KEYWORD_local); // local
-            EXPECTED(TOKEN_ID); // id
 
-            // Store id to sym table.
-            Symt.store_id(active_scope, Scanner.get_prev_token());
+            // creating tempo variable token because type will be known later
+            dynstring_t *tok_id = Scanner.get_curr_token().attribute.id;
+
+            EXPECTED(TOKEN_ID); // id
 
             EXPECTED(TOKEN_COLON); // :
             if (!datatype(pfile)) { // <datatype>
                 return false;
             }
+
+            // Should be KEYWORD_string || KEYWORD_boolean || KEYWOARD_integer || KEYWOARD_number
+            // Gets id type
+            int tok_type = Scanner.get_curr_token().type;
+
+            // If id is already in sym table.
+            if (Symt.find_id(active_scope, tok_id) == true){
+                Errors.set_error(ERROR_SEMANTICS_OTHER);
+                return false;
+            }
+
+            // Store id to scope active scope.
+            Symt.store_id(active_scope, tok_id, tok_type);
 
             // = expr, but can also be an empty statement.
             assignment(pfile); // assignment
@@ -319,11 +352,11 @@ static bool fun_stmt(pfile_t *pfile) {
 
             // while <expr> do <fun_body> end
         case KEYWORD_while:
-            EXPECTED(KEYWORD_while);
 
-            // Creating scope for if
-            // maybe there will be problem with while token
-            active_scope = Symt.Ctor(symbol_tab, Scanner.get_prev_token(), active_scope);
+            // Creating scope for while loop
+            create_scope(Scanner.get_curr_token(), false, false);
+
+            EXPECTED(KEYWORD_while);
 
             // parse expressions
             if (Expr.parse(pfile)) {
@@ -360,11 +393,10 @@ static bool fun_stmt(pfile_t *pfile) {
 
             // rule <fun_stmt> -> for id = expression, expression do <fun_body>
         case KEYWORD_for:
-            EXPECTED(KEYWORD_for); // for
+            // Creating scope for for loop
+            create_scope(Scanner.get_curr_token(), false, false);
 
-            // Creating scope for if
-            // maybe there will be problem with while token
-            active_scope = Symt.Ctor(symbol_tab, Scanner.get_prev_token(), active_scope);
+            EXPECTED(KEYWORD_for); // for
 
             // a, b, c.
             // TODO: so prodbably we can use rule from function statements, e.g.
@@ -414,13 +446,13 @@ static bool fun_stmt(pfile_t *pfile) {
 static bool fun_body(pfile_t *pfile) {
     debug_msg("<fun_body> ->\n");
 
+    /*If we reach end of a block return to previous scope*/
+    if(Scanner.get_curr_token().type == KEYWORD_end){
+        active_scope = active_scope->parent;
+    }
+
     // end |
     EXPECTED_OPT(KEYWORD_end);
-
-    /*If we reach end of a block return to previous scope*/
-    if(Scanner.get_prev_token().type == KEYWORD_end){
-       active_scope = active_scope->parent;
-    }
 
     return fun_stmt(pfile) && fun_body(pfile);
 }
@@ -441,10 +473,10 @@ static bool other_funparams(pfile_t *pfile) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    EXPECTED(TOKEN_ID);
-
     // creating tempo variable token because type will be known later
-    token_t id = Scanner.get_prev_token();
+    dynstring_t *tok_id = Scanner.get_curr_token().attribute.id;
+
+    EXPECTED(TOKEN_ID);
 
     // :
     EXPECTED(TOKEN_COLON);
@@ -456,15 +488,17 @@ static bool other_funparams(pfile_t *pfile) {
 
     // Should be KEYWORD_string || KEYWORD_boolean || KEYWOARD_integer || KEYWOARD_number
     // Gets id type
-    id.type = Scanner.get_prev_token().type;
+    int tok_type = Scanner.get_curr_token().type;
 
     // If id is already in sym table.
-    if (Symt.find_id(active_scope, id) == true){
-        Errors.set_error(ERROR_LEXICAL);  //check if valid error code pls
+    if (Symt.find_id(active_scope, tok_id) == true){
+        Errors.set_error(ERROR_SEMANTICS_OTHER);
         return false;
     }
+
     // Store id to scope active scope.
-    Symt.store_id(active_scope, id);
+    Symt.store_id(active_scope, tok_id, tok_type);
+
 
     return other_funparams(pfile);
 }
@@ -484,11 +518,11 @@ static bool funparam_def_list(pfile_t *pfile) {
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
+    // creating tempo variable token because type will be known later
+    dynstring_t *tok_id = Scanner.get_curr_token().attribute.id;
+
     // id
     EXPECTED(TOKEN_ID);
-
-    // creating tempo variable token because type will be known later
-    token_t id = Scanner.get_prev_token();
 
     // :
     EXPECTED(TOKEN_COLON);
@@ -500,16 +534,16 @@ static bool funparam_def_list(pfile_t *pfile) {
 
     // Should be KEYWORD_string || KEYWORD_boolean || KEYWOARD_integer || KEYWOARD_number
     // Gets id type
-    id.type = Scanner.get_prev_token().type;
+    int tok_type = Scanner.get_curr_token().type;
 
     // If id is already in sym table.
-    if (Symt.find_id(active_scope, id) == true){
-        Errors.set_error(ERROR_LEXICAL);  //check if valid error code pls
+    if (Symt.find_id(active_scope, tok_id) == true){
+        Errors.set_error(ERROR_SEMANTICS_OTHER);
         return false;
     }
 
     // Store id to scope active scope.
-    Symt.store_id(active_scope, id);
+    Symt.store_id(active_scope, tok_id, tok_type);
 
     // <other_funparams>
     return other_funparams(pfile);
@@ -608,11 +642,10 @@ static bool funretopt(pfile_t *pfile) {
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
 
-    token_t token = {.type = 0, .attribute.id = Dynstring.ctor("")};
-    token = Scanner.get_curr_token();
+    token_t token = Scanner.get_curr_token();
+    token_t id_tok;
 
     switch (token.type) {
-
 
         // function declaration: global id : function ( <datatype_list> <funcretopt>
         case KEYWORD_global:
@@ -620,18 +653,12 @@ static bool stmt(pfile_t *pfile) {
             // global
             EXPECTED(KEYWORD_global);
 
+            id_tok = Scanner.get_curr_token();
+
             // function name
             EXPECTED(TOKEN_ID);
 
-            // If global scope is not create yet. Don't need to set as active. Because main is
-            // always on index 0.
-            if(symbol_tab->size == 0){
-                // Main scope doesn't have any parent so third parameter is null.
-                Symt.Ctor(symbol_tab, Scanner.get_prev_token(), NULL);
-            } else{
-                // store to main scope
-                Symt.store_id(symbol_tab->scopes[0], Scanner.get_prev_token());
-            }
+            create_scope(id_tok, true, false);
 
             // :
             EXPECTED(TOKEN_COLON);
@@ -658,11 +685,13 @@ static bool stmt(pfile_t *pfile) {
             // function
             EXPECTED(KEYWORD_function);
 
+            id_tok = Scanner.get_curr_token();
+
             // id
             EXPECTED(TOKEN_ID);
 
             // Create scope for function and set as active set main scope as parent.
-            active_scope = Symt.Ctor(symbol_tab, Scanner.get_prev_token(), symbol_tab->scopes[0]);
+            create_scope(id_tok, false, true);
 
             // (
             EXPECTED(TOKEN_LPAREN);
@@ -685,13 +714,14 @@ static bool stmt(pfile_t *pfile) {
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:
+
+            token = Scanner.get_curr_token();
+
             EXPECTED(TOKEN_ID);
 
-            /*there could be check if function is not in symbol table error becaouse
-            function is not declared, but it is called */
-            /* What do you think saša?*/
-            if((Symt.find_id_in_scope(symbol_tab->scopes[0], Scanner.get_prev_token())) == true){
-                Errors.set_error(ERROR_LEXICAL);  //check if valid error code pls
+            if((Symt.find_id_in_scope(symbol_tab->scopes[0], token.attribute.id)) == false){
+                // ERROR: Function is called but not declared.
+                Errors.set_error(ERROR_SEMANTICS_OTHER);
                 return false;
             }
 
@@ -730,9 +760,6 @@ static bool stmt_list(pfile_t *pfile) {
 
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
-
-
-
 
     // <stmt> <stmt_list>
     return stmt(pfile) && stmt_list(pfile);
