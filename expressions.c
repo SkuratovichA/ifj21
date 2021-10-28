@@ -753,8 +753,28 @@ int main() {
     s[32] = "f() > g(a + b)";
     s[33] = "2 < 5 < 8 < q";
     s[34] = "a >= b <= 3";
+    s[35] = "a\nd = 3";
+    s[36] = "a + b / c\n d = a + b";
+    s[37] = "(a)\nb=3";
+    s[38] = "(a + b / c)/nb = (a + b)";
+    s[39] = "(3 + a\n+ b + d)";
+    s[40] = "a\na, b = 1";
+    s[41] = "a\na, b = 1, 2";
+    s[42] = "a + b\na, b, c = c, b, a";
+    s[43] = "1\na = a";
+    s[44] = "a + 1\na, b, c, d = 1, a+b, 2, (d*e)";
+    s[45] = "(a + 1)\na, b, c = (a + b + c)";
+    s[46] = "(a) + 1\n(a) = (a) + 2";
+    s[47] = "#a\na = #a + #b";
+    s[48] = "a + b .. c\nd, e, f = a .. b";
+    s[49] = "1\na, b, c, d, e = a .. b + #c + d .. e * #d // 2";
+    s[50] = "a\na, b = foo(), bar()";
+    s[51] = "foo()\na = bar()";
+    s[52] = "a() + b(a + c)\na = a + 1";
+    s[53] = "foo(a)";
+    s[54] = "a\na, b, c, d, e = foo(x + y)";
 
-    unsigned num_of_tests_valid = 35; // don't forget to add 1 (bcs counting from 0)
+    unsigned num_of_tests_valid = 55; // don't forget to add 1 (bcs counting from 0)
                     // eg. number_of_tests_valid = 11 when the last assignment is s[10]
 
     fprintf(stdout, "\x1b[33m" "TESTS - VALID INPUT\n" "\x1b[0m");
@@ -803,8 +823,26 @@ int main() {
     s[i+30] = "a < b # < c";
     s[i+31] = "<";
     s[i+32] = "< a >";
+    s[i+33] = "a\nd d";
+    s[i+34] = "a a";
+    s[i+35] = "a\nd = d = d";
+    s[i+36] = "a = a\nd";
+    s[i+37] = "a\na, a, a";
+    s[i+38] = "a, #a, #a";
+    s[i+39] = "a = 3";
+    s[i+40] = "a .. b\n= 3";
+    s[i+41] = "3\n3 = a";
+    s[i+42] = "a\na\na = n";
+    s[i+43] = "()";
+    s[i+44] = "(a = b)";
+    s[i+45] = "a + (b + c)\nd + 1";
+    s[i+46] = "d + 1 = 4";
+    s[i+47] = "(a + b * c)\nd * e = e * f";
+    s[i+48] = "a\na() = b";
+    s[i+49] = "a\na, b() = 1, 2";
+    s[i+50] = "a() = a()";
 
-    unsigned num_of_tests = num_of_tests_valid + 32;    // the number in the last s[i + num_of_tests]
+    unsigned num_of_tests = num_of_tests_valid + 50;    // the number in the last s[i + num_of_tests]
                                 // (eg. num_of_tests = 10 when the last s assignment is s[i + 10])
 
     fprintf(stdout, "\x1b[33m" "TESTS - INVALID INPUT\n" "\x1b[0m");
