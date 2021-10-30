@@ -215,7 +215,7 @@ static bool precedence_check (op_list_t first_op, op_list_t second_op) {
  * <0 if first_op has a lower precedence.
  * @return bool.
  */
-static bool precedence_cmp (op_list_t first_op, op_list_t second_op, int *cmp) {
+static bool precedence_cmp (op_list_t first_op, op_list_t second_op, int * cmp) {
     if (precedence_check(first_op, second_op)) {
         *cmp = f[first_op] - g[second_op];
         return true;
@@ -326,18 +326,24 @@ static bool operator(sstack_t * r_stack) {
  * !rule <other_arguments> -> , E <other_arguments> | )
  *
  * @param r_stack stack with handle (rule).
+ * @param func_entries count of entries to functions.
  * @return bool.
  */
-static bool other_arguments (sstack_t * r_stack) {
+static bool other_arguments (sstack_t * r_stack, int * func_entries) {
     debug_msg("EXPECTED: , E <other_arguments> | )\n");
 
     // ,
     if (single_op(r_stack, OP_COMMA)) {
         // E <other_arguments>
-        return expression(r_stack) && other_arguments(r_stack);
+        return expression(r_stack) && other_arguments(r_stack, func_entries);
     } else {
         // )
-        return single_op(r_stack, OP_RPAREN);
+        if (single_op(r_stack, OP_RPAREN)) {
+            (*func_entries)--;
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 
@@ -347,18 +353,24 @@ static bool other_arguments (sstack_t * r_stack) {
  * !rule <arguments> -> E <other_arguments> | )
  *
  * @param r_stack stack with handle (rule).
+ * @param func_entries count of entries to functions.
  * @return bool.
  */
-static bool arguments (sstack_t * r_stack) {
+static bool arguments (sstack_t * r_stack, int * func_entries) {
     debug_msg("EXPECTED: E <other_arguments> | )\n");
 
     // E
     if (expression(r_stack)) {
         // <other_arguments>
-        return other_arguments(r_stack);
+        return other_arguments(r_stack, func_entries);
     } else {
         // )
-        return single_op(r_stack, OP_RPAREN);
+        if (single_op(r_stack, OP_RPAREN)) {
+            (*func_entries)--;
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 
@@ -368,9 +380,10 @@ static bool arguments (sstack_t * r_stack) {
  * !rule E -> E <operator> | # E | ( E ) | id | id ( <arguments>
  *
  * @param r_stack stack with handle (rule).
+ * @param func_entries count of entries to functions.
  * @return bool.
  */
-static bool check_rule(sstack_t * r_stack) {
+static bool check_rule(sstack_t * r_stack, int * func_entries) {
     debug_msg("EXPECTED: E <operator> | # E | ( E ) | id | id ( <arguments>\n");
 
     stack_item_t * item = Stack.peek(r_stack);
@@ -403,7 +416,7 @@ static bool check_rule(sstack_t * r_stack) {
             // id ( <arguments>
             case OP_FUNC:
                 Stack.pop(r_stack, stack_item_dtor);
-                return single_op(r_stack, OP_LPAREN) && arguments(r_stack);
+                return single_op(r_stack, OP_LPAREN) && arguments(r_stack, func_entries);
             default:
                 break;
         }
@@ -447,7 +460,7 @@ static stack_item_t * pop_expr (sstack_t * stack, stack_item_t ** top) {
  * @param expr pointer to expression.
  * @param cmp comparison result.
  */
-static void shift (pfile_t *pfile, sstack_t *stack, stack_item_t *expr, int const cmp) {
+static void shift (pfile_t * pfile, sstack_t * stack, stack_item_t * expr, int const cmp) {
     debug_msg("SHIFT < | SHIFT =\n");
 
     // If first_op has a lower precedence, then push less than symbol
@@ -474,9 +487,10 @@ static void shift (pfile_t *pfile, sstack_t *stack, stack_item_t *expr, int cons
  * @param stack stack to compare precedence and analyze an expression.
  * @param expr pointer to expression.
  * @param top item on top of the stack.
+ * @param func_entries count of entries to functions.
  * @return bool.
  */
-static bool reduce (sstack_t * stack, stack_item_t * expr, stack_item_t * top) {
+static bool reduce (sstack_t * stack, stack_item_t * expr, stack_item_t * top, int * func_entries) {
     debug_msg("REDUCE >\n");
 
     // Push expression if exists
@@ -494,7 +508,7 @@ static bool reduce (sstack_t * stack, stack_item_t * expr, stack_item_t * top) {
         top = Stack.peek(stack);
     }
 
-    if (!check_rule(r_stack) || Stack.peek(r_stack) != NULL) {
+    if (!check_rule(r_stack, func_entries) || Stack.peek(r_stack) != NULL) {
         debug_msg("Reduction error!\n");
         Stack.dtor(r_stack, stack_item_dtor);
         return false;
@@ -521,7 +535,7 @@ static bool reduce (sstack_t * stack, stack_item_t * expr, stack_item_t * top) {
  * @return
  */
 static bool is_function_call (op_list_t first_op, op_list_t second_op) {
-    return first_op == OP_ID && second_op == OP_LPAREN;
+    return  first_op == OP_ID && second_op == OP_LPAREN;
 }
 
 /**
@@ -533,13 +547,9 @@ static bool is_function_call (op_list_t first_op, op_list_t second_op) {
  * @return bool.
  */
 static bool is_expr_end (op_list_t first_op, op_list_t second_op, int func_cnt) {
-    if ((first_op == OP_RPAREN && Scanner.get_curr_token().type == TOKEN_ID) ||
-        (first_op == OP_ID && Scanner.get_curr_token().type == TOKEN_ID) ||
-        (second_op == OP_COMMA && func_cnt == 0)) {
-        return true;
-    }
-
-    return false;
+    return  (first_op == OP_RPAREN && Scanner.get_curr_token().type == TOKEN_ID) ||
+            (first_op == OP_ID && Scanner.get_curr_token().type == TOKEN_ID) ||
+            (second_op == OP_COMMA && func_cnt == 0);
 }
 
 /**
@@ -547,17 +557,13 @@ static bool is_expr_end (op_list_t first_op, op_list_t second_op, int func_cnt) 
  *
  * @param first_op first operator.
  * @param second_op second operator.
- * @param hard_reduce flag to reduce without comparison two operators.
+ * @param hard_reduce flag to reduce without comparison.
  * @return bool.
  */
 static bool is_parse_success (op_list_t first_op, op_list_t second_op, bool hard_reduce) {
-    if ((first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
-        (first_op == OP_DOLLAR && second_op == OP_ID && hard_reduce) ||
-        (first_op == OP_DOLLAR && second_op == OP_COMMA && hard_reduce)) {
-        return true;
-    }
-
-    return false;
+    return  (first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
+            (first_op == OP_DOLLAR && second_op == OP_ID && hard_reduce) ||
+            (first_op == OP_DOLLAR && second_op == OP_COMMA && hard_reduce);
 }
 
 /**
@@ -565,18 +571,19 @@ static bool is_parse_success (op_list_t first_op, op_list_t second_op, bool hard
  *
  * @param pfile program file to pass in to scanner.
  * @param stack stack to compare precedence and analyze an expression.
+ * @param expr_type type of expression to parse.
  * @return bool.
  */
-static bool parse (pfile_t * pfile, sstack_t * stack) {
+static bool parse (pfile_t * pfile, sstack_t * stack, expr_type_t expr_type) {
     bool hard_reduce = false;
-    // TODO make function detection better
-    int func_cnt = 0;
+    int func_entries = (expr_type == EXPR_FUNC) ? 1 : 0;
     int cmp;
 
     while (Scanner.get_curr_token().type != TOKEN_DEAD) {
         // Peek item from the stack
         stack_item_t * top = (stack_item_t *) Stack.peek(stack);
 
+        debug_msg("Function entries: %d\n", func_entries);
         debug_msg("Next: \"%s\"\n", Scanner.to_string(Scanner.get_curr_token().type));
 
         // Pop expression if we have it on the top of the stack
@@ -587,9 +594,10 @@ static bool parse (pfile_t * pfile, sstack_t * stack) {
         op_list_t first_op = (top->type == ITEM_TYPE_DOLLAR) ? OP_DOLLAR : get_op(top->token);
         op_list_t second_op = get_op(Scanner.get_curr_token());
 
-        // TODO make function detection better
-        if (first_op == OP_LPAREN) { func_cnt++; }
-        if (second_op == OP_RPAREN) { func_cnt--; }
+        // Check on expression end
+        if (!hard_reduce && is_expr_end(first_op, second_op, func_entries)) {
+            hard_reduce = true;
+        }
 
         // Check if success
         if (is_parse_success(first_op, second_op, hard_reduce)) {
@@ -600,15 +608,11 @@ static bool parse (pfile_t * pfile, sstack_t * stack) {
             return true;
         }
 
-        // Check on expression end
-        if (!hard_reduce && is_expr_end(first_op, second_op, func_cnt)) {
-            hard_reduce = true;
-        }
-
         // Precedence comparison
         if (!hard_reduce && !precedence_cmp(first_op, second_op, &cmp)) {
             // Try to parse function call
             if (is_function_call(first_op, second_op)) {
+                func_entries++;
                 top->token.type = TOKEN_FUNC;
                 cmp = 0;
             } else {
@@ -624,7 +628,7 @@ static bool parse (pfile_t * pfile, sstack_t * stack) {
         if (!hard_reduce && cmp <= 0) {
             shift(pfile, stack, expr, cmp);
         } else {
-            if (!reduce(stack, expr, top)) {
+            if (!reduce(stack, expr, top, &func_entries)) {
                 return false;
             }
         }
@@ -660,7 +664,7 @@ static bool parse_init(pfile_t * pfile, expr_type_t expr_type, token_t * prev_to
     }
 
     // Parsing process
-    bool parse_result = parse(pfile, stack);
+    bool parse_result = parse(pfile, stack, expr_type);
 
     // Delete $ from stack
     Stack.dtor(stack, stack_item_dtor);
