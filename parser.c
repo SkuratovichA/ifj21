@@ -66,7 +66,7 @@ static bool other_expr(pfile_t *pfile) {
     EXPECTED(TOKEN_COMMA);
 
     // expr
-    if (!Expr.parse(pfile)) {
+    if (!Expr.parse(pfile, true)) {
         return false;
     }
 
@@ -89,7 +89,7 @@ static bool list_expr(pfile_t *pfile) {
     EXPECTED_OPT(TOKEN_RPAREN);
 
     // expr
-    if (!Expr.parse(pfile)) {
+    if (!Expr.parse(pfile, true)) {
         return false;
     }
 
@@ -134,7 +134,7 @@ static bool cond_body(pfile_t *pfile) {
 static bool cond_stmt(pfile_t *pfile) {
     debug_msg_s("<cond_stmt> -> \n");
 
-    if (!Expr.parse(pfile)) {
+    if (!Expr.parse(pfile, true)) {
         return false;
     }
 
@@ -212,7 +212,7 @@ static bool assignment(pfile_t *pfile) {
     EXPECTED(TOKEN_ASSIGN);
 
     // expression
-    if (!Expr.parse(pfile)) {
+    if (!Expr.parse(pfile, true)) {
         return false;
     }
 
@@ -319,7 +319,9 @@ static bool fun_stmt(pfile_t *pfile) {
             }
 
             // = expr, but can also be an empty statement.
-            assignment(pfile);
+            if (!assignment(pfile)) {
+                return false;
+            }
             break;
 
             // return <list_expr>
@@ -336,7 +338,7 @@ static bool fun_stmt(pfile_t *pfile) {
             EXPECTED(KEYWORD_while);
 
             // parse expressions
-            if (Expr.parse(pfile)) {
+            if (Expr.parse(pfile, true)) {
                 return false;
             }
             EXPECTED(KEYWORD_do);
@@ -363,7 +365,7 @@ static bool fun_stmt(pfile_t *pfile) {
             }
 
             // expression represent a condition after an until keyword.
-            if (!Expr.parse(pfile)) {
+            if (!Expr.parse(pfile, true)) {
                 return false;
             }
             break;
@@ -402,7 +404,7 @@ static bool fun_stmt(pfile_t *pfile) {
         default:
             // at the end try to parse an expression, because actually recursive descent parser know nothing
             // about them so there "probably" can be an expression here.
-            if (!Expr.parse(pfile)) {
+            if (!Expr.parse(pfile, false)) {
                 return false;
             }
     }
