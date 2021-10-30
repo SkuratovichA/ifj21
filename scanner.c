@@ -593,6 +593,7 @@ static token_t lex_number(pfile_t *pfile) {
         return (token_t) {.type = TOKEN_DEAD};
     }
 
+    Pfile.ungetc(pfile);
     token_t token;
 
     // TODO: actually we can get rid of it and left number as string but with market that its an integer or a float.
