@@ -16,6 +16,11 @@
 #define ITEM_TYPE(type) _cat_2_(ITEM_TYPE, type)
 
 /**
+ * Add prefix before expression type.
+ */
+#define EXPR(type) _cat_2_(EXPR, type)
+
+/**
  * List of operators from the precedence table.
  */
 typedef enum op_list {
@@ -52,13 +57,23 @@ typedef enum item_type {
     ITEM_TYPE(TOKEN),
 } item_type_t;
 
+/**
+ * List of expression types.
+ */
+typedef enum expr_type {
+    EXPR(DEFAULT),
+    EXPR(ASSIGN),
+    EXPR(FUNC),
+    EXPR(INVALID)
+} expr_type_t;
+
 typedef struct stack_item {
     item_type_t type;
     token_t token;
 } stack_item_t;
 
 struct expr_interface_t {
-    bool (*parse)(pfile_t *);
+    bool (*parse)(pfile_t *, bool);
 };
 
 extern const struct expr_interface_t Expr;
