@@ -832,6 +832,104 @@ int main() {
                               "     s1 = reads()                                                          \n "
     );
 
+#define PROLOG "require \"ifj21\" \n"
+#define END " end "
+#define FUN " function "
+#define LOCAL " local "
+#define STRING " string "
+#define IF " if "
+#define ELSIF " elsif "
+#define ELSE " else "
+#define THEN " then "
+#define NUMBER " number "
+#define WHILE " while "
+#define DO " do "
+#define REPEAT " repeat "
+#define UNTIL " until "
+#define FOR " for "
+
+    pfile_t *pf7 = Pfile.ctor(
+            PROLOG
+            FUN "mein()"
+            LOCAL "myself" " : " STRING "\"me\""
+            WHILE "loves(cat, dog)" DO
+            WHILE "loves(cat, dog)" DO
+            WHILE "loves(cat, dog)" DO
+            WHILE "loves(cat, dog)" DO
+            WHILE "loves(cat, dog)" DO
+            WHILE "loves(cat, dog)" DO
+            WHILE "loves(cat, dog)" DO
+            WHILE "loves(cat, dog)" DO
+            "kill(myself)"
+            END
+            END
+            END
+            END
+            END
+            END
+            END
+            END
+            END // fun
+    );
+
+    pfile_t *pf8 = Pfile.ctor(
+            PROLOG
+            FUN "main()"
+            LOCAL "suka" ":" NUMBER " = 69"
+
+            IF "suka > 10" THEN
+            "write(\"suka\")"
+            LOCAL "suka" ":" STRING " = \"suka\""
+            IF "suka > 10" THEN
+            "fuck()"
+            ELSE
+            "die()"
+            ELSIF "suka < 10" THEN
+            "write(\"o feunde nicht smth\")"
+            ELSE
+            "die()"
+            END
+            END // fun
+    );
+    pfile_t *pf9 = Pfile.ctor(
+            PROLOG
+            FUN "yours()"
+            REPEAT
+            "to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"
+            UNTIL " true "
+            END
+    );
+    pfile_t *pf10 = Pfile.ctor(
+            PROLOG
+            FUN "yours()"
+            REPEAT
+            REPEAT
+            REPEAT
+            REPEAT
+            REPEAT
+            REPEAT
+            " live_is_beautiful() "
+            UNTIL " true "
+            UNTIL " true "
+            UNTIL " true "
+            UNTIL " true "
+            UNTIL " true "
+            UNTIL " true "
+            END
+    );
+
+    pfile_t *pf11 = Pfile.ctor(
+            PROLOG
+            FUN "healthy()"
+            FOR "i=0" "," "i<3" DO
+            FOR "j=0" "," "j<12" DO
+            "push_up()"
+            END
+            END
+            END
+    );
+
+
     "if s1 ~= nil then                                                     \n "
     "while s1 ~= \"abcdefgh\" do                                           \n "
     "    write(\"\\n\", \"Spatne zadana posloupnost, zkuste znovu:\")      \n "
@@ -866,9 +964,31 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf5), true, "Some curve's test.");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
-    Tests.warning("5: Curve's test simplified");
+    Tests.warning("6: Curve's test simplified");
     TEST_EXPECT(Parser.analyse(pf6), true, "Some curve's test.");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("7: while statements");
+    TEST_EXPECT(Parser.analyse(pf7), true, "Some curve's test.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("8: if statements");
+    TEST_EXPECT(Parser.analyse(pf8), true, "Some curve's test.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("9: repeat until statements");
+    TEST_EXPECT(Parser.analyse(pf9), true, "Some curve's test.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("10: repeat until statements");
+    TEST_EXPECT(Parser.analyse(pf10), true, "Some curve's test.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("11: for statements");
+    TEST_EXPECT(Parser.analyse(pf11), true, "Some curve's test.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+
 
 
     // destructors
