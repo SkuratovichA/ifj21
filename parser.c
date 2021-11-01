@@ -197,7 +197,9 @@ static bool repeat_body(pfile_t *pfile) {
 /**
  * @brief Optional assignment after a local variable declaration.
  *
- * !rule <assignment> -> e | = expression
+ * Here, an assign token is processed(if it is), and expression
+ * parsing begins.
+ * !rule <assignment> -> e | = expr
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -211,6 +213,7 @@ static bool assignment(pfile_t *pfile) {
     }
     EXPECTED(TOKEN_ASSIGN);
 
+    // TODO: probably we dont need an Expr.parse() to be boolean.
     // expression
     if (!Expr.parse(pfile, true)) {
         return false;
@@ -324,11 +327,12 @@ static bool fun_stmt(pfile_t *pfile) {
             }
             break;
 
-            // return <list_expr>
+            // return expr
         case KEYWORD_return:
             EXPECTED(KEYWORD_return);
-            // return expr, expr, expr.
-            if (!list_expr(pfile)) {
+            // return expr
+            if (!Expr.parse(pfile, /*inside=*/true)) {
+                debug_msg("Expression analysis failed.\n");
                 return false;
             }
             break;
@@ -743,6 +747,7 @@ const struct parser_interface_t Parser = {
         .analyse = Analyse
 };
 
+//#define SELFTEST_parser 1
 #ifdef SELFTEST_parser
 #include "tests/tests.h"
 int main() {
@@ -816,7 +821,10 @@ int main() {
 #endif
     Tests.warning("4: Mutually recursive functions.");
     TEST_EXPECT(Parser.analyse(pf4), true, "Mutually recursive functions. Return statement.");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+    TEST_EXPECT((Errors.get_error() == ERROR_NOERROR), true, "There's no error.");
+    if (Errors.get_error() != ERROR_NOERROR) {
+        Tests.warning("Error(error must not be here) %s\n", Errors.get_errmsg());
+    }
 
 
     // destructors

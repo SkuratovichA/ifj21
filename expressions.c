@@ -262,6 +262,7 @@ static bool single_op (sstack_t * r_stack, op_list_t exp_op) {
     stack_item_t * item = Stack.peek(r_stack);
 
     if (!item) {
+        debug_msg("Failed to analyze expression with a token '%s'\n", Scanner.to_string(Scanner.get_curr_token().type));
         Errors.set_error(ERROR_SYNTAX);
         return false;
     }
@@ -273,7 +274,11 @@ static bool single_op (sstack_t * r_stack, op_list_t exp_op) {
         }
     }
 
-    Errors.set_error(ERROR_SYNTAX);
+    // here, unrecognized token is on the input, so
+    // it probably can be reduced(or parsed) in parser.
+    // To terminate expression parsing, we return false, but without setting an error code.
+    //debug_msg("Failed to analyze expression with a token '%s'\n", Scanner.to_string(Scanner.get_curr_token().type));
+    //Errors.set_error(ERROR_SYNTAX);
     return false;
 }
 
@@ -330,7 +335,7 @@ static bool operator(sstack_t * r_stack) {
  * @return bool.
  */
 static bool other_arguments (sstack_t * r_stack, int * func_entries) {
-    debug_msg("EXPECTED: , E <other_arguments> | )\n");
+    debug_msg("rule: , E <other_arguments> | )\n");
 
     // ,
     if (single_op(r_stack, OP_COMMA)) {
@@ -823,16 +828,17 @@ static bool expr_stmt (pfile_t * pfile) {
 /**
  * @brief Expression parsing driven by a precedence table.
  *
+ *
  * @param pfile program file to pass in to scanner.
- * @param inside_stmt flag to detect expression position.
+ * @param inside_stmt true when the function is called from parser.
  * @return bool.
  */
 static bool Parse_expression(pfile_t * pfile, bool inside_stmt) {
-    if (!inside_stmt) {
+    if (inside_stmt == true) {
+        return parse_init(pfile, EXPR_DEFAULT, NULL);
+    } else {
         return expr_stmt(pfile);
     }
-
-    return parse_init(pfile, EXPR_DEFAULT, NULL);
 }
 
 /**
