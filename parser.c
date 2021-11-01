@@ -300,7 +300,7 @@ static bool list_identif(pfile_t *pfile) {
  * @return bool.
  */
 static bool fun_stmt(pfile_t *pfile) {
-    debug_msg_s("<fun_stmt> -> \n");
+    debug_msg("<fun_stmt> -> \n");
 
     switch (Scanner.get_curr_token().type) {
         // if <cond_stmt>
@@ -370,6 +370,7 @@ static bool fun_stmt(pfile_t *pfile) {
 
             // expression represent a condition after an until keyword.
             if (!Expr.parse(pfile, true)) {
+                debug_msg("Expression function returned false\n");
                 return false;
             }
             break;
@@ -378,19 +379,8 @@ static bool fun_stmt(pfile_t *pfile) {
         case KEYWORD_for:
             EXPECTED(KEYWORD_for); // for
 
-            // a, b, c.
-            // TODO: so prodbably we can use rule from function statements, e.g.
-            // a, b, c, d = function()
-            // a, b, c, d = b, d, c, a
-            if (!list_identif(pfile)) {
-                return false;
-            }
-
-            // '='
-            EXPECTED(TOKEN_ASSIGN);
-
-            // <list_expr>
-            if (!list_expr(pfile)) {
+            if (!Expr.parse(pfile, true)) {
+                debug_msg("Expression function returned false\n");
                 return false;
             }
 
@@ -409,6 +399,7 @@ static bool fun_stmt(pfile_t *pfile) {
             // at the end try to parse an expression, because actually recursive descent parser know nothing
             // about them so there "probably" can be an expression here.
             if (!Expr.parse(pfile, false)) {
+                debug_msg("Expression function returned false\n");
                 return false;
             }
     }
@@ -747,7 +738,7 @@ const struct parser_interface_t Parser = {
         .analyse = Analyse
 };
 
-//#define SELFTEST_parser 1
+#define SELFTEST_parser 1
 #ifdef SELFTEST_parser
 #include "tests/tests.h"
 int main() {
@@ -756,7 +747,6 @@ int main() {
     //2
     pfile_t *pf2 = Pfile.ctor("1234.er require \"ifj21\"\n");
     //3
-    Tests.warning("3: function declarations.");
     pfile_t *pf3 = Pfile.ctor(
         "require \"ifj21\""
         "--[[--------------- function declarations -----------------------]]"
@@ -796,14 +786,59 @@ int main() {
     );
     //4
     pfile_t *pf4 = Pfile.ctor("require \"ifj21\"\n"
-                           "global foo : function(string) : string\n"
-                           "function bar(param : string) : string\n"
-                           "    return foo (param)\n"
-                           "end\n"
-                           "function foo(param:string):string \n"
-                           "    return bar(param)\n"
-                           "end\n");
+                              "global foo : function(string) : string\n"
+                              "function bar(param : string) : string\n"
+                              "    return foo (param)\n"
+                              "end\n"
+                              "function foo(param:string):string \n"
+                              "    return bar(param)\n"
+                              "end\n");
 
+    //5
+    pfile_t *pf5 = Pfile.ctor("-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
+                              "require \"ifj21\"\n"
+                              "function main()                                                        \n"
+                              "local s1 : string = \"Toto je nejaky text\"                            \n"
+                              "local s2 : string = s1 .. \", ktery jeste trochu obohatime\"           \n"
+                              "print(s1, \"\\010\", s2)local s1len:integer=#s1                        \n"
+                              "s1len = s1len - 4 s1 =                                                 \n"
+                              "substr(s2, s1len, s1len + 4)                                           \n"
+                              "s1len = s1len + 1 write(                                               \n"
+                              "\"4 znaky od\", s1len, \". znaku v \\\"\", s2, \"\\\":\", s1, \"\\n\") \n" // what the fuck
+                              "write(\"Zadejte serazenou posloupnost vsem malych pismen a-h, \")     \n "
+                              "write(\"pricemz se pismena nesmeji v posloupnosti opakovat: \")       \n "
+                              "s1 = reads()                                                          \n "
+                              "if s1 ~= nil then                                                     \n "
+                              "while s1 ~= \"abcdefgh\" do                                           \n "
+                              "    write(\"\\n\", \"Spatne zadana posloupnost, zkuste znovu:\")      \n "
+                              "s1 = reads()                                                          \n "
+                              "end else                                                              \n "
+                              "end end                                                               \n "
+                              "main()                                                                \n "
+    );
+
+    //5
+    pfile_t *pf6 = Pfile.ctor("-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
+                              "require \"ifj21\"\n"
+                              "function main()                                                        \n"
+                              "     local s1 : string = \"Toto je nejaky text\"                            \n"
+                              "     local s2 : string = s1 .. \", ktery jeste trochu obohatime\"           \n"
+                              "     print(s1, \"ahoj\", s2)                                                \n"
+                              "     local s1len:integer=#s1                                                \n"
+                              "     s1len = s1len - 4                                                      \n"
+                              "     s1 = substr(s2, s1len, s1len + 4)                                      \n"
+                              "     write(\"Zadejte serazenou posloupnost vsem malych pismen a-h, \")     \n "
+                              "     write(\"pricemz se pismena nesmeji v posloupnosti opakovat: \")       \n "
+                              "     s1 = reads()                                                          \n "
+    );
+
+    "if s1 ~= nil then                                                     \n "
+    "while s1 ~= \"abcdefgh\" do                                           \n "
+    "    write(\"\\n\", \"Spatne zadana posloupnost, zkuste znovu:\")      \n "
+    "s1 = reads()                                                          \n "
+    "end else                                                              \n "
+    "end end                                                               \n "
+    "main()                                                                \n ";
 
     // tests.
 #if 0
@@ -818,13 +853,22 @@ int main() {
     Tests.warning("3: function declarations.");
     TEST_EXPECT(Parser.analyse(pf3), true, "Function declarations OK.");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
-#endif
+
     Tests.warning("4: Mutually recursive functions.");
     TEST_EXPECT(Parser.analyse(pf4), true, "Mutually recursive functions. Return statement.");
     TEST_EXPECT((Errors.get_error() == ERROR_NOERROR), true, "There's no error.");
     if (Errors.get_error() != ERROR_NOERROR) {
         Tests.warning("Error(error must not be here) %s\n", Errors.get_errmsg());
     }
+#endif
+
+    Tests.warning("5: Curve's test");
+    TEST_EXPECT(Parser.analyse(pf5), true, "Some curve's test.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("5: Curve's test simplified");
+    TEST_EXPECT(Parser.analyse(pf6), true, "Some curve's test.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
 
     // destructors
@@ -832,6 +876,8 @@ int main() {
     Pfile.dtor(pf2);
     Pfile.dtor(pf3);
     Pfile.dtor(pf4);
+    Pfile.dtor(pf5);
+    Pfile.dtor(pf6);
     return 0;
 }
 #endif

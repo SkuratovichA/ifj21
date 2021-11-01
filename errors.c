@@ -19,7 +19,8 @@ static int Get_error() {
  * @param errcode Errors codes are defined in errors.h.
  */
 static void Set_error(int errcode) {
-    debug_msg("-------Error is about to be set.\n");
+    if (errcode != ERROR_NOERROR)
+        debug_msg("-------Error is about to be set.\n");;
     switch (errcode) {
         case ERROR_LEXICAL:
             // 1 - lexical error
