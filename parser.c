@@ -755,7 +755,6 @@ const struct parser_interface_t Parser = {
 #ifdef SELFTEST_parser
 
 #include "tests/tests.h"
-
 #define PROLOG "require \"ifj21\" \n"
 #define END " end "
 #define FUN " function "
@@ -789,7 +788,7 @@ int main() {
     pfile_t *pf3 = Pfile.ctor(
             PROLOG
             "--[[--------------- function declarations -----------------------]]"
-        "-- functions with no returns"
+            "-- functions with no returns"
         "global foo : function()"
         "global baz : function(string)"
         "global bar : function(string, integer)"
@@ -805,16 +804,16 @@ int main() {
         "global bar : function(string, integer) : number\n"
         "global arst : function(string, integer, number) : number\n"
         "--- functions with more returns:\n"
-        "global foo : function() : string\n"
-        "global baz : function(number) : integer, integer, integer, integer\n"
-        "global bar : function(string, integer, number) : number\n"
-        "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-        "global foo : function():string\n"
-        "global baz : function(number):integer, integer, integer, integer\n"
-        "global bar : function(string, integer, number):number\n"
-        "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-        "global bar : function(string,integer,number):number, integer\n"
-        "global bar : function(string,integer,number):number, number\n"
+            "global foo : function() : string\n"
+            "global baz : function(number) : integer, integer, integer, integer\n"
+            "global bar : function(string, integer, number) : number\n"
+            "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+            "global foo : function():string\n"
+            "global baz : function(number):integer, integer, integer, integer\n"
+            "global bar : function(string, integer, number):number\n"
+            "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+            "global bar : function(string,integer,number):number, integer\n"
+            "global bar : function(string,integer,number):number, number\n"
             "global bar : function(string,integer,number):number, string\n"
             "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
             "                                                                                                 ---\n"
@@ -904,7 +903,7 @@ int main() {
 
             IF "suka > 10" THEN
             WRITE"("SOME_STRING")"
-            LOCAL "suka" ":" STRING SOME_STRING
+            LOCAL "suka" ":" STRING "=" SOME_STRING
             IF "suka > 10" THEN
             "fuck()"
             ELSE
