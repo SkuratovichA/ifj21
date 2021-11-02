@@ -240,7 +240,7 @@ static bool expression (sstack_t * r_stack) {
         return false;
     }
 
-    if (item && item->type == ITEM_TYPE_EXPR) {
+    if (item->type == ITEM_TYPE_EXPR) {
         Stack.pop(r_stack, stack_item_dtor);
         return true;
     }
@@ -805,18 +805,30 @@ static bool expr_stmt_next (pfile_t * pfile, token_t * prev_token) {
  * @return bool.
  */
 static bool expr_stmt (pfile_t * pfile) {
-    debug_msg("EXPECTED: id <expr_stmt_next>\n");
+    debug_msg("rule: id <expr_stmt_next>\n");
 
     // DEAD TOKEN
     if (Scanner.get_curr_token().type == TOKEN_DEAD) {
+        debug_msg("token is dead... And we killed him.\n");
         Errors.set_error(ERROR_LEXICAL);
         return false;
     }
 
-    // id
-    if (Scanner.get_curr_token().type != TOKEN_ID) {
-        Errors.set_error(ERROR_SYNTAX);
-        return false;
+    // id or name of a builtin function
+    switch (Scanner.get_curr_token().type) {
+        // probably(not sure we well have to perform some semantic actions on this, so i left it as is).
+        case TOKEN_ID:
+        case KEYWORD_read:
+        case KEYWORD_write:
+        case KEYWORD_0: // for false
+        case KEYWORD_1: // for true
+        case KEYWORD_nil: // do we need to use nil? IDK.
+            break;
+        default:
+            debug_msg("must be id, but we got something different:\n");
+            debug_msg_s("actual token: \t%s\n", Scanner.to_string(Scanner.get_curr_token().type));
+            Errors.set_error(ERROR_SYNTAX);
+            return false;
     }
 
     // <expr_stmt_next>

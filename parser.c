@@ -99,11 +99,14 @@ static bool list_expr(pfile_t *pfile) {
 
 /**
  * @brief Conditional expression body implemented with an extension. Contains statements.
- * !rule <cond_body> -> else <fun_stmt> <cond_body>
+ * !rule <cond_body> -> else <fun_body>
  * !rule <cond_body> -> elseif <cond_stmt>
  *
- * // todo: im not really sure about this rule.
- * !rule <cond_body> -> <fun_body>
+ * // todo: im not quite sure about this rule.
+ * here, we are free to take every statement from fun_stmt,
+ * however, the next statement must be from <cond_body>,
+ * because we remember about else or elseif
+ * !rule <cond_body> -> <fun_stmt> <cond_body>
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -111,16 +114,21 @@ static bool list_expr(pfile_t *pfile) {
 static bool cond_body(pfile_t *pfile) {
     debug_msg_s("<cond_body> -> \n");
 
-    // else
-    if (Scanner.get_curr_token().type == KEYWORD_else) {
-        return fun_body(pfile);
-    }
-    // elseif expression then
-    if (Scanner.get_curr_token().type == KEYWORD_elseif) {
-        return cond_stmt(pfile);
+    switch (Scanner.get_curr_token().type) {
+        case KEYWORD_else:
+            EXPECTED(KEYWORD_else);
+            return fun_body(pfile);
+        case KEYWORD_elseif:
+            EXPECTED(KEYWORD_elseif);
+            return cond_stmt(pfile);
+        case KEYWORD_end: // terminating condition i guess.
+            EXPECTED(KEYWORD_end);
+            return true;
+        default:
+            break;
     }
 
-    return fun_body(pfile);
+    return fun_stmt(pfile) && cond_body(pfile);
 }
 
 /**
@@ -300,7 +308,12 @@ static bool list_identif(pfile_t *pfile) {
  * @return bool.
  */
 static bool fun_stmt(pfile_t *pfile) {
-    debug_msg("<fun_stmt> -> \n");
+    debug_msg("<fun_stmt> ->");
+    debug_msg_s(" (token = { %s %s}) -> \n",
+                Scanner.to_string(Scanner.get_curr_token().type),
+                Scanner.get_curr_token().type == TOKEN_ID || Scanner.get_curr_token().type == TOKEN_STR ?
+                Dynstring.c_str(Scanner.get_curr_token().attribute.id) : ""
+    );
 
     switch (Scanner.get_curr_token().type) {
         // if <cond_stmt>
@@ -342,7 +355,7 @@ static bool fun_stmt(pfile_t *pfile) {
             EXPECTED(KEYWORD_while);
 
             // parse expressions
-            if (Expr.parse(pfile, true)) {
+            if (!Expr.parse(pfile, true)) {
                 return false;
             }
             EXPECTED(KEYWORD_do);
@@ -740,16 +753,42 @@ const struct parser_interface_t Parser = {
 
 #define SELFTEST_parser 1
 #ifdef SELFTEST_parser
+
 #include "tests/tests.h"
+
+#define PROLOG "require \"ifj21\" \n"
+#define END " end "
+#define FUN " function "
+#define LOCAL " local "
+#define STRING " string "
+#define IF " if "
+#define ELSIF " elseif "
+#define ELSE " else "
+#define THEN " then "
+#define NUMBER " number "
+#define WHILE " while "
+#define DO " do "
+#define REPEAT " repeat "
+#define UNTIL " until "
+#define FOR " for "
+#define CONCAT " .. "
+//#define SOME_STRING " \"arst \\\\ \\n 123 \\192 string \" "
+#define SOME_STRING "\"test_string\""
+#define WRITE " write "
+#define READ " read "
+#define READS " reads "
+#define SUBSTR " substr "
+#define GLOBAL " global "
+
 int main() {
     //1
-    pfile_t *pf1 = Pfile.ctor("require \"ifj21\"\n");
+    pfile_t *pf1 = Pfile.ctor(PROLOG);
     //2
-    pfile_t *pf2 = Pfile.ctor("1234.er require \"ifj21\"\n");
+    pfile_t *pf2 = Pfile.ctor("1234.er" PROLOG);
     //3
     pfile_t *pf3 = Pfile.ctor(
-        "require \"ifj21\""
-        "--[[--------------- function declarations -----------------------]]"
+            PROLOG
+            "--[[--------------- function declarations -----------------------]]"
         "-- functions with no returns"
         "global foo : function()"
         "global baz : function(string)"
@@ -776,95 +815,81 @@ int main() {
         "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
         "global bar : function(string,integer,number):number, integer\n"
         "global bar : function(string,integer,number):number, number\n"
-        "global bar : function(string,integer,number):number, string\n"
-        "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-        "                                                                                                 ---\n"
-        "                                                                                         global foo : function()\n"
-        "global foo : function()\n"
-        "global foo : function()\n"
-        "global foo : function()\n"
+            "global bar : function(string,integer,number):number, string\n"
+            "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+            "                                                                                                 ---\n"
+            "                                                                                         global foo : function()\n"
+            "global foo : function()\n"
+            "global foo : function()\n"
+            "global foo : function()\n"
     );
+#define RETURN " return "
     //4
-    pfile_t *pf4 = Pfile.ctor("require \"ifj21\"\n"
-                              "global foo : function(string) : string\n"
-                              "function bar(param : string) : string\n"
-                              "    return foo (param)\n"
-                              "end\n"
-                              "function foo(param:string):string \n"
-                              "    return bar(param)\n"
-                              "end\n");
+    pfile_t *pf4 = Pfile.ctor(
+            PROLOG
+            GLOBAL " foo : " FUN "(string) : string\n"
+            FUN "bar(param : string) : string\n"
+            RETURN "foo (param)\n"
+            END
+            FUN "foo(param:string):string \n"
+            RETURN "bar(param)\n"
+            END
+    );
+
 
     //5
-    pfile_t *pf5 = Pfile.ctor("-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
-                              "require \"ifj21\"\n"
-                              "function main()                                                        \n"
-                              "local s1 : string = \"Toto je nejaky text\"                            \n"
-                              "local s2 : string = s1 .. \", ktery jeste trochu obohatime\"           \n"
-                              "print(s1, \"\\010\", s2)local s1len:integer=#s1                        \n"
-                              "s1len = s1len - 4 s1 =                                                 \n"
-                              "substr(s2, s1len, s1len + 4)                                           \n"
-                              "s1len = s1len + 1 write(                                               \n"
-                              "\"4 znaky od\", s1len, \". znaku v \\\"\", s2, \"\\\":\", s1, \"\\n\") \n" // what the fuck
-                              "write(\"Zadejte serazenou posloupnost vsem malych pismen a-h, \")     \n "
-                              "write(\"pricemz se pismena nesmeji v posloupnosti opakovat: \")       \n "
-                              "s1 = reads()                                                          \n "
-                              "if s1 ~= nil then                                                     \n "
-                              "while s1 ~= \"abcdefgh\" do                                           \n "
-                              "    write(\"\\n\", \"Spatne zadana posloupnost, zkuste znovu:\")      \n "
-                              "s1 = reads()                                                          \n "
-                              "end else                                                              \n "
-                              "end end                                                               \n "
-                              "main()                                                                \n "
+    pfile_t *pf5 = Pfile.ctor(
+            "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
+            PROLOG
+            FUN "main()"
+            LOCAL "s1" ": string = " SOME_STRING
+            LOCAL "s2" ": string = s1 .." SOME_STRING
+            "print(s1,"SOME_STRING", s2)"
+            LOCAL "s1len : integer=#s1"
+            "s1len = s1len - 4 "
+            "s1" "=" SUBSTR"(s2, s1len, s1len + 4)"
+            "s1len = s1len + 1 "
+            WRITE "("SOME_STRING")"
+            WRITE "("SOME_STRING")"
+            WRITE "("SOME_STRING")"
+            "s1 = reads()                                                          \n "
+            IF "s1 ~= nil" THEN
+            WHILE "s1" "~=" SOME_STRING DO
+            WRITE "("SOME_STRING")"
+            "s1" "=" READS"()"
+            END
+            ELSE
+            END
+            END
+            "main()"
     );
 
     //5
-    pfile_t *pf6 = Pfile.ctor("-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
-                              "require \"ifj21\"\n"
-                              "function main()                                                        \n"
-                              "     local s1 : string = \"Toto je nejaky text\"                            \n"
-                              "     local s2 : string = s1 .. \", ktery jeste trochu obohatime\"           \n"
-                              "     print(s1, \"ahoj\", s2)                                                \n"
-                              "     local s1len:integer=#s1                                                \n"
-                              "     s1len = s1len - 4                                                      \n"
-                              "     s1 = substr(s2, s1len, s1len + 4)                                      \n"
-                              "     write(\"Zadejte serazenou posloupnost vsem malych pismen a-h, \")     \n "
-                              "     write(\"pricemz se pismena nesmeji v posloupnosti opakovat: \")       \n "
-                              "     s1 = reads()                                                          \n "
+    pfile_t *pf6 = Pfile.ctor(
+            "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
+            PROLOG
+            FUN "main()"
+            LOCAL "s1 : string =" SOME_STRING
+            LOCAL "s2 : string = s1" CONCAT SOME_STRING
+            "print("SOME_STRING")"
+            LOCAL "s1len : integer = #s1"
+            "s1len = s1len - 4"
+            "s1 = "SUBSTR"(s2, s1len, s1len + 4)"
+            WRITE"("SOME_STRING")"
+            WRITE"("SOME_STRING")"
+            "s1 = "READS"()"
+            END
     );
-
-#define PROLOG "require \"ifj21\" \n"
-#define END " end "
-#define FUN " function "
-#define LOCAL " local "
-#define STRING " string "
-#define IF " if "
-#define ELSIF " elsif "
-#define ELSE " else "
-#define THEN " then "
-#define NUMBER " number "
-#define WHILE " while "
-#define DO " do "
-#define REPEAT " repeat "
-#define UNTIL " until "
-#define FOR " for "
 
     pfile_t *pf7 = Pfile.ctor(
             PROLOG
             FUN "mein()"
-            LOCAL "myself" " : " STRING "\"me\""
-            WHILE "loves(cat, dog)" DO
-            WHILE "loves(cat, dog)" DO
-            WHILE "loves(cat, dog)" DO
-            WHILE "loves(cat, dog)" DO
-            WHILE "loves(cat, dog)" DO
-            WHILE "loves(cat, dog)" DO
-            WHILE "loves(cat, dog)" DO
-            WHILE "loves(cat, dog)" DO
-            "kill(myself)"
-            END
-            END
-            END
-            END
+            LOCAL "myself" " : " STRING " = " "\"me\""
+            WHILE "opposite(love, hate) == false and opposite(love, indifference)" DO
+            WHILE "opposite(art, ugliness) == false and opposite(art, indifference)" DO
+            WHILE "opposite(faith, heresy) == false and opposite(faith, indifference)" DO
+            WHILE "opposite(life, death) == false and opposite(life, indifference)" DO
+            "is_beautiful(life)"
             END
             END
             END
@@ -878,19 +903,21 @@ int main() {
             LOCAL "suka" ":" NUMBER " = 69"
 
             IF "suka > 10" THEN
-            "write(\"suka\")"
-            LOCAL "suka" ":" STRING " = \"suka\""
+            WRITE"("SOME_STRING")"
+            LOCAL "suka" ":" STRING SOME_STRING
             IF "suka > 10" THEN
             "fuck()"
             ELSE
             "die()"
+            END
             ELSIF "suka < 10" THEN
-            "write(\"o feunde nicht smth\")"
+            WRITE"("SOME_STRING")"
             ELSE
             "die()"
             END
             END // fun
     );
+
     pfile_t *pf9 = Pfile.ctor(
             PROLOG
             FUN "yours()"
@@ -899,6 +926,7 @@ int main() {
             UNTIL " true "
             END
     );
+
     pfile_t *pf10 = Pfile.ctor(
             PROLOG
             FUN "yours()"
@@ -960,32 +988,33 @@ int main() {
     }
 #endif
 
+    Tests.warning("8: if statements");
+    TEST_EXPECT(Parser.analyse(pf8), true, "If statements");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
     Tests.warning("5: Curve's test");
-    TEST_EXPECT(Parser.analyse(pf5), true, "Some curve's test.");
+    TEST_EXPECT(Parser.analyse(pf5), true, "curve's program(bigger).");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
     Tests.warning("6: Curve's test simplified");
-    TEST_EXPECT(Parser.analyse(pf6), true, "Some curve's test.");
+    TEST_EXPECT(Parser.analyse(pf6), true, "curve's program.");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
     Tests.warning("7: while statements");
-    TEST_EXPECT(Parser.analyse(pf7), true, "Some curve's test.");
+    TEST_EXPECT(Parser.analyse(pf7), true, "while statements.");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
-    Tests.warning("8: if statements");
-    TEST_EXPECT(Parser.analyse(pf8), true, "Some curve's test.");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
     Tests.warning("9: repeat until statements");
-    TEST_EXPECT(Parser.analyse(pf9), true, "Some curve's test.");
+    TEST_EXPECT(Parser.analyse(pf9), true, "Repeat until statement");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
     Tests.warning("10: repeat until statements");
-    TEST_EXPECT(Parser.analyse(pf10), true, "Some curve's test.");
+    TEST_EXPECT(Parser.analyse(pf10), true, "Repeat until statements");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
     Tests.warning("11: for statements");
-    TEST_EXPECT(Parser.analyse(pf11), true, "Some curve's test.");
+    TEST_EXPECT(Parser.analyse(pf11), true, "For statements");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
 
