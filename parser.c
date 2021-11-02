@@ -787,40 +787,33 @@ int main() {
     //3
     pfile_t *pf3 = Pfile.ctor(
             PROLOG
-            "--[[--------------- function declarations -----------------------]]"
-            "-- functions with no returns"
-        "global foo : function()"
-        "global baz : function(string)"
-        "global bar : function(string, integer)"
-        "global arst : function(string, integer, number, number, integer, string)"
-        "global foo:function()"
-        "global baz:function(string)"
-        "global bar:function(string, integer)"
-        "global arst:function(string, integer, number, number, integer, string)"
-        "                        ---"
-        "-- functions with one return:"
-        "global foo : function() : string\n"
-        "global baz : function(string) : integer\n"
-        "global bar : function(string, integer) : number\n"
-        "global arst : function(string, integer, number) : number\n"
-        "--- functions with more returns:\n"
-            "global foo : function() : string\n"
-            "global baz : function(number) : integer, integer, integer, integer\n"
-            "global bar : function(string, integer, number) : number\n"
-            "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-            "global foo : function():string\n"
-            "global baz : function(number):integer, integer, integer, integer\n"
-            "global bar : function(string, integer, number):number\n"
-            "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-            "global bar : function(string,integer,number):number, integer\n"
-            "global bar : function(string,integer,number):number, number\n"
-            "global bar : function(string,integer,number):number, string\n"
-            "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-            "                                                                                                 ---\n"
-            "                                                                                         global foo : function()\n"
-            "global foo : function()\n"
-            "global foo : function()\n"
-            "global foo : function()\n"
+            GLOBAL "foo : function()"
+            GLOBAL "baz : function(string)"
+            GLOBAL "bar : function(string, integer)"
+            GLOBAL "arst : function(string, integer, number, number, integer, string)"
+            GLOBAL "foo:function()"
+            GLOBAL "baz:function(string)"
+            GLOBAL "bar:function(string, integer)"
+            GLOBAL "arst:function(string, integer, number, number, integer, string)"
+            GLOBAL "foo : function() : string\n"
+            GLOBAL "baz : function(string) : integer\n"
+            GLOBAL "bar : function(string, integer) : number\n"
+            GLOBAL "arst : function(string, integer, number) : number\n"
+            GLOBAL "foo : function() : string\n"
+            GLOBAL "baz : function(number) : integer, integer, integer, integer\n"
+            GLOBAL "bar : function(string, integer, number) : number\n"
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+            GLOBAL "foo : function():string\n"
+            GLOBAL "baz : function(number):integer, integer, integer, integer\n"
+            GLOBAL "bar : function(string, integer, number):number\n"
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+            GLOBAL "bar : function(string,integer,number):number, integer\n"
+            GLOBAL "bar : function(string,integer,number):number, number\n"
+            GLOBAL "bar : function(string,integer,number):number, string\n"
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+            GLOBAL "foo : function()\n"
+            GLOBAL "foo : function()\n"
+            GLOBAL "foo : function()\n"
     );
 #define RETURN " return "
     //4
@@ -851,7 +844,7 @@ int main() {
             WRITE "("SOME_STRING")"
             WRITE "("SOME_STRING")"
             WRITE "("SOME_STRING")"
-            "s1 = reads()                                                          \n "
+            "s1 = reads()"
             IF "s1 ~= nil" THEN
             WHILE "s1" "~=" SOME_STRING DO
             WRITE "("SOME_STRING")"
@@ -991,14 +984,6 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf8), true, "If statements");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
-    Tests.warning("5: Curve's test");
-    TEST_EXPECT(Parser.analyse(pf5), true, "curve's program(bigger).");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
-
-    Tests.warning("6: Curve's test simplified");
-    TEST_EXPECT(Parser.analyse(pf6), true, "curve's program.");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
-
     Tests.warning("7: while statements");
     TEST_EXPECT(Parser.analyse(pf7), true, "while statements.");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
@@ -1016,6 +1001,14 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf11), true, "For statements");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
+
+    Tests.warning("5: Curve's test");
+    TEST_EXPECT(Parser.analyse(pf5), true, "curve's program(bigger).");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("6: Curve's test simplified");
+    TEST_EXPECT(Parser.analyse(pf6), true, "curve's program.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
 
 
