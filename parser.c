@@ -18,31 +18,34 @@ do { \
 } while (0)
 
 #define EXPECTED(p) \
-do {   \
+do {                \
     token_t tok__ = Scanner.get_curr_token(); \
-    if (tok__.type == (p)) { \
+    if (tok__.type == (p)) {                  \
         if (tok__.type == TOKEN_ID || tok__.type == TOKEN_STR) { \
             debug_msg("\t%s = { '%s' }\n", Scanner.to_string(tok__.type), Dynstring.c_str(tok__.attribute.id)); \
-        } else { \
-            debug_msg("\t%s\n", Scanner.to_string(tok__.type)); \
-        } \
+        } else {    \
+            if (tok__.type == KEYWORD_end) {      \
+                active_scope = active_scope->parent; /* change scope to the prev.scope */         \
+            }           \
+            debug_msg("\t%s\n", Scanner.to_string(tok__.type));  \
+        }           \
         if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) {  \
-            Errors.set_error(ERROR_LEXICAL); \
-        } \
-    } else { \
-        expected_err((p)); \
-    } \
+            Errors.set_error(ERROR_LEXICAL);  \
+        }           \
+    } else {        \
+        expected_err((p));                    \
+    }               \
 } while(0)
 
 // if there's a condition of type '<a> -> b | c', you have to add EXPECTED_OPT(b) in the function.
 #define EXPECTED_OPT(toktype) \
-do { \
+do {                          \
     if (Scanner.get_curr_token().type == (toktype)) { \
         /* OR use Scanner.get_next_token, but let it be clear in case we want */ \
-        /* to change Scanner.get_next_token or add debug messages. */ \
-        EXPECTED((toktype)); \
-        return true; \
-    } \
+        /* to change Scanner.get_next_token or add debug messages. */            \
+        EXPECTED((toktype));  \
+        return true;          \
+    }                         \
 } while(0)
 
 static bool cond_stmt(pfile_t *);
@@ -50,53 +53,53 @@ static bool fun_body(pfile_t *);
 static bool fun_stmt(pfile_t *);
 
 
-/**
- * @brief Create new scope from given token. I know that function is disgusting but, it makes important code more readable.
- *
- * @param id_tok token that is head of scope.
- * @param function_declaration If function declaration set true.
- * @param function_definition If function definition set true.
- */
-static void create_scope(token_t id_tok, bool function_declaration, bool function_definition){
+// TODO: rename - i dont like it. I want it to be SCOPE_GLOBAL, SCOPE_LOCAL
+// think if there's need to have 2 'SCOPES' for functions
+typedef enum scope_frame_opt {
+    SCOPE_FUN_DECL, SCOPE_FUN_DEF, SCOPE_LOCAL_FRAME
+} scope_frame_opt_t;
 
-    if(function_declaration == true){
-        // If global scope is not create yet. Don't need to set as active. Because main is always on index 0.
-        if(symbol_tab->size == 0){
-            // Main scope doesn't have any parent so third parameter is null.
-            Symt.Ctor(symbol_tab, id_tok.attribute.id, id_tok.type, NULL);
-        } else{
-            // store to main scope
-            Symt.store_id(symbol_tab->scopes[0], id_tok.attribute.id, id_tok.type);
-        }
-    } else if(function_definition == true){
-        active_scope = Symt.Ctor(symbol_tab, id_tok.attribute.id, id_tok.type, symbol_tab->scopes[0]);
-    } else{ // while loop, for loop, if statement.
-        active_scope = Symt.Ctor(symbol_tab, id_tok.attribute.id, id_tok.type, active_scope);
+/**
+ * @brief Create a new scope from the given token.
+ *
+ * @param name token that is head of scope.
+ * // fixme: do whe really need it?
+ * // fixme: what does the token do here? Can we create a scope without it?
+ * @param opt SCOPE_FUN_DECL
+ *            SCOPE_FUN_DEF
+ */
+static void create_scope(token_t name, scope_frame_opt_t opt ){
+    switch (opt) {
+        case SCOPE_FUN_DECL:
+            // If global scope is not create yet. Don't need to set as active. Because main is always on index 0.
+            if(symbol_tab->size == 0){
+                // Main scope doesn't have any parent so third parameter is null.
+                Symt.Ctor(symbol_tab, name.attribute.id, name.type, NULL);
+            } else{
+                // store to main scope
+                Symt.store_id(symbol_tab->scopes[0], name.attribute.id, name.type);
+            }
+            break;
+        case SCOPE_FUN_DEF:
+            active_scope = Symt.Ctor(symbol_tab, name.attribute.id, name.type, symbol_tab->scopes[0]);
+            break;
+        case SCOPE_LOCAL_FRAME:
+            // while loop, for loop, if statement.
+            active_scope = Symt.Ctor(symbol_tab, name.attribute.id, name.type, active_scope);
+            break;
     }
 }
 
 /**
- * @brief Expression list. TODO: probably this rule will be the part of Expr.parse().
- *
- * !rule <list_expr> -> ) | expr <other_expr>
- *
- * @param pfile input file for Scanner.get_next_token().
- * @return bool.
- */
-static bool list_expr(pfile_t *pfile) {
-    debug_msg("<list_expr> -> \n");
-
-    // expr
-    return Expr.parse(pfile);
-}
-
-/**
  * @brief Conditional expression body implemented with an extension. Contains statements.
- * !rule <cond_body> -> else <fun_stmt> <cond_body>
+ * !rule <cond_body> -> else <fun_body>
  * !rule <cond_body> -> elseif <cond_stmt>
  *
- * // todo: im not really sure about this rule.
- * !rule <cond_body> -> <fun_body>
+ * // todo: im not quite sure about this rule.
+ * here, we are free to take every statement from fun_stmt,
+ * however, the next statement must be from <cond_body>,
+ * because we remember about else or elseif
+ * !rule <cond_body> -> <fun_stmt> <cond_body>
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -104,18 +107,29 @@ static bool list_expr(pfile_t *pfile) {
 static bool cond_body(pfile_t *pfile) {
     debug_msg_s("<cond_body> -> \n");
 
-    // else
-    if (Scanner.get_curr_token().type == KEYWORD_else) {
-        return fun_body(pfile);
-    }
-    // elseif expression then
-    if (Scanner.get_curr_token().type == KEYWORD_elseif) {
-        return cond_stmt(pfile);
+    // TODO: create new scopes here, probably
+    // also, we can delete a previous scope a nd create a new one,
+    // because anyway, we dont use variables prom the past scope.
+    switch (Scanner.get_curr_token().type) {
+        case KEYWORD_else:
+            EXPECTED(KEYWORD_else);
+            // TODO: somehow change scope, because here,
+            // scopes must lay lineary to each other.
+            return fun_body(pfile);
+        case KEYWORD_elseif:
+            EXPECTED(KEYWORD_elseif);
+            // TODO: somehow change scope, because here,
+            // scopes must lay lineary to each other.
+            return cond_stmt(pfile);
+        case KEYWORD_end: // terminating condition i guess.
+            EXPECTED(KEYWORD_end);
+            active_scope = active_scope->parent;
+            return true;
+        default:
+            break;
     }
 
-    // End of if statement. set active scope to parent scope.
-    active_scope = active_scope->parent;
-    return fun_body(pfile);
+    return fun_stmt(pfile) && cond_body(pfile);
 }
 
 /**
@@ -129,7 +143,7 @@ static bool cond_body(pfile_t *pfile) {
 static bool cond_stmt(pfile_t *pfile) {
     debug_msg_s("<cond_stmt> -> \n");
 
-    if (!Expr.parse(pfile)) {
+    if (!Expr.parse(pfile, true)) {
         return false;
     }
 
@@ -192,7 +206,9 @@ static bool repeat_body(pfile_t *pfile) {
 /**
  * @brief Optional assignment after a local variable declaration.
  *
- * !rule <assignment> -> e | = expression
+ * Here, an assign token is processed(if it is), and expression
+ * parsing begins.
+ * !rule <assignment> -> e | = expr
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -206,54 +222,13 @@ static bool assignment(pfile_t *pfile) {
     }
     EXPECTED(TOKEN_ASSIGN);
 
+    // TODO: probably we dont need an Expr.parse() to be boolean (at least here).
     // expression
-    if (!Expr.parse(pfile)) {
+    if (!Expr.parse(pfile, true)) {
         return false;
     }
 
     return true;
-}
-
-/**
- * @brief Other identifiers followed by a comma. Ends with =.
- *
- * !rule <other_identifiers> -> = | , id <other_identifiers>
- *
- * @param pfile input file for Scanner.get_next_token().
- * @return bool.
- */
-static bool other_identifiers(pfile_t *pfile) {
-    debug_msg_s("<other_identifiers> -> \n");
-
-    // '=' |
-    EXPECTED_OPT(TOKEN_ASSIGN);
-
-    // ,
-    EXPECTED(TOKEN_COMMA);
-
-    EXPECTED(TOKEN_ID);
-
-    //todo check if we can find sematic error not in symtable.
-
-    // <other_identifiers>
-    return other_identifiers(pfile);
-}
-
-/**
- * @brief Start the list with identifiers.
- *
- * !rule <list_identif> -> id <other_identifiers>
- *
- * @param pfile input file for Scanner.get_next_token().
- * @return bool.
- */
-static bool list_identif(pfile_t *pfile) {
-    debug_msg_s("<list_identif> -> \n");
-
-    EXPECTED(TOKEN_ID);
-
-    // <other_identifiers>
-    return other_identifiers(pfile);
 }
 
 /**
@@ -272,7 +247,9 @@ static bool list_identif(pfile_t *pfile) {
  ** A premium part.
  * !rule <fun_stmt> -> repeat <repeat_body>
  * // for i = 1, i < 10 do ... end
- * !rule <fun_stmt> -> for id = expression, expression do <fun_body> // todo: Probably we have to change this rule.
+ * // FIXME chose one
+ * xrule <fun_stmt> -> for <forcycleexp> do <fun_body> // todo: Probably we have to change this rule.
+ * xrule <fun_stmt> -> for id = expression, expression do <fun_body> // todo: Probably we have to change this rule.
  *
  *
  *
@@ -283,7 +260,7 @@ static bool list_identif(pfile_t *pfile) {
  *
  *
  *** Expressions: function calling, assignments, conditions.
- * rule <fun_stmt> -> <expr_list> = <list_expr>
+ * rule <fun_stmt> -> expression
  * just function calls, e.g. f + foo(baz(bar())) or soo(qua())
  *
  *
@@ -292,16 +269,20 @@ static bool list_identif(pfile_t *pfile) {
  * @return bool.
  */
 static bool fun_stmt(pfile_t *pfile) {
-    debug_msg("<fun_stmt> -> \n");
+    debug_msg("<fun_stmt> ->");
+    debug_msg_s(" (token = %s %s ) -> \n",
+                Scanner.to_string(Scanner.get_curr_token().type),
+                Scanner.get_curr_token().type == TOKEN_ID || Scanner.get_curr_token().type == TOKEN_STR ?
+                Dynstring.c_str(Scanner.get_curr_token().attribute.id) : ""
+    );
 
     switch (Scanner.get_curr_token().type) {
         // if <cond_stmt>
         case KEYWORD_if:
+            EXPECTED(KEYWORD_if);
 
             // Creating scope for if statement
-            create_scope(Scanner.get_curr_token(), false, false);
-
-            EXPECTED(KEYWORD_if);
+            create_scope(active_scope, SCOPE_LOCAL_FRAME);
 
             // <cond_stmt>
             if (!cond_stmt(pfile)) {
@@ -309,57 +290,50 @@ static bool fun_stmt(pfile_t *pfile) {
             }
             break;
 
-
             // local id : <datatype>
         case KEYWORD_local:
             EXPECTED(KEYWORD_local); // local
 
-            // creating tempo variable token because type will be known later
-            dynstring_t *tok_id = Scanner.get_curr_token().attribute.id;
-
+            // get the variable name(for a symtable)
+            dynstring_t *name = Scanner.get_curr_token().attribute.id;
             EXPECTED(TOKEN_ID); // id
-
             EXPECTED(TOKEN_COLON); // :
+
+            // get type(for a tymtable)
+            token_type_t type = Scanner.get_curr_token().type;
             if (!datatype(pfile)) { // <datatype>
                 return false;
             }
 
-            // Should be KEYWORD_string || KEYWORD_boolean || KEYWOARD_integer || KEYWOARD_number
-            // Gets id type
-            int tok_type = Scanner.get_curr_token().type;
-
-            // If id is already in sym table.
-            if (Symt.find_id(active_scope, tok_id) == true){
+            // TODO: perform semantic actions later.
+            if (Symt.find_id(active_scope, name)) {
                 Errors.set_error(ERROR_SEMANTICS_OTHER);
                 return false;
             }
 
-            // Store id to scope active scope.
-            Symt.store_id(active_scope, tok_id, tok_type);
-
             // = expr, but can also be an empty statement.
+            // todo should it be booolean?
             assignment(pfile); // assignment
             break;
 
-            // return <list_expr>
+            // return expr
         case KEYWORD_return:
             EXPECTED(KEYWORD_return);
-            // return expr, expr, expr.
-            if (!list_expr(pfile)) {
+            // return expr
+            if (!Expr.parse(pfile, /*inside=*/true)) {
+                debug_msg("Expression analysis failed.\n");
                 return false;
             }
             break;
 
             // while <expr> do <fun_body> end
         case KEYWORD_while:
-
-            // Creating scope for while loop
-            create_scope(Scanner.get_curr_token(), false, false);
-
             EXPECTED(KEYWORD_while);
 
+            create_scope(active_scope, SCOPE_LOCAL_FRAME);
+
             // parse expressions
-            if (Expr.parse(pfile)) {
+            if (!Expr.parse(pfile, true)) {
                 return false;
             }
             EXPECTED(KEYWORD_do);
@@ -386,31 +360,21 @@ static bool fun_stmt(pfile_t *pfile) {
             }
 
             // expression represent a condition after an until keyword.
-            if (!Expr.parse(pfile)) {
+            if (!Expr.parse(pfile, true)) {
+                debug_msg("Expression function returned false\n");
                 return false;
             }
             break;
 
             // rule <fun_stmt> -> for id = expression, expression do <fun_body>
         case KEYWORD_for:
-            // Creating scope for for loop
-            create_scope(Scanner.get_curr_token(), false, false);
-
             EXPECTED(KEYWORD_for); // for
 
-            // a, b, c.
-            // TODO: so prodbably we can use rule from function statements, e.g.
-            // a, b, c, d = function()
-            // a, b, c, d = b, d, c, a
-            if (!list_identif(pfile)) {
-                return false;
-            }
+            create_scope(active_scope, SCOPE_LOCAL_FRAME);
 
-            // '='
-            EXPECTED(TOKEN_ASSIGN);
-
-            // <list_expr>
-            if (!list_expr(pfile)) {
+            // TODO: call function directly for for parsing.
+            if (!Expr.parse(pfile, true)) {
+                debug_msg("Expression function returned false\n");
                 return false;
             }
 
@@ -428,7 +392,8 @@ static bool fun_stmt(pfile_t *pfile) {
         default:
             // at the end try to parse an expression, because actually recursive descent parser know nothing
             // about them so there "probably" can be an expression here.
-            if (!Expr.parse(pfile)) {
+            if (!Expr.parse(pfile, false)) {
+                debug_msg("Expression function returned false\n");
                 return false;
             }
     }
@@ -445,11 +410,6 @@ static bool fun_stmt(pfile_t *pfile) {
  */
 static bool fun_body(pfile_t *pfile) {
     debug_msg("<fun_body> ->\n");
-
-    /*If we reach end of a block return to previous scope*/
-    if(Scanner.get_curr_token().type == KEYWORD_end){
-        active_scope = active_scope->parent;
-    }
 
     // end |
     EXPECTED_OPT(KEYWORD_end);
@@ -473,32 +433,29 @@ static bool other_funparams(pfile_t *pfile) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    // creating tempo variable token because type will be known later
-    dynstring_t *tok_id = Scanner.get_curr_token().attribute.id;
+    dynstring_t *name = Scanner.get_curr_token().attribute.id;
 
+    // id
     EXPECTED(TOKEN_ID);
 
     // :
     EXPECTED(TOKEN_COLON);
+
+    token_type_t type = Scanner.get_curr_token().type;
 
     // <datatype> here datatype is expected
     if (!datatype(pfile)) {
         return false;
     }
 
-    // Should be KEYWORD_string || KEYWORD_boolean || KEYWOARD_integer || KEYWOARD_number
-    // Gets id type
-    int tok_type = Scanner.get_curr_token().type;
-
-    // If id is already in sym table.
-    if (Symt.find_id(active_scope, tok_id) == true){
+    // TODO: emantics
+    if (Symt.find_id(active_scope, name)) {
+        debug_msg("Variable has the same name as one of the previously declared functions\n!");
         Errors.set_error(ERROR_SEMANTICS_OTHER);
         return false;
     }
 
-    // Store id to scope active scope.
-    Symt.store_id(active_scope, tok_id, tok_type);
-
+    Symt.store_id(active_scope, name, type);
 
     return other_funparams(pfile);
 }
@@ -514,12 +471,10 @@ static bool other_funparams(pfile_t *pfile) {
 static bool funparam_def_list(pfile_t *pfile) {
     debug_msg("funparam_def_list ->\n");
 
-
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
-    // creating tempo variable token because type will be known later
-    dynstring_t *tok_id = Scanner.get_curr_token().attribute.id;
+    dynstring_t *name = Scanner.get_curr_token().attribute.id;
 
     // id
     EXPECTED(TOKEN_ID);
@@ -527,23 +482,20 @@ static bool funparam_def_list(pfile_t *pfile) {
     // :
     EXPECTED(TOKEN_COLON);
 
+    token_type_t type = Scanner.get_curr_token().type;
     // <datatype>
     if (!datatype(pfile)) {
         return false;
     }
-
-    // Should be KEYWORD_string || KEYWORD_boolean || KEYWOARD_integer || KEYWOARD_number
-    // Gets id type
-    int tok_type = Scanner.get_curr_token().type;
-
-    // If id is already in sym table.
-    if (Symt.find_id(active_scope, tok_id) == true){
+    // TODO: semantics
+    // here, a function argument(local scope variable)
+    // cannot have the same name as one of previously declared/defined functions.
+    if (Symt.find_id(active_scope, name)) {
+        debug_msg("Variable has the same name as one of the previously declared functions\n!");
         Errors.set_error(ERROR_SEMANTICS_OTHER);
         return false;
     }
-
-    // Store id to scope active scope.
-    Symt.store_id(active_scope, tok_id, tok_type);
+    Symt.store_id(active_scope, name, type);
 
     // <other_funparams>
     return other_funparams(pfile);
@@ -577,7 +529,7 @@ static bool other_datatypes(pfile_t *pfile) {
 static bool datatype_list(pfile_t *pfile) {
     debug_msg("<datatype_list> ->\n");
 
-    // if  ')' then return true
+    // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
     //<datatype> && <other_datatypes>
@@ -643,22 +595,24 @@ static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
 
     token_t token = Scanner.get_curr_token();
-    token_t id_tok;
+    token_t name;
 
     switch (token.type) {
 
         // function declaration: global id : function ( <datatype_list> <funcretopt>
         case KEYWORD_global:
-
             // global
             EXPECTED(KEYWORD_global);
 
-            id_tok = Scanner.get_curr_token();
+            name = Scanner.get_curr_token();
 
             // function name
             EXPECTED(TOKEN_ID);
 
-            create_scope(id_tok, true, false);
+            // FIXME: not sure if there's a need to add a scope here.
+            // it looks more adequate if there will be only adding an
+            // identifier name + function type (parameters, return values and so).
+            create_scope(name, SCOPE_FUN_DECL);
 
             // :
             EXPECTED(TOKEN_COLON);
@@ -685,13 +639,13 @@ static bool stmt(pfile_t *pfile) {
             // function
             EXPECTED(KEYWORD_function);
 
-            id_tok = Scanner.get_curr_token();
+            name = Scanner.get_curr_token();
 
             // id
             EXPECTED(TOKEN_ID);
 
             // Create scope for function and set as active set main scope as parent.
-            create_scope(id_tok, false, true);
+            create_scope(name, SCOPE_FUN_DEF);
 
             // (
             EXPECTED(TOKEN_LPAREN);
@@ -715,21 +669,23 @@ static bool stmt(pfile_t *pfile) {
             // function calling: id ( <list_expr> )
         case TOKEN_ID:
 
-            token = Scanner.get_curr_token();
+            name = Scanner.get_curr_token();
 
             EXPECTED(TOKEN_ID);
 
-            if((Symt.find_id_in_scope(symbol_tab->scopes[0], token.attribute.id)) == false){
-                // ERROR: Function is called but not declared.
-                Errors.set_error(ERROR_SEMANTICS_OTHER);
-                return false;
-            }
+            // TODO: semantics.
+            // however, first, there's need to implement
+            // storing to the symtable, then finding
+          //  if((Symt.find_id_in_scope(symbol_tab->scopes[0], token.attribute.id)) == false){
+          //      // ERROR: Function is called but not declared.
+          //      Errors.set_error(ERROR_SEMANTICS_OTHER);
+          //      return false;
+          //  }
 
             // <list_expr>
             if (!list_expr(pfile)) {
                 return false;
             }
-
             break;
 
         case TOKEN_DEAD:
@@ -790,13 +746,9 @@ static bool program(pfile_t *pfile) {
     }
     EXPECTED(TOKEN_STR);
 
-    // symbol table initialization
     symbol_tab = NULL;
     active_scope = NULL;
-
-    // Symbol table constructor
     symbol_tab = Symt.st_ctor();
-
 
     // <stmt_list>
     Dynstring.dtor(prolog_str);
@@ -828,9 +780,6 @@ static bool Analyse(pfile_t *pfile) {
     // Free scanner
     Scanner.free();
 
-    // Dtor pfile
-    Pfile.dtor(pfile);
-
     return res;
 }
 
@@ -842,61 +791,210 @@ const struct parser_interface_t Parser = {
 };
 
 #ifdef SELFTEST_parser
+
 #include "tests/tests.h"
+#define PROLOG "require \"ifj21\" \n"
+#define END " end "
+#define FUN " function "
+#define LOCAL " local "
+#define STRING " string "
+#define IF " if "
+#define ELSIF " elseif "
+#define ELSE " else "
+#define THEN " then "
+#define NUMBER " number "
+#define WHILE " while "
+#define DO " do "
+#define REPEAT " repeat "
+#define UNTIL " until "
+#define FOR " for "
+#define CONCAT " .. "
+//#define SOME_STRING " \"arst \\\\ \\n 123 \\192 string \" "
+#define SOME_STRING "\"test_string\""
+#define WRITE " write "
+#define READ " read "
+#define READS " reads "
+#define SUBSTR " substr "
+#define GLOBAL " global "
+
 int main() {
     //1
-    pfile_t *pf1 = Pfile.ctor("require \"ifj21\"\n");
+    pfile_t *pf1 = Pfile.ctor(PROLOG);
     //2
-    pfile_t *pf2 = Pfile.ctor("1234.er require \"ifj21\"\n");
+    pfile_t *pf2 = Pfile.ctor("1234.er" PROLOG);
     //3
-    Tests.warning("3: function declarations.");
     pfile_t *pf3 = Pfile.ctor(
-        "require \"ifj21\""
-        "--[[--------------- function declarations -----------------------]]"
-        "-- functions with no returns"
-        "global foo : function()"
-        "global baz : function(string)"
-        "global bar : function(string, integer)"
-        "global arst : function(string, integer, number, number, integer, string)"
-        "global foo:function()"
-        "global baz:function(string)"
-        "global bar:function(string, integer)"
-        "global arst:function(string, integer, number, number, integer, string)"
-        "                        ---"
-        "-- functions with one return:"
-        "global foo : function() : string\n"
-        "global baz : function(string) : integer\n"
-        "global bar : function(string, integer) : number\n"
-        "global arst : function(string, integer, number) : number\n"
-        "--- functions with more returns:\n"
-        "global foo : function() : string\n"
-        "global baz : function(number) : integer, integer, integer, integer\n"
-        "global bar : function(string, integer, number) : number\n"
-        "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-        "global foo : function():string\n"
-        "global baz : function(number):integer, integer, integer, integer\n"
-        "global bar : function(string, integer, number):number\n"
-        "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-        "global bar : function(string,integer,number):number, integer\n"
-        "global bar : function(string,integer,number):number, number\n"
-        "global bar : function(string,integer,number):number, string\n"
-        "global aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-        "                                                                                                 ---\n"
-        "                                                                                         global foo : function()\n"
-        "global foo : function()\n"
-        "global foo : function()\n"
-        "global foo : function()\n"
+            PROLOG
+            GLOBAL "foo : function()"
+            GLOBAL "baz : function(string)"
+            GLOBAL "bar : function(string, integer)"
+            GLOBAL "arst : function(string, integer, number, number, integer, string)"
+            GLOBAL "foo:function()"
+            GLOBAL "baz:function(string)"
+            GLOBAL "bar:function(string, integer)"
+            GLOBAL "arst:function(string, integer, number, number, integer, string)"
+            GLOBAL "foo : function() : string\n"
+            GLOBAL "baz : function(string) : integer\n"
+            GLOBAL "bar : function(string, integer) : number\n"
+            GLOBAL "arst : function(string, integer, number) : number\n"
+            GLOBAL "foo : function() : string\n"
+            GLOBAL "baz : function(number) : integer, integer, integer, integer\n"
+            GLOBAL "bar : function(string, integer, number) : number\n"
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+            GLOBAL "foo : function():string\n"
+            GLOBAL "baz : function(number):integer, integer, integer, integer\n"
+            GLOBAL "bar : function(string, integer, number):number\n"
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+            GLOBAL "bar : function(string,integer,number):number, integer\n"
+            GLOBAL "bar : function(string,integer,number):number, number\n"
+            GLOBAL "bar : function(string,integer,number):number, string\n"
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+            GLOBAL "foo : function()\n"
+            GLOBAL "foo : function()\n"
+            GLOBAL "foo : function()\n"
     );
+#define RETURN " return "
     //4
-    pfile_t *pf4 = Pfile.ctor("require \"ifj21\"\n"
-                           "global foo : function(string) : string\n"
-                           "function bar(param : string) : string\n"
-                           "    return foo (param)\n"
-                           "end\n"
-                           "function foo(param:string):string \n"
-                           "    return x\n"
-                           "end\n");
+    pfile_t *pf4 = Pfile.ctor(
+            PROLOG
+            GLOBAL " foo : " FUN "(string) : string\n"
+            FUN "bar(param : string) : string\n"
+            RETURN "foo (param)\n"
+            END
+            FUN "foo(param:string):string \n"
+            RETURN "bar(param)\n"
+            END
+    );
 
+
+    //5
+    pfile_t *pf5 = Pfile.ctor(
+            "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
+            PROLOG
+            FUN "main()"
+            LOCAL "s1" ": string = " SOME_STRING
+            LOCAL "s2" ": string = s1 .." SOME_STRING
+            "print(s1,"SOME_STRING", s2)"
+            LOCAL "s1len : integer=#s1"
+            "s1len = s1len - 4 "
+            "s1" "=" SUBSTR"(s2, s1len, s1len + 4)"
+            "s1len = s1len + 1 "
+            WRITE "("SOME_STRING")"
+            WRITE "("SOME_STRING")"
+            WRITE "("SOME_STRING")"
+            "s1 = reads()"
+            IF "s1 ~= nil" THEN
+            WHILE "s1" "~=" SOME_STRING DO
+            WRITE "("SOME_STRING")"
+            "s1" "=" READS"()"
+            END
+            ELSE
+            END
+            END
+            "main()"
+    );
+
+    //5
+    pfile_t *pf6 = Pfile.ctor(
+            "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
+            PROLOG
+            FUN "main()"
+            LOCAL "s1 : string =" SOME_STRING
+            LOCAL "s2 : string = s1" CONCAT SOME_STRING
+            "print("SOME_STRING")"
+            LOCAL "s1len : integer = #s1"
+            "s1len = s1len - 4"
+            "s1 = "SUBSTR"(s2, s1len, s1len + 4)"
+            WRITE"("SOME_STRING")"
+            WRITE"("SOME_STRING")"
+            "s1 = "READS"()"
+            END
+    );
+
+    pfile_t *pf7 = Pfile.ctor(
+            PROLOG
+            FUN "mein()"
+            LOCAL "myself" " : " STRING " = " "\"me\""
+            WHILE "opposite(love, hate) == false and opposite(love, indifference)" DO
+            WHILE "opposite(art, ugliness) == false and opposite(art, indifference)" DO
+            WHILE "opposite(faith, heresy) == false and opposite(faith, indifference)" DO
+            WHILE "opposite(life, death) == false and opposite(life, indifference)" DO
+            "is_beautiful(life)"
+            END
+            END
+            END
+            END
+            END // fun
+    );
+
+    pfile_t *pf8 = Pfile.ctor(
+            PROLOG
+            FUN "main()"
+            LOCAL "suka" ":" NUMBER " = 69"
+
+            IF "suka > 10" THEN
+            WRITE"("SOME_STRING")"
+            LOCAL "suka" ":" STRING "=" SOME_STRING
+            IF "suka > 10" THEN
+            "fuck()"
+            ELSE
+            "die()"
+            END
+            ELSIF "suka < 10" THEN
+            WRITE"("SOME_STRING")"
+            ELSE
+            "die()"
+            END
+            END // fun
+    );
+
+    pfile_t *pf9 = Pfile.ctor(
+            PROLOG
+            FUN "yours()"
+            REPEAT
+            "to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"
+            UNTIL " true "
+            END
+    );
+
+    pfile_t *pf10 = Pfile.ctor(
+            PROLOG
+            FUN "yours()"
+            REPEAT
+            REPEAT
+            REPEAT
+            REPEAT
+            REPEAT
+            REPEAT
+            " live_is_beautiful() "
+            UNTIL " true "
+            UNTIL " true "
+            UNTIL " true "
+            UNTIL " true "
+            UNTIL " true "
+            UNTIL " true "
+            END
+    );
+
+    pfile_t *pf11 = Pfile.ctor(
+            PROLOG
+            FUN "healthy()"
+            FOR "i=0" "," "i<3" DO
+            FOR "j=0" "," "j<12" DO
+            "push_up()"
+            END
+            END
+            END
+    );
+
+
+    "if s1 ~= nil then                                                     \n "
+    "while s1 ~= \"abcdefgh\" do                                           \n "
+    "    write(\"\\n\", \"Spatne zadana posloupnost, zkuste znovu:\")      \n "
+    "s1 = reads()                                                          \n "
+    "end else                                                              \n "
+    "end end                                                               \n "
+    "main()                                                                \n ";
 
     // tests.
 #if 0
@@ -911,10 +1009,45 @@ int main() {
     Tests.warning("3: function declarations.");
     TEST_EXPECT(Parser.analyse(pf3), true, "Function declarations OK.");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
-#endif
+
     Tests.warning("4: Mutually recursive functions.");
     TEST_EXPECT(Parser.analyse(pf4), true, "Mutually recursive functions. Return statement.");
+    TEST_EXPECT((Errors.get_error() == ERROR_NOERROR), true, "There's no error.");
+    if (Errors.get_error() != ERROR_NOERROR) {
+        Tests.warning("Error(error must not be here) %s\n", Errors.get_errmsg());
+    }
+#endif
+
+    Tests.warning("8: if statements");
+    TEST_EXPECT(Parser.analyse(pf8), true, "If statements");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("7: while statements");
+    TEST_EXPECT(Parser.analyse(pf7), true, "while statements.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+
+    Tests.warning("9: repeat until statements");
+    TEST_EXPECT(Parser.analyse(pf9), true, "Repeat until statement");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("10: repeat until statements");
+    TEST_EXPECT(Parser.analyse(pf10), true, "Repeat until statements");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("11: for statements");
+    TEST_EXPECT(Parser.analyse(pf11), true, "For statements");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+
+    Tests.warning("5: Curve's test");
+    TEST_EXPECT(Parser.analyse(pf5), true, "curve's program(bigger).");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("6: Curve's test simplified");
+    TEST_EXPECT(Parser.analyse(pf6), true, "curve's program.");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
 
 
     // destructors
@@ -922,6 +1055,8 @@ int main() {
     Pfile.dtor(pf2);
     Pfile.dtor(pf3);
     Pfile.dtor(pf4);
+    Pfile.dtor(pf5);
+    Pfile.dtor(pf6);
     return 0;
 }
 #endif

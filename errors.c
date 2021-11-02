@@ -1,6 +1,7 @@
 #include "errors.h"
+#include "debug.h"
 
-static int error;
+static int error = 0;
 static char *errmsg = "";
 
 /**
@@ -18,6 +19,8 @@ static int Get_error() {
  * @param errcode Errors codes are defined in errors.h.
  */
 static void Set_error(int errcode) {
+    if (errcode != ERROR_NOERROR)
+        debug_msg("-------Error is about to be set.\n");;
     switch (errcode) {
         case ERROR_LEXICAL:
             // 1 - lexical error

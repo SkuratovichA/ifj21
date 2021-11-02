@@ -3,18 +3,18 @@
 
 
 #ifndef DEBUG_scanner
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmacro-redefined"
-// undef debug macros
-#define debug_err(...)
-#define debug_msg(...)
-#define debug_msg_stdout(...)
-#define debug_msg_stderr(...)
-#define debug_todo(...)
-#define debug_assert(cond)
-#define debug_msg_s(...)
-#define DEBUG_SEP
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Wmacro-redefined"
+//// undef debug macros
+//#define debug_err(...)
+//#define debug_msg(...)
+//#define debug_msg_stdout(...)
+//#define debug_msg_stderr(...)
+//#define debug_todo(...)
+//#define debug_assert(cond)
+//#define debug_msg_s(...)
+//#define DEBUG_SEP
+//#pragma GCC diagnostic pop
 #endif
 
 /**
@@ -112,6 +112,8 @@ static char *To_string(const int t) {
             return "..";
         case TOKEN_COLON:
             return ":";
+        case TOKEN_HASH:
+            return "#";
         case TOKEN_DEAD:
             return "DEAD TOKEN";
 
@@ -135,7 +137,6 @@ static size_t charpos;
  * @return token. If STATE!= STATE_STR_FINAL returns TOKEN_DEAD.
  */
 static token_t lex_string(pfile_t *pfile) {
-    debug_msg(DEBUG_SEP);
     state = STATE_STR_INIT;
     int ch;
     uint8_t escaped_char;
@@ -144,7 +145,6 @@ static token_t lex_string(pfile_t *pfile) {
 
     while (!accepted && (ch = Pfile.pgetc(pfile)) != EOF) {
         charpos++;
-        debug_msg("GOT: %c in state %s\n", ch, state_tostring(state));
         switch (state) {
             case STATE_STR_INIT:
                 switch (ch) {
@@ -260,11 +260,9 @@ static token_t lex_string(pfile_t *pfile) {
                 break;
         }
     }
-    debug_msg("GOT STRING: %s\n", Dynstring.c_str(token.attribute.id));
     if (state != STATE_STR_FINAL) {
         token.type = TOKEN_DEAD;
         Dynstring.dtor(token.attribute.id);
-        debug_msg_stderr("ERROR while lexing a string\n");
     }
 
     return token;
@@ -276,7 +274,6 @@ static token_t lex_string(pfile_t *pfile) {
  * @return token. If state != STATE_ID_FINAL return TOKEN_DEAD
  */
 static token_t lex_identif(pfile_t *pfile) {
-    debug_msg(DEBUG_SEP);
 
     state = STATE_ID_INIT;
     int ch;
@@ -315,13 +312,9 @@ static token_t lex_identif(pfile_t *pfile) {
         token.type = TOKEN_DEAD;
     }
 
-    debug_msg("identif: %s", Dynstring.c_str(token.attribute.id));
     // this 2 lines of code make parsing much more easier
     if ((token.type = to_keyword(Dynstring.c_str(token.attribute.id))) != TOKEN_ID) {
         Dynstring.dtor(token.attribute.id);
-        debug_msg_s("- keyword!\n");
-    } else {
-        debug_msg_s("\n");
     }
 
     return token;
@@ -335,7 +328,6 @@ static token_t lex_identif(pfile_t *pfile) {
  * @return false if comment is wrong
  */
 static bool process_comment(pfile_t *pfile) {
-    debug_msg(DEBUG_SEP);
     state = STATE_COMMENT_INIT;
     bool accepted = false;
     int ch;
@@ -405,7 +397,6 @@ static bool process_comment(pfile_t *pfile) {
  * @return (token_t) (.type = actual_state)
  */
 static token_t lex_relate_op(pfile_t *pfile) {
-    debug_msg(DEBUG_SEP);
     bool accepted = false;
     int ch;
 
@@ -443,7 +434,6 @@ static token_t lex_relate_op(pfile_t *pfile) {
  * @return token
  */
 static token_t lex_number(pfile_t *pfile) {
-    debug_msg(DEBUG_SEP);
     state = STATE_NUM_INIT;
     dynstring_t *ascii_num = Dynstring.ctor(""); // ctor an empty string
 
@@ -591,6 +581,7 @@ static token_t lex_number(pfile_t *pfile) {
         return (token_t) {.type = TOKEN_DEAD};
     }
 
+    Pfile.ungetc(pfile);
     token_t token;
 
     // TODO: actually we can get rid of it and left number as string but with market that its an integer or a float.
@@ -613,7 +604,6 @@ static token_t lex_number(pfile_t *pfile) {
  * @return token
  */
 static token_t scanner(pfile_t *pfile) {
-    debug_msg(DEBUG_SEP);
     int ch;
     token_t token = {0,};
 
@@ -691,7 +681,6 @@ static token_t scanner(pfile_t *pfile) {
             break;
 
         default:
-            debug_msg("UNKNOWN CHARACTER: %c\n", ch);
             token.type = TOKEN_DEAD;
             break;
     }

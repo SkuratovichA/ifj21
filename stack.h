@@ -20,8 +20,9 @@ struct stack_interface_t {
      * @brief Pops a top item of the stack.
      *
      * @param stack
+     * @param clear_fun pointer to a function, which will free the list data.
      */
-    void (*pop)(list_t *stack);
+    void (*pop)(list_t *stack, void (*clear_fun)(void *));
 
     /**
      * @brief Checks if the stack is empty or not.
@@ -35,8 +36,9 @@ struct stack_interface_t {
      * @brief Deletes all items in the stack.
      *
      * @param stack
+     * @param clear_fun pointer to a function, which will free the list data.
      */
-    void (*clear)(list_t *stack);
+    void (*clear)(list_t *stack, void (*clear_fun)(void *));
 
     /**
      * @brief Returns data on the top of the stack.
@@ -56,8 +58,9 @@ struct stack_interface_t {
      * @brief Stack destructor.
      *
      * @param stack Stack to be destructed.
+     * @param clear_fun pointer to a function, which will free the list data.
      */
-    void (*dtor)(list_t *stack);
+    void (*dtor)(list_t *stack, void (*clear_fun)(void *));
 };
 
 // Dont change. On apple macos it doesnt wrk because there's already a stack structure.
