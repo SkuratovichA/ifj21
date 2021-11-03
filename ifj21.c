@@ -16,9 +16,7 @@ int main() {
         ret = Errors.get_error();
     }
 
+
     Pfile.dtor(pfile);
-
-    Symt.st_dtor(symbol_tab);
-
     return ret;
 }

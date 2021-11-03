@@ -5,6 +5,9 @@
 #include "expressions.h"
 
 
+symstack_t *symstack;
+symtable_t *curr_table;
+
 static void print_expected_err(const char *a, const char *b) {
     fprintf(stderr, "line %zu, character %zu\n", Scanner.get_line(), Scanner.get_charpos());
     fprintf(stderr, "\tERROR: Expected '%s', got '%s' instead\n", a, b);
@@ -24,9 +27,6 @@ do {                \
         if (tok__.type == TOKEN_ID || tok__.type == TOKEN_STR) { \
             debug_msg("\t%s = { '%s' }\n", Scanner.to_string(tok__.type), Dynstring.c_str(tok__.attribute.id)); \
         } else {    \
-            if (tok__.type == KEYWORD_end) {      \
-                active_scope = active_scope->parent; /* change scope to the prev.scope */         \
-            }           \
             debug_msg("\t%s\n", Scanner.to_string(tok__.type));  \
         }           \
         if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) {  \
@@ -49,7 +49,9 @@ do {                          \
 } while(0)
 
 static bool cond_stmt(pfile_t *);
+
 static bool fun_body(pfile_t *);
+
 static bool fun_stmt(pfile_t *);
 
 
@@ -58,37 +60,6 @@ static bool fun_stmt(pfile_t *);
 typedef enum scope_frame_opt {
     SCOPE_FUN_DECL, SCOPE_FUN_DEF, SCOPE_LOCAL_FRAME
 } scope_frame_opt_t;
-
-/**
- * @brief Create a new scope from the given token.
- *
- * @param name token that is head of scope.
- * // fixme: do whe really need it?
- * // fixme: what does the token do here? Can we create a scope without it?
- * @param opt SCOPE_FUN_DECL
- *            SCOPE_FUN_DEF
- */
-static void create_scope(token_t name, scope_frame_opt_t opt ){
-    switch (opt) {
-        case SCOPE_FUN_DECL:
-            // If global scope is not create yet. Don't need to set as active. Because main is always on index 0.
-            if(symbol_tab->size == 0){
-                // Main scope doesn't have any parent so third parameter is null.
-                Symt.Ctor(symbol_tab, name.attribute.id, name.type, NULL);
-            } else{
-                // store to main scope
-                Symt.store_id(symbol_tab->scopes[0], name.attribute.id, name.type);
-            }
-            break;
-        case SCOPE_FUN_DEF:
-            active_scope = Symt.Ctor(symbol_tab, name.attribute.id, name.type, symbol_tab->scopes[0]);
-            break;
-        case SCOPE_LOCAL_FRAME:
-            // while loop, for loop, if statement.
-            active_scope = Symt.Ctor(symbol_tab, name.attribute.id, name.type, active_scope);
-            break;
-    }
-}
 
 /**
  * @brief Conditional expression body implemented with an extension. Contains statements.
@@ -306,7 +277,7 @@ static bool fun_stmt(pfile_t *pfile) {
             }
 
             // TODO: perform semantic actions later.
-            if (Symt.find_id(active_scope, name)) {
+            if (Symtable.find_id(active_scope, name)) {
                 Errors.set_error(ERROR_SEMANTICS_OTHER);
                 return false;
             }
@@ -316,11 +287,12 @@ static bool fun_stmt(pfile_t *pfile) {
             assignment(pfile); // assignment
             break;
 
-            // return expr
+            // return expr_list(from expressions)
         case KEYWORD_return:
             EXPECTED(KEYWORD_return);
             // return expr
-            if (!Expr.parse(pfile, /*inside=*/true)) {
+            if (!Expr.parse_expr_list(pfile)) {
+//            if (!Expr.parse(pfile, /*inside=*/true)) {
                 debug_msg("Expression analysis failed.\n");
                 return false;
             }
@@ -366,20 +338,33 @@ static bool fun_stmt(pfile_t *pfile) {
             }
             break;
 
-            // rule <fun_stmt> -> for id = expression, expression do <fun_body>
+            // rule <fun_stmt> -> for <for_def>, <for_cond> , <for_assignment> <fun_body>
         case KEYWORD_for:
             EXPECTED(KEYWORD_for); // for
 
             create_scope(active_scope, SCOPE_LOCAL_FRAME);
 
-            // TODO: call function directly for for parsing.
-            if (!Expr.parse(pfile, true)) {
+            // <for_def> -> id = <expr>
+            if (!for_def(pfile)) {
                 debug_msg("Expression function returned false\n");
                 return false;
             }
 
-            // do
-            EXPECTED(KEYWORD_do);
+            // ,
+            EXPECTED(TOKEN_COMMA);
+
+            // condition in for cannot be empty
+            if (Expr.parse(pfile, true)) {
+                debug_msg("Expression function returned false\n");
+                return false;
+            }
+
+            // for assignment can be empty, so create a rule for it
+            // <for_assignment> -> do | , expr do
+            if (!for_assignment(pfile)) {
+                debug_msg("Expression function returned false\n");
+                return false;
+            }
 
             // <fun_body>, which ends with 'end'
             if (!fun_body(pfile)) {
@@ -449,13 +434,13 @@ static bool other_funparams(pfile_t *pfile) {
     }
 
     // TODO: emantics
-    if (Symt.find_id(active_scope, name)) {
+    if (Symtable.find_id(active_scope, name)) {
         debug_msg("Variable has the same name as one of the previously declared functions\n!");
         Errors.set_error(ERROR_SEMANTICS_OTHER);
         return false;
     }
 
-    Symt.store_id(active_scope, name, type);
+    Symtable.store_id(active_scope, name, type);
 
     return other_funparams(pfile);
 }
@@ -490,12 +475,12 @@ static bool funparam_def_list(pfile_t *pfile) {
     // TODO: semantics
     // here, a function argument(local scope variable)
     // cannot have the same name as one of previously declared/defined functions.
-    if (Symt.find_id(active_scope, name)) {
+    if (Symtable.find_id(active_scope, name)) {
         debug_msg("Variable has the same name as one of the previously declared functions\n!");
         Errors.set_error(ERROR_SEMANTICS_OTHER);
         return false;
     }
-    Symt.store_id(active_scope, name, type);
+    Symtable.store_id(active_scope, name, type);
 
     // <other_funparams>
     return other_funparams(pfile);
@@ -676,11 +661,11 @@ static bool stmt(pfile_t *pfile) {
             // TODO: semantics.
             // however, first, there's need to implement
             // storing to the symtable, then finding
-          //  if((Symt.find_id_in_scope(symbol_tab->scopes[0], token.attribute.id)) == false){
-          //      // ERROR: Function is called but not declared.
-          //      Errors.set_error(ERROR_SEMANTICS_OTHER);
-          //      return false;
-          //  }
+            //  if((Symtable.find_id_in_scope(symbol_tab->scopes[0], token.attribute.id)) == false){
+            //      // ERROR: Function is called but not declared.
+            //      Errors.set_error(ERROR_SEMANTICS_OTHER);
+            //      return false;
+            //  }
 
             // <list_expr>
             if (!list_expr(pfile)) {
@@ -721,6 +706,7 @@ static bool stmt_list(pfile_t *pfile) {
     return stmt(pfile) && stmt_list(pfile);
 }
 
+
 /**
  * @brief Program(start) rule.
  * !rule <program> -> require "ifj21" <stmt_list>
@@ -731,6 +717,7 @@ static bool stmt_list(pfile_t *pfile) {
 static bool program(pfile_t *pfile) {
     dynstring_t *prolog_str = Dynstring.ctor("ifj21");
     debug_msg("<program> ->\n");
+    curr_table = Symtable.ctor();
 
     // require keyword
     EXPECTED(KEYWORD_require);
@@ -746,9 +733,6 @@ static bool program(pfile_t *pfile) {
     }
     EXPECTED(TOKEN_STR);
 
-    symbol_tab = NULL;
-    active_scope = NULL;
-    symbol_tab = Symt.st_ctor();
 
     // <stmt_list>
     Dynstring.dtor(prolog_str);
@@ -764,8 +748,9 @@ static bool program(pfile_t *pfile) {
  * @return bool.
  */
 static bool Analyse(pfile_t *pfile) {
+    symstack = Symstack.init();
     Errors.set_error(ERROR_NOERROR);
-    if (!pfile) {
+    if (pfile == NULL || symstack == NULL) {
         Errors.set_error(ERROR_INTERNAL);
         return NULL;
     }
@@ -779,7 +764,7 @@ static bool Analyse(pfile_t *pfile) {
     }
     // Free scanner
     Scanner.free();
-
+    Symstack.dtor(symstack);
     return res;
 }
 

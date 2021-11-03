@@ -15,7 +15,6 @@ set(UTILS_SOURCES
         expressions.c
         )
 set(DATASTRUCTURES
-        bintree.c
         symtable.c
         list.c
         stack.c
@@ -77,14 +76,6 @@ message(STATUS ${ATTRIBUTE} " execucumber compiled.")
 
 #dynstring tests.
 set(ATTRIBUTE dynstring)
-add_executable(test_${ATTRIBUTE}
-        ${PROJ_FILES}
-        )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
-message(STATUS ${ATTRIBUTE} " execucumber compiled.")
-
-#bintree tests
-set(ATTRIBUTE bintree)
 add_executable(test_${ATTRIBUTE}
         ${PROJ_FILES}
         )

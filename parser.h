@@ -17,10 +17,6 @@
 #include "symtable.h"
 #include "debug.h"
 
-/* Symbol table data structure */
-sym_t *symbol_tab;
-scope_t *active_scope; //active scope.
-
 extern const struct parser_interface_t Parser;
 
 struct parser_interface_t {

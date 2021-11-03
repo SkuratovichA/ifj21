@@ -711,7 +711,7 @@ static bool other_expr (pfile_t * pfile) {
  * @param pfile program file to pass in to scanner.
  * @return bool.
  */
-static bool expr_list (pfile_t * pfile) {
+static bool Expr_list(pfile_t *pfile) {
     debug_msg("EXPECTED: E <other_expr>\n");
 
     // expr
@@ -754,7 +754,7 @@ static bool id_list (pfile_t * pfile) {
     // =
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
         Scanner.get_next_token(pfile);
-        return expr_list(pfile);
+        return Expr_list(pfile);
     }
 
     // Otherwise
@@ -858,6 +858,7 @@ static bool Parse_expression(pfile_t * pfile, bool inside_stmt) {
  */
 const struct expr_interface_t Expr = {
         .parse = Parse_expression,
+        .parse_expr_list = Expr_list,
 };
 
 #ifdef SELFTEST_expressions
