@@ -580,6 +580,7 @@ static bool funretopt(pfile_t *pfile) {
  *
  * function declaration: !rule <stmt> -> global id : function ( <datatype_list> <funcretopt>
  * function definition: !rule <stmt> -> function id ( <funparam_def_list> <funretopt> <fun_body>
+ * TODO: function calling will be processed by expression parser OR we had to use Expressions list_expr function
  * function calling: !rule <stmt> -> id ( <list_expr>
  *
  * @param pfile input file for Scanner.get_next_token().
@@ -645,25 +646,30 @@ static bool stmt(pfile_t *pfile) {
             break;
 
             // function calling: id ( <list_expr> )
-        case TOKEN_ID:
+        /*case TOKEN_ID:
             EXPECTED(TOKEN_ID);
             // <list_expr>
             if (!list_expr(pfile)) {
                 return false;
             }
-            break;
+            break;*/
 
         case TOKEN_DEAD:
             Errors.set_error(ERROR_LEXICAL);
             return false;
 
         default:
-            debug_todo(
+            /*debug_todo(
                     "Add more <stmt> derivations, if there are so. Otherwise return an error_interface message\n");
             debug_msg("Got token: %s\n", Scanner.to_string(Scanner.get_curr_token().type));
             debug_msg("Line: %zu, position: %zu\n", Scanner.get_line(), Scanner.get_charpos());
             Errors.set_error(ERROR_SYNTAX);
-            return false;
+            return false;*/
+            // TODO that is not correct solution, we had to fix as soon as possible
+            if (!Expr.parse(pfile, true)) {
+                debug_msg("Expression function returned false\n");
+                return false;
+            }
     }
     return true;
 }
@@ -751,7 +757,6 @@ const struct parser_interface_t Parser = {
         .analyse = Analyse
 };
 
-#define SELFTEST_parser 1
 #ifdef SELFTEST_parser
 
 #include "tests/tests.h"
