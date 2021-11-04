@@ -13,9 +13,10 @@ typedef struct symtable {
 
 
 // symbol table
-static void *ST_Ctor(int depth) {
+static void *ST_Ctor() {
     symtable_t *table = calloc(1, sizeof(symtable_t));
     soft_assert(table, ERROR_INTERNAL);
+    return table;
 }
 
 static bool ST_Get(symtable_t *table, dynstring_t *id, symbol_t *container) {
@@ -57,6 +58,7 @@ static void ST_Dtor(void *table) {
     ST_Dtor(((symtable_t *) table)->left);
     ST_Dtor(((symtable_t *) table)->right);
     free(table);
+    debug_msg("symtable node freed\n");
 }
 
 
@@ -82,40 +84,44 @@ static void SS_Push(symstack_t **stack, symtable_t *table) {
     newstack->next = (*stack);
     newstack->table = table;
     (*stack) = newstack;
+    debug_msg("New symtable pushed on the stack.\n");
 }
 
 static void SS_Pop(symstack_t **stack) {
     symstack_t *st = *stack;
+    if ((*stack)->next == NULL) {
+        debug_msg("Popping the last(global) stack.\n");
+    }
     *stack = (*stack)->next;
     free(st);
 }
 
-static void SS_Dtor(symstack_t *stack) {
-    symstack_t *st = stack, *nn;
-
-    while (st != NULL) {
-        Symtable.dtor(st->table);
-        nn = st;
-        st = st->next;
-        free(nn);
+static void SS_Dtor(void **stack) {
+    while (*stack != NULL) {
+        Symtable.dtor(((symstack_t *) (*stack))->table);
+        SS_Pop((symstack_t **) stack);
     }
-    free(stack);
+    free(*stack);
+    debug_msg("Symstack destroyed.\n");
 }
 
-static symbol_t *SS_Get(symstack_t *stack, dynstring_t *id) {
+static bool SS_Get(symstack_t *stack, dynstring_t *id, symbol_t *sym) {
     symstack_t *st = stack;
-    symbol_t *sym = calloc(1, sizeof(symbol_t *));
     while (st != NULL) {
         if (Symtable.get(st->table, id, sym)) {
-            return sym;
+            return true;
         }
         st = st->next;
     }
-    free(sym);
-    return NULL;
+    return false;
 }
 
 static void SS_Put(symstack_t *stack, dynstring_t *id, id_type_t type) {
+    soft_assert(stack != NULL, ERROR_INTERNAL);
+    if (stack->table == NULL) {
+        fprintf(stderr, "There was no symtable on the stack.\nInitializing a global frame automatically\n");
+        stack->table = Symtable.ctor();
+    }
     Symtable.put(stack->table, id, type);
 }
 
