@@ -6,7 +6,7 @@
 
 
 symstack_t *symstack;
-symtable_t *curr_table;
+symtable_t *global_table;
 
 static void print_expected_err(const char *a, const char *b) {
     fprintf(stderr, "line %zu, character %zu\n", Scanner.get_line(), Scanner.get_charpos());
@@ -55,12 +55,6 @@ static bool fun_body(pfile_t *);
 static bool fun_stmt(pfile_t *);
 
 
-// TODO: rename - i dont like it. I want it to be SCOPE_GLOBAL, SCOPE_LOCAL
-// think if there's need to have 2 'SCOPES' for functions
-typedef enum scope_frame_opt {
-    SCOPE_FUN_DECL, SCOPE_FUN_DEF, SCOPE_LOCAL_FRAME
-} scope_frame_opt_t;
-
 /**
  * @brief Conditional expression body implemented with an extension. Contains statements.
  * !rule <cond_body> -> else <fun_body>
@@ -70,9 +64,9 @@ typedef enum scope_frame_opt {
  * here, we are free to take every statement from fun_stmt,
  * however, the next statement must be from <cond_body>,
  * because we remember about else or elseif
- * !rule <cond_body> -> <fun_stmt> <cond_body>
+ * !rule <cond_body> -> end | else <fun_body> | else if <cond_body> | <fun_stmt> <cond_body>
  *
- * @param pfile input file for Scanner.get_next_token().
+ * @param pfile pfile.
  * @return bool.
  */
 static bool cond_body(pfile_t *pfile) {
@@ -86,15 +80,19 @@ static bool cond_body(pfile_t *pfile) {
             EXPECTED(KEYWORD_else);
             // TODO: somehow change scope, because here,
             // scopes must lay lineary to each other.
+            // solution: pop, push?
             return fun_body(pfile);
+
         case KEYWORD_elseif:
             EXPECTED(KEYWORD_elseif);
             // TODO: somehow change scope, because here,
             // scopes must lay lineary to each other.
+            // solution: pop, push?
             return cond_stmt(pfile);
-        case KEYWORD_end: // terminating condition i guess.
+
+        case KEYWORD_end:
             EXPECTED(KEYWORD_end);
-            active_scope = active_scope->parent;
+            Symstack.pop(&symstack);
             return true;
         default:
             break;
@@ -113,13 +111,10 @@ static bool cond_body(pfile_t *pfile) {
  */
 static bool cond_stmt(pfile_t *pfile) {
     debug_msg_s("<cond_stmt> -> \n");
-
     if (!Expr.parse(pfile, true)) {
         return false;
     }
-
     EXPECTED(KEYWORD_then);
-
     return cond_body(pfile);
 }
 
@@ -166,10 +161,8 @@ static inline bool datatype(pfile_t *pfile) {
  */
 static bool repeat_body(pfile_t *pfile) {
     debug_msg_s("<repeat_body> -> \n");
-
     // until |
     EXPECTED_OPT(KEYWORD_until);
-
     // a new solution which doesnt have to cause problems. But not tested yet, so i dont know.
     return fun_stmt(pfile) && repeat_body(pfile);
 }
@@ -186,19 +179,67 @@ static bool repeat_body(pfile_t *pfile) {
  */
 static bool assignment(pfile_t *pfile) {
     debug_msg_s("<assignment> -> \n");
-
     // e |
     if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
         return true;
     }
     EXPECTED(TOKEN_ASSIGN);
-
-    // TODO: probably we dont need an Expr.parse() to be boolean (at least here).
-    // expression
     if (!Expr.parse(pfile, true)) {
         return false;
     }
+    return true;
+}
 
+/**
+ * @brief optional expressions followed by a comma.
+ *
+ * !rule <other_return_expr> -> , expr <other_expr> | e
+ *
+ * @param pfile pfile
+ * @return bool.
+ */
+static bool other_return_expr(pfile_t *pfile) {
+    debug_msg_s("<other_return_expr> -> \n");
+    // , |
+    EXPECTED_OPT(TOKEN_COMMA);
+    if (!Expr.parse(pfile, true)) {
+        return false;
+    }
+    return other_return_expr(pfile);
+}
+
+/**
+ * @brief Expression list after return statement in the function.
+ *
+ * !rule <return_expr_list> -> expr <other_expr>
+ *
+ * @param pfile pfile
+ * @return bool.
+ */
+static bool return_expr_list(pfile_t *pfile) {
+    debug_msg_s("<return_expr_list> -> \n");
+    if (!Expr.parse(pfile, true)) {
+        debug_msg("Expression analysis failed.\n");
+        return false;
+    }
+    return other_return_expr(pfile);
+}
+
+/**
+ * @brief For assignment.
+ * !rule <for_assignment> -> do | , expr do
+ * @param pfile pfile
+ * @return bool.
+ */
+static bool for_assignment(pfile_t *pfile) {
+    debug_msg("<for_assignment> ->\n");
+    EXPECTED_OPT(KEYWORD_do);
+    EXPECTED(TOKEN_COMMA);
+    if (!Expr.parse(pfile, true)) {
+        debug_msg("Expression parsing failed.\n");
+        return false;
+    }
+    EXPECTED(KEYWORD_do);
     return true;
 }
 
@@ -206,29 +247,20 @@ static bool assignment(pfile_t *pfile) {
  * @brief Statement inside the function.
  *
  *** The easiest statements:
- * !rule <fun_stmt> -> e
- * !rule <fun_stmt> -> return <list_expr>
+ * !rule <fun_stmt> -> e // can it be e ?
+ * !rule <fun_stmt> -> return <return_expr_list>
  * !rule <fun_stmt> -> local id : <datatype> <assignment>
  *
- *
- *
- *** Cycles:
+*** Cycles:
  ** A basic assignment.
  * !rule <fun_stmt> -> while <expr> do <fun_body>
  ** A premium part.
  * !rule <fun_stmt> -> repeat <repeat_body>
- * // for i = 1, i < 10 do ... end
- * // FIXME chose one
- * xrule <fun_stmt> -> for <forcycleexp> do <fun_body> // todo: Probably we have to change this rule.
- * xrule <fun_stmt> -> for id = expression, expression do <fun_body> // todo: Probably we have to change this rule.
- *
- *
+ * !rule <fun_stmt> -> for id = expr , expr <for_assignment> <fun_body> // todo: Probably we have to change this rule.
  *
  *** Statements:
  * // if cond_stmt which is <cond_stmt> -> else <fun_body> end | <elseif> <fun_body> end | <fun_body> end
  * !rule <fun_stmt> -> if <cond_stmt>
- *
- *
  *
  *** Expressions: function calling, assignments, conditions.
  * rule <fun_stmt> -> expression
@@ -248,14 +280,40 @@ static bool fun_stmt(pfile_t *pfile) {
     );
 
     switch (Scanner.get_curr_token().type) {
-        // if <cond_stmt>
+        // rule <fun_stmt> -> for <for_def>, expr <for_assignment> <fun_body>
+        case KEYWORD_for:
+            EXPECTED(KEYWORD_for); // for
+            Symstack.push(&symstack, Symtable.ctor());
+            // id
+            Symstack.put(symstack, Scanner.get_curr_token().attribute.id, TYPE_integer);
+            EXPECTED(TOKEN_ID);
+            // =
+            EXPECTED(TOKEN_ASSIGN);
+            if (!Expr.parse(pfile, true)) {
+                debug_msg("Expression function returned false\n");
+                return false;
+            }
+            // ,
+            EXPECTED(TOKEN_COMMA);
+            // terminating expr in for cycle.
+            if (!Expr.parse(pfile, true)) {
+                debug_msg("Expression function returned false\n");
+                return false;
+            }
+            // do | , expr do
+            if (!for_assignment(pfile)) {
+                return false;
+            }
+            // <fun_body>, which ends with 'end'
+            if (!fun_body(pfile)) {
+                return false;
+            }
+            break;
+
+            // if <cond_stmt>
         case KEYWORD_if:
             EXPECTED(KEYWORD_if);
-
-            // Creating scope for if statement
-            create_scope(active_scope, SCOPE_LOCAL_FRAME);
-
-            // <cond_stmt>
+            Symstack.push(&symstack, Symtable.ctor());
             if (!cond_stmt(pfile)) {
                 return false;
             }
@@ -264,36 +322,24 @@ static bool fun_stmt(pfile_t *pfile) {
             // local id : <datatype>
         case KEYWORD_local:
             EXPECTED(KEYWORD_local); // local
-
-            // get the variable name(for a symtable)
-            dynstring_t *name = Scanner.get_curr_token().attribute.id;
+            dynstring_t *localvar_name = Scanner.get_curr_token().attribute.id;
             EXPECTED(TOKEN_ID); // id
             EXPECTED(TOKEN_COLON); // :
-
-            // get type(for a tymtable)
-            token_type_t type = Scanner.get_curr_token().type;
+            token_type_t localvar_type = Scanner.get_curr_token().type;
             if (!datatype(pfile)) { // <datatype>
                 return false;
             }
-
-            // TODO: perform semantic actions later.
-            if (Symtable.find_id(active_scope, name)) {
-                Errors.set_error(ERROR_SEMANTICS_OTHER);
+            Symstack.put(symstack, localvar_name, localvar_type);
+            if (!assignment(pfile)) {
                 return false;
             }
-
-            // = expr, but can also be an empty statement.
-            // todo should it be booolean?
-            assignment(pfile); // assignment
             break;
 
-            // return expr_list(from expressions)
+            // return <return_expr_list>
         case KEYWORD_return:
             EXPECTED(KEYWORD_return);
             // return expr
-            if (!Expr.parse_expr_list(pfile)) {
-//            if (!Expr.parse(pfile, /*inside=*/true)) {
-                debug_msg("Expression analysis failed.\n");
+            if (!return_expr_list(pfile)) {
                 return false;
             }
             break;
@@ -301,16 +347,13 @@ static bool fun_stmt(pfile_t *pfile) {
             // while <expr> do <fun_body> end
         case KEYWORD_while:
             EXPECTED(KEYWORD_while);
-
-            create_scope(active_scope, SCOPE_LOCAL_FRAME);
-
+            Symstack.push(&symstack, Symtable.ctor());
             // parse expressions
             if (!Expr.parse(pfile, true)) {
+                debug_msg("Expression analysis failed.\n");
                 return false;
             }
             EXPECTED(KEYWORD_do);
-
-            // get a body('end' at the end)
             if (!fun_body(pfile)) {
                 return false;
             }
@@ -319,7 +362,7 @@ static bool fun_stmt(pfile_t *pfile) {
             // repeat <some_body> until expression
         case KEYWORD_repeat:
             EXPECTED(KEYWORD_repeat);
-
+            Symstack.push(&symstack, Symtable.ctor());
             // TODO:
             // I am not sure about it.
             // This also can be done in the function repeat_body().
@@ -330,7 +373,6 @@ static bool fun_stmt(pfile_t *pfile) {
             if (!repeat_body(pfile)) {
                 return false;
             }
-
             // expression represent a condition after an until keyword.
             if (!Expr.parse(pfile, true)) {
                 debug_msg("Expression function returned false\n");
@@ -338,49 +380,12 @@ static bool fun_stmt(pfile_t *pfile) {
             }
             break;
 
-            // rule <fun_stmt> -> for <for_def>, <for_cond> , <for_assignment> <fun_body>
-        case KEYWORD_for:
-            EXPECTED(KEYWORD_for); // for
-
-            create_scope(active_scope, SCOPE_LOCAL_FRAME);
-
-            // <for_def> -> id = <expr>
-            if (!for_def(pfile)) {
-                debug_msg("Expression function returned false\n");
-                return false;
-            }
-
-            // ,
-            EXPECTED(TOKEN_COMMA);
-
-            // condition in for cannot be empty
-            if (Expr.parse(pfile, true)) {
-                debug_msg("Expression function returned false\n");
-                return false;
-            }
-
-            // for assignment can be empty, so create a rule for it
-            // <for_assignment> -> do | , expr do
-            if (!for_assignment(pfile)) {
-                debug_msg("Expression function returned false\n");
-                return false;
-            }
-
-            // <fun_body>, which ends with 'end'
-            if (!fun_body(pfile)) {
-                return false;
-            }
-            break;
-
-
             // todo: add expressions.
         default:
             // at the end try to parse an expression, because actually recursive descent parser know nothing
             // about them so there "probably" can be an expression here.
-            if (!Expr.parse(pfile, false)) {
-                debug_msg("Expression function returned false\n");
-                return false;
-            }
+            // Also, there can be an 'end' keyword here, so if expression failed, dont set an error here.
+            Expr.parse(pfile, false);
     }
 
     return true;
@@ -395,10 +400,8 @@ static bool fun_stmt(pfile_t *pfile) {
  */
 static bool fun_body(pfile_t *pfile) {
     debug_msg("<fun_body> ->\n");
-
     // end |
     EXPECTED_OPT(KEYWORD_end);
-
     return fun_stmt(pfile) && fun_body(pfile);
 }
 
@@ -411,37 +414,30 @@ static bool fun_body(pfile_t *pfile) {
  */
 static bool other_funparams(pfile_t *pfile) {
     debug_msg("<other_funparam> ->\n");
-
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
-
     // ,
     EXPECTED(TOKEN_COMMA);
-
-    dynstring_t *name = Scanner.get_curr_token().attribute.id;
-
+    dynstring_t *funarg_name = Scanner.get_curr_token().attribute.id;
     // id
     EXPECTED(TOKEN_ID);
-
     // :
     EXPECTED(TOKEN_COLON);
-
-    token_type_t type = Scanner.get_curr_token().type;
-
+    token_type_t funarg_type = Scanner.get_curr_token().type;
     // <datatype> here datatype is expected
     if (!datatype(pfile)) {
         return false;
     }
-
-    // TODO: emantics
-    if (Symtable.find_id(active_scope, name)) {
-        debug_msg("Variable has the same name as one of the previously declared functions\n!");
+    // TODO: semantics
+    // here, a function argument(local scope variable)
+    // cannot have the same name as one of previously declared/defined functions.
+    symbol_t sym;
+    if (Symstack.get(symstack, funarg_name, &sym)) {
+        debug_msg("Variable %s has already been declared:", Dynstring.c_str(funarg_name));
         Errors.set_error(ERROR_SEMANTICS_OTHER);
         return false;
     }
-
-    Symtable.store_id(active_scope, name, type);
-
+    Symstack.put(symstack, funarg_name, funarg_type);
     return other_funparams(pfile);
 }
 
@@ -455,19 +451,14 @@ static bool other_funparams(pfile_t *pfile) {
  */
 static bool funparam_def_list(pfile_t *pfile) {
     debug_msg("funparam_def_list ->\n");
-
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
-
-    dynstring_t *name = Scanner.get_curr_token().attribute.id;
-
+    dynstring_t *funarg_name = Scanner.get_curr_token().attribute.id;
     // id
     EXPECTED(TOKEN_ID);
-
     // :
     EXPECTED(TOKEN_COLON);
-
-    token_type_t type = Scanner.get_curr_token().type;
+    token_type_t funarg_type = Scanner.get_curr_token().type;
     // <datatype>
     if (!datatype(pfile)) {
         return false;
@@ -475,13 +466,13 @@ static bool funparam_def_list(pfile_t *pfile) {
     // TODO: semantics
     // here, a function argument(local scope variable)
     // cannot have the same name as one of previously declared/defined functions.
-    if (Symtable.find_id(active_scope, name)) {
-        debug_msg("Variable has the same name as one of the previously declared functions\n!");
+    symbol_t sym;
+    if (Symstack.get(symstack, funarg_name, &sym)) {
+        debug_msg("Variable %s has already been declared:", Dynstring.c_str(funarg_name));
         Errors.set_error(ERROR_SEMANTICS_OTHER);
         return false;
     }
-    Symtable.store_id(active_scope, name, type);
-
+    Symstack.put(symstack, funarg_name, funarg_type);
     // <other_funparams>
     return other_funparams(pfile);
 }
@@ -495,12 +486,9 @@ static bool funparam_def_list(pfile_t *pfile) {
  */
 static bool other_datatypes(pfile_t *pfile) {
     debug_msg("<other_datatypes> ->\n");
-
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
-
     EXPECTED(TOKEN_COMMA);
-
     return datatype(pfile) && other_datatypes(pfile);
 }
 
@@ -513,10 +501,8 @@ static bool other_datatypes(pfile_t *pfile) {
  */
 static bool datatype_list(pfile_t *pfile) {
     debug_msg("<datatype_list> ->\n");
-
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
-
     //<datatype> && <other_datatypes>
     return datatype(pfile) && other_datatypes(pfile);
 }
@@ -531,20 +517,16 @@ static bool datatype_list(pfile_t *pfile) {
  */
 static bool other_funrets(pfile_t *pfile) {
     debug_msg("<other_funrets> -> \n");
-
     // e |
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
         return true;
     }
-
     // ,
     EXPECTED(TOKEN_COMMA);
-
     return datatype(pfile) && other_funrets(pfile);
 }
 
 /**
- * @brief
  * !rule <funretopt> -> e | : <datatype> <other_funrets>
  *
  * @param pfile input file for Scanner.get_next_token().
@@ -552,35 +534,29 @@ static bool other_funrets(pfile_t *pfile) {
  */
 static bool funretopt(pfile_t *pfile) {
     debug_msg("<funretopt> ->\n");
-
     // e |
     if (Scanner.get_curr_token().type != TOKEN_COLON) {
         return true;
     }
-
     // :
     EXPECTED(TOKEN_COLON);
-
     // <<datatype> <other_funrets>
     return datatype(pfile) && other_funrets(pfile);
 }
 
 /**
- *
  * @brief Statement(global statement) rule.
  *
  * function declaration: !rule <stmt> -> global id : function ( <datatype_list> <funcretopt>
  * function definition: !rule <stmt> -> function id ( <funparam_def_list> <funretopt> <fun_body>
- * function calling: !rule <stmt> -> id ( <list_expr>
+ * function call: !rule <stmt> -> expr
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
-
     token_t token = Scanner.get_curr_token();
-    token_t name;
 
     switch (token.type) {
 
@@ -588,31 +564,24 @@ static bool stmt(pfile_t *pfile) {
         case KEYWORD_global:
             // global
             EXPECTED(KEYWORD_global);
-
-            name = Scanner.get_curr_token();
-
+            // function declaration name is put on the stack with the type of function declaration
+            Symstack.put(symstack, Scanner.get_curr_token().attribute.id, TYPE_func_decl);
             // function name
             EXPECTED(TOKEN_ID);
-
-            // FIXME: not sure if there's a need to add a scope here.
-            // it looks more adequate if there will be only adding an
-            // identifier name + function type (parameters, return values and so).
-            create_scope(name, SCOPE_FUN_DECL);
-
             // :
             EXPECTED(TOKEN_COLON);
-
             // function
             EXPECTED(KEYWORD_function);
-
             // (
             EXPECTED(TOKEN_LPAREN);
-
+            // TODO: is there a need to push them on the stack?
+            // or we have a structure called function which will contain all params and returns as a list?
             // <funparam_decl_list>
             if (!datatype_list(pfile)) {
                 return false;
             }
-
+            // TODO: is there a need to push them on the stack?
+            // or we have a structure called function which will contain all params and returns as a list?
             // <funretopt> can be empty
             if (!funretopt(pfile)) {
                 return false;
@@ -623,28 +592,23 @@ static bool stmt(pfile_t *pfile) {
         case KEYWORD_function:
             // function
             EXPECTED(KEYWORD_function);
-
-            name = Scanner.get_curr_token();
-
+            // function name goes on the global stack frame.
+            Symstack.put(symstack, Scanner.get_curr_token().attribute.id, TYPE_func_def);
             // id
             EXPECTED(TOKEN_ID);
-
-            // Create scope for function and set as active set main scope as parent.
-            create_scope(name, SCOPE_FUN_DEF);
-
             // (
             EXPECTED(TOKEN_LPAREN);
-
+            // local symbol stack created.
+            // FIXME: also, it is not necessary, because symstack is smart enough(unlike me)
+            Symstack.push(&symstack, Symtable.ctor());
             // <funparam_def_list>
             if (!funparam_def_list(pfile)) {
                 return false;
             }
-
             // <funcretopt>
             if (!funretopt(pfile)) {
                 return false;
             }
-
             // <fun_body>
             if (!fun_body(pfile)) {
                 return false;
@@ -653,22 +617,7 @@ static bool stmt(pfile_t *pfile) {
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:
-
-            name = Scanner.get_curr_token();
-
-            EXPECTED(TOKEN_ID);
-
-            // TODO: semantics.
-            // however, first, there's need to implement
-            // storing to the symtable, then finding
-            //  if((Symtable.find_id_in_scope(symbol_tab->scopes[0], token.attribute.id)) == false){
-            //      // ERROR: Function is called but not declared.
-            //      Errors.set_error(ERROR_SEMANTICS_OTHER);
-            //      return false;
-            //  }
-
-            // <list_expr>
-            if (!list_expr(pfile)) {
+            if (!Expr.parse(pfile, true)) {
                 return false;
             }
             break;
@@ -698,10 +647,8 @@ static bool stmt(pfile_t *pfile) {
  */
 static bool stmt_list(pfile_t *pfile) {
     debug_msg("<stmt_list> ->\n");
-
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
-
     // <stmt> <stmt_list>
     return stmt(pfile) && stmt_list(pfile);
 }
@@ -717,7 +664,6 @@ static bool stmt_list(pfile_t *pfile) {
 static bool program(pfile_t *pfile) {
     dynstring_t *prolog_str = Dynstring.ctor("ifj21");
     debug_msg("<program> ->\n");
-    curr_table = Symtable.ctor();
 
     // require keyword
     EXPECTED(KEYWORD_require);
@@ -733,9 +679,10 @@ static bool program(pfile_t *pfile) {
     }
     EXPECTED(TOKEN_STR);
 
-
     // <stmt_list>
     Dynstring.dtor(prolog_str);
+    // push a global frame.
+    Symstack.push(&symstack, Symtable.ctor());
     return stmt_list(pfile);
 }
 
@@ -748,13 +695,21 @@ static bool program(pfile_t *pfile) {
  * @return bool.
  */
 static bool Analyse(pfile_t *pfile) {
-    symstack = Symstack.init();
-    Errors.set_error(ERROR_NOERROR);
-    if (pfile == NULL || symstack == NULL) {
-        Errors.set_error(ERROR_INTERNAL);
-        return NULL;
-    }
     bool res = false; // Suppose we have an error.
+    Errors.set_error(ERROR_NOERROR);
+
+    if (pfile == NULL) {
+        Errors.set_error(ERROR_INTERNAL);
+        return res;
+    }
+
+    symstack = Symstack.init();
+    global_table = Symtable.ctor();
+    Symstack.push(&symstack, global_table);
+    if (symstack == NULL) {
+        Errors.set_error(ERROR_INTERNAL);
+        return res;
+    }
 
     // get first token to get start
     if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) {
@@ -801,7 +756,7 @@ const struct parser_interface_t Parser = {
 #define READS " reads "
 #define SUBSTR " substr "
 #define GLOBAL " global "
-
+#define RETURN " return "
 int main() {
     //1
     pfile_t *pf1 = Pfile.ctor(PROLOG);
@@ -838,7 +793,6 @@ int main() {
             GLOBAL "foo : function()\n"
             GLOBAL "foo : function()\n"
     );
-#define RETURN " return "
     //4
     pfile_t *pf4 = Pfile.ctor(
             PROLOG
@@ -971,17 +925,26 @@ int main() {
             END
             END
     );
-
-
-    "if s1 ~= nil then                                                     \n "
-    "while s1 ~= \"abcdefgh\" do                                           \n "
-    "    write(\"\\n\", \"Spatne zadana posloupnost, zkuste znovu:\")      \n "
-    "s1 = reads()                                                          \n "
-    "end else                                                              \n "
-    "end end                                                               \n "
-    "main()                                                                \n ";
+    pfile_t *pf12 = Pfile.ctor(
+            PROLOG
+            FUN "funnnn()"
+            END
+            );
+    pfile_t *pf13 = Pfile.ctor(
+            PROLOG
+            FUN "funnnn()"
+                "AAAAAA()"
+            END
+            );
+    pfile_t *pf14 = Pfile.ctor(
+            PROLOG
+            FUN "funnnn()"
+                "AAAAA_ERRORRR() +++ lol"
+            END
+            );
 
     // tests.
+
 #if 0
     Tests.warning("1: prolog only.");
     TEST_EXPECT(Parser.analyse(pf1), true, "First test.");
@@ -1002,7 +965,6 @@ int main() {
         Tests.warning("Error(error must not be here) %s\n", Errors.get_errmsg());
     }
 #endif
-
     Tests.warning("8: if statements");
     TEST_EXPECT(Parser.analyse(pf8), true, "If statements");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
@@ -1024,7 +986,6 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf11), true, "For statements");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
-
     Tests.warning("5: Curve's test");
     TEST_EXPECT(Parser.analyse(pf5), true, "curve's program(bigger).");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
@@ -1035,6 +996,18 @@ int main() {
 
 
 
+    Tests.warning("12: Function with no body");
+    TEST_EXPECT(Parser.analyse(pf12), true, "function with no body");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("13: Function with an expression as a body.");
+    TEST_EXPECT(Parser.analyse(pf13), true, "function which body is only one expression");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("14: Function with a wrong expression as a body.");
+    TEST_EXPECT(Parser.analyse(pf14), false, "unction which body is only one wrong expression.");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error..");
+
     // destructors
     Pfile.dtor(pf1);
     Pfile.dtor(pf2);
@@ -1042,6 +1015,11 @@ int main() {
     Pfile.dtor(pf4);
     Pfile.dtor(pf5);
     Pfile.dtor(pf6);
+
+    Pfile.dtor(pf12);
+    Pfile.dtor(pf13);
+    Pfile.dtor(pf14);
+
     return 0;
 }
 #endif
