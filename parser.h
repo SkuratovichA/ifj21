@@ -14,9 +14,8 @@
 #include "progfile.h"
 #include "macros.h"
 #include "dynstring.h"
-
+#include "symtable.h"
 #include "debug.h"
-
 
 extern const struct parser_interface_t Parser;
 

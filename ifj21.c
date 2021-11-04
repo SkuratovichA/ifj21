@@ -2,7 +2,7 @@
 #include "errors.h"
 #include "parser.h"
 #include "progfile.h"
-
+#include "symtable.h"
 
 int main() {
     pfile_t *pfile;
@@ -16,7 +16,7 @@ int main() {
         ret = Errors.get_error();
     }
 
-    Pfile.dtor(pfile);
 
+    Pfile.dtor(pfile);
     return ret;
 }

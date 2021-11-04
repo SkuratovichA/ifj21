@@ -1,0 +1,12 @@
+Starting parser tests...
+
+
+Exit status:  0 , expected  2  when testing the file  parser_0.tl
+require "ifj21"
+7aaa
+
+
+Exit status:  0 , expected  2  when testing the file  parser_1.tl
+require "ifj21"
+6^7
+Finished.
