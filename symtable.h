@@ -12,11 +12,12 @@ typedef sstack_t tables_t;
 
 
 typedef enum dataytpe {
-    TYPE_integer,
-    TYPE_number,
-    TYPE_string,
-    TYPE_function,
-    TYPE_boolean,
+    TYPE_integer = KEYWORD_integer,
+    TYPE_number = KEYWORD_number,
+    TYPE_string = KEYWORD_string,
+    TYPE_boolean = KEYWORD_boolean,
+    TYPE_func_def,
+    TYPE_func_decl,
 } id_type_t;
 
 
@@ -34,16 +35,16 @@ extern const struct symstack_interface_t Symstack;
 struct symstack_interface_t {
     void *(*init)();
 
-    bool (*push)(symtable_t *, dynstring_t *, symbol_t *);
+    void (*push)(symstack_t **, symtable_t *);
 
-    void (*pop)(symtable_t *, dynstring_t *, id_type_t);
+    void (*pop)(symstack_t **);
 
     void (*dtor)(void *);
 
     // symtable functions
-    bool (*get)(symtable_t *, dynstring_t *, symbol_t *);
+    bool (*get)(symstack_t *, dynstring_t *, symbol_t *);
 
-    void (*put)(symtable_t *, dynstring_t *, id_type_t);
+    void (*put)(symstack_t *, dynstring_t *, id_type_t);
 };
 
 
