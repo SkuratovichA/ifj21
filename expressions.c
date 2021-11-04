@@ -9,22 +9,25 @@
  * Precedence function table.
  * f, g - precedence functions.
  *
- * A = {*, /, //}, B = {+, -}, C = {<, <=, >, >=, ==, ~=}
+ * A = {*, /, //},
+ * B = {+, -},
+ * C = {<, <=, >, >=, ==, ~=}
+ * D = {#, not}
  *
- *  |   | id |  ( |  ) |  # |  A |  B |  C | .. |  f |  , |  $ |
- *  | f | 10 |  0 | 10 |  8 |  8 |  6 |  2 |  4 |  9 |  0 |  0 |
- *  | g |  9 |  9 |  0 |  9 |  7 |  3 |  1 |  5 |  9 |  0 |  0 |
+ *  |   |  id |   ( |   ) |   A |   B |   C |   D |  .. | and |  or |   f |   , |   $ |
+ *  | f |  14 |   0 |  14 |  12 |  10 |   6 |  14 |   8 |   4 |   2 |  15 |   0 |   0 |
+ *  | g |  15 |  15 |   0 |  11 |   7 |   5 |  13 |   9 |   3 |   1 |  15 |   0 |   0 |
  */
 
 /**
  * f - represents rows of the precedence table.
  */
-static const int f[19] = {10, 0, 10, 8, 8, 8, 8, 6, 6, 2, 2, 2, 2, 2, 2, 4, 9, 0, 0};
+static const int f[22] = {14, 0, 14, 12, 12, 12, 10, 10, 6, 6, 6, 6, 6, 6, 14, 14, 8, 4, 2, 15, 0, 0};
 
 /**
  * g - represents columns.
  */
-static const int g[19] = {9, 9, 0, 9, 7, 7, 7, 3, 3, 1, 1, 1, 1, 1, 1, 5, 9, 0, 0};
+static const int g[22] = {15, 15, 0, 11, 11, 11, 7, 7, 5, 5, 5, 5, 5, 5, 13, 13, 9, 3, 1, 15, 0, 0};
 
 /**
  * @brief
@@ -40,6 +43,7 @@ static op_list_t get_op (token_t token) {
         case TOKEN_STR:
         case TOKEN_NUM_F:
         case TOKEN_NUM_I:
+        case KEYWORD_nil:
         case TOKEN_ID:      return OP_ID;
         case TOKEN_LPAREN:  return OP_LPAREN;
         case TOKEN_RPAREN:  return OP_RPAREN;
@@ -57,6 +61,8 @@ static op_list_t get_op (token_t token) {
         case TOKEN_NE:      return OP_NE;
         case TOKEN_STRCAT:  return OP_STRCAT;
         case TOKEN_COMMA:   return OP_COMMA;
+        case KEYWORD_read:
+        case KEYWORD_write:
         case TOKEN_FUNC:    return OP_FUNC;
         default: return OP_DOLLAR;
     }
@@ -552,8 +558,20 @@ static bool is_function_call (op_list_t first_op, op_list_t second_op) {
  * @return bool.
  */
 static bool is_expr_end (op_list_t first_op, op_list_t second_op, int func_cnt) {
-    return  (first_op == OP_RPAREN && Scanner.get_curr_token().type == TOKEN_ID) ||
-            (first_op == OP_ID && Scanner.get_curr_token().type == TOKEN_ID) ||
+    return  (
+                first_op == OP_ID && (
+                        Scanner.get_curr_token().type == TOKEN_ID ||
+                        Scanner.get_curr_token().type == KEYWORD_write ||
+                        Scanner.get_curr_token().type == KEYWORD_read
+                )
+            ) ||
+            (
+                first_op == OP_RPAREN && (
+                      Scanner.get_curr_token().type == TOKEN_ID ||
+                      Scanner.get_curr_token().type == KEYWORD_write ||
+                      Scanner.get_curr_token().type == KEYWORD_read
+                )
+            ) ||
             (second_op == OP_COMMA && func_cnt == 0);
 }
 
@@ -567,7 +585,7 @@ static bool is_expr_end (op_list_t first_op, op_list_t second_op, int func_cnt) 
  */
 static bool is_parse_success (op_list_t first_op, op_list_t second_op, bool hard_reduce) {
     return  (first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
-            (first_op == OP_DOLLAR && second_op == OP_ID && hard_reduce) ||
+            (first_op == OP_DOLLAR && (second_op == OP_ID || second_op == OP_FUNC) && hard_reduce) ||
             (first_op == OP_DOLLAR && second_op == OP_COMMA && hard_reduce);
 }
 
