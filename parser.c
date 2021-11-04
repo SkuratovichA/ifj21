@@ -400,6 +400,9 @@ static bool fun_stmt(pfile_t *pfile) {
  */
 static bool fun_body(pfile_t *pfile) {
     debug_msg("<fun_body> ->\n");
+    if (Scanner.get_curr_token().type == KEYWORD_end) {
+        Symstack.pop(&symstack);
+    }
     // end |
     EXPECTED_OPT(KEYWORD_end);
     return fun_stmt(pfile) && fun_body(pfile);
