@@ -513,7 +513,7 @@ static bool datatype_list(pfile_t *pfile) {
 /**
  * @brief
  *
- * !rule <other_funcreturns> -> e | , <datatype> <other_funrets>
+ * !rule <other_funrets> -> e | , <datatype> <other_funrets>
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -550,7 +550,7 @@ static bool funretopt(pfile_t *pfile) {
 /**
  * @brief Statement(global statement) rule.
  *
- * function declaration: !rule <stmt> -> global id : function ( <datatype_list> <funcretopt>
+ * function declaration: !rule <stmt> -> global id : function ( <datatype_list> <funretopt>
  * function definition: !rule <stmt> -> function id ( <funparam_def_list> <funretopt> <fun_body>
  * function call: !rule <stmt> -> expr
  *
@@ -563,7 +563,7 @@ static bool stmt(pfile_t *pfile) {
 
     switch (token.type) {
 
-        // function declaration: global id : function ( <datatype_list> <funcretopt>
+        // function declaration: global id : function ( <datatype_list> <funretopt>
         case KEYWORD_global:
             // global
             EXPECTED(KEYWORD_global);
@@ -608,7 +608,7 @@ static bool stmt(pfile_t *pfile) {
             if (!funparam_def_list(pfile)) {
                 return false;
             }
-            // <funcretopt>
+            // <funretopt>
             if (!funretopt(pfile)) {
                 return false;
             }
