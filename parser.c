@@ -104,7 +104,7 @@ static bool cond_body(pfile_t *pfile) {
 /**
  * @brief Conditional(if or elseif statement). Contains an expression and body.
  *
- * !rule <cond_stmt> -> expr then <cond_body>
+ * !rule <cond_stmt> -> `expr` then <cond_body>
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -172,7 +172,7 @@ static bool repeat_body(pfile_t *pfile) {
  *
  * Here, an assign token is processed(if it is), and expression
  * parsing begins.
- * !rule <assignment> -> e | = expr
+ * !rule <assignment> -> e | = `expr`
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -193,7 +193,7 @@ static bool assignment(pfile_t *pfile) {
 /**
  * @brief optional expressions followed by a comma.
  *
- * !rule <other_return_expr> -> , expr <other_expr> | e
+ * !rule <other_return_expr> -> , `expr` <other_expr> | e
  *
  * @param pfile pfile
  * @return bool.
@@ -211,7 +211,7 @@ static bool other_return_expr(pfile_t *pfile) {
 /**
  * @brief Expression list after return statement in the function.
  *
- * !rule <return_expr_list> -> expr <other_expr>
+ * !rule <return_expr_list> -> `expr` <other_expr>
  *
  * @param pfile pfile
  * @return bool.
@@ -227,7 +227,7 @@ static bool return_expr_list(pfile_t *pfile) {
 
 /**
  * @brief For assignment.
- * !rule <for_assignment> -> do | , expr do
+ * !rule <for_assignment> -> do | , `expr` do
  * @param pfile pfile
  * @return bool.
  */
@@ -253,17 +253,17 @@ static bool for_assignment(pfile_t *pfile) {
  *
 *** Cycles:
  ** A basic assignment.
- * !rule <fun_stmt> -> while <expr> do <fun_body>
+ * !rule <fun_stmt> -> while `expr` do <fun_body>
  ** A premium part.
  * !rule <fun_stmt> -> repeat <repeat_body>
- * !rule <fun_stmt> -> for id = expr , expr <for_assignment> <fun_body> // todo: Probably we have to change this rule.
+ * !rule <fun_stmt> -> for id = `expr` , `expr` <for_assignment> <fun_body> // todo: Probably we have to change this rule.
  *
  *** Statements:
  * // if cond_stmt which is <cond_stmt> -> else <fun_body> end | <elseif> <fun_body> end | <fun_body> end
  * !rule <fun_stmt> -> if <cond_stmt>
  *
  *** Expressions: function calling, assignments, conditions.
- * rule <fun_stmt> -> expression
+ * rule <fun_stmt> -> `expr`
  * just function calls, e.g. f + foo(baz(bar())) or soo(qua())
  *
  *
@@ -280,7 +280,7 @@ static bool fun_stmt(pfile_t *pfile) {
     );
 
     switch (Scanner.get_curr_token().type) {
-        // rule <fun_stmt> -> for <for_def>, expr <for_assignment> <fun_body>
+        // rule <fun_stmt> -> for <for_def>, `expr` <for_assignment> <fun_body>
         case KEYWORD_for:
             EXPECTED(KEYWORD_for); // for
             Symstack.push(&symstack, Symtable.ctor());
@@ -295,12 +295,12 @@ static bool fun_stmt(pfile_t *pfile) {
             }
             // ,
             EXPECTED(TOKEN_COMMA);
-            // terminating expr in for cycle.
+            // terminating `expr` in for cycle.
             if (!Expr.parse(pfile, true)) {
                 debug_msg("Expression function returned false\n");
                 return false;
             }
-            // do | , expr do
+            // do | , `expr` do
             if (!for_assignment(pfile)) {
                 return false;
             }
@@ -344,7 +344,7 @@ static bool fun_stmt(pfile_t *pfile) {
             }
             break;
 
-            // while <expr> do <fun_body> end
+            // while `expr` do <fun_body> end
         case KEYWORD_while:
             EXPECTED(KEYWORD_while);
             Symstack.push(&symstack, Symtable.ctor());
@@ -359,7 +359,7 @@ static bool fun_stmt(pfile_t *pfile) {
             }
             break;
 
-            // repeat <some_body> until expression
+            // repeat <some_body> until `expr`
         case KEYWORD_repeat:
             EXPECTED(KEYWORD_repeat);
             Symstack.push(&symstack, Symtable.ctor());
@@ -380,7 +380,6 @@ static bool fun_stmt(pfile_t *pfile) {
             }
             break;
 
-            // todo: add expressions.
         default:
             // at the end try to parse an expression, because actually recursive descent parser know nothing
             // about them so there "probably" can be an expression here.
@@ -552,7 +551,7 @@ static bool funretopt(pfile_t *pfile) {
  *
  * function declaration: !rule <stmt> -> global id : function ( <datatype_list> <funretopt>
  * function definition: !rule <stmt> -> function id ( <funparam_def_list> <funretopt> <fun_body>
- * function call: !rule <stmt> -> expr
+ * function call: !rule <stmt> -> `expr`
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
