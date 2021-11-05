@@ -193,7 +193,7 @@ static bool assignment(pfile_t *pfile) {
 /**
  * @brief optional expressions followed by a comma.
  *
- * !rule <other_return_expr> -> , `expr` <other_expr> | e
+ * !rule <other_return_expr> -> , `expr` <other_return_expr> | e
  *
  * @param pfile pfile
  * @return bool.
@@ -211,7 +211,7 @@ static bool other_return_expr(pfile_t *pfile) {
 /**
  * @brief Expression list after return statement in the function.
  *
- * !rule <return_expr_list> -> `expr` <other_expr>
+ * !rule <return_expr_list> -> `expr` <other_return_expr>
  *
  * @param pfile pfile
  * @return bool.
