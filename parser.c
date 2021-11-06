@@ -64,7 +64,7 @@ static bool fun_stmt(pfile_t *);
  * here, we are free to take every statement from fun_stmt,
  * however, the next statement must be from <cond_body>,
  * because we remember about else or elseif
- * !rule <cond_body> -> end | else <fun_body> | else if <cond_body> | <fun_stmt> <cond_body>
+ * !rule <cond_body> -> end | else <fun_body> | elseif <cond_body> | <fun_stmt> <cond_body>
  *
  * @param pfile pfile.
  * @return bool.
