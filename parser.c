@@ -59,12 +59,13 @@ static bool fun_stmt(pfile_t *);
  * @brief Conditional expression body implemented with an extension. Contains statements.
  * !rule <cond_body> -> else <fun_body>
  * !rule <cond_body> -> elseif <cond_stmt>
+ * !rule <cond_body> -> end
  *
- * // todo: im not quite sure about this rule.
  * here, we are free to take every statement from fun_stmt,
  * however, the next statement must be from <cond_body>,
  * because we remember about else or elseif
- * !rule <cond_body> -> end | else <fun_body> | elseif <cond_body> | <fun_stmt> <cond_body>
+ * !rule <cond_body> -> <fun_stmt> <cond_body>
+ *
  *
  * @param pfile pfile.
  * @return bool.
