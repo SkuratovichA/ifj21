@@ -59,7 +59,6 @@ static bool fun_stmt(pfile_t *);
  * @brief Conditional expression body implemented with an extension. Contains statements.
  * !rule <cond_body> -> end
  * !rule <cond_body> -> elseif <cond_stmt>
- * !rule <cond_body> -> <fun_stmt> <cond_body>
  * !rule <cond_body> -> else <fun_body>
  *
  *
