@@ -57,9 +57,11 @@ static bool fun_stmt(pfile_t *);
 
 /**
  * @brief Conditional expression body implemented with an extension. Contains statements.
- * !rule <cond_body> -> else <fun_body>
- * !rule <cond_body> -> elseif <cond_stmt>
  * !rule <cond_body> -> end
+ * !rule <cond_body> -> elseif <cond_stmt>
+ * !rule <cond_body> -> <fun_stmt> <cond_body>
+ * !rule <cond_body> -> else <fun_body>
+ *
  *
  * here, we are free to take every statement from fun_stmt,
  * however, the next statement must be from <cond_body>,
@@ -83,6 +85,7 @@ static bool cond_body(pfile_t *pfile) {
             // scopes must lay lineary to each other.
             // solution: pop, push?
             return fun_body(pfile);
+            // Keyword end required.
 
         case KEYWORD_elseif:
             EXPECTED(KEYWORD_elseif);
@@ -248,7 +251,7 @@ static bool for_assignment(pfile_t *pfile) {
  * @brief Statement inside the function.
  *
  *** The easiest statements:
- * !rule <fun_stmt> -> e // can it be e ?
+ * !rule <fun_stmt> -> if <cond_stmt>
  * !rule <fun_stmt> -> return <return_expr_list>
  * !rule <fun_stmt> -> local id : <datatype> <assignment>
  *

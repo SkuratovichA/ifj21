@@ -39,6 +39,6 @@ DATATYPE ::= boolean
 DATATYPE ::= number
 COND_STMT ::= expr then COND_BODY
 COND_BODY ::= end
-COND_BODY ::= elseif COND_BODY
+COND_BODY ::= elseif COND_STMT
 COND_BODY ::= FUN_STMT COND_BODY
 COND_BODY ::= else FUN_BODY 
