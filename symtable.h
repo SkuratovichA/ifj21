@@ -33,17 +33,27 @@ typedef struct symbol {
 extern const struct symstack_interface_t Symstack;
 
 struct symstack_interface_t {
+    // init once.
     void *(*init)();
 
+    // caller pushes.
+    // Symstack.push(...)
+    // some_body(...)
     void (*push)(symstack_t **, symtable_t *);
 
+    // caller pops.
+    // some_body(...)
+    // Symstack.pop(...)
     void (*pop)(symstack_t **);
 
-    void (*dtor)(void *);
+    // destruct once.
+    void (*dtor)(void **);
 
-    // symtable functions
+    // get an item from symstack through the pointer.
+    // true if we find an element.
     bool (*get)(symstack_t *, dynstring_t *, symbol_t *);
 
+    // put symbol in to symtable on the top of the stack.
     void (*put)(symstack_t *, dynstring_t *, id_type_t);
 };
 
