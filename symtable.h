@@ -12,10 +12,10 @@ typedef sstack_t tables_t;
 
 
 typedef enum dataytpe {
-    TYPE_integer = KEYWORD_integer,
-    TYPE_number = KEYWORD_number,
     TYPE_string = KEYWORD_string,
     TYPE_boolean = KEYWORD_boolean,
+    TYPE_number = KEYWORD_number,
+    TYPE_integer = KEYWORD_integer,
     TYPE_func_def,
     TYPE_func_decl,
 } id_type_t;
