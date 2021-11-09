@@ -8,8 +8,6 @@
 #include "dynstring.h"
 #include "stack.h"
 
-typedef sstack_t tables_t;
-
 
 typedef enum dataytpe {
     TYPE_string = KEYWORD_string,
