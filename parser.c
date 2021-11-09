@@ -217,6 +217,8 @@ static bool assignment(pfile_t *pfile) {
     if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
         return true;
     }
+
+    // =
     EXPECTED(TOKEN_ASSIGN);
     if (!Expr.parse(pfile, true)) {
         return false;
@@ -368,7 +370,7 @@ static bool fun_stmt(pfile_t *pfile) {
             }
             break;
 
-            // local id : <datatype>
+            // local id : <datatype> <assignment>
         case KEYWORD_local:
             EXPECTED(KEYWORD_local); // local
 
@@ -384,6 +386,7 @@ static bool fun_stmt(pfile_t *pfile) {
                 return false;
             }
 
+            // = `expr`
             if (!assignment(pfile)) {
                 return false;
             }
