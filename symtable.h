@@ -37,15 +37,15 @@ struct symstack_interface_t {
     // caller pushes.
     // Symstack.push(...)
     // some_body(...)
-    void (*push)(symstack_t **, symtable_t *);
+    void (*push)(symstack_t *, symtable_t *);
 
     // caller pops.
     // some_body(...)
     // Symstack.pop(...)
-    void (*pop)(symstack_t **);
+    void (*pop)(symstack_t *);
 
     // destruct once.
-    void (*dtor)(void **);
+    void (*dtor)(symstack_t *);
 
     // get an item from symstack through the pointer.
     // true if we find an element.
@@ -59,11 +59,11 @@ struct symstack_interface_t {
 extern const struct symtable_interface_t Symtable;
 
 struct symtable_interface_t {
-    void *(*ctor)();
+    symtable_t *(*ctor)();
 
     bool (*get)(symtable_t *, dynstring_t *, symbol_t *);
 
     void (*put)(symtable_t *, dynstring_t *, id_type_t);
 
-    void (*dtor)(void *);
+    void (*dtor)(symtable_t *);
 };
