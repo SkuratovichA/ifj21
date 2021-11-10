@@ -6,7 +6,7 @@ do { \
     if (!(cond)) { \
         debug_msg_s("\n "); \
         debug_msg(" "); \
-        fprintf(stderr, "(soft)assertion failed: "); \
+        fprintf(stderr, __FILE__":%d in %s (soft)assertion failed ", __LINE__, __FUNCTION__); \
         fprintf(stderr, #cond); \
         fprintf(stderr, "\n"); \
         exit((err)); \
