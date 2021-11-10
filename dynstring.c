@@ -94,7 +94,9 @@ static void Str_clear(dynstring_t *str) {
  * @param str dynstring_t to dtor.
  */
 static void Str_free(dynstring_t *str) {
-    soft_assert(str, ERROR_INTERNAL);
+    if (str == NULL) {
+        return;
+    }
     free(str->str);
     free(str);
 }
