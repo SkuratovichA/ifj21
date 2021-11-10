@@ -756,6 +756,37 @@ static bool program(pfile_t *pfile) {
 }
 
 /**
+ * @brief Initialize symstack and global_frame structures
+ * for semantic analysis.
+ *
+ * @return true/false.
+ */
+static bool Init_parser() {
+    // create a stack with symtables.
+    symstack = Symstack.init();
+    // create a global table.
+    global_table = Symtable.ctor();
+
+    if (((size_t) symstack & (size_t) global_table) == 0) {
+        return false;
+    }
+
+    // push the global frame
+    Symstack.push(symstack, global_table);
+    return true;
+}
+
+/**
+ * @breaf Cleanup functions.
+ *
+ * @return void
+ */
+static void Free_parser() {
+    Scanner.free();
+    Symstack.dtor(symstack);
+}
+
+/**
  * @brief Analyze function initializes the scanner, gets 1st token and starts parsing using top-down
  * recursive descent method for everything except expressions and bottom-up precedence parsing method for expressions.
  * Syntax analysis is based on LL(1) grammar.
@@ -764,18 +795,12 @@ static bool program(pfile_t *pfile) {
  * @return bool.
  */
 static bool Analyse(pfile_t *pfile) {
+    soft_assert(pfile != NULL, ERROR_INTERNAL);
+    Errors.set_error(ERROR_NOERROR); // Suppose there's no error here he-he.
     bool res = false; // Suppose we have an error.
-    Errors.set_error(ERROR_NOERROR);
 
-    if (pfile == NULL) {
-        Errors.set_error(ERROR_INTERNAL);
-        return res;
-    }
-
-    symstack = Symstack.init();
-    global_table = Symtable.ctor();
-    Symstack.push(&symstack, global_table);
-    if (symstack == NULL) {
+    // initialize structures(symstack, symtable)
+    if (false == Init_parser()) {
         Errors.set_error(ERROR_INTERNAL);
         return res;
     }
@@ -786,9 +811,8 @@ static bool Analyse(pfile_t *pfile) {
     } else {
         res = program(pfile);
     }
-    // Free scanner
-    Scanner.free();
-    Symstack.dtor(symstack);
+
+    Free_parser();
     return res;
 }
 
@@ -796,7 +820,7 @@ static bool Analyse(pfile_t *pfile) {
  * parser interface.
  */
 const struct parser_interface_t Parser = {
-        .analyse = Analyse
+        .analyse = Analyse,
 };
 
 #ifdef SELFTEST_parser
