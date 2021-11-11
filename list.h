@@ -11,12 +11,19 @@
  */
 
 typedef struct list_item list_item_t;
-
+/**
+ * List item struct.
+ */
+struct list_item {
+    void *data;
+    list_item_t *next;
+};
 /**
  * A structure that represents a singly linked list.
  */
  typedef struct list {
      list_item_t *head;
+     list_item_t *tail;
  } list_t;
 
 /**
@@ -32,6 +39,14 @@ struct list_interface_t {
      * @param data Data to insert.
      */
     void (*prepend)(list_t *list, void *data);
+
+    /**
+     * @brief Appends element to a list.
+     *
+     * @param list Singly linked list.
+     * @param data Data to insert.
+     */
+    void (*append)(list_t *list, void *data);
 
     /**
      * @brief Delete the first item in list.

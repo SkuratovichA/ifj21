@@ -1,12 +1,5 @@
 #include "list.h"
 
-/**
- * List item struct.
- */
-struct list_item {
-    void *data;
-    list_item_t *next;
-};
 
 /**
  * @brief List constructor.
@@ -32,8 +25,33 @@ static void Prepend(list_t *list, void *data) {
     } else {
         new_item->data = data;
     }
+
     new_item->next = list->head;
+
+    if (list->head == NULL) {
+        list->tail = new_item;
+    }
+
     list->head = new_item;
+}
+
+static void Append(list_t *list, void *data) {
+    list_item_t *new_item = calloc(1, sizeof(list_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    if (List.copy_data != NULL) {
+        List.copy_data(new_item, data);
+    } else {
+        new_item->data = data;
+    }
+    if (list->head == NULL) {
+        list->head = new_item;
+        list->tail = list->head;
+    } else {
+        list->tail->next = new_item;
+        list->tail = new_item;
+    }
+    new_item->next = NULL;
 }
 
 /**
@@ -108,6 +126,7 @@ static void *Gethead(list_t *list) {
  */
 const struct list_interface_t List = {
         .prepend = Prepend,
+        .append = Append,
         .delete_list = Clear,
         .delete_first = Delete_first,
         .insert = Insert,
