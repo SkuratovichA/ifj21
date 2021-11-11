@@ -7,11 +7,23 @@
 
 symstack_t *symstack;
 symtable_t *global_table;
+symtable_t *local_table;
 
 static void print_error_uexpected_token(const char *a, const char *b) {
     fprintf(stderr, "line %zu, character %zu\n", Scanner.get_line(), Scanner.get_charpos());
     fprintf(stderr, "ERROR(syntax): Expected '%s', got '%s' instead\n", a, b);
 }
+
+#define SYMSTACK_PUSH()                                                \
+    do {                                                              \
+        Symstack.push(symstack, (local_table = Symtable.ctor()));     \
+    } while (0)
+
+#define SYMSTACK_POP()                          \
+     do {                                      \
+        Symstack.pop(symstack);                \
+        local_table = Symstack.top(symstack);  \
+     } while(0)
 
 #define error_unexpected_token(a)                               \
     do {                                                       \
@@ -62,12 +74,17 @@ static void print_error_uexpected_token(const char *a, const char *b) {
         }                                                                            \
     } while(0)
 
+// TODO: in function declaration/definition DONT use this macro.
 // semantic control whether variable have been declared previously.
 #define SEMANTICS_SYMTABLE_CHECK_AND_PUT(name, type)                 \
     do {                                                            \
         dynstring_t *_name = name;                                  \
         symbol_t _dummy_symbol;                                     \
-        if (Symstack.get(symstack, _name, &_dummy_symbol)) {        \
+        /* if name is already defined in the local scope or there*/  \
+        /* exists a function with the same name                 */  \
+        if (Symtable.get(local_table, _name, &_dummy_symbol) ||     \
+            Symtable.get(global_table, _name, &_dummy_symbol)       \
+            ) {                                                     \
             error_multiple_declaration(_name);                      \
             return false;                                           \
         }                                                           \
@@ -99,33 +116,33 @@ static bool fun_stmt(pfile_t *);
  * @return bool.
  */
 static bool cond_body(pfile_t *pfile) {
-    debug_msg_s("<cond_body> -> \n");
+    debug_msg("<cond_body> -> \n");
 
     switch (Scanner.get_curr_token().type) {
         case KEYWORD_else:
             EXPECTED(KEYWORD_else);
             // pop an existent symtable, because we ara in the if statement(scope).
-            Symstack.pop(&symstack);
+            SYMSTACK_POP();
             // also, we need to create a new symtable for 'else' scope.
-            Symstack.push(&symstack, Symtable.ctor());
+            SYMSTACK_PUSH();
             if (!fun_body(pfile)) {
                 return false;
             }
-            Symstack.pop(&symstack);
+            SYMSTACK_POP();
             return true;
 
         case KEYWORD_elseif:
             EXPECTED(KEYWORD_elseif);
             // pop an existent symtable, because we ara in the if statement(scope).
-            Symstack.pop(&symstack);
+            SYMSTACK_POP();
             // also, we need to create a new symtable for 'elseif' scope.
-            Symstack.push(&symstack, Symtable.ctor());
+            SYMSTACK_PUSH();
             return cond_stmt(pfile);
 
         case KEYWORD_end:
             EXPECTED(KEYWORD_end);
             // end of statement reached, so push an existent table.
-            Symstack.pop(&symstack);
+            SYMSTACK_POP();
             return true;
         default:
             break;
@@ -319,7 +336,7 @@ static bool fun_stmt(pfile_t *pfile) {
         // rule <fun_stmt> -> for <for_def>, `expr` <for_assignment> <fun_body>
         case KEYWORD_for:
             EXPECTED(KEYWORD_for); // for
-            Symstack.push(&symstack, Symtable.ctor());
+            SYMSTACK_PUSH();
 
             token_t counter = Scanner.get_curr_token();
             symbol_t fun_name; // dummy symbol to control function name.
@@ -358,13 +375,13 @@ static bool fun_stmt(pfile_t *pfile) {
             if (!fun_body(pfile)) {
                 return false;
             }
-            Symstack.pop(&symstack);
+            SYMSTACK_POP();
             break;
 
             // if <cond_stmt>
         case KEYWORD_if:
             EXPECTED(KEYWORD_if);
-            Symstack.push(&symstack, Symtable.ctor());
+            SYMSTACK_PUSH();
             if (!cond_stmt(pfile)) {
                 return false;
             }
@@ -374,7 +391,9 @@ static bool fun_stmt(pfile_t *pfile) {
         case KEYWORD_local:
             EXPECTED(KEYWORD_local); // local
 
-            dynstring_t *localvar_name = Scanner.get_curr_token().attribute.id;
+            // this obscure statement must be here because then the dynstring will be deleted...
+            // and we lost a string.
+            dynstring_t *localvar_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
 
             EXPECTED(TOKEN_ID); // id
             EXPECTED(TOKEN_COLON); // :
@@ -405,7 +424,7 @@ static bool fun_stmt(pfile_t *pfile) {
         case KEYWORD_while:
             EXPECTED(KEYWORD_while);
             // create a new symtable for while cycle.
-            Symstack.push(&symstack, Symtable.ctor());
+            SYMSTACK_PUSH();
             // parse expressions
             if (!Expr.parse(pfile, true)) {
                 debug_msg("Expression analysis failed.\n");
@@ -416,13 +435,13 @@ static bool fun_stmt(pfile_t *pfile) {
                 return false;
             }
             // parent function pops a table from the stack.
-            Symstack.pop(&symstack);
+            SYMSTACK_POP();
             break;
 
             // repeat <some_body> until `expr`
         case KEYWORD_repeat:
             EXPECTED(KEYWORD_repeat);
-            Symstack.push(&symstack, Symtable.ctor());
+            SYMSTACK_PUSH();
 
             if (!repeat_body(pfile)) {
                 return false;
@@ -433,7 +452,7 @@ static bool fun_stmt(pfile_t *pfile) {
                 return false;
             }
 
-            Symstack.pop(&symstack);
+            SYMSTACK_POP();
             break;
 
         default:
@@ -460,6 +479,7 @@ static bool fun_body(pfile_t *pfile) {
     }
     // end |
     EXPECTED_OPT(KEYWORD_end);
+
     return fun_stmt(pfile) && fun_body(pfile);
 }
 
@@ -478,7 +498,7 @@ static bool other_funparams(pfile_t *pfile) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    dynstring_t *funparam_name = Scanner.get_curr_token().attribute.id;
+    dynstring_t *funparam_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     // id
     EXPECTED(TOKEN_ID);
 
@@ -509,7 +529,7 @@ static bool funparam_def_list(pfile_t *pfile) {
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
-    dynstring_t *funparam_name = Scanner.get_curr_token().attribute.id;
+    dynstring_t *funparam_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     // id
     EXPECTED(TOKEN_ID);
     // :
@@ -666,7 +686,7 @@ static bool stmt(pfile_t *pfile) {
             EXPECTED(TOKEN_LPAREN);
 
             // symtable for a function.
-            Symstack.push(&symstack, Symtable.ctor());
+            SYMSTACK_PUSH();
 
             // <funparam_def_list>
             if (!funparam_def_list(pfile)) {
@@ -681,7 +701,7 @@ static bool stmt(pfile_t *pfile) {
             if (!fun_body(pfile)) {
                 return false;
             }
-            Symstack.pop(&symstack);
+            SYMSTACK_POP();
             break;
 
             // function calling: id ( <list_expr> )
@@ -695,11 +715,10 @@ static bool stmt(pfile_t *pfile) {
             Errors.set_error(ERROR_LEXICAL);
             return false;
 
+            // FIXME. I dont know how to solve this recursion.
+        case TOKEN_EOFILE:
+            return true;
         default:
-            debug_todo(
-                    "Add more <stmt> derivations, if there are so. Otherwise return an error_interface message\n");
-            debug_msg("Got token: %s\n", Scanner.to_string(Scanner.get_curr_token().type));
-            debug_msg("Line: %zu, position: %zu\n", Scanner.get_line(), Scanner.get_charpos());
             Errors.set_error(ERROR_SYNTAX);
             return false;
     }
@@ -751,7 +770,7 @@ static bool program(pfile_t *pfile) {
     // <stmt_list>
     Dynstring.dtor(prolog_str);
     // push a global frame.
-    Symstack.push(&symstack, Symtable.ctor());
+    SYMSTACK_PUSH();
     return stmt_list(pfile);
 }
 
@@ -767,7 +786,7 @@ static bool Init_parser() {
     // create a global table.
     global_table = Symtable.ctor();
 
-    if (((size_t) symstack & (size_t) global_table) == 0) {
+    if (((bool) symstack && (bool) global_table) == 0) {
         return false;
     }
 
@@ -962,21 +981,19 @@ int main() {
     pfile_t *pf8 = Pfile.ctor(
             PROLOG
             FUN "main()"
-            LOCAL "suka" ":" NUMBER " = 69"
+                LOCAL "suka" ":" NUMBER
 
-            IF "suka > 10" THEN
-            WRITE"("SOME_STRING")"
-            LOCAL "suka" ":" STRING "=" SOME_STRING
-            IF "suka > 10" THEN
-            "fuck()"
-            ELSE
-            "die()"
-            END
-            ELSIF "suka < 10" THEN
-            WRITE"("SOME_STRING")"
-            ELSE
-            "die()"
-            END
+                IF "suka > 10" THEN
+                    WRITE"("SOME_STRING")"
+                    LOCAL "suka" ":" STRING "=" SOME_STRING
+                    IF "suka > 10" THEN
+                        "fuck()"
+                    ELSIF "suka < 10" THEN
+                        WRITE"("SOME_STRING")"
+                    ELSE
+                        "die()"
+                    END
+                END
             END // fun
     );
 
@@ -1057,10 +1074,6 @@ int main() {
     if (Errors.get_error() != ERROR_NOERROR) {
         Tests.warning("Error(error must not be here) %s\n", Errors.get_errmsg());
     }
-#endif
-    Tests.warning("8: if statements");
-    TEST_EXPECT(Parser.analyse(pf8), true, "If statements");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
     Tests.warning("7: while statements");
     TEST_EXPECT(Parser.analyse(pf7), true, "while statements.");
@@ -1100,6 +1113,11 @@ int main() {
     Tests.warning("14: Function with a wrong expression as a body.");
     TEST_EXPECT(Parser.analyse(pf14), false, "unction which body is only one wrong expression.");
     TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error..");
+
+#endif
+    Tests.warning("8: if statements");
+    TEST_EXPECT(Parser.analyse(pf8), true, "If statements");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
     // destructors
     Pfile.dtor(pf1);
