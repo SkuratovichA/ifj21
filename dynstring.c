@@ -159,6 +159,25 @@ static dynstring_t *Str_cat(dynstring_t *s1, dynstring_t *s2) {
 }
 
 /**
+ * @brief Duplicates a dynstring.
+ *
+ * @param s dynstring to be duplicated.
+ * @return pointer to the new dynstring_t object.
+ */
+
+static dynstring_t *Str_dup(dynstring_t *s) {
+    soft_assert(s, ERROR_INTERNAL);
+
+    return Str_ctor(s->str);
+}
+
+static char *Str_get_str(dynstring_t *s) {
+    soft_assert(s, ERROR_INTERNAL);
+
+    return s->str;
+}
+
+/**
  * Interface to use when dealing with dynstrings.
  * Functions are in struct so we can use them in different files.
  */
@@ -171,6 +190,8 @@ const struct dynstring_interface_t Dynstring = {
         .dtor = Str_free,
         .cmp = Str_cmp,
         .cat = Str_cat,
+        .dup = Str_dup,
+        .get_str = Str_get_str,
 };
 
 #ifdef SELFTEST_dynstring
