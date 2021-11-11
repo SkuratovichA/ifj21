@@ -38,7 +38,7 @@ add_compile_options(
 add_executable(${PROJECT_NAME}
         ifj21.c
         ${PROJ_FILES}
-        )
+        code_generator.c code_generator.h)
 message(STATUS ${PROJECT_NAME} " execucumber compiled.")
 
 # todo somehow make it more general
