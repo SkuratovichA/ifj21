@@ -3,11 +3,8 @@
 // Includes
 #include "scanner.h"
 #include "debug.h"
-#include "scanner.h"
 #include "errors.h"
 #include "dynstring.h"
-#include "stack.h"
-
 
 typedef enum dataytpe {
     TYPE_string = KEYWORD_string,
@@ -18,17 +15,15 @@ typedef enum dataytpe {
     TYPE_func_decl,
 } id_type_t;
 
-
-typedef struct symstack symstack_t;
-typedef struct symtable symtable_t;
-
 typedef struct symbol {
     id_type_t type;
     dynstring_t *id;
 } symbol_t;
 
-
+extern const struct symtable_interface_t Symtable;
 extern const struct symstack_interface_t Symstack;
+typedef struct symstack symstack_t;
+typedef struct symtable symtable_t;
 
 struct symstack_interface_t {
     // init once.
@@ -54,9 +49,6 @@ struct symstack_interface_t {
     // put symbol in to symtable on the top of the stack.
     void (*put)(symstack_t *, dynstring_t *, id_type_t);
 };
-
-
-extern const struct symtable_interface_t Symtable;
 
 struct symtable_interface_t {
     symtable_t *(*ctor)();
