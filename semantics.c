@@ -19,10 +19,10 @@ static int int_equal(void *a, void *b) {
     return (int) *((int *) a) == (int) *((int *) b);
 }
 
-static bool Function_signature_equality(func_semantics_t func) {
+static bool Function_signature_equality(func_semantics_t *func) {
     return
-            List.equal(func.declaration.params, func.definition.params, int_equal) &&
-            List.equal(func.declaration.returns, func.definition.returns, int_equal);
+            List.equal(func->declaration.params, func->definition.params, int_equal) &&
+            List.equal(func->declaration.returns, func->definition.returns, int_equal);
 }
 
 static bool Is_declared(func_semantics_t *self) {
@@ -97,5 +97,5 @@ const struct semantics_interface_t Semantics = {
         .is_builtin = Is_builtin,
         .add_return = Add_return,
         .add_param = Add_param,
-        .signatures_matched = Function_signature_equality,
+        .signature_matched = Function_signature_equality,
 };
