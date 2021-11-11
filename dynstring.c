@@ -138,7 +138,7 @@ static int Str_cmp(dynstring_t *s1, dynstring_t *s2) {
  *
  * @param s1 dynstring_t object.
  * @param s2 dynstring_t object.
- * @returns new dysntring, which is product of s1 and s2.
+ * @returns new dynstring, which is product of s1 and s2.
  */
 static dynstring_t *Str_cat(dynstring_t *s1, dynstring_t *s2) {
     soft_assert(s2, ERROR_INTERNAL);
@@ -146,14 +146,14 @@ static dynstring_t *Str_cat(dynstring_t *s1, dynstring_t *s2) {
 
     dynstring_t *new = Str_ctor(s1->str);
 
-    size_t diff = new->size - s1->len;
+    size_t diff = new->size - s2->len;
     if (diff <= 1) {
         size_t nsiz = new->size *= 2;
         char *tmp = realloc(new->str, nsiz + sizeof(dynstring_t));
         soft_assert(tmp, ERROR_INTERNAL);
         new->str = tmp;
     }
-    strcat(new->str, s1->str);
+    strcat(new->str, s2->str);
 
     return new;
 }
