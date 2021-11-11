@@ -103,6 +103,40 @@ static void *Gethead(list_t *list) {
 }
 
 /**
+ * @brief Recursively compare 2 lists.
+ * @param l1
+ * @param l2
+ * @param cmp
+ * @return bool.
+ */
+static bool _equal(list_item_t *l1, list_item_t *l2, int (*cmp)(void *, void *)) {
+    if (((bool) l1 && (bool) l2) == false) {
+        // if one is not NULL, function returns false.
+        return ((bool) l1 || (bool) l2) == false;
+    }
+
+    return cmp(l1->data, l2->data) == 0 && _equal(l1->next, l2->next, cmp);
+}
+
+/**
+ * @brief Equality of lists.
+ *
+ * @param l1 list
+ * @param l2 list
+ * @param cmp compare function.
+ * @return bool.
+ */
+static bool Equal(list_t *l1, list_t *l2, int (*cmp)(void *, void *)) {
+    // check for NULL, NULL case
+    if ((bool) l1 && (bool) l2 == false) {
+        // if one is not NULL, function returns false
+        return ((bool) l1 || (bool) l2) == false;
+    }
+
+    return _equal(l1->head, l2->head, cmp);
+}
+
+/**
  * Interface to use when dealing with singly linked list.
  * Functions are in struct so we can use them in different files.
  */
@@ -114,7 +148,8 @@ const struct list_interface_t List = {
         .gethead = Gethead,
         .copy_data = NULL,
         .ctor = Ctor,
-        .dtor = Dtor
+        .dtor = Dtor,
+        .equal = Equal,
 };
 
 #ifdef SELFTEST_list
