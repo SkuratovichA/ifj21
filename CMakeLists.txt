@@ -13,6 +13,7 @@ set(UTILS_SOURCES
         tests/tests.c
         parser.c
         expressions.c
+        semantics.c
         )
 set(DATASTRUCTURES
         symtable.c

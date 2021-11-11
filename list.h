@@ -88,16 +88,23 @@ struct list_interface_t {
     void (*copy_data)(list_item_t *dst, void *src);
 
     /**
-    * @brief List constructor.
-    *
-    * @return Pointer to the allocated memory.
-    */
+     * @brief List constructor.
+     *
+     * @return Pointer to the allocated memory.
+     */
     list_t *(*ctor)(void);
 
     /**
-    * @brief List destructor.
-    *
-    * @param list the list to be destructed.
+     * @brief Equality of lists
+     *
+     * @return bool
+     */
+    bool (*equal)(list_t *l1, list_t *l2, int (*cmp)(void *, void *));
+
+    /**
+     * @brief List destructor.
+     *
+     * @param list the list to be destructed.
      * @param clear_fun pointer to a function, which will free the list data.
     */
     void (*dtor)(list_t *list, void (*clear_fun)(void *));
