@@ -2,6 +2,8 @@
 #include "tests/tests.h"
 #include "errors.h"
 
+// TODO: move global_table, local_table here.
+
 typedef struct node {
     symbol_t symbol;
     struct node *left, *right;
@@ -51,25 +53,20 @@ static symtable_t *ST_Ctor() {
     return table;
 }
 
-static _st_get(node_t
-*node,
-dynstring_t *id, symbol_t
-*container) {
-if (node == NULL) {
-return false;
-}
+static bool _st_get(node_t *node, dynstring_t *id, symbol_t *container) {
+    if (node == NULL) {
+        return false;
+    }
 
-int res = Dynstring.cmp(id, node->symbol.id);
-if (res == 0) {
-if (container != NULL) {
-*
-container = node->symbol;
-}
-return true;
-}
-return
-_st_get(res
-> 0 ? node->right : node->left, id, container);
+    int res = Dynstring.cmp(id, node->symbol.id);
+    if (res == 0) {
+        if (container != NULL) {
+            *
+                    container = node->symbol;
+        }
+        return true;
+    }
+    return _st_get(res > 0 ? node->right : node->left, id, container);
 }
 
 static bool ST_Get(symtable_t *table, dynstring_t *id, symbol_t *container) {
@@ -88,7 +85,7 @@ static void ST_Put(symtable_t *table, dynstring_t *id, id_type_t type) {
         return;
     }
 
-    node_t * *iterator = &table->root;
+    node_t **iterator = &table->root;
     int res;
 
     while ((*iterator) != NULL) {
@@ -194,11 +191,24 @@ static bool SS_Get(symstack_t *stack, dynstring_t *id, symbol_t *sym) {
     stack_el_t *st = stack->head;
     while (st != NULL) {
         if (ST_Get(st->table, id, sym)) {
+            debug_msg("Found a name. Returning true.\n");
             return true;
         }
         st = st->next;
     }
     return false;
+}
+
+static symtable_t *SS_Top(symstack_t *stack) {
+    if (stack == NULL) {
+        debug_msg("Stack is null.\n");
+        return NULL;
+    }
+    if (stack->head == NULL) {
+        debug_msg("Head is null.\n");
+        return NULL;
+    }
+    return stack->head->table;
 }
 
 static void SS_Put(symstack_t *stack, dynstring_t *id, id_type_t type) {
@@ -235,11 +245,10 @@ const struct symstack_interface_t Symstack = {
         .dtor = SS_Dtor,
         .get = SS_Get,
         .put = SS_Put,
+        .top = SS_Top,
 };
 
-#define SELFTEST_symtable
 #ifdef SELFTEST_symtable
-
 #define HELLO "HELLO"
 
 int main() {

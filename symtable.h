@@ -48,6 +48,8 @@ struct symstack_interface_t {
 
     // put symbol in to symtable on the top of the stack.
     void (*put)(symstack_t *, dynstring_t *, id_type_t);
+
+    symtable_t *(*top)(symstack_t *);
 };
 
 struct symtable_interface_t {
