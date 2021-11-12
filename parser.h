@@ -17,6 +17,10 @@
 #include "symtable.h"
 #include "debug.h"
 
+symstack_t *symstack;
+symtable_t *global_table;
+symtable_t *local_table;
+
 extern const struct parser_interface_t Parser;
 
 struct parser_interface_t {
