@@ -334,7 +334,7 @@ static bool operator(sstack_t * r_stack) {
 /**
  * @brief
  *
- * !rule <other_arguments> -> , E <other_arguments> | )
+ * !rule <other_arguments> -> , expr <other_arguments> | )
  *
  * @param r_stack stack with handle (rule).
  * @param func_entries count of entries to functions.
@@ -361,7 +361,7 @@ static bool other_arguments (sstack_t * r_stack, int * func_entries) {
 /**
  * @brief
  *
- * !rule <arguments> -> E <other_arguments> | )
+ * !rule <arguments> -> expr <other_arguments> | )
  *
  * @param r_stack stack with handle (rule).
  * @param func_entries count of entries to functions.
@@ -388,7 +388,7 @@ static bool arguments (sstack_t * r_stack, int * func_entries) {
 /**
  * @brief
  *
- * !rule E -> E <operator> | # E | ( E ) | id | id ( <arguments>
+ * !rule expr -> expr <operator> | # expr | ( expr ) | id | id ( <arguments>
  *
  * @param r_stack stack with handle (rule).
  * @param func_entries count of entries to functions.
@@ -697,7 +697,7 @@ static bool parse_init(pfile_t * pfile, expr_type_t expr_type, token_t * prev_to
 /**
  * @brief
  *
- * !rule <other_expr> -> , E <other_expr>
+ * !rule <other_expr> -> , expr <other_expr>
  *
  * @param pfile program file to pass in to scanner.
  * @return bool.
@@ -724,7 +724,7 @@ static bool other_expr (pfile_t * pfile) {
 /**
  * @brief
  *
- * !rule <expr_list> -> E <other_expr>
+ * !rule <expr_list> -> expr <other_expr>
  *
  * @param pfile program file to pass in to scanner.
  * @return bool.
@@ -783,7 +783,7 @@ static bool id_list (pfile_t * pfile) {
 /**
  * @brief
  *
- * !rule <expr_stmt_next> -> = E | ( E | <id_list>
+ * !rule <expr_stmt_next> -> = expr | ( expr | <id_list>
  *
  * @param pfile program file to pass in to scanner.
  * @param prev_token previous token.
