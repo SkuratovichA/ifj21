@@ -3,11 +3,7 @@
 #include "errors.h"
 
 #include "expressions.h"
-
-
-symstack_t *symstack;
-symtable_t *global_table;
-symtable_t *local_table;
+#include "code_generator.h"
 
 static void print_error_unexpected_token(const char *a, const char *b) {
     fprintf(stderr, "line %zu, character %zu\n", Scanner.get_line(), Scanner.get_charpos());
@@ -127,6 +123,11 @@ static bool cond_body(pfile_t *pfile) {
             SYMSTACK_POP();
             // also, we need to create a new symtable for 'else' scope.
             SYMSTACK_PUSH(SCOPE_TYPE_condition);
+
+            // generate start of else block
+            instructions.cond_num++;
+            Generator.cond_else(instructions.cond_scope_id, instructions.cond_num);
+
             if (!fun_body(pfile)) {
                 return false;
             }
@@ -139,12 +140,21 @@ static bool cond_body(pfile_t *pfile) {
             SYMSTACK_POP();
             // also, we need to create a new symtable for 'elseif' scope.
             SYMSTACK_PUSH(SCOPE_TYPE_condition);
+
+            // generate start of elseif block
+            Generator.cond_elseif(instructions.cond_scope_id, instructions.cond_num);
+
             return cond_stmt(pfile);
 
         case KEYWORD_end:
             EXPECTED(KEYWORD_end);
             // end of statement reached, so push an existent table.
             SYMSTACK_POP();
+
+            // generate start of end block
+            Generator.cond_end(instructions.cond_scope_id, instructions.cond_num);
+            instructions.cond_num = 0;
+
             return true;
         default:
             break;
@@ -164,10 +174,17 @@ static bool cond_body(pfile_t *pfile) {
  */
 static bool cond_stmt(pfile_t *pfile) {
     debug_msg_s("<cond_stmt> -> \n");
+
+    // generate condition evaluation (JUMPIFNEQ ...)
+    instructions.cond_num++;
+    Generator.cond_if(instructions.cond_scope_id, instructions.cond_num);
+
     if (!Expr.parse(pfile, true)) {
+        instructions.cond_num = 0;
         return false;
     }
     EXPECTED(KEYWORD_then);
+
     return cond_body(pfile);
 }
 
@@ -232,8 +249,12 @@ static bool repeat_body(pfile_t *pfile) {
  */
 static bool assignment(pfile_t *pfile) {
     debug_msg_s("<assignment> -> \n");
+
+    token_t prev_token_id = Scanner.get_prev_token();
     // e |
     if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
+        // generate var declaration
+        Generator.var_declaration(prev_token_id);
         return true;
     }
 
@@ -242,6 +263,11 @@ static bool assignment(pfile_t *pfile) {
     if (!Expr.parse(pfile, true)) {
         return false;
     }
+    // where is the expression result?
+    // token_t token_value = Scanner.get_curr_token(); // not here - remove
+    // generate var definition - in expressions I think
+    // Generator.var_definition(prev_token_id, token_value);
+
     return true;
 }
 
@@ -401,7 +427,6 @@ static bool fun_stmt(pfile_t *pfile) {
 
             id_type_t localvar_type = Symtable.of_id_type(Scanner.get_curr_token().type);
             SEMANTICS_SYMTABLE_CHECK_AND_PUT(localvar_name, localvar_type);
-
             if (!datatype(pfile)) { // <datatype>
                 return false;
             }
@@ -526,7 +551,7 @@ static bool other_funparams(pfile_t *pfile) {
  * @return bool.
  */
 static bool funparam_def_list(pfile_t *pfile) {
-    debug_msg("funparam_def_list ->\n");
+    debug_msg("<funparam_def_list> ->\n");
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
@@ -542,6 +567,8 @@ static bool funparam_def_list(pfile_t *pfile) {
 
     token_type_t funparam_type = Scanner.get_curr_token().type;
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(funparam_name, funparam_type);
+
+    // Generator.func_pass_param(0);    // need index of the param to the code generator, not the name
 
     // <other_funparams>
     return other_funparams(pfile);
@@ -707,9 +734,15 @@ static bool stmt(pfile_t *pfile) {
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:
+            debug_msg("Function calling --------\n");
+            // TODO save the function id
+
             if (!Expr.parse(pfile, true)) {
                 return false;
             }
+            // in expressions we pass the parameters
+            // function call
+            // Generator.func_call(func_id);
             break;
 
         case TOKEN_DEAD:
@@ -720,6 +753,8 @@ static bool stmt(pfile_t *pfile) {
         case TOKEN_EOFILE:
             return true;
         default:
+            debug_msg("Current token: %d\n", (Scanner.get_curr_token().type));
+            debug_msg("stmt - DEFAULT --------");
             Errors.set_error(ERROR_SYNTAX);
             return false;
     }
@@ -770,6 +805,8 @@ static bool program(pfile_t *pfile) {
 
     // <stmt_list>
     Dynstring.dtor(prolog_str);
+
+    Generator.prog_start();
 
     return stmt_list(pfile);
 }
@@ -830,6 +867,8 @@ static bool Analyse(pfile_t *pfile) {
     } else {
         res = program(pfile);
     }
+
+    Generator.main_end();
 
     Free_parser();
     return res;
