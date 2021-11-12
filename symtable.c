@@ -4,7 +4,7 @@
 
 // TODO: move global_table, local_table here.
 
-static __unique__id;
+static size_t __unique__id;
 
 typedef struct node {
     symbol_t symbol;
