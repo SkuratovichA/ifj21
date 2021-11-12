@@ -16,21 +16,43 @@ int main() {
         return Errors.get_error();
     }
 
-    instrList = List.ctor();            // creating global list of instructions
-    tmp_instr = Dynstring.ctor("");     // variable for currently generated instruction
+    // Initialise code generator lists of instructions
+    // variable for currently generated instruction
+    tmp_instr = Dynstring.ctor("");
+    // initialize lists of instructions
+    instructions.startList = List.ctor();
+    instructions.instrListFunctions = List.ctor();
+    instructions.mainList = List.ctor();
+    instructions.in_loop = false;
+    instructions.before_loop_start = NULL;
+
+    instrList = instructions.startList;
 
     if (Parser.analyse(pfile)) {
         ret = Errors.get_error();
     }
 
-    Generator.prog_start();             // test - remove later
     // Prints the list of instructions to stdout
     printf("# ---------- Instructions List ----------\n");
-    for (list_item_t *tmp = instrList->head; tmp != NULL; tmp = tmp->next ) {
+    INSTR_CHANGE_ACTIVE_LIST(instructions.startList);
+    printf("# ---------- startList ----------\n");
+    for (list_item_t *tmp = instrList->head; tmp != NULL; tmp = tmp->next) {
+        printf("%s\n", Dynstring.c_str(tmp->data));
+    }
+    INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
+    printf("# ---------- listFunctions ----------\n");
+    for (list_item_t *tmp = instrList->head; tmp != NULL; tmp = tmp->next) {
+        printf("%s\n", Dynstring.c_str(tmp->data));
+    }
+    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
+    printf("# ---------- mainList ----------\n");
+    for (list_item_t *tmp = instrList->head; tmp != NULL; tmp = tmp->next) {
         printf("%s\n", Dynstring.c_str(tmp->data));
     }
 
-    List.dtor(instrList, Dynstring.dtor); // use Dynstring.dtor or free?
+    List.dtor(instructions.startList, Dynstring.dtor); // use Dynstring.dtor or free?
+    List.dtor(instructions.instrListFunctions, Dynstring.dtor); // use Dynstring.dtor or free?
+    List.dtor(instructions.mainList, Dynstring.dtor); // use Dynstring.dtor or free?
     Dynstring.dtor(tmp_instr);
 
     Pfile.dtor(pfile);
