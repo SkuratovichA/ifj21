@@ -30,7 +30,7 @@ static void Set_error(int errcode) {
             // 2 - syntactic error
             errmsg = "Syntax error";
             break;
-        case ERROR_UNDEF_FUN_OR_VAR:
+        case ERROR_DEFINITION:
             // todo: does it want to add more error messages? i.e undefined function, undefined variable ...
             // case ERROR_UNDEFINED_FUNCTION:
             // 3 - semantic error in the program - undefined function/variable, attempt of redefining the variable,. ..
@@ -40,7 +40,7 @@ static void Set_error(int errcode) {
             // 4 - type missmatch in assignment expression
             errmsg = "Type missmatch!";
             break;
-        case ERROR_SEMANTICS_NUMBER_PARAMETERS:
+        case ERROR_FUNCTION_SEMANTICS:
             // 5 - semantic error - wrong number/type of parameters(function calling/return) or return values
             errmsg = "Wrong number of parameters/return values!";
             break;
