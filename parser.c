@@ -14,9 +14,11 @@ static void print_error_unexpected_token(const char *a, const char *b) {
     fprintf(stderr, "ERROR(syntax): Expected '%s', got '%s' instead\n", a, b);
 }
 
-#define SYMSTACK_PUSH()                                                \
-    do {                                                              \
-        Symstack.push(symstack, (local_table = Symtable.ctor()));     \
+// push a new symtable on symstack
+#define SYMSTACK_PUSH(_scope_type)                          \
+    do {                                                   \
+        local_table = Symtable.ctor();                     \
+        Symstack.push(symstack, local_table, _scope_type); \
     } while (0)
 
 #define SYMSTACK_POP()                          \
@@ -124,7 +126,7 @@ static bool cond_body(pfile_t *pfile) {
             // pop an existent symtable, because we ara in the if statement(scope).
             SYMSTACK_POP();
             // also, we need to create a new symtable for 'else' scope.
-            SYMSTACK_PUSH();
+            SYMSTACK_PUSH(SCOPE_condition);
             if (!fun_body(pfile)) {
                 return false;
             }
@@ -136,7 +138,7 @@ static bool cond_body(pfile_t *pfile) {
             // pop an existent symtable, because we ara in the if statement(scope).
             SYMSTACK_POP();
             // also, we need to create a new symtable for 'elseif' scope.
-            SYMSTACK_PUSH();
+            SYMSTACK_PUSH(SCOPE_condition);
             return cond_stmt(pfile);
 
         case KEYWORD_end:
@@ -335,7 +337,7 @@ static bool fun_stmt(pfile_t *pfile) {
         // rule <fun_stmt> -> for <for_def>, `expr` <for_assignment> <fun_body>
         case KEYWORD_for:
             EXPECTED(KEYWORD_for); // for
-            SYMSTACK_PUSH();
+            SYMSTACK_PUSH(SCOPE_cycle);
 
             token_t counter = Scanner.get_curr_token();
             symbol_t fun_name; // dummy symbol to control function name.
@@ -380,7 +382,7 @@ static bool fun_stmt(pfile_t *pfile) {
             // if <cond_stmt>
         case KEYWORD_if:
             EXPECTED(KEYWORD_if);
-            SYMSTACK_PUSH();
+            SYMSTACK_PUSH(SCOPE_condition);
             if (!cond_stmt(pfile)) {
                 return false;
             }
@@ -423,7 +425,7 @@ static bool fun_stmt(pfile_t *pfile) {
         case KEYWORD_while:
             EXPECTED(KEYWORD_while);
             // create a new symtable for while cycle.
-            SYMSTACK_PUSH();
+            SYMSTACK_PUSH(SCOPE_cycle);
             // parse expressions
             if (!Expr.parse(pfile, true)) {
                 debug_msg("Expression analysis failed.\n");
@@ -440,7 +442,7 @@ static bool fun_stmt(pfile_t *pfile) {
             // repeat <some_body> until `expr`
         case KEYWORD_repeat:
             EXPECTED(KEYWORD_repeat);
-            SYMSTACK_PUSH();
+            SYMSTACK_PUSH(SCOPE_do_cycle);
 
             if (!repeat_body(pfile)) {
                 return false;
@@ -685,7 +687,7 @@ static bool stmt(pfile_t *pfile) {
             EXPECTED(TOKEN_LPAREN);
 
             // symtable for a function.
-            SYMSTACK_PUSH();
+            SYMSTACK_PUSH(SCOPE_function);
 
             // <funparam_def_list>
             if (!funparam_def_list(pfile)) {
@@ -768,8 +770,7 @@ static bool program(pfile_t *pfile) {
 
     // <stmt_list>
     Dynstring.dtor(prolog_str);
-    // push a global frame.
-    SYMSTACK_PUSH();
+
     return stmt_list(pfile);
 }
 
@@ -789,8 +790,8 @@ static bool Init_parser() {
         return false;
     }
 
-    // push the global frame
-    Symstack.push(symstack, global_table);
+    // push a global frame
+    Symstack.push(symstack, global_table, SCOPE_global);
     return true;
 }
 
@@ -823,7 +824,7 @@ static bool Analyse(pfile_t *pfile) {
         return res;
     }
 
-    // get first token to get start
+    // get_symbol first token to get_symbol start
     if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) {
         Errors.set_error(ERROR_LEXICAL);
     } else {
