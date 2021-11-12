@@ -2,8 +2,6 @@
 #include "errors.h"
 #include "parser.h"
 #include "progfile.h"
-#include "symtable.h"
-// moved definition of list_item_t to list.h
 #include "list.h"
 #include "code_generator.h"
 
@@ -32,22 +30,26 @@ int main() {
         ret = Errors.get_error();
     }
 
-    // Prints the list of instructions to stdout
-    printf("# ---------- Instructions List ----------\n");
-    INSTR_CHANGE_ACTIVE_LIST(instructions.startList);
-    printf("# ---------- startList ----------\n");
-    for (list_item_t *tmp = instrList->head; tmp != NULL; tmp = tmp->next) {
-        printf("%s\n", Dynstring.c_str(tmp->data));
-    }
-    INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
-    printf("# ---------- listFunctions ----------\n");
-    for (list_item_t *tmp = instrList->head; tmp != NULL; tmp = tmp->next) {
-        printf("%s\n", Dynstring.c_str(tmp->data));
-    }
-    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
-    printf("# ---------- mainList ----------\n");
-    for (list_item_t *tmp = instrList->head; tmp != NULL; tmp = tmp->next) {
-        printf("%s\n", Dynstring.c_str(tmp->data));
+
+    // Print instructions only when everything was ok
+    if (ret == 0) {
+        // Prints the list of instructions to stdout
+        printf("# ---------- Instructions List ----------\n");
+        INSTR_CHANGE_ACTIVE_LIST(instructions.startList);
+        printf("# ---------- startList ----------\n");
+        for (list_item_t *tmp = instrList->head; tmp != NULL; tmp = tmp->next) {
+            printf("%s\n", Dynstring.c_str(tmp->data));
+        }
+        INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
+        printf("# ---------- listFunctions ----------\n");
+        for (list_item_t *tmp = instrList->head; tmp != NULL; tmp = tmp->next) {
+            printf("%s\n", Dynstring.c_str(tmp->data));
+        }
+        INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
+        printf("# ---------- mainList ----------\n");
+        for (list_item_t *tmp = instrList->head; tmp != NULL; tmp = tmp->next) {
+            printf("%s\n", Dynstring.c_str(tmp->data));
+        }
     }
 
     List.dtor(instructions.startList, Dynstring.dtor); // use Dynstring.dtor or free?
