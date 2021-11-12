@@ -4,6 +4,7 @@
 #include "stack.h"
 #include "errors.h"
 #include "stdbool.h"
+#include "code_generator.h"
 
 /**
  * Precedence function table.
@@ -856,6 +857,15 @@ static bool expr_stmt (pfile_t * pfile) {
  * @return bool.
  */
 static bool Parse_expression(pfile_t * pfile, bool inside_stmt) {
+    // FIXME temporary instruction - remove afterwards
+    token_t tmp;
+    tmp.type = TOKEN_ID;
+    tmp.attribute.id = Dynstring.ctor("result");
+    token_t tmp_value;
+    tmp_value.type = TOKEN_NUM_I;
+    tmp_value.attribute.num_i = 42;
+    Generator.var_definition(tmp, tmp_value);
+
     if (inside_stmt == true) {
         return parse_init(pfile, EXPR_DEFAULT, NULL);
     } else {
