@@ -529,11 +529,12 @@ static bool fun_stmt(pfile_t *pfile) {
  */
 static bool fun_body(pfile_t *pfile) {
     debug_msg("<fun_body> ->\n");
+    // end |
     if (Scanner.get_curr_token().type == KEYWORD_end) {
+        EXPECTED(KEYWORD_end);
+        debug_msg("\tend\n");
         return true;
     }
-    // end |
-    EXPECTED_OPT(KEYWORD_end);
 
     return fun_stmt(pfile) && fun_body(pfile);
 }
@@ -753,9 +754,9 @@ static bool function_definition(pfile_t *pfile) {
 
     dynstring_t *id_name;
     // We need to have a pointer to the symbol in the symbol table.
-    symbol_t *symbol;
+    symbol_t *symbol = NULL;
 
-    soft_assert(local_table == global_table && "tables must be equal now", ERROR_SYNTAX);
+    soft_assert((local_table == global_table) && "tables must be equal now", ERROR_SYNTAX);
     id_name = Scanner.get_curr_token().attribute.id;
     // Semantic control.
     // if we find a symbol on the stack, check it.
@@ -769,7 +770,7 @@ static bool function_definition(pfile_t *pfile) {
             return false;
         }
     }
-    Symstack.put_symbol(symstack, id_name, ID_TYPE_func_def);
+    symbol = Symstack.put_symbol(symstack, id_name, ID_TYPE_func_def);
 
     // id
     EXPECTED(TOKEN_ID);
@@ -860,6 +861,7 @@ static bool function_definition(pfile_t *pfile) {
  */
 static bool stmt_list(pfile_t *pfile) {
     debug_msg("<stmt_list> ->\n");
+    debug_msg("token in gloobal scope '%s'\n", Scanner.to_string(Scanner.get_curr_token().type));
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
 
@@ -876,6 +878,8 @@ static bool stmt_list(pfile_t *pfile) {
  */
 static bool program(pfile_t *pfile) {
     dynstring_t *prolog_str = Dynstring.ctor("ifj21");
+    debug_msg("=====================================\n\n\n");
+    debug_msg("PARISNG STARTED\n");
     debug_msg("<program> ->\n");
 
     // require keyword
@@ -894,8 +898,6 @@ static bool program(pfile_t *pfile) {
 
     Dynstring.dtor(prolog_str);
 
-
-    // TODO: add builtin functions.
     // <stmt_list>
     return stmt_list(pfile);
 }
@@ -911,6 +913,8 @@ static bool Init_parser() {
     symstack = Symstack.init();
     // create a global table.
     global_table = Symtable.ctor();
+    //at the beginning, local and global tables are equal.
+    local_table = global_table;
 
     if (((bool) symstack && (bool) global_table) == 0) {
         return false;
@@ -1204,6 +1208,7 @@ int main() {
                     END
                 END
             END
+            "main()"
             );
 
     // tests.
@@ -1264,11 +1269,11 @@ int main() {
     Tests.warning("14: Function with a wrong expression as a body.");
     TEST_EXPECT(Parser.analyse(pf14), false, "unction which body is only one wrong expression.");
     TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error..");
+#endif
 
     Tests.warning("8: if statements");
     TEST_EXPECT(Parser.analyse(pf8), true, "If statements");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
-#endif
 
     TEST_EXPECT(Parser.analyse(pf_nested_whiles), true, "nested whiles");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");

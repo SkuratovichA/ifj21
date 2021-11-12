@@ -113,11 +113,11 @@ static bool builtin_name(dynstring_t *name) {
                                                       strcmp(Dynstring.c_str(name), "write") == 0;
 }
 
-static void ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
+static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
     debug_msg("\n");
     if (self == NULL) {
         debug_msg("\tNull passed to a function.\n");
-        return;
+        return NULL;
     }
 
     node_t **iterator = &self->root;
@@ -135,7 +135,7 @@ static void ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
             } else {
                 debug_msg("\tItem {%s, %d} is already in the table\n", Dynstring.c_str(id), type);
             }
-            return;
+            return NULL;
         }
         iterator = res > 0 ? &(*iterator)->right : &(*iterator)->left;
     }
@@ -156,6 +156,7 @@ static void ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
               "{ .id = '%s', .type = '%s' }.\n",
               Dynstring.c_str((*iterator)->symbol.id), type_to_str((*iterator)->symbol.type)
     );
+    return &(*iterator)->symbol;
 }
 
 static void _st_dtor(node_t *node) {
@@ -194,7 +195,6 @@ static void *SS_Init() {
 
 
 static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type) {
-    debug_msg("\n");
     // create a new elment.
     stack_el_t *stack_element = calloc(1, sizeof(stack_el_t));
     soft_assert(stack_element != NULL, ERROR_INTERNAL);
@@ -212,11 +212,11 @@ static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type
     stack_element->next = self->head;
     self->head = stack_element;
 
-    debug_msg("\tNew symtable pushed on the stack.\n");
+    debug_msg("New symtable pushed on the stack.\n");
 }
 
 static void SS_Pop(symstack_t *self) {
-    debug_msg("\n");
+    debug_msg("Symtable is about to be popped.\n");
     if (self == NULL) {
         debug_msg("\tTrying to pop from uninitialized stack. DONT!\n");
         return;
@@ -286,16 +286,16 @@ static symtable_t *SS_Top(symstack_t *self) {
     return self->head->table;
 }
 
-static void SS_Put_symbol(symstack_t *self, dynstring_t *id, id_type_t type) {
+static symbol_t *SS_Put_symbol(symstack_t *self, dynstring_t *id, id_type_t type) {
     debug_msg("\n");
     soft_assert(self != NULL, ERROR_INTERNAL);
 
     // stack did not have a head.
     if (self->head == NULL) {
         debug_msg("\tStack has been empty. Create a frame(Symstack.push) before putting a symbol.\n");
-        return;
+        return NULL;
     }
-    ST_Put(self->head->table, id, type);
+    return ST_Put(self->head->table, id, type);
 }
 
 static scope_info_t SS_Get_scope_info(symstack_t *self) {

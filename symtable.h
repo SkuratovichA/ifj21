@@ -43,9 +43,8 @@ typedef enum id_type {
 
 
 typedef struct symbol {
-    dynstring_t *id;
     id_type_t type;
-
+    dynstring_t *id;
     func_semantics_t *function_semantics;
 } symbol_t;
 
@@ -82,7 +81,7 @@ struct symstack_interface_t {
     bool (*get_symbol)(symstack_t *, dynstring_t *, symbol_t **);
 
     // put_symbol symbol in to symtable on the top of the stack.
-    void (*put_symbol)(symstack_t *, dynstring_t *, id_type_t);
+    symbol_t *(*put_symbol)(symstack_t *, dynstring_t *, id_type_t);
 
     symtable_t *(*top)(symstack_t *);
 
@@ -96,7 +95,7 @@ struct symtable_interface_t {
 
     bool (*get_symbol)(symtable_t *, dynstring_t *, symbol_t **);
 
-    void (*put)(symtable_t *, dynstring_t *, id_type_t);
+    symbol_t *(*put)(symtable_t *, dynstring_t *, id_type_t);
 
     void (*add_builtin_function)(symtable_t *, char *, char *, char *);
 
