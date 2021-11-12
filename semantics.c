@@ -7,6 +7,7 @@ typedef struct func_info {
     list_t *params; //< list wish enum(int) values representing types of function arguments.
 } func_info_t;
 
+
 typedef struct func_semantics {
     func_info_t declaration; //< function info from the function declaration.
     func_info_t definition; //< function info from the function definition.
@@ -16,7 +17,7 @@ typedef struct func_semantics {
 } func_semantics_t;
 
 static int int_equal(void *a, void *b) {
-    return (int) *((int *) a) == (int) *((int *) b);
+    return *((int *) a) == *((int *) b);
 }
 
 static bool Function_signature_equality(func_semantics_t *func) {
