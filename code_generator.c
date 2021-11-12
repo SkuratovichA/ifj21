@@ -401,7 +401,7 @@ static void generate_cond_elseif(size_t if_scope_id, size_t cond_num) {
  *          --- else body ---
  */
 static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR("JUMP $");
+    ADD_INSTR_PART("JUMP $");
     ADD_INSTR_INT((int)if_scope_id);
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP;
@@ -429,6 +429,52 @@ static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
     generate_cond_label(if_scope_id, cond_num);
 }
 
+/*
+ * @brief Generates while loop header.
+ * generates sth like: LABEL $while$id
+ */
+static void generate_while_header() {
+    ADD_INSTR_PART("LABEL $while$");
+    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates while loop condition check.
+ * generates sth like: JUMPIFEQ $while$end$id LF@%result bool@true
+ */
+static void generate_while_cond() {
+    ADD_INSTR_PART("JUMPIFEQ $end$");
+    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART(" LF@%result bool@true");
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates while loop end.
+ * generates sth like: JUMP $id$while
+ *                     LABEL $while$end$id
+ */
+static void generate_while_end() {
+    ADD_INSTR_PART("JUMP $while$");
+    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_TMP;
+
+    ADD_INSTR_PART("LABEL $end$");
+    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates while loop end.
+ * generates sth like: JUMP $id$while
+ *                     LABEL $while$end$id
+ */
+static void generate_end() {
+    ADD_INSTR_PART("LABEL $end$");
+    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_TMP;
+}
 
 /*
  * @brief Generates program start (adds header, define built-in functions).
@@ -472,4 +518,8 @@ const struct code_generator_interface_t Generator = {
         .cond_elseif = generate_cond_elseif,
         .cond_else = generate_cond_else,
         .cond_end = generate_cond_end,
+        .while_header = generate_while_header,
+        .while_cond = generate_while_cond,
+        .while_end = generate_while_end,
+        .end = generate_end,
 };

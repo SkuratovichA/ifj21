@@ -23,6 +23,8 @@ int main() {
     instructions.mainList = List.ctor();
     instructions.in_loop = false;
     instructions.before_loop_start = NULL;
+    instructions.outer_cond_id = 0;
+    instructions.outer_loop_id = 0;
 
     instrList = instructions.startList;
 

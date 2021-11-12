@@ -17,7 +17,8 @@ typedef struct {
     list_t *mainList;
     list_item_t *before_loop_start;
     bool in_loop;
-    size_t cond_scope_id;
+    size_t outer_loop_id;               // id of scope of the most outer loop
+    size_t outer_cond_id;               // id of scope of the most inner if
     size_t cond_num;
 } instructions_t;
 
@@ -88,6 +89,10 @@ struct code_generator_interface_t {
     void (*cond_elseif)(size_t if_scope_id, size_t cond_num);
     void (*cond_else)(size_t if_scope_id, size_t cond_num);
     void (*cond_end)(size_t if_scope_id, size_t cond_num);
+    void (*while_header)(void);
+    void (*while_cond)(void);
+    void (*while_end)(void);
+    void (*end)(void);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.

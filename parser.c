@@ -126,7 +126,7 @@ static bool cond_body(pfile_t *pfile) {
 
             // generate start of else block
             instructions.cond_num++;
-            Generator.cond_else(instructions.cond_scope_id, instructions.cond_num);
+            Generator.cond_else(instructions.outer_cond_id, instructions.cond_num);
 
             if (!fun_body(pfile)) {
                 return false;
@@ -142,7 +142,7 @@ static bool cond_body(pfile_t *pfile) {
             SYMSTACK_PUSH(SCOPE_TYPE_condition);
 
             // generate start of elseif block
-            Generator.cond_elseif(instructions.cond_scope_id, instructions.cond_num);
+            Generator.cond_elseif(instructions.outer_cond_id, instructions.cond_num);
 
             return cond_stmt(pfile);
 
@@ -152,9 +152,9 @@ static bool cond_body(pfile_t *pfile) {
             SYMSTACK_POP();
 
             // generate start of end block
-            Generator.cond_end(instructions.cond_scope_id, instructions.cond_num);
+            Generator.cond_end(instructions.outer_cond_id, instructions.cond_num);
             instructions.cond_num = 0;
-            instructions.cond_scope_id = 0;
+            instructions.outer_cond_id = 0;
 
             return true;
         default:
@@ -178,7 +178,7 @@ static bool cond_stmt(pfile_t *pfile) {
 
     // generate condition evaluation (JUMPIFNEQ ...)
     instructions.cond_num++;
-    Generator.cond_if(instructions.cond_scope_id, instructions.cond_num);
+    Generator.cond_if(instructions.outer_cond_id, instructions.cond_num);
 
     if (!Expr.parse(pfile, true)) {
         instructions.cond_num = 0;
@@ -411,7 +411,7 @@ static bool fun_stmt(pfile_t *pfile) {
             EXPECTED(KEYWORD_if);
             SYMSTACK_PUSH(SCOPE_TYPE_condition);
 
-            instructions.cond_scope_id = Symstack.get_scope_info(symstack).unique_id;
+            instructions.outer_cond_id = Symstack.get_scope_info(symstack).unique_id;
 
             if (!cond_stmt(pfile)) {
                 return false;
@@ -455,11 +455,24 @@ static bool fun_stmt(pfile_t *pfile) {
             EXPECTED(KEYWORD_while);
             // create a new symtable for while cycle.
             SYMSTACK_PUSH(SCOPE_TYPE_cycle);
+
+            // nested while
+            if (!instructions.in_loop) {
+                instructions.in_loop = true;
+                instructions.outer_loop_id = Symstack.get_scope_info(symstack).unique_id;
+                instructions.before_loop_start = instrList->tail;   // use when declaring vars in loop
+            }
+            Generator.while_header();
+
             // parse expressions
             if (!Expr.parse(pfile, true)) {
                 debug_msg("Expression analysis failed.\n");
                 return false;
             }
+
+            // expression result in LF@%result
+            Generator.while_cond();
+
             EXPECTED(KEYWORD_do);
             if (!fun_body(pfile)) {
                 return false;
@@ -505,10 +518,28 @@ static bool fun_stmt(pfile_t *pfile) {
 static bool fun_body(pfile_t *pfile) {
     debug_msg("<fun_body> ->\n");
     if (Scanner.get_curr_token().type == KEYWORD_end) {
+        switch (Symstack.get_scope_info(symstack).scope_type) {
+            case SCOPE_TYPE_cycle:
+                // FIXME - can be also for loop
+                Generator.while_end();
+                if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
+                    instructions.in_loop = false;       // FIXME - nested loops problem!!!
+                    instructions.outer_loop_id = 0;
+                    instructions.before_loop_start = NULL;
+                }
+                break;
+            case SCOPE_TYPE_function:
+                Generator.func_end();
+                break;
+            default:
+                debug_msg("Shouldn't be here.\n");
+                break;
+        }
         return true;
     }
     // end |
     EXPECTED_OPT(KEYWORD_end);
+
 
     return fun_stmt(pfile) && fun_body(pfile);
 }
@@ -673,6 +704,7 @@ static bool funretopt(pfile_t *pfile) {
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
     token_t token = Scanner.get_curr_token();
+    printf("---------------------------SCOPE TYPE: %u\n", Symstack.get_scope_info(symstack).scope_type);
 
     switch (token.type) {
         // function declaration: global id : function ( <datatype_list> <funretopt>
