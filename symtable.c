@@ -24,24 +24,24 @@ typedef struct symstack {
 } symstack_t;
 
 
+static char *scope_to_str(scope_type_t scope) {
+    switch (scope) {
+        #define X(s) case SCOPE_TYPE_##s: return #s;
+        SCOPE_TYPE_T(X)
+        #undef X
+        default:
+            return "undefined";
+    }
+}
+
 static char *type_to_str(id_type_t type) {
     switch (type) {
-        case TYPE_func_decl:
-            return "func_decl";
-        case TYPE_integer:
-            return "integer";
-        case TYPE_boolean:
-            return "boolean";
-        case TYPE_number:
-            return "number";
-        case TYPE_func_def:
-            return "func_def";
-        case TYPE_string:
-            return "string";
+        #define X(t) case ID_TYPE_##t: return #t;
+        ID_TYPE_T(X)
+        #undef X
         default:
-            break;
+            return "undefined";
     }
-    return "undefined type :(";
 }
 
 // symbol table
@@ -231,24 +231,33 @@ static void SS_Put(symstack_t *self, dynstring_t *id, id_type_t type) {
         self->head->info.scope_level = 0;
         debug_msg("Symtable on the stack created.\n");
         // global_frame = stack->head;
-        self->head->info.scope_type = SCOPE_global;
+        self->head->info.scope_type = SCOPE_TYPE_global;
     }
     ST_Put(self->head->table, id, type);
 }
 
 static scope_info_t SS_Get_scope_info(symstack_t *self) {
     return self != NULL && self->head != NULL
-           ? self->head->info : (scope_info_t) {.scope_type = 0, .scope_level = 0};
+           ? self->head->info
+           : (scope_info_t) {.scope_type = SCOPE_TYPE_UNDEF, .scope_level = 0};
+}
+
+static id_type_t Of_id_type(int token_type) {
+    switch (token_type) {
+        case KEYWORD_string:
+            return ID_TYPE_string;
+        case KEYWORD_boolean:
+            return ID_TYPE_boolean;
+        case KEYWORD_number:
+            return ID_TYPE_number;
+        case KEYWORD_integer:
+            return ID_TYPE_integer;
+        default :
+            return ID_TYPE_UNDEF;
+    }
 }
 
 //=================================================
-const struct symtable_interface_t Symtable = {
-        .get = ST_Get,
-        .put = ST_Put,
-        .dtor = ST_Dtor,
-        .ctor = ST_Ctor,
-};
-
 const struct symstack_interface_t Symstack = {
         .init = SS_Init,
         .push = SS_Push,
@@ -259,6 +268,14 @@ const struct symstack_interface_t Symstack = {
         .put = SS_Put,
         .top = SS_Top,
         .get_scope_info = SS_Get_scope_info,
+};
+
+const struct symtable_interface_t Symtable = {
+        .get = ST_Get,
+        .put = ST_Put,
+        .dtor = ST_Dtor,
+        .ctor = ST_Ctor,
+        .of_id_type = Of_id_type,
 };
 
 #ifdef SELFTEST_symtable

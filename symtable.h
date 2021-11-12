@@ -7,23 +7,34 @@
 #include "dynstring.h"
 
 
+// types of scope
+#define SCOPE_TYPE_T(X) \
+    X(function)          \
+    X(cycle)             \
+    X(do_cycle)          \
+    X(condition)         \
+    X(global)            \
+    X(UNDEF)             \
+
+#define ID_TYPE_T(X)   \
+    X(string)          \
+    X(boolean)         \
+    X(number)          \
+    X(integer)         \
+    X(func_def)        \
+    X(func_decl)       \
+    X(UNDEF)           \
+
 typedef enum scope_type {
-    _SCOPE_UNDEF_,
-    SCOPE_function,
-    SCOPE_cycle,
-    SCOPE_do_cycle,
-    SCOPE_condition,
-    SCOPE_global,
+    #define X(a) SCOPE_TYPE_##a ,
+    SCOPE_TYPE_T(X)
+    #undef X
 } scope_type_t;
 
 typedef enum id_type {
-    _TYPE_UNDEF,
-    TYPE_string = KEYWORD_string,
-    TYPE_boolean = KEYWORD_boolean,
-    TYPE_number = KEYWORD_number,
-    TYPE_integer = KEYWORD_integer,
-    TYPE_func_def,
-    TYPE_func_decl,
+    #define X(a) ID_TYPE_##a ,
+    ID_TYPE_T(X)
+    #undef X
 } id_type_t;
 
 typedef struct symbol {
@@ -72,6 +83,8 @@ struct symstack_interface_t {
 
 struct symtable_interface_t {
     symtable_t *(*ctor)();
+
+    id_type_t (*of_id_type)(int);
 
     bool (*get)(symtable_t *, dynstring_t *, symbol_t *);
 
