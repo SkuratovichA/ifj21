@@ -152,7 +152,7 @@ static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
                 Semantics.ctor(type == ID_TYPE_func_def, type == ID_TYPE_func_decl, builtin_name(id));
     }
 
-    debug_msg("\tAdd new item to symtable: new root created with new data:"
+    debug_msg("\t[symtable]Add new item to symtable: new root created with new data:"
               "{ .id = '%s', .type = '%s' }.\n",
               Dynstring.c_str((*iterator)->symbol.id), type_to_str((*iterator)->symbol.type)
     );
@@ -160,7 +160,6 @@ static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
 }
 
 static void _st_dtor(node_t *node) {
-    debug_msg("\n");
     if (node == NULL) {
         return;
     }
@@ -178,18 +177,16 @@ static void _st_dtor(node_t *node) {
 }
 
 static void ST_Dtor(symtable_t *self) {
-    debug_msg("\n");
     if (self == NULL) {
-        debug_msg("\tBase case. Returning :).\n");
         return;
     }
     _st_dtor(self->root);
     free(self);
-    debug_msg("symtable node freed\n");
+    debug_msg("[dtor] Symtable deleted\n");
 }
 
 static void *SS_Init() {
-    debug_msg("\n");
+    debug_msg("\n[ctor] Init a symstack.\n");
     return calloc(1, sizeof(symstack_t));
 }
 
@@ -212,11 +209,15 @@ static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type
     stack_element->next = self->head;
     self->head = stack_element;
 
-    debug_msg("New symtable pushed on the stack.\n");
+    debug_msg("\t[push] symtable -> symstack: \n"
+              "\t\t{ .unique_id = '%zu', scope_level = '%zu', scope_type = '%s' }\n",
+              stack_element->info.unique_id,
+              stack_element->info.scope_level,
+              scope_to_str(stack_element->info.scope_type)
+    );
 }
 
 static void SS_Pop(symstack_t *self) {
-    debug_msg("Symtable is about to be popped.\n");
     if (self == NULL) {
         debug_msg("\tTrying to pop from uninitialized stack. DONT!\n");
         return;
@@ -229,7 +230,7 @@ static void SS_Pop(symstack_t *self) {
 
     ST_Dtor(self->head->table);
     self->head = self->head->next;
-    debug_msg("\titem from a stack\n");
+    debug_msg("[pop] popped a symtable\n");
 }
 
 static void SS_Dtor(symstack_t *self) {
@@ -245,7 +246,7 @@ static void SS_Dtor(symstack_t *self) {
     }
 
     free(self);
-    debug_msg("\t[DESTROY] symstack destroyed.\n");
+    debug_msg("[dtor] deleted symstack.\n");
 }
 
 /** Get a symbol from the symbol stack.
@@ -258,14 +259,14 @@ static void SS_Dtor(symstack_t *self) {
 static bool SS_Get_symbol(symstack_t *self, dynstring_t *id, symbol_t **sym) {
     debug_msg("\n");
     if (self == NULL) {
-        debug_msg("Stack is null. Returning false.\n");
+        debug_msg("[getter] Stack is null. Returning false.\n");
         return false;
     }
 
     stack_el_t *st = self->head;
     while (st != NULL) {
         if (ST_Get(st->table, id, sym)) {
-            debug_msg("\tsymbol found\n");
+            debug_msg("[getter] symbol found\n");
             return true;
         }
         st = st->next;
@@ -274,7 +275,6 @@ static bool SS_Get_symbol(symstack_t *self, dynstring_t *id, symbol_t **sym) {
 }
 
 static symtable_t *SS_Top(symstack_t *self) {
-    debug_msg("\n");
     if (self == NULL) {
         debug_msg("\tStack is null.\n");
         return NULL;
@@ -287,7 +287,6 @@ static symtable_t *SS_Top(symstack_t *self) {
 }
 
 static symbol_t *SS_Put_symbol(symstack_t *self, dynstring_t *id, id_type_t type) {
-    debug_msg("\n");
     soft_assert(self != NULL, ERROR_INTERNAL);
 
     // stack did not have a head.
@@ -306,7 +305,6 @@ static scope_info_t SS_Get_scope_info(symstack_t *self) {
 }
 
 static void Add_builtin_function(symtable_t *self, char *name, char *params, char *returns) {
-    debug_msg("\n");
     if ((bool) self && (bool) name == 0) {
         debug_msg("\tnull passed into a function...\n");
         return;
@@ -316,7 +314,6 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
     dynstring_t *returnvec = Dynstring.ctor(returns);
     ST_Put(self, dname, ID_TYPE_func_decl);
     ST_Put(self, dname, ID_TYPE_func_def);
-    debug_msg("\t[BUILTIN]: add declaration, definition to the global scope.\n");
 
     symbol_t *symbol;
     ST_Get(self, dname, &symbol);

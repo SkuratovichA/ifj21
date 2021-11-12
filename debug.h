@@ -17,17 +17,19 @@
 
 #define DEBUG_SEP "\033[0;36m<><><><><><><><>\033[0m\n"
 
-#define debug_todo(...) do{ \
-        fprintf(stderr, "TODO: "); \
-        debug_msg(__VA_ARGS__); \
+#define debug_todo(...) do{            \
+        fprintf(stderr, "TODO: ");     \
+        debug_msg(__VA_ARGS__);        \
     } while(0)
 
-#define debug_print(_dst, ...) do { \
-        fprintf((_dst), __FILE__":%.4d in %s %*s%s: ", \
-            __LINE__, \
-            __FUNCTION__, (int)(15 - strlen(__FUNCTION__))/*an indentation number*/, "", " "\
-            ); \
-        fprintf((_dst), __VA_ARGS__);\
+#define debug_print(_dst, ...) do {                     \
+        fprintf((_dst), /*__FILE__ */":%.4d in %s %*s%s: ",  \
+            __LINE__,                                   \
+            __FUNCTION__,                               \
+            (int)(25 - strlen(__FUNCTION__))/*an indentation number*/, \
+            "", " "                                     \
+            );                                          \
+        fprintf((_dst), __VA_ARGS__);                   \
     } while(0)
 
     #define debug_assert(cond) assert((cond))

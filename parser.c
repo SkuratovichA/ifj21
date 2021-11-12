@@ -292,7 +292,7 @@ static bool for_assignment(pfile_t *pfile) {
     EXPECTED_OPT(KEYWORD_do);
     EXPECTED(TOKEN_COMMA);
     if (!Expr.parse(pfile, true)) {
-        debug_msg("Expression parsing failed.\n");
+        debug_msg("[error] Expression parsing failed.\n");
         return false;
     }
     EXPECTED(KEYWORD_do);
@@ -720,7 +720,7 @@ static bool function_declaration(pfile_t *pfile) {
         }
     }
     // normally put id on the stack.
-    Symstack.put_symbol(symstack, id_name, ID_TYPE_func_decl);
+    symbol = Symstack.put_symbol(symstack, id_name, ID_TYPE_func_decl);
 
     // function name
     EXPECTED(TOKEN_ID);
@@ -731,6 +731,7 @@ static bool function_declaration(pfile_t *pfile) {
 
     // (
     EXPECTED(TOKEN_LPAREN);
+
     // <funparam_decl_list>
     if (!datatype_list(pfile, symbol->function_semantics->declaration)) {
         return false;
@@ -927,11 +928,10 @@ static bool Init_parser() {
     // TODO: should we add parameters?
     // add builtin functions.
     Symtable.add_builtin_function(global_table, "write", "", "");
-    Symtable.add_builtin_function(global_table, "read", "", "");
 
-    Symtable.add_builtin_function(global_table, "readi", "", ""); // string
-    Symtable.add_builtin_function(global_table, "readn", "", ""); // integer
-    Symtable.add_builtin_function(global_table, "reads", "", ""); // number
+    Symtable.add_builtin_function(global_table, "readi", "", "i"); // string
+    Symtable.add_builtin_function(global_table, "readn", "", "f"); // integer
+    Symtable.add_builtin_function(global_table, "reads", "", "s"); // number
 
     Symtable.add_builtin_function(global_table, "tointeger", "f", "i"); // (f : number) : integer
     Symtable.add_builtin_function(global_table, "substr", "sff",
@@ -1221,11 +1221,12 @@ int main() {
     Tests.warning("2: prolog with an error..");
     TEST_EXPECT(Parser.analyse(pf2), false, "Second test. Lixecal error handled.");
     TEST_EXPECT(Errors.get_error() == ERROR_LEXICAL, true, "This error must be a lexical one.");
+#endif
 
     Tests.warning("3: function declarations.");
     TEST_EXPECT(Parser.analyse(pf3), true, "Function declarations OK.");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
-
+#if 0
     Tests.warning("4: Mutually recursive functions.");
     TEST_EXPECT(Parser.analyse(pf4), true, "Mutually recursive functions. Return statement.");
     TEST_EXPECT((Errors.get_error() == ERROR_NOERROR), true, "There's no error.");
@@ -1266,10 +1267,6 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf13), true, "function which body is only one expression");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
-    Tests.warning("14: Function with a wrong expression as a body.");
-    TEST_EXPECT(Parser.analyse(pf14), false, "unction which body is only one wrong expression.");
-    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error..");
-#endif
 
     Tests.warning("8: if statements");
     TEST_EXPECT(Parser.analyse(pf8), true, "If statements");
@@ -1277,6 +1274,11 @@ int main() {
 
     TEST_EXPECT(Parser.analyse(pf_nested_whiles), true, "nested whiles");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("14: Function with a wrong expression as a body.");
+    TEST_EXPECT(Parser.analyse(pf14), false, "function which body is only one wrong expression.");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error..");
+#endif
 
     // destructors
     Pfile.dtor(pf1);

@@ -9,7 +9,7 @@ static bool Check_signatures(func_semantics_t *func) {
     res = Dynstring.cmp(func->declaration.params, func->definition.params) == 0;
     res &= (Dynstring.cmp(func->declaration.returns, func->definition.returns) == 0);
 
-    debug_msg("Signatures are %s\n", res ? "same" : "different");
+    debug_msg("[semantics] Signatures are %s\n", res ? "same" : "different");
     return res;
 }
 

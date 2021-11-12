@@ -90,7 +90,6 @@ let get_filenames arr =
 let () =
   let lines = List.fold_left (fun acc x -> merge (lines_of_file x) acc) [] (get_filenames Sys.argv) in
 
-
   (* just a latex version *) 
   Printf.printf "\\begin{enumerate}\n"; (* because we want to create an automatic enumeration. Even if we dont need to... *) 
   let latexarrow = "\\rightarrow" in     (* just '->' if you want to output in terminal *) 
@@ -106,7 +105,7 @@ let () =
                            )
                           )
                          )
-                       )
+                        )
                       ) 
             ) (List.rev lines); (* they are our lines. but prolog is below(suppose). *)
   Printf.printf "\\end{enumerate}\n";
@@ -114,9 +113,23 @@ let () =
 
 
   (* just a commandline vesion. (The easiest one. :^) *)
-  List.iteri (fun i x -> Printf.fprintf stderr "%d: %s\n" (i + 1) x) (List.rev lines)
+  List.iteri (fun i x -> Printf.fprintf stderr "%d: %s\n" (i + 1) x) (List.rev lines);
 
+(* DOCUMENTATION.
+  (* version to check for LLness. *)
+  List.iter (fun x -> Printf.printf "%s\n"
+              (global_replace (regexp "<") "" 
+                (global_replace (regexp ">") ""
+                  (global_replace (regexp "->") "::="
+                    (global_replace (regexp " e ") " \" " 
+                      (Str.global_substitute (regexp "\<.*\>") (fun r -> String.uppercase r) x)
+                    )
+                  )
+                )
+              )
+  ) (List.rev lines);
 
+*)
 
 
 
