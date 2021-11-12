@@ -3,18 +3,22 @@
 #include "dynstring.h"
 #include "list.h"
 #include "scanner.h"
+#include "parser.h"
 
 #define MAX_CHAR 23         // maximum characters when converting num to string
 
 list_t *instrList;          // global list of instructions
 dynstring_t *tmp_instr;     // instruction that is currently being generated
 
+// TODO - use union
 typedef struct {
     list_t *startList;
     list_t *instrListFunctions;
     list_t *mainList;
     list_item_t *before_loop_start;
     bool in_loop;
+    size_t cond_scope_id;
+    size_t cond_num;
 } instructions_t;
 
 instructions_t instructions;
@@ -63,8 +67,7 @@ do {                                        \
  */
 #define INSTR_CHANGE_ACTIVE_LIST(newList)   \
 do {                                        \
-    instrList->head = (newList)->head;      \
-    instrList->tail = (newList)->tail;      \
+    instrList = (newList);                  \
 } while (0)
 
 /**
@@ -79,8 +82,12 @@ struct code_generator_interface_t {
     void (*func_createframe)(void);
     void (*main_end)(void);
     void (*func_call)(void);
-    void (*var_declaration)(void);
-    void (*var_definition)(token_t token);
+    void (*var_declaration)(token_t token_id);
+    void (*var_definition)(token_t token_id, token_t token_value);
+    void (*cond_if)(size_t if_scope_id, size_t cond_num);
+    void (*cond_elseif)(size_t if_scope_id, size_t cond_num);
+    void (*cond_else)(size_t if_scope_id, size_t cond_num);
+    void (*cond_end)(size_t if_scope_id, size_t cond_num);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.
