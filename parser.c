@@ -300,7 +300,6 @@ static bool for_assignment(pfile_t *pfile) {
  * @brief Statement inside the function.
  *
  *** The easiest statements:
- * !rule <fun_stmt> -> if <cond_stmt>
  * !rule <fun_stmt> -> return <return_expr_list>
  * !rule <fun_stmt> -> local id : <datatype> <assignment>
  *
