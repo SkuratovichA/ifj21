@@ -77,7 +77,6 @@ static void generate_func_tointeger() {
                 "FLOAT2INT LF@%res LF@p0 \n"      \
                 "POPFRAME \n"                     \
                 "RETURN \n");
-
 }
 
 /*
@@ -182,15 +181,6 @@ static void generate_func_substr() {
 }
 
 /*
- * @brief Generates variable declaration.
- */
-static void generate_var_declaration() {
-    ADD_INSTR_PART("DEFVAR LF@%");
-    ADD_INSTR_PART(Dynstring.get_str(Scanner.get_prev_token().attribute.id));
-    ADD_INSTR_TMP;
-}
-
-/*
  * @brief Generates function call.
  */
 static void generate_func_call() {
@@ -292,22 +282,49 @@ static void generate_var_value(token_t token) {
             ADD_INSTR_PART(Dynstring.get_str(token.attribute.id));
             break;
         default:
+            ADD_INSTR_PART("Not expected token");
             break;
     }
 }
 /*
  * @brief Generates variable declaration.
  */
-static void generate_var_definition(token_t token) {
-   // ADD_INSTR_PART("DEFVAR LF@%");
-   // ADD_INSTR_PART(Dynstring.get_str(token.attribute.id));
-   // ADD_INSTR_TMP;
+static void generate_var_definition(token_t token_id, token_t token_value) {
+    debug_msg("- generate_var_definition: %s\n", Dynstring.get_str(token_id.attribute.id));
+    ADD_INSTR_PART("DEFVAR LF@%");
+    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);    // FIXME - casting
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART(Dynstring.get_str(token_id.attribute.id));
+    ADD_INSTR_TMP;
 
     ADD_INSTR_PART("MOVE LF@%");
-    ADD_INSTR_PART(Dynstring.get_str(token.attribute.id));
+    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);    // FIXME - casting
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART(Dynstring.get_str(token_id.attribute.id));
     ADD_INSTR_PART(" ");
-    //generate_var_value();
-    ADD_INSTR_PART("69");
+    generate_var_value(token_value);
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates variable declaration.
+ */
+static void generate_var_declaration(token_t token_id) {
+    debug_msg("- generate_var_declaration: %s\n", Dynstring.get_str(token_id.attribute.id));
+    ADD_INSTR_PART("DEFVAR LF@%");
+    // add scope_id
+    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART(Dynstring.get_str(token_id.attribute.id));
+    ADD_INSTR_TMP;
+
+    // initialise to nil
+    ADD_INSTR_PART("MOVE LF@%");
+    // add scope_id
+    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART(Dynstring.get_str(token_id.attribute.id));
+    ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP;
 }
 
@@ -337,14 +354,92 @@ static void generate_func_createframe() {
 }
 
 /*
+ * @brief Generates condition label.
+ */
+static void generate_cond_label(size_t if_scope_id, size_t cond_num) {
+    ADD_INSTR_PART("LABEL $");
+    ADD_INSTR_INT((int) if_scope_id);
+    ADD_INSTR_PART("$");
+    ADD_INSTR_INT((int) cond_num);
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates start of if block. The result of expression in the condition
+ *        is expected in LF@%result (LF@%result0?) variable.
+ * generates sth like: JUMPIFNEQ $23$next_cond LF@%result bool@true
+ */
+static void generate_cond_if(size_t if_scope_id, size_t cond_num) {
+    ADD_INSTR_PART("JUMPIFNEQ $");
+    ADD_INSTR_INT((int)if_scope_id);
+    ADD_INSTR_PART("$");
+    ADD_INSTR_INT((int)cond_num);
+    ADD_INSTR_PART(" LF@%result bool@true");
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates start of else if block - JUMP $end from previous block
+ *        and LABEL for new elseif block.
+ * generates sth like: JUMP $scope$end
+ *                     LABEL $scope$new_scope_num
+ */
+static void generate_cond_elseif(size_t if_scope_id, size_t cond_num) {
+    ADD_INSTR_PART("JUMP $");
+    ADD_INSTR_INT((int)if_scope_id);
+    ADD_INSTR_PART("$end");
+    ADD_INSTR_TMP;
+
+    generate_cond_label(if_scope_id, cond_num);
+}
+
+/*
+ * @brief Generates start of else statement.
+ *          JUMP $id_scope$end
+ *          LABEL $id_scope$else
+ *          JUMPIFNEQ $id_scope$end
+ *          --- else body ---
+ */
+static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
+    ADD_INSTR("JUMP $");
+    ADD_INSTR_INT((int)if_scope_id);
+    ADD_INSTR_PART("$end");
+    ADD_INSTR_TMP;
+
+    generate_cond_label(if_scope_id, cond_num - 1);
+
+    ADD_INSTR_PART("JUMPIFNEQ $");
+    ADD_INSTR_INT((int)if_scope_id);
+    ADD_INSTR_PART("$end LF@%result bool@true");
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates end of if statement.
+ * generates sth like: LABEL $scope$end
+ *                     LABEL $scope$new_scope_num
+ * Yes, I need two labels rn.
+ */
+static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
+    ADD_INSTR_PART("LABEL $");
+    ADD_INSTR_INT((int)if_scope_id);
+    ADD_INSTR_PART("$end");
+    ADD_INSTR_TMP;
+
+    generate_cond_label(if_scope_id, cond_num);
+}
+
+
+/*
  * @brief Generates program start (adds header, define built-in functions).
  */
 static void generate_prog_start() {
-    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
+    INSTR_CHANGE_ACTIVE_LIST(instructions.startList);
     ADD_INSTR(".IFJcode21");
     ADD_INSTR("JUMP $$MAIN");
 
-    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
+    INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
+    // TODO: add built-in functions every time or when needed?
     generate_func_ord();
     generate_func_chr();
     generate_func_substr();
@@ -354,6 +449,7 @@ static void generate_prog_start() {
     generate_func_write();
     generate_func_tointeger();
 
+    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
     generate_main_start();
 }
 
@@ -372,4 +468,8 @@ const struct code_generator_interface_t Generator = {
         .func_call = generate_func_call,
         .var_declaration = generate_var_declaration,
         .var_definition = generate_var_definition,
+        .cond_if = generate_cond_if,
+        .cond_elseif = generate_cond_elseif,
+        .cond_else = generate_cond_else,
+        .cond_end = generate_cond_end,
 };
