@@ -1058,10 +1058,10 @@ int main() {
             PROLOG
             GLOBAL " foo : " FUN "(string) : string\n"
             FUN "bar(param : string) : string\n"
-            RETURN "foo (param)\n"
+                RETURN "foo (param)\n"
             END
             FUN "foo(param:string):string \n"
-            RETURN "bar(param)\n"
+                RETURN "bar(param)\n"
             END
     );
 
@@ -1115,13 +1115,13 @@ int main() {
             FUN "mein()"
             LOCAL "myself" " : " STRING " = " "\"me\""
             WHILE "opposite(love, hate) == false and opposite(love, indifference)" DO
-            WHILE "opposite(art, ugliness) == false and opposite(art, indifference)" DO
-            WHILE "opposite(faith, heresy) == false and opposite(faith, indifference)" DO
-            WHILE "opposite(life, death) == false and opposite(life, indifference)" DO
-            "is_beautiful(life)"
-            END
-            END
-            END
+                WHILE "opposite(art, ugliness) == false and opposite(art, indifference)" DO
+                    WHILE "opposite(faith, heresy) == false and opposite(faith, indifference)" DO
+                        WHILE "opposite(life, death) == false and opposite(life, indifference)" DO
+                                "is_beautiful(life)"
+                        END
+                    END
+                END
             END
             END // fun
     );
@@ -1221,12 +1221,11 @@ int main() {
     Tests.warning("2: prolog with an error..");
     TEST_EXPECT(Parser.analyse(pf2), false, "Second test. Lixecal error handled.");
     TEST_EXPECT(Errors.get_error() == ERROR_LEXICAL, true, "This error must be a lexical one.");
-#endif
 
     Tests.warning("3: function declarations.");
     TEST_EXPECT(Parser.analyse(pf3), true, "Function declarations OK.");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
-#if 0
+
     Tests.warning("4: Mutually recursive functions.");
     TEST_EXPECT(Parser.analyse(pf4), true, "Mutually recursive functions. Return statement.");
     TEST_EXPECT((Errors.get_error() == ERROR_NOERROR), true, "There's no error.");
@@ -1243,11 +1242,7 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf9), true, "Repeat until statement");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
-    Tests.warning("10: repeat until statements");
-    TEST_EXPECT(Parser.analyse(pf10), true, "Repeat until statements");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
-
-    Tests.warning("11: for statements");
+   Tests.warning("11: for statements");
     TEST_EXPECT(Parser.analyse(pf11), true, "For statements");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
@@ -1267,7 +1262,6 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf13), true, "function which body is only one expression");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
-
     Tests.warning("8: if statements");
     TEST_EXPECT(Parser.analyse(pf8), true, "If statements");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
@@ -1279,6 +1273,11 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf14), false, "function which body is only one wrong expression.");
     TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error..");
 #endif
+
+    Tests.warning("10: repeat until statements");
+    TEST_EXPECT(Parser.analyse(pf10), true, "Repeat until statements");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
 
     // destructors
     Pfile.dtor(pf1);

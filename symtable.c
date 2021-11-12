@@ -96,27 +96,24 @@ static bool _st_get(node_t *node, dynstring_t *id, symbol_t **storage) {
  * @return bool.
  */
 static bool ST_Get(symtable_t *self, dynstring_t *id, symbol_t **storage) {
-    debug_msg("Try to find %s in symtable\n", Dynstring.c_str(id));
     if (self == NULL) {
         return false;
     }
 
     bool found = _st_get(self->root, id, storage);
 
-    debug_msg("\t%s\n", found ? "found" : "not found");
+    debug_msg("\t[get]%s\n", found ? "found" : "not found");
     return found;
 }
 
 static bool builtin_name(dynstring_t *name) {
-    //TODO add more builtin names? or suppress?
+    //TODO add more builtin names? or suppress the function.
     return strcmp(Dynstring.c_str(name), "read") == 0 ||
-                                                      strcmp(Dynstring.c_str(name), "write") == 0;
+           strcmp(Dynstring.c_str(name), "write") == 0;
 }
 
 static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
-    debug_msg("\n");
     if (self == NULL) {
-        debug_msg("\tNull passed to a function.\n");
         return NULL;
     }
 
@@ -128,12 +125,12 @@ static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
         if (res == 0) {
             if (type == ID_TYPE_func_decl) {
                 Semantics.declare((*iterator)->symbol.function_semantics);
-                debug_msg("\tfunction declared '%s'\n", Dynstring.c_str(id));
+                debug_msg("\t[put] function declared '%s'\n", Dynstring.c_str(id));
             } else if (type == ID_TYPE_func_def) {
                 Semantics.define((*iterator)->symbol.function_semantics);
-                debug_msg("\tfunction defined '%s'\n", Dynstring.c_str(id));
+                debug_msg("\t[put] function defined '%s'\n", Dynstring.c_str(id));
             } else {
-                debug_msg("\tItem {%s, %d} is already in the table\n", Dynstring.c_str(id), type);
+                debug_msg("\t[put] {%s, %d} is already in the table\n", Dynstring.c_str(id), type);
             }
             return NULL;
         }
@@ -152,10 +149,10 @@ static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
                 Semantics.ctor(type == ID_TYPE_func_def, type == ID_TYPE_func_decl, builtin_name(id));
     }
 
-    debug_msg("\t[symtable]Add new item to symtable: new root created with new data:"
-              "{ .id = '%s', .type = '%s' }.\n",
+    debug_msg("[put] new on { .id = '%s', .type = '%s' }.\n",
               Dynstring.c_str((*iterator)->symbol.id), type_to_str((*iterator)->symbol.type)
     );
+
     return &(*iterator)->symbol;
 }
 
@@ -209,8 +206,7 @@ static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type
     stack_element->next = self->head;
     self->head = stack_element;
 
-    debug_msg("\t[push] symtable -> symstack: \n"
-              "\t\t{ .unique_id = '%zu', scope_level = '%zu', scope_type = '%s' }\n",
+    debug_msg("[push] { .unique_id = '%zu', scope_level = '%zu', scope_type = '%s' }\n",
               stack_element->info.unique_id,
               stack_element->info.scope_level,
               scope_to_str(stack_element->info.scope_type)
