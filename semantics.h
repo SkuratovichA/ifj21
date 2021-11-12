@@ -1,18 +1,15 @@
 #pragma once
 
 #include "list.h"
-#include "stdbool.h"
+#include <stdbool.h>
 #include "debug.h"
+#include "dynstring.h"
 
 
 typedef struct func_info {
-    list_t *returns; //< list with enum(int) values representing types of return values.
-    list_t *params; //< list wish enum(int) values representing types of function arguments.
+    dynstring_t *returns; //< vector with enum(int) values representing types of return values.
+    dynstring_t *params; //< vector wish enum(int) values representing types of function arguments.
 } func_info_t;
-
-typedef struct var_semantics {
-    int datatype; // can be id_type_t or keyword
-} var_semantics_t;
 
 typedef struct func_semantics {
     func_info_t declaration; //< function info from the function declaration.
@@ -49,4 +46,8 @@ struct semantics_interface_t {
     void (*define)(func_semantics_t *);
 
     void (*builtin)(func_semantics_t *);
+
+    void (*set_returns)(func_info_t, dynstring_t *);
+
+    void (*set_params)(func_info_t, dynstring_t *);
 };

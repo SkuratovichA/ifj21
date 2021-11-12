@@ -363,7 +363,6 @@ static bool if_statement(pfile_t *pfile) {
  * @return
  */
 static bool var_definition(pfile_t *pfile) {
-    symbol_t *symbol;
     dynstring_t *id_name;
     int id_type;
     EXPECTED(KEYWORD_local);
@@ -585,7 +584,6 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
  * @return bool.
  */
 static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
-    symbol_t *symbol;
     dynstring_t *id_name;
     debug_msg("funparam_def_list ->\n");
     // ) |
@@ -921,17 +919,21 @@ static bool Init_parser() {
     // push a global frame
     Symstack.push(symstack, global_table, SCOPE_TYPE_global);
 
-    Symtable.add_builtin_function(global_table, "write");
-    Symtable.add_builtin_function(global_table, "read");
-    Symtable.add_builtin_function(global_table, "readi"); // string
-    Symtable.add_builtin_function(global_table, "readn"); // integer
-    Symtable.add_builtin_function(global_table, "reads"); // number
 
     // TODO: should we add parameters?
-    Symtable.add_builtin_function(global_table, "tointeger"); // (f : number) : integer
-    Symtable.add_builtin_function(global_table, "substr"); // substr(s : string, i : number, j : number)
-    Symtable.add_builtin_function(global_table, "ord"); // (s : string, i : integer) : integer
-    Symtable.add_builtin_function(global_table, "chr"); // (i : integer) : string
+    // add builtin functions.
+    Symtable.add_builtin_function(global_table, "write", "", "");
+    Symtable.add_builtin_function(global_table, "read", "", "");
+
+    Symtable.add_builtin_function(global_table, "readi", "", ""); // string
+    Symtable.add_builtin_function(global_table, "readn", "", ""); // integer
+    Symtable.add_builtin_function(global_table, "reads", "", ""); // number
+
+    Symtable.add_builtin_function(global_table, "tointeger", "f", "i"); // (f : number) : integer
+    Symtable.add_builtin_function(global_table, "substr", "sff",
+                                  "s"); // substr(s : string, i : number, j : number) : string
+    Symtable.add_builtin_function(global_table, "ord", "si", "i"); // (s : string, i : integer) : integer
+    Symtable.add_builtin_function(global_table, "chr", "i", "s"); // (i : integer) : string
 
     return true;
 }
@@ -1194,6 +1196,15 @@ int main() {
                 "AAAAA_ERRORRR() +++ lol"
             END
             );
+    pfile_t *pf_nested_whiles = Pfile.ctor(
+            PROLOG
+            FUN "funnnn()"
+                WHILE "1" DO
+                    WHILE "1" DO
+                    END
+                END
+            END
+            );
 
     // tests.
 
@@ -1242,8 +1253,6 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf6), true, "curve's program.");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
-
-
     Tests.warning("12: Function with no body");
     TEST_EXPECT(Parser.analyse(pf12), true, "function with no body");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
@@ -1256,9 +1265,12 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf14), false, "unction which body is only one wrong expression.");
     TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error..");
 
-#endif
     Tests.warning("8: if statements");
     TEST_EXPECT(Parser.analyse(pf8), true, "If statements");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+#endif
+
+    TEST_EXPECT(Parser.analyse(pf_nested_whiles), true, "nested whiles");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
     // destructors
@@ -1272,6 +1284,8 @@ int main() {
     Pfile.dtor(pf12);
     Pfile.dtor(pf13);
     Pfile.dtor(pf14);
+
+    Pfile.dtor(pf_nested_whiles);
 
     return 0;
 }

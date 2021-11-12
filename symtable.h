@@ -5,7 +5,7 @@
 #include "debug.h"
 #include "errors.h"
 #include "dynstring.h"
-
+#include "semantics.h"
 
 // types of scope
 #define SCOPE_TYPE_T(X) \
@@ -23,6 +23,7 @@
     X(integer)         \
     X(func_def)        \
     X(func_decl)       \
+    X(nil)             \
     X(UNDEF)       \
 
 typedef enum scope_type {
@@ -40,16 +41,12 @@ typedef enum id_type {
     #undef X
 } id_type_t;
 
-#include "semantics.h"
 
 typedef struct symbol {
     dynstring_t *id;
     id_type_t type;
 
-    union {
-        func_semantics_t *function_semantics;
-        var_semantics_t *var_semantics;
-    };
+    func_semantics_t *function_semantics;
 } symbol_t;
 
 typedef struct scope_info {
@@ -95,13 +92,13 @@ struct symstack_interface_t {
 struct symtable_interface_t {
     symtable_t *(*ctor)();
 
-    id_type_t (*of_id_type)(int);
+    id_type_t (*id_type_of_token_type)(int);
 
     bool (*get_symbol)(symtable_t *, dynstring_t *, symbol_t **);
 
     void (*put)(symtable_t *, dynstring_t *, id_type_t);
 
-    void (*add_builtin_function)(symtable_t *, char *);
+    void (*add_builtin_function)(symtable_t *, char *, char *, char *);
 
     void (*dtor)(symtable_t *);
 
