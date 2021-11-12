@@ -300,6 +300,24 @@ static id_type_t Of_id_type(int token_type) {
     }
 }
 
+static void Add_builtin_function(symtable_t *self, char *name) {
+    if ((bool) self && (bool) name == 0) {
+        debug_msg("null passed into a function...\n");
+        return;
+    }
+    dynstring_t *dname = Dynstring.ctor(name);
+    ST_Put(self, dname, ID_TYPE_func_decl);
+    ST_Put(self, dname, ID_TYPE_func_def);
+    debug_msg("[BUILTIN]: add declaration, definition to the global scope.\n");
+
+    symbol_t *symbol;
+    ST_Get(self, dname, &symbol);
+
+    Semantics.builtin(symbol->function_semantics);
+
+    debug_msg("[BUILTIN]: builtin flag is set.\n");
+}
+
 //=================================================
 const struct symstack_interface_t Symstack = {
         .init = SS_Init,
@@ -314,11 +332,12 @@ const struct symstack_interface_t Symstack = {
 };
 
 const struct symtable_interface_t Symtable = {
-        .get = ST_Get,
+        .get_symbol = ST_Get,
         .put = ST_Put,
         .dtor = ST_Dtor,
         .ctor = ST_Ctor,
         .of_id_type = Of_id_type,
+        .add_builtin_function = Add_builtin_function,
 };
 
 #ifdef SELFTEST_symtable

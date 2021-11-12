@@ -31,7 +31,7 @@ typedef enum scope_type {
     #undef X
 } scope_type_t;
 
-#define KEYWORD_func_def KEYWORD_UNDEF
+#define KEYWORD_func_def (KEYWORD_UNDEF + 1)
 #define KEYWORD_func_decl (KEYWORD_func_def + 1)
 
 typedef enum id_type {
@@ -97,9 +97,12 @@ struct symtable_interface_t {
 
     id_type_t (*of_id_type)(int);
 
-    bool (*get)(symtable_t *, dynstring_t *, symbol_t **);
+    bool (*get_symbol)(symtable_t *, dynstring_t *, symbol_t **);
 
     void (*put)(symtable_t *, dynstring_t *, id_type_t);
 
+    void (*add_builtin_function)(symtable_t *, char *);
+
     void (*dtor)(symtable_t *);
+
 };
