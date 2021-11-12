@@ -90,7 +90,7 @@ static void print_error_unexpected_token(const char *a, const char *b) {
             error_multiple_declaration(_name);                      \
             return false;                                           \
         }                                                           \
-        Symstack.put(symstack, _name, type);                        \
+        Symstack.put_symbol(symstack, _name, type);                        \
     } while (0)
 
 
@@ -310,7 +310,7 @@ static bool for_assignment(pfile_t *pfile) {
  * !rule <fun_stmt> -> while `expr` do <fun_body>
  ** A premium part.
  * !rule <fun_stmt> -> repeat <repeat_body>
- * !rule <fun_stmt> -> for id = `expr` , `expr` <for_assignment> <fun_body> // todo: Probably we have to change this rule.
+ * !rule <fun_stmt> -> for id = `expr` , `expr` <for_assignment> <fun_body>
  *
  *** Statements:
  * // if cond_stmt which is <cond_stmt> -> else <fun_body> end | <elseif> <fun_body> end | <fun_body> end
@@ -408,7 +408,7 @@ static bool fun_stmt(pfile_t *pfile) {
                 return false;
             }
 
-            Symtable.put_symbol(symtable, id_name, Scanner.get_curr_token().type);
+            Symstack.put_symbol(symstack, id_name, Scanner.get_curr_token().type);
 
             // <datatype>
             if (!datatype(pfile)) {
@@ -527,7 +527,7 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
     Dynstring.dtor(id_name);
-    return other_funparams(pfile);
+    return other_funparams(pfile, function_def_info);
 }
 
 /**
@@ -600,7 +600,7 @@ static bool datatype_list(pfile_t *pfile, func_info_t function_decl_info) {
 
     Semantics.add_param(function_decl_info, Scanner.get_curr_token().type);
     //<datatype> && <other_datatypes>
-    return datatype() && other_datatypes(pfile);
+    return datatype(pfile) && other_datatypes(pfile);
 }
 
 /**
@@ -688,9 +688,8 @@ static bool function_declaration(pfile_t *pfile) {
     }
 
     // <funretopt> can be empty
-    return funretopt(pfile, symbol->function_semantics->declaration)) {
-    }
-
+    return funretopt(pfile, symbol->function_semantics->declaration);
+}
 /** Function definition.
  * !rule <function_definition> -> function id ( <funparam_def_list> <funretopt> <fun_body>
  * @param pfile
@@ -705,7 +704,7 @@ static bool function_declaration(pfile_t *pfile) {
         symbol_t *symbol;
 
         soft_assert(local_table == global_table && "tables must be equal now", ERROR_SYNTAX);
-        id_name = Scanner.get_curr_token().attribute.id);
+        id_name = Scanner.get_curr_token().attribute.id;
         // Semantic control.
         // if we find a symbol on the stack, check it.
         if (Symstack.get_symbol(symstack, id_name, &symbol)) {
@@ -713,7 +712,7 @@ static bool function_declaration(pfile_t *pfile) {
             // because in the grammar, there's only one options and this option is
             // to be a function.
             // If function has been defined, return false and set an error code.
-            if (Semantics.is_defined(symbol.function_semantics)) {
+            if (Semantics.is_defined(symbol->function_semantics)) {
                 Errors.set_error(ERROR_FUNCTION_SEMANTICS);
                 return false;
             }
