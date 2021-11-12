@@ -9,7 +9,7 @@ symstack_t *symstack;
 symtable_t *global_table;
 symtable_t *local_table;
 
-static void print_error_uexpected_token(const char *a, const char *b) {
+static void print_error_unexpected_token(const char *a, const char *b) {
     fprintf(stderr, "line %zu, character %zu\n", Scanner.get_line(), Scanner.get_charpos());
     fprintf(stderr, "ERROR(syntax): Expected '%s', got '%s' instead\n", a, b);
 }
@@ -28,7 +28,7 @@ static void print_error_uexpected_token(const char *a, const char *b) {
 #define error_unexpected_token(a)                               \
     do {                                                       \
         Errors.set_error(ERROR_SYNTAX);                        \
-        print_error_uexpected_token(Scanner.to_string(a),      \
+        print_error_unexpected_token(Scanner.to_string(a),      \
             Scanner.to_string(Scanner.get_curr_token().type)); \
         return false;                                          \
     } while (0)
@@ -194,7 +194,7 @@ static inline bool datatype(pfile_t *pfile) {
             EXPECTED(KEYWORD_number);
             break;
         default:
-            print_error_uexpected_token("datatype", Scanner.to_string(Scanner.get_curr_token().type));
+            print_error_unexpected_token("datatype", Scanner.to_string(Scanner.get_curr_token().type));
             Errors.set_error(ERROR_SYNTAX);
             return false;
     }
