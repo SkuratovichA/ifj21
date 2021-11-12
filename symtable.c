@@ -38,8 +38,9 @@ static char *scope_to_str(scope_type_t scope) {
 }
 
 static char *type_to_str(id_type_t type) {
+
     switch (type) {
-        #define X(t) case ID_TYPE_##t: return #t;
+        #define X(t) case ID_TYPE_: return #t;
         ID_TYPE_T(X)
         #undef X
         default:
@@ -307,7 +308,6 @@ const struct symstack_interface_t Symstack = {
         .pop = SS_Pop,
         .dtor = SS_Dtor,
         .get_symbol = SS_Get_symbol,
-
         .put_symbol = SS_Put_symbol,
         .top = SS_Top,
         .get_scope_info = SS_Get_scope_info,
