@@ -6,6 +6,7 @@
 
 static size_t __unique__id;
 
+// private structures
 typedef struct node {
     symbol_t symbol;
     struct node *left, *right;
@@ -56,7 +57,7 @@ static symtable_t *ST_Ctor() {
     return table;
 }
 
-static bool _st_get(node_t *node, dynstring_t *id, symbol_t *storage) {
+static bool _st_get(node_t *node, dynstring_t *id, symbol_t **storage) {
     if (node == NULL) {
         return false;
     }
@@ -64,20 +65,32 @@ static bool _st_get(node_t *node, dynstring_t *id, symbol_t *storage) {
     int res = Dynstring.cmp(id, node->symbol.id);
     if (res == 0) {
         if (storage != NULL) {
-            *storage = node->symbol;
+            *storage = &node->symbol;
         }
         return true;
     }
     return _st_get(res > 0 ? node->right : node->left, id, storage);
 }
 
-static bool ST_Get(symtable_t *self, dynstring_t *id, symbol_t *storage) {
+/** Get a symbol from the symtable.
+ *
+ * @param self symtable.
+ * @param id
+ * @param storage storage will contain a pointer to the symbol.
+ * @return bool.
+ */
+static bool ST_Get(symtable_t *self, dynstring_t *id, symbol_t **storage) {
     debug_msg("\n");
     if (self == NULL) {
         return false;
     }
 
     return _st_get(self->root, id, storage);
+}
+
+static bool builtin_name(dynstring_t *name) {
+    return strcmp(Dynstring.c_str(name), "read") == 0 ||
+           strcmp(Dynstring.c_str(name), "write") == 0;
 }
 
 static void ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
@@ -94,6 +107,14 @@ static void ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
         res = Dynstring.cmp(id, (*iterator)->symbol.id);
         if (res == 0) {
             debug_msg("Item {%s, %d} is already in the table\n", Dynstring.c_str(id), type);
+            if (type == ID_TYPE_func_decl) {
+                Semantics.declare((*iterator)->symbol.function_semantics);
+                debug_msg("New function declared\n");
+            }
+            if (type == ID_TYPE_func_def) {
+                Semantics.define((*iterator)->symbol.function_semantics);
+                debug_msg("New function defined\n");
+            }
             return;
         }
         iterator = res > 0 ? &(*iterator)->right : &(*iterator)->left;
@@ -102,8 +123,15 @@ static void ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
     // base case with no root
     (*iterator) = calloc(1, sizeof(node_t));
     soft_assert((*iterator) != NULL, ERROR_INTERNAL);
+
     (*iterator)->symbol.id = Dynstring.ctor(Dynstring.c_str(id));
     (*iterator)->symbol.type = type;
+
+    if (type == ID_TYPE_func_decl || type == ID_TYPE_func_def) {
+        (*iterator)->symbol.function_semantics =
+                Semantics.ctor(type == ID_TYPE_func_def, type == ID_TYPE_func_decl, builtin_name(id));
+    }
+
     debug_msg("Add new item to symtable: new root created with new data:"
               "{ .id = '%s', .type = '%s' }.\n",
               Dynstring.c_str((*iterator)->symbol.id), type_to_str((*iterator)->symbol.type)
@@ -192,7 +220,14 @@ static void SS_Dtor(symstack_t *self) {
     debug_msg("Symstack destroyed.\n");
 }
 
-static bool SS_Get_symbol(symstack_t *self, dynstring_t *id, symbol_t *sym) {
+/**
+ *
+ * @param self symstack.
+ * @param id key.
+ * @param sym a pointer to symbol to store a pointer to the object if we find it.
+ * @return
+ */
+static bool SS_Get_symbol(symstack_t *self, dynstring_t *id, symbol_t **sym) {
     debug_msg("\n");
     if (self == NULL) {
         debug_msg("Stack is null. Returning false.\n");
@@ -222,7 +257,7 @@ static symtable_t *SS_Top(symstack_t *self) {
     return self->head->table;
 }
 
-static void SS_Put(symstack_t *self, dynstring_t *id, id_type_t type) {
+static void SS_Put_symbol(symstack_t *self, dynstring_t *id, id_type_t type) {
     debug_msg("\n");
     soft_assert(self != NULL, ERROR_INTERNAL);
 
@@ -273,7 +308,7 @@ const struct symstack_interface_t Symstack = {
         .dtor = SS_Dtor,
         .get_symbol = SS_Get_symbol,
 
-        .put = SS_Put,
+        .put_symbol = SS_Put_symbol,
         .top = SS_Top,
         .get_scope_info = SS_Get_scope_info,
 };
@@ -299,16 +334,16 @@ int main() {
 
     char *strs[6] = {"aaa", "bbb", "ccc", "ddd", "eee", "fff"};
 
-    // put an item on the "global frame"
+    // put_symbol an item on the "global frame"
     Symstack.push(stack, t, SCOPE_TYPE_global);
-    Symstack.put(stack, hello, ID_TYPE_number);
+    Symstack.put_symbol(stack, hello, ID_TYPE_number);
 
     // create a new frame.
     Symstack.push(stack, Symtable.ctor(), SCOPE_TYPE_function);
 
     // push on new frame.
     for (int i = 0; i < 6; i++) {
-        Symstack.put(stack, Dynstring.ctor(strs[i]), ID_TYPE_string);
+        Symstack.put_symbol(stack, Dynstring.ctor(strs[i]), ID_TYPE_string);
     }
 
     // find elements.

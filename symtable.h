@@ -14,7 +14,7 @@
     X(do_cycle)          \
     X(condition)         \
     X(global)            \
-    X(UNDEF)             \
+    X(UNDEF)         \
 
 #define ID_TYPE_T(X)   \
     X(string)          \
@@ -23,7 +23,7 @@
     X(integer)         \
     X(func_def)        \
     X(func_decl)       \
-    X(UNDEF)           \
+    X(UNDEF)       \
 
 typedef enum scope_type {
     #define X(a) SCOPE_TYPE_##a ,
@@ -31,15 +31,25 @@ typedef enum scope_type {
     #undef X
 } scope_type_t;
 
+#define KEYWORD_func_def KEYWORD_UNDEF
+#define KEYWORD_func_decl (KEYWORD_func_def + 1)
+
 typedef enum id_type {
-    #define X(a) ID_TYPE_##a ,
+    #define X(a) ID_TYPE_##a = KEYWORD_##a,
     ID_TYPE_T(X)
     #undef X
 } id_type_t;
 
+#include "semantics.h"
+
 typedef struct symbol {
-    id_type_t type;
     dynstring_t *id;
+    id_type_t type;
+
+    union {
+        func_semantics_t *function_semantics;
+        var_semantics_t *var_semantics;
+    };
 } symbol_t;
 
 typedef struct scope_info {
@@ -72,10 +82,10 @@ struct symstack_interface_t {
 
     // get_symbol an item from symstack through the pointer.
     // true if we find an element.
-    bool (*get_symbol)(symstack_t *, dynstring_t *, symbol_t *);
+    bool (*get_symbol)(symstack_t *, dynstring_t *, symbol_t **);
 
-    // put symbol in to symtable on the top of the stack.
-    void (*put)(symstack_t *, dynstring_t *, id_type_t);
+    // put_symbol symbol in to symtable on the top of the stack.
+    void (*put_symbol)(symstack_t *, dynstring_t *, id_type_t);
 
     symtable_t *(*top)(symstack_t *);
 
@@ -87,7 +97,7 @@ struct symtable_interface_t {
 
     id_type_t (*of_id_type)(int);
 
-    bool (*get)(symtable_t *, dynstring_t *, symbol_t *);
+    bool (*get)(symtable_t *, dynstring_t *, symbol_t **);
 
     void (*put)(symtable_t *, dynstring_t *, id_type_t);
 

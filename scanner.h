@@ -189,7 +189,8 @@ struct scanner_interface {
     X(function) \
     X(global) \
     X(require) \
-    X(for)
+    X(for) \
+    X(UNDEF)
 
 
 typedef enum keywords {
