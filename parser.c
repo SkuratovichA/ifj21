@@ -349,7 +349,7 @@ static bool fun_stmt(pfile_t *pfile) {
             // Put an integer counter on to the stack.
             // Or we can just create a symbol and push it later,
             // because there's also an assignment.
-            Symstack.put(symstack, counter.attribute.id, ID_TYPE_integer);
+            Symstack.put_symbol(symstack, counter.attribute.id, ID_TYPE_integer);
 
             // id
             EXPECTED(TOKEN_ID);
@@ -394,15 +394,24 @@ static bool fun_stmt(pfile_t *pfile) {
 
             // this obscure statement must be here because then the dynstring will be deleted...
             // and we lost a string.
-            dynstring_t *localvar_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
+            symbol_t *symbol;
 
+            dynstring_t *id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
             EXPECTED(TOKEN_ID); // id
             EXPECTED(TOKEN_COLON); // :
 
-            id_type_t localvar_type = Symtable.of_id_type(Scanner.get_curr_token().type);
-            SEMANTICS_SYMTABLE_CHECK_AND_PUT(localvar_name, localvar_type);
 
-            if (!datatype(pfile)) { // <datatype>
+            //SEMANTICS_SYMTABLE_CHECK_AND_PUT(localvar_name, localvar_type);
+            // if such a symbol exists, we have a redefinition error.
+            if (Symstack.get_symbol(symstack, id_name, &symbol)) {
+                Errors.set_error(ERROR_DEFINITION);
+                return false;
+            }
+
+            Symtable.put_symbol(symtable, id_name, Scanner.get_curr_token().type);
+
+            // <datatype>
+            if (!datatype(pfile)) {
                 return false;
             }
 
@@ -491,29 +500,33 @@ static bool fun_body(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool other_funparams(pfile_t *pfile) {
+static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
+    dynstring_t *id_name;
     debug_msg("<other_funparam> ->\n");
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
-
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    dynstring_t *funparam_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
+
+    id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     // id
     EXPECTED(TOKEN_ID);
 
     // :
     EXPECTED(TOKEN_COLON);
 
-    token_type_t funparam_type = Scanner.get_curr_token().type;
+    token_type_t id_type = Scanner.get_curr_token().type;
+    // add a parameter to the list.
+    Semantics.add_param(function_def_info, id_type);
     // <datatype>
     if (!datatype(pfile)) {
         return false;
     }
 
-    SEMANTICS_SYMTABLE_CHECK_AND_PUT(funparam_name, funparam_type);
+    SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
+    Dynstring.dtor(id_name);
     return other_funparams(pfile);
 }
 
@@ -525,26 +538,33 @@ static bool other_funparams(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool funparam_def_list(pfile_t *pfile) {
+static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
+    symbol_t *symbol;
+    dynstring_t *id_name;
     debug_msg("funparam_def_list ->\n");
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
-    dynstring_t *funparam_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
+    id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     // id
     EXPECTED(TOKEN_ID);
     // :
     EXPECTED(TOKEN_COLON);
+
+
+    token_type_t id_type = Scanner.get_curr_token().type;
+    // add a datatype to function parameters
+    Semantics.add_param(function_def_info, id_type);
     // <datatype>
     if (!datatype(pfile)) {
         return false;
     }
 
-    token_type_t funparam_type = Scanner.get_curr_token().type;
-    SEMANTICS_SYMTABLE_CHECK_AND_PUT(funparam_name, funparam_type);
+    SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
+    Dynstring.dtor(id_name);
     // <other_funparams>
-    return other_funparams(pfile);
+    return other_funparams(pfile, function_def_info);
 }
 
 /**
@@ -561,6 +581,8 @@ static bool other_datatypes(pfile_t *pfile) {
 
     // ,
     EXPECTED(TOKEN_COMMA);
+
+    Semantics.add_param(decl_parameters, Scanner.get_curr_token().type);
     return datatype(pfile) && other_datatypes(pfile);
 }
 
@@ -571,13 +593,14 @@ static bool other_datatypes(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool datatype_list(pfile_t *pfile) {
+static bool datatype_list(pfile_t *pfile, func_info_t function_decl_info) {
     debug_msg("<datatype_list> ->\n");
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
+    Semantics.add_param(function_decl_info, Scanner.get_curr_token().type);
     //<datatype> && <other_datatypes>
-    return datatype(pfile) && other_datatypes(pfile);
+    return datatype() && other_datatypes(pfile);
 }
 
 /**
@@ -588,7 +611,7 @@ static bool datatype_list(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool other_funrets(pfile_t *pfile) {
+static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
     debug_msg("<other_funrets> -> \n");
     // e |
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
@@ -597,12 +620,9 @@ static bool other_funrets(pfile_t *pfile) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    // <datatype>
-    if (!datatype(pfile)) {
-        return false;
-    }
-
-    return other_funrets(pfile);
+    Semantics.add_return(function_info, Scanner.get_curr_token().type);
+    // <datatype> <other_funrets>
+    return datatype(pfile) && other_funrets(pfile, function_info);
 }
 
 /**
@@ -611,7 +631,7 @@ static bool other_funrets(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool funretopt(pfile_t *pfile) {
+static bool funretopt(pfile_t *pfile, func_info_t function_info) {
     debug_msg("<funretopt> ->\n");
     // e |
     if (Scanner.get_curr_token().type != TOKEN_COLON) {
@@ -620,109 +640,163 @@ static bool funretopt(pfile_t *pfile) {
     // :
     EXPECTED(TOKEN_COLON);
 
-    // <<datatype>
-    if (!datatype(pfile)) {
+    Semantics.add_return(function_info, Scanner.get_curr_token().type);
+    // <datatype> <other_funrets>
+    return datatype && other_funrets(pfile, function_info);
+}
+
+/** Function declaration.
+ * !rule <function_declaration> -> global id : function ( <datatype_list> <funretopt>
+ * @param pfile
+ * @return
+ */
+static bool function_declaration(pfile_t *pfile) {
+    dynstring_t *id_name;
+    symbol_t *symbol;
+
+    // global
+    EXPECTED(KEYWORD_global);
+
+    // assertion is only for test.
+    soft_assert(local_table == global_table && "tables must be equal now", ERROR_SYNTAX);
+    id_name = Scanner.get_curr_token().attribute.id;
+
+    // Semantic control.
+    // if we find a symbol on the stack, check it.
+    if (Symstack.get_symbol(symstack, id_name, &symbol)) {
+        // If function has been defined or declared.
+        if (Semantics.is_defined(symbol->function_semantics) || Semantics.is_declared(symbol->function_semantics)) {
+            Errors.set_error(ERROR_DEFINITION);
+            return false;
+        }
+    }
+    // normally put id on the stack.
+    Symstack.put_symbol(symstack, id_name, ID_TYPE_func_decl);
+
+    // function name
+    EXPECTED(TOKEN_ID);
+    // :
+    EXPECTED(TOKEN_COLON);
+    // function
+    EXPECTED(KEYWORD_function);
+
+    // (
+    EXPECTED(TOKEN_LPAREN);
+    // <funparam_decl_list>
+    if (!datatype_list(pfile, symbol->function_semantics->declaration)) {
         return false;
     }
 
-    // <other_funrets>
-    return other_funrets(pfile);
-}
+    // <funretopt> can be empty
+    return funretopt(pfile, symbol->function_semantics->declaration)) {
+    }
+
+/** Function definition.
+ * !rule <function_definition> -> function id ( <funparam_def_list> <funretopt> <fun_body>
+ * @param pfile
+ * @return
+ */
+    static bool function_definition(pfile_t *pfile) {
+        // function
+        EXPECTED(KEYWORD_function);
+
+        dynstring_t *id_name;
+        // We need to have a pointer to the symbol in the symbol table.
+        symbol_t *symbol;
+
+        soft_assert(local_table == global_table && "tables must be equal now", ERROR_SYNTAX);
+        id_name = Scanner.get_curr_token().attribute.id);
+        // Semantic control.
+        // if we find a symbol on the stack, check it.
+        if (Symstack.get_symbol(symstack, id_name, &symbol)) {
+            // we don't have to control if the symbol is a function,
+            // because in the grammar, there's only one options and this option is
+            // to be a function.
+            // If function has been defined, return false and set an error code.
+            if (Semantics.is_defined(symbol.function_semantics)) {
+                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+                return false;
+            }
+        }
+        Symstack.put_symbol(symstack, id_name, ID_TYPE_func_def);
+
+        // id
+        EXPECTED(TOKEN_ID);
+        // (
+        EXPECTED(TOKEN_LPAREN);
+        // symtable for a function.
+        SYMSTACK_PUSH(SCOPE_TYPE_function);
+
+        // <funparam_def_list>
+        if (!funparam_def_list(pfile, symbol->function_semantics->definition)) {
+            return false;
+        }
+
+        // <funretopt>
+        if (!funretopt(pfile, symbol->function_semantics->returns)) {
+            return false;
+        }
+
+
+        // check signatures
+        if (Semantics.is_declared(symbol->function_semantics)) {
+            if (false == Semantics.check_signatures(symbol->function_semantics)) {
+                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+            }
+        }
+
+
+        // <fun_body>
+        if (!fun_body(pfile)) {
+            return false;
+        }
+        SYMSTACK_POP();
+
+        return true;
+    }
 
 /**
  * @brief Statement(global statement) rule.
  *
- * function declaration: !rule <stmt> -> global id : function ( <datatype_list> <funretopt>
- * function definition: !rule <stmt> -> function id ( <funparam_def_list> <funretopt> <fun_body>
+ * function declaration: !rule <stmt> -> <function_declaration>
+ * function definition: !rule <stmt> -> <function_definintion>
  * function call: !rule <stmt> -> `expr`
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool stmt(pfile_t *pfile) {
-    debug_msg("<stmt> ->\n");
-    token_t token = Scanner.get_curr_token();
+    static bool stmt(pfile_t *pfile) {
+        debug_msg("<stmt> ->\n");
+        token_t token = Scanner.get_curr_token();
 
-    switch (token.type) {
-        // function declaration: global id : function ( <datatype_list> <funretopt>
-        case KEYWORD_global:
-            // global
-            EXPECTED(KEYWORD_global);
+        switch (token.type) {
+            // function declaration: global id : function ( <datatype_list> <funretopt>
+            case KEYWORD_global:
+                return function_declaration(pfile);
 
-            dynstring_t *fundecl_name = Scanner.get_curr_token().attribute.id;
-            SEMANTICS_SYMTABLE_CHECK_AND_PUT(fundecl_name, ID_TYPE_func_decl);
+                // function definition: function id ( <funparam_def_list> <funretopt> <fun_body>
+            case KEYWORD_function:
+                return function_definition(pfile);
 
-            // function name
-            EXPECTED(TOKEN_ID);
-            // :
-            EXPECTED(TOKEN_COLON);
-            // function
-            EXPECTED(KEYWORD_function);
+                // function calling: id ( <list_expr> )
+            case TOKEN_ID:
+                if (!Expr.parse(pfile, true)) {
+                    return false;
+                }
+                break;
 
-            // (
-            EXPECTED(TOKEN_LPAREN);
-            // <funparam_decl_list>
-            if (!datatype_list(pfile)) {
+                // FIXME. I dont know how to solve this recursion.
+            case TOKEN_EOFILE:
+                return true;
+
+            case TOKEN_DEAD:
+                Errors.set_error(ERROR_LEXICAL);
                 return false;
-            }
 
-            // <funretopt> can be empty
-            if (!funretopt(pfile)) {
+            default:
+                Errors.set_error(ERROR_SYNTAX);
                 return false;
-            }
-            break;
-
-            // function definition: function id ( <funparam_def_list> <funretopt> <fun_body>
-        case KEYWORD_function:
-            // function
-            EXPECTED(KEYWORD_function);
-
-            dynstring_t *fundef_name = Scanner.get_curr_token().attribute.id;
-            // Semantic control.
-            SEMANTICS_SYMTABLE_CHECK_AND_PUT(fundef_name, ID_TYPE_func_def);
-            // id
-            EXPECTED(TOKEN_ID);
-
-            // (
-            EXPECTED(TOKEN_LPAREN);
-
-            // symtable for a function.
-            SYMSTACK_PUSH(SCOPE_TYPE_function);
-
-            // <funparam_def_list>
-            if (!funparam_def_list(pfile)) {
-                return false;
-            }
-            // <funretopt>
-            if (!funretopt(pfile)) {
-                return false;
-            }
-
-            // <fun_body>
-            if (!fun_body(pfile)) {
-                return false;
-            }
-            SYMSTACK_POP();
-            break;
-
-            // function calling: id ( <list_expr> )
-        case TOKEN_ID:
-            if (!Expr.parse(pfile, true)) {
-                return false;
-            }
-            break;
-
-        case TOKEN_DEAD:
-            Errors.set_error(ERROR_LEXICAL);
-            return false;
-
-            // FIXME. I dont know how to solve this recursion.
-        case TOKEN_EOFILE:
-            return true;
-        default:
-            Errors.set_error(ERROR_SYNTAX);
-            return false;
-    }
+        }
     return true;
 }
 
@@ -817,6 +891,7 @@ static bool Analyse(pfile_t *pfile) {
     soft_assert(pfile != NULL, ERROR_INTERNAL);
     Errors.set_error(ERROR_NOERROR); // Suppose there's no error here he-he.
     bool res = false; // Suppose we have an error.
+
 
     // initialize structures(symstack, symtable)
     if (false == Init_parser()) {
