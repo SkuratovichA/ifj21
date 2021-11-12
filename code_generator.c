@@ -182,21 +182,50 @@ static void generate_func_substr() {
 }
 
 /*
+ * @brief Generates variable declaration.
+ */
+static void generate_var_declaration() {
+    ADD_INSTR_PART("DEFVAR LF@%");
+    ADD_INSTR_PART(Dynstring.get_str(Scanner.get_prev_token().attribute.id));
+    ADD_INSTR_TMP;
+}
+
+/*
  * @brief Generates function call.
  */
 static void generate_func_call() {
     ADD_INSTR_PART("CALL $");
     // add function id
-    ADD_INSTR_PART("main");
+    ADD_INSTR_PART("CHR");
     ADD_INSTR_TMP;
 }
 
 /*
  * @brief Generates function start.
  */
-static void generate_func_start() {
-    ADD_INSTR("LABEL $main");
+static void generate_main_start() {
+    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
+    ADD_INSTR("LABEL $$MAIN");
     ADD_INSTR("CREATEFRAME");
+    ADD_INSTR("PUSHFRAME");
+}
+
+/*
+ * @brief Generates function end.
+ */
+static void generate_main_end() {
+    // maybe this function is not necessary
+    ADD_INSTR("LABEL $$MAIN$end");
+    ADD_INSTR("POPFRAME");
+    ADD_INSTR("RETURN");
+}
+
+/*
+ * @brief Generates function start.
+ */
+static void generate_func_start() {
+    INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
+    ADD_INSTR("LABEL $");   // add name of function
     ADD_INSTR("PUSHFRAME");
 }
 
@@ -207,6 +236,7 @@ static void generate_func_end() {
     ADD_INSTR("LABEL $main$end");
     ADD_INSTR("POPFRAME");
     ADD_INSTR("RETURN");
+    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
 }
 
 /*
@@ -223,7 +253,7 @@ static void generate_func_return_value(unsigned index) {
 /*
  * @brief Generates code with value of the token.
  */
-static void generate_func_param_value(token_t token) {
+static void generate_var_value(token_t token) {
     char str[MAX_CHAR];
     memset(str, '\0', MAX_CHAR);
     switch (token.type) {
@@ -265,6 +295,21 @@ static void generate_func_param_value(token_t token) {
             break;
     }
 }
+/*
+ * @brief Generates variable declaration.
+ */
+static void generate_var_definition(token_t token) {
+   // ADD_INSTR_PART("DEFVAR LF@%");
+   // ADD_INSTR_PART(Dynstring.get_str(token.attribute.id));
+   // ADD_INSTR_TMP;
+
+    ADD_INSTR_PART("MOVE LF@%");
+    ADD_INSTR_PART(Dynstring.get_str(token.attribute.id));
+    ADD_INSTR_PART(" ");
+    //generate_var_value();
+    ADD_INSTR_PART("69");
+    ADD_INSTR_TMP;
+}
 
 /*
  * @brief Generates parameter pass to a function.
@@ -272,7 +317,7 @@ static void generate_func_param_value(token_t token) {
  *          DEFVAR TF@%0
  *          MOVE TF@%0 int@42
  */
-static void generate_func_pass_param(token_t token, int param_index) {
+static void generate_func_pass_param(int param_index) {
     ADD_INSTR_PART("DEFVAR TF@%");
     ADD_INSTR_INT(param_index);
     ADD_INSTR_TMP;
@@ -280,7 +325,7 @@ static void generate_func_pass_param(token_t token, int param_index) {
     ADD_INSTR_PART("MOVE TF@%");
     ADD_INSTR_INT(param_index);
     ADD_INSTR_PART(" ");
-    generate_func_param_value(token);
+    generate_var_value(Scanner.get_curr_token());
     ADD_INSTR_TMP;
 }
 
@@ -295,7 +340,11 @@ static void generate_func_createframe() {
  * @brief Generates program start (adds header, define built-in functions).
  */
 static void generate_prog_start() {
+    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
     ADD_INSTR(".IFJcode21");
+    ADD_INSTR("JUMP $$MAIN");
+
+    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
     generate_func_ord();
     generate_func_chr();
     generate_func_substr();
@@ -305,7 +354,7 @@ static void generate_prog_start() {
     generate_func_write();
     generate_func_tointeger();
 
-    // create main function, JUMP
+    generate_main_start();
 }
 
 /**
@@ -319,4 +368,8 @@ const struct code_generator_interface_t Generator = {
         .func_return_value = generate_func_return_value,
         .func_pass_param = generate_func_pass_param,
         .func_createframe = generate_func_createframe,
+        .main_end = generate_main_end,
+        .func_call = generate_func_call,
+        .var_declaration = generate_var_declaration,
+        .var_definition = generate_var_definition,
 };
