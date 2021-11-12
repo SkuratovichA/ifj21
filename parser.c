@@ -126,7 +126,7 @@ static bool cond_body(pfile_t *pfile) {
             // pop an existent symtable, because we ara in the if statement(scope).
             SYMSTACK_POP();
             // also, we need to create a new symtable for 'else' scope.
-            SYMSTACK_PUSH(SCOPE_condition);
+            SYMSTACK_PUSH(SCOPE_TYPE_condition);
             if (!fun_body(pfile)) {
                 return false;
             }
@@ -138,7 +138,7 @@ static bool cond_body(pfile_t *pfile) {
             // pop an existent symtable, because we ara in the if statement(scope).
             SYMSTACK_POP();
             // also, we need to create a new symtable for 'elseif' scope.
-            SYMSTACK_PUSH(SCOPE_condition);
+            SYMSTACK_PUSH(SCOPE_TYPE_condition);
             return cond_stmt(pfile);
 
         case KEYWORD_end:
@@ -337,7 +337,7 @@ static bool fun_stmt(pfile_t *pfile) {
         // rule <fun_stmt> -> for <for_def>, `expr` <for_assignment> <fun_body>
         case KEYWORD_for:
             EXPECTED(KEYWORD_for); // for
-            SYMSTACK_PUSH(SCOPE_cycle);
+            SYMSTACK_PUSH(SCOPE_TYPE_cycle);
 
             token_t counter = Scanner.get_curr_token();
             symbol_t fun_name; // dummy symbol to control function name.
@@ -349,7 +349,7 @@ static bool fun_stmt(pfile_t *pfile) {
             // Put an integer counter on to the stack.
             // Or we can just create a symbol and push it later,
             // because there's also an assignment.
-            Symstack.put(symstack, counter.attribute.id, TYPE_integer);
+            Symstack.put(symstack, counter.attribute.id, ID_TYPE_integer);
 
             // id
             EXPECTED(TOKEN_ID);
@@ -382,7 +382,7 @@ static bool fun_stmt(pfile_t *pfile) {
             // if <cond_stmt>
         case KEYWORD_if:
             EXPECTED(KEYWORD_if);
-            SYMSTACK_PUSH(SCOPE_condition);
+            SYMSTACK_PUSH(SCOPE_TYPE_condition);
             if (!cond_stmt(pfile)) {
                 return false;
             }
@@ -399,7 +399,7 @@ static bool fun_stmt(pfile_t *pfile) {
             EXPECTED(TOKEN_ID); // id
             EXPECTED(TOKEN_COLON); // :
 
-            token_type_t localvar_type = Scanner.get_curr_token().type;
+            id_type_t localvar_type = Symtable.of_id_type(Scanner.get_curr_token().type);
             SEMANTICS_SYMTABLE_CHECK_AND_PUT(localvar_name, localvar_type);
 
             if (!datatype(pfile)) { // <datatype>
@@ -425,7 +425,7 @@ static bool fun_stmt(pfile_t *pfile) {
         case KEYWORD_while:
             EXPECTED(KEYWORD_while);
             // create a new symtable for while cycle.
-            SYMSTACK_PUSH(SCOPE_cycle);
+            SYMSTACK_PUSH(SCOPE_TYPE_cycle);
             // parse expressions
             if (!Expr.parse(pfile, true)) {
                 debug_msg("Expression analysis failed.\n");
@@ -442,7 +442,7 @@ static bool fun_stmt(pfile_t *pfile) {
             // repeat <some_body> until `expr`
         case KEYWORD_repeat:
             EXPECTED(KEYWORD_repeat);
-            SYMSTACK_PUSH(SCOPE_do_cycle);
+            SYMSTACK_PUSH(SCOPE_TYPE_do_cycle);
 
             if (!repeat_body(pfile)) {
                 return false;
@@ -650,7 +650,7 @@ static bool stmt(pfile_t *pfile) {
             EXPECTED(KEYWORD_global);
 
             dynstring_t *fundecl_name = Scanner.get_curr_token().attribute.id;
-            SEMANTICS_SYMTABLE_CHECK_AND_PUT(fundecl_name, TYPE_func_decl);
+            SEMANTICS_SYMTABLE_CHECK_AND_PUT(fundecl_name, ID_TYPE_func_decl);
 
             // function name
             EXPECTED(TOKEN_ID);
@@ -679,7 +679,7 @@ static bool stmt(pfile_t *pfile) {
 
             dynstring_t *fundef_name = Scanner.get_curr_token().attribute.id;
             // Semantic control.
-            SEMANTICS_SYMTABLE_CHECK_AND_PUT(fundef_name, TYPE_func_def);
+            SEMANTICS_SYMTABLE_CHECK_AND_PUT(fundef_name, ID_TYPE_func_def);
             // id
             EXPECTED(TOKEN_ID);
 
@@ -687,7 +687,7 @@ static bool stmt(pfile_t *pfile) {
             EXPECTED(TOKEN_LPAREN);
 
             // symtable for a function.
-            SYMSTACK_PUSH(SCOPE_function);
+            SYMSTACK_PUSH(SCOPE_TYPE_function);
 
             // <funparam_def_list>
             if (!funparam_def_list(pfile)) {
@@ -791,7 +791,7 @@ static bool Init_parser() {
     }
 
     // push a global frame
-    Symstack.push(symstack, global_table, SCOPE_global);
+    Symstack.push(symstack, global_table, SCOPE_TYPE_global);
     return true;
 }
 
