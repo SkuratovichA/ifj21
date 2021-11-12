@@ -154,6 +154,7 @@ static bool cond_body(pfile_t *pfile) {
             // generate start of end block
             Generator.cond_end(instructions.cond_scope_id, instructions.cond_num);
             instructions.cond_num = 0;
+            instructions.cond_scope_id = 0;
 
             return true;
         default:
@@ -409,6 +410,9 @@ static bool fun_stmt(pfile_t *pfile) {
         case KEYWORD_if:
             EXPECTED(KEYWORD_if);
             SYMSTACK_PUSH(SCOPE_TYPE_condition);
+
+            instructions.cond_scope_id = Symstack.get_scope_info(symstack).unique_id;
+
             if (!cond_stmt(pfile)) {
                 return false;
             }
