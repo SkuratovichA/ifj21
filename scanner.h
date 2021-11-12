@@ -187,8 +187,6 @@ struct scanner_interface {
     X(nil) \
     X(while) \
     X(function) \
-    X(read) \
-    X(write) \
     X(global) \
     X(require) \
     X(for)
