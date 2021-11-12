@@ -61,8 +61,6 @@ static op_list_t get_op (token_t token) {
         case TOKEN_NE:      return OP_NE;
         case TOKEN_STRCAT:  return OP_STRCAT;
         case TOKEN_COMMA:   return OP_COMMA;
-        case KEYWORD_read:
-        case KEYWORD_write:
         case TOKEN_FUNC:    return OP_FUNC;
         default: return OP_DOLLAR;
     }
@@ -560,16 +558,12 @@ static bool is_function_call (op_list_t first_op, op_list_t second_op) {
 static bool is_expr_end (op_list_t first_op, op_list_t second_op, int func_cnt) {
     return  (
                 first_op == OP_ID && (
-                        Scanner.get_curr_token().type == TOKEN_ID ||
-                        Scanner.get_curr_token().type == KEYWORD_write ||
-                        Scanner.get_curr_token().type == KEYWORD_read
+                        Scanner.get_curr_token().type == TOKEN_ID
                 )
             ) ||
             (
                 first_op == OP_RPAREN && (
-                      Scanner.get_curr_token().type == TOKEN_ID ||
-                      Scanner.get_curr_token().type == KEYWORD_write ||
-                      Scanner.get_curr_token().type == KEYWORD_read
+                        Scanner.get_curr_token().type == TOKEN_ID
                 )
             ) ||
             (second_op == OP_COMMA && func_cnt == 0);
@@ -836,8 +830,6 @@ static bool expr_stmt (pfile_t * pfile) {
     switch (Scanner.get_curr_token().type) {
         // probably(not sure we well have to perform some semantic actions on this, so i left it as is).
         case TOKEN_ID:
-        case KEYWORD_read:
-        case KEYWORD_write:
         case KEYWORD_0: // for false
         case KEYWORD_1: // for true
         case KEYWORD_nil: // do we need to use nil? IDK.

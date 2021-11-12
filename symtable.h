@@ -45,6 +45,7 @@ typedef struct symbol {
 typedef struct scope_info {
     scope_type_t scope_type;
     size_t scope_level;
+    size_t unique_id;
 } scope_info_t;
 
 extern const struct symtable_interface_t Symtable;
