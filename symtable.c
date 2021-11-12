@@ -53,29 +53,28 @@ static symtable_t *ST_Ctor() {
     return table;
 }
 
-static bool _st_get(node_t *node, dynstring_t *id, symbol_t *container) {
+static bool _st_get(node_t *node, dynstring_t *id, symbol_t *storage) {
     if (node == NULL) {
         return false;
     }
 
     int res = Dynstring.cmp(id, node->symbol.id);
     if (res == 0) {
-        if (container != NULL) {
-            *
-                    container = node->symbol;
+        if (storage != NULL) {
+            *storage = node->symbol;
         }
         return true;
     }
-    return _st_get(res > 0 ? node->right : node->left, id, container);
+    return _st_get(res > 0 ? node->right : node->left, id, storage);
 }
 
-static bool ST_Get(symtable_t *table, dynstring_t *id, symbol_t *container) {
+static bool ST_Get(symtable_t *table, dynstring_t *id, symbol_t *storage) {
     debug_msg("\n");
     if (table == NULL) {
         return false;
     }
 
-    return _st_get(table->root, id, container);
+    return _st_get(table->root, id, storage);
 }
 
 static void ST_Put(symtable_t *table, dynstring_t *id, id_type_t type) {

@@ -6,7 +6,7 @@
 #include "errors.h"
 #include "dynstring.h"
 
-typedef enum dataytpe {
+typedef enum id_type {
     TYPE_string = KEYWORD_string,
     TYPE_boolean = KEYWORD_boolean,
     TYPE_number = KEYWORD_number,
