@@ -104,17 +104,6 @@ static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin
     return newbe;
 }
 
-static Set_datatype(var_semantics_t *self, int datatype) {
-    if (self == NULL) {
-        return;
-    }
-
-    /*self->
-    datatype = datatype;
-    */
-}
-
-
 const struct semantics_interface_t Semantics = {
         .dtor = Dtor,
         .ctor = Ctor,
@@ -127,5 +116,4 @@ const struct semantics_interface_t Semantics = {
         .declare = Declare,
         .define = Define,
         .builtin = Builtin,
-        .set_var_datatype = Set_datatype,
 };

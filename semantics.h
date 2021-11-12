@@ -48,10 +48,5 @@ struct semantics_interface_t {
 
     void (*define)(func_semantics_t *);
 
-
-    void (*set_var_datatype)(var_semantics_t *, int);
-
-    void (*get_var_datatype)(var_semantics_t *);
-
     void (*builtin)(func_semantics_t *);
 };
