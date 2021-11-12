@@ -4,6 +4,8 @@
 
 // TODO: move global_table, local_table here.
 
+static __unique__id;
+
 typedef struct node {
     symbol_t symbol;
     struct node *left, *right;
@@ -134,19 +136,25 @@ static void *SS_Init() {
     return calloc(1, sizeof(symstack_t));
 }
 
+
 static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type) {
     debug_msg("\n");
+    // create a new elment.
+    stack_el_t *stack_element = calloc(1, sizeof(stack_el_t));
+    soft_assert(stack_element != NULL, ERROR_INTERNAL);
 
-    stack_el_t *st = calloc(1, sizeof(stack_el_t));
-    soft_assert(st != NULL, ERROR_INTERNAL);
+    // map a symtable.
+    stack_element->table = table;
+    // set info.
+    stack_element->info.scope_type = scope_type;
+    // set scope level. Either 0 or 1 + previous level.
+    stack_element->info.scope_level = self->head != NULL ? self->head->info.scope_level + 1 : 0;
+    // set a unique id for code generation.
+    stack_element->info.unique_id = __unique__id++;
 
-    size_t level = self->head != NULL ? self->head->info.scope_level + 1 : 0;
-
-    st->table = table;
-    st->next = self->head;
-    st->info.scope_type = scope_type, st->info.scope_level = level;
-
-    self->head = st;
+    // prepend new stack element.
+    stack_element->next = self->head;
+    self->head = stack_element;
 
     debug_msg("New symtable pushed on the stack.\n");
 }
@@ -292,15 +300,15 @@ int main() {
     char *strs[6] = {"aaa", "bbb", "ccc", "ddd", "eee", "fff"};
 
     // put an item on the "global frame"
-    Symstack.push(stack, t);
-    Symstack.put(stack, hello, TYPE_number);
+    Symstack.push(stack, t, SCOPE_TYPE_global);
+    Symstack.put(stack, hello, ID_TYPE_number);
 
     // create a new frame.
-    Symstack.push(stack, Symtable.ctor());
+    Symstack.push(stack, Symtable.ctor(), SCOPE_TYPE_function);
 
     // push on new frame.
     for (int i = 0; i < 6; i++) {
-        Symstack.put(stack, Dynstring.ctor(strs[i]), TYPE_string);
+        Symstack.put(stack, Dynstring.ctor(strs[i]), ID_TYPE_string);
     }
 
     // find elements.
