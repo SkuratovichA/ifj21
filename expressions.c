@@ -38,31 +38,50 @@ static const int g[22] = {15, 15, 0, 11, 11, 11, 7, 7, 5, 5, 5, 5, 5, 5, 13, 13,
  * @param token
  * @return op_list_t.
  */
-static op_list_t get_op (token_t token) {
+static op_list_t get_op(token_t token) {
     switch (token.type) {
         case TOKEN_STR:
         case TOKEN_NUM_F:
         case TOKEN_NUM_I:
         case KEYWORD_nil:
-        case TOKEN_ID:      return OP_ID;
-        case TOKEN_LPAREN:  return OP_LPAREN;
-        case TOKEN_RPAREN:  return OP_RPAREN;
-        case TOKEN_HASH:    return OP_HASH;
-        case TOKEN_MUL:     return OP_MUL;
-        case TOKEN_DIV_F:   return OP_DIV_F;
-        case TOKEN_DIV_I:   return OP_DIV_I;
-        case TOKEN_ADD:     return OP_ADD;
-        case TOKEN_SUB:     return OP_SUB;
-        case TOKEN_LT:      return OP_LT;
-        case TOKEN_LE:      return OP_LE;
-        case TOKEN_GT:      return OP_GT;
-        case TOKEN_GE:      return OP_GE;
-        case TOKEN_EQ:      return OP_EQ;
-        case TOKEN_NE:      return OP_NE;
-        case TOKEN_STRCAT:  return OP_STRCAT;
-        case TOKEN_COMMA:   return OP_COMMA;
-        case TOKEN_FUNC:    return OP_FUNC;
-        default: return OP_DOLLAR;
+        case TOKEN_ID:
+            return OP_ID;
+        case TOKEN_LPAREN:
+            return OP_LPAREN;
+        case TOKEN_RPAREN:
+            return OP_RPAREN;
+        case TOKEN_HASH:
+            return OP_HASH;
+        case TOKEN_MUL:
+            return OP_MUL;
+        case TOKEN_DIV_F:
+            return OP_DIV_F;
+        case TOKEN_DIV_I:
+            return OP_DIV_I;
+        case TOKEN_ADD:
+            return OP_ADD;
+        case TOKEN_SUB:
+            return OP_SUB;
+        case TOKEN_LT:
+            return OP_LT;
+        case TOKEN_LE:
+            return OP_LE;
+        case TOKEN_GT:
+            return OP_GT;
+        case TOKEN_GE:
+            return OP_GE;
+        case TOKEN_EQ:
+            return OP_EQ;
+        case TOKEN_NE:
+            return OP_NE;
+        case TOKEN_STRCAT:
+            return OP_STRCAT;
+        case TOKEN_COMMA:
+            return OP_COMMA;
+        case TOKEN_FUNC:
+            return OP_FUNC;
+        default:
+            return OP_DOLLAR;
     }
 }
 
@@ -72,28 +91,48 @@ static op_list_t get_op (token_t token) {
  * @param op
  * @return char *.
  */
-static char * op_to_string(op_list_t op) {
-    switch(op) {
-        case OP_ID:         return "id";
-        case OP_LPAREN:     return "(";
-        case OP_RPAREN:     return ")";
-        case OP_HASH:       return "#";
-        case OP_MUL:        return "*";
-        case OP_DIV_I:      return "//";
-        case OP_DIV_F:      return "/";
-        case OP_ADD:        return "+";
-        case OP_SUB:        return "-";
-        case OP_LT:         return "<";
-        case OP_LE:         return "<=";
-        case OP_GT:         return ">";
-        case OP_GE:         return ">=";
-        case OP_EQ:         return "==";
-        case OP_NE:         return "~=";
-        case OP_STRCAT:     return "..";
-        case OP_FUNC:       return "func";
-        case OP_COMMA:      return ",";
-        case OP_DOLLAR:     return "$";
-        default: return "unrecognized operator";
+static char *op_to_string(op_list_t op) {
+    switch (op) {
+        case OP_ID:
+            return "id";
+        case OP_LPAREN:
+            return "(";
+        case OP_RPAREN:
+            return ")";
+        case OP_HASH:
+            return "#";
+        case OP_MUL:
+            return "*";
+        case OP_DIV_I:
+            return "//";
+        case OP_DIV_F:
+            return "/";
+        case OP_ADD:
+            return "+";
+        case OP_SUB:
+            return "-";
+        case OP_LT:
+            return "<";
+        case OP_LE:
+            return "<=";
+        case OP_GT:
+            return ">";
+        case OP_GE:
+            return ">=";
+        case OP_EQ:
+            return "==";
+        case OP_NE:
+            return "~=";
+        case OP_STRCAT:
+            return "..";
+        case OP_FUNC:
+            return "func";
+        case OP_COMMA:
+            return ",";
+        case OP_DOLLAR:
+            return "$";
+        default:
+            return "unrecognized operator";
     }
 }
 
@@ -104,14 +143,25 @@ static char * op_to_string(op_list_t op) {
  * @param type
  * @return char *.
  */
-static char * item_to_string(item_type_t type) {
-    switch(type) {
-        case ITEM_TYPE_EXPR:     return "E"; break;
-        case ITEM_TYPE_LT:       return "<"; break;
-        case ITEM_TYPE_GT:       return ">"; break;
-        case ITEM_TYPE_EQ:       return "="; break;
-        case ITEM_TYPE_DOLLAR:   return "$"; break;
-        default: return "unrecognized type";
+static char *item_to_string(item_type_t type) {
+    switch (type) {
+        case ITEM_TYPE_EXPR:
+            return "E";
+            break;
+        case ITEM_TYPE_LT:
+            return "<";
+            break;
+        case ITEM_TYPE_GT:
+            return ">";
+            break;
+        case ITEM_TYPE_EQ:
+            return "=";
+            break;
+        case ITEM_TYPE_DOLLAR:
+            return "$";
+            break;
+        default:
+            return "unrecognized type";
     }
 }
 
@@ -122,7 +172,7 @@ static char * item_to_string(item_type_t type) {
  * @param item
  * @return char *.
  */
-static char * to_str (stack_item_t * item) {
+static char *to_str(stack_item_t *item) {
     return (item->type == ITEM_TYPE_TOKEN) ? op_to_string(get_op(item->token)) : item_to_string(item->type);
 }
 
@@ -136,8 +186,8 @@ static char * to_str (stack_item_t * item) {
  * @param token
  * @return stack_item_t *.
  */
-static stack_item_t * stack_item_ctor (item_type_t type, token_t * token) {
-    stack_item_t * new_item = calloc(1, sizeof(stack_item_t));
+static stack_item_t *stack_item_ctor(item_type_t type, token_t *token) {
+    stack_item_t *new_item = calloc(1, sizeof(stack_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
     new_item->type = type;
 
@@ -155,8 +205,8 @@ static stack_item_t * stack_item_ctor (item_type_t type, token_t * token) {
  * @param item
  * @return stack_item_t.
  */
-static stack_item_t * stack_item_copy (stack_item_t * item) {
-    stack_item_t * new_item = calloc(1, sizeof(stack_item_t));
+static stack_item_t *stack_item_copy(stack_item_t *item) {
+    stack_item_t *new_item = calloc(1, sizeof(stack_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
     new_item->type = item->type;
 
@@ -173,7 +223,7 @@ static stack_item_t * stack_item_copy (stack_item_t * item) {
  *
  * @param item
  */
-static void stack_item_dtor (void * item) {
+static void stack_item_dtor(void *item) {
     debug_msg("Deleted: \"%s\"\n", to_str(item));
     free(item);
 }
@@ -186,7 +236,7 @@ static void stack_item_dtor (void * item) {
  * @param second_op second operator.
  * @return bool.
  */
-static bool precedence_check (op_list_t first_op, op_list_t second_op) {
+static bool precedence_check(op_list_t first_op, op_list_t second_op) {
     if (first_op == OP_ID || first_op == OP_RPAREN) {
         if (second_op == OP_ID || second_op == OP_LPAREN || second_op == OP_FUNC) {
             return false;
@@ -219,7 +269,7 @@ static bool precedence_check (op_list_t first_op, op_list_t second_op) {
  * <0 if first_op has a lower precedence.
  * @return bool.
  */
-static bool precedence_cmp (op_list_t first_op, op_list_t second_op, int * cmp) {
+static bool precedence_cmp(op_list_t first_op, op_list_t second_op, int *cmp) {
     if (precedence_check(first_op, second_op)) {
         *cmp = f[first_op] - g[second_op];
         return true;
@@ -234,10 +284,10 @@ static bool precedence_cmp (op_list_t first_op, op_list_t second_op, int * cmp) 
  * @param r_stack stack with handle (rule).
  * @return bool.
  */
-static bool expression (sstack_t * r_stack) {
+static bool expression(sstack_t *r_stack) {
     debug_msg("EXPECTED: E\n");
 
-    stack_item_t * item = Stack.peek(r_stack);
+    stack_item_t *item = Stack.peek(r_stack);
 
     if (!item) {
         Errors.set_error(ERROR_SYNTAX);
@@ -260,10 +310,10 @@ static bool expression (sstack_t * r_stack) {
  * @param exp_op expected operator.
  * @return
  */
-static bool single_op (sstack_t * r_stack, op_list_t exp_op) {
+static bool single_op(sstack_t *r_stack, op_list_t exp_op) {
     debug_msg("EXPECTED: %s\n", op_to_string(exp_op));
 
-    stack_item_t * item = Stack.peek(r_stack);
+    stack_item_t *item = Stack.peek(r_stack);
 
     if (!item) {
         debug_msg("Failed to analyze expression with a token '%s'\n", Scanner.to_string(Scanner.get_curr_token().type));
@@ -294,10 +344,10 @@ static bool single_op (sstack_t * r_stack, op_list_t exp_op) {
  * @param r_stack stack with handle (rule).
  * @return bool.
  */
-static bool operator(sstack_t * r_stack) {
+static bool operator(sstack_t *r_stack) {
     debug_msg("EXPECTED: binary operator\n");
 
-    stack_item_t * item = Stack.peek(r_stack);
+    stack_item_t *item = Stack.peek(r_stack);
 
     if (!item) {
         Errors.set_error(ERROR_SYNTAX);
@@ -338,7 +388,7 @@ static bool operator(sstack_t * r_stack) {
  * @param func_entries count of entries to functions.
  * @return bool.
  */
-static bool other_arguments (sstack_t * r_stack, int * func_entries) {
+static bool other_arguments(sstack_t *r_stack, int *func_entries) {
     debug_msg("rule: , E <other_arguments> | )\n");
 
     // ,
@@ -365,7 +415,7 @@ static bool other_arguments (sstack_t * r_stack, int * func_entries) {
  * @param func_entries count of entries to functions.
  * @return bool.
  */
-static bool arguments (sstack_t * r_stack, int * func_entries) {
+static bool arguments(sstack_t *r_stack, int *func_entries) {
     debug_msg("EXPECTED: E <other_arguments> | )\n");
 
     // E
@@ -392,10 +442,10 @@ static bool arguments (sstack_t * r_stack, int * func_entries) {
  * @param func_entries count of entries to functions.
  * @return bool.
  */
-static bool check_rule(sstack_t * r_stack, int * func_entries) {
+static bool check_rule(sstack_t *r_stack, int *func_entries) {
     debug_msg("EXPECTED: E <operator> | # E | ( E ) | id | id ( <arguments>\n");
 
-    stack_item_t * item = Stack.peek(r_stack);
+    stack_item_t *item = Stack.peek(r_stack);
 
     if (!item) {
         Errors.set_error(ERROR_SYNTAX);
@@ -409,20 +459,20 @@ static bool check_rule(sstack_t * r_stack, int * func_entries) {
     }
 
     if (item->type == ITEM_TYPE_TOKEN) {
-        switch(get_op(item->token)) {
+        switch (get_op(item->token)) {
             // # E
             case OP_HASH:
                 Stack.pop(r_stack, stack_item_dtor);
                 return expression(r_stack);
-            // ( E )
+                // ( E )
             case OP_LPAREN:
                 Stack.pop(r_stack, stack_item_dtor);
                 return expression(r_stack) && single_op(r_stack, OP_RPAREN);
-            // id
+                // id
             case OP_ID:
                 Stack.pop(r_stack, stack_item_dtor);
                 return true;
-            // id ( <arguments>
+                // id ( <arguments>
             case OP_FUNC:
                 Stack.pop(r_stack, stack_item_dtor);
                 return single_op(r_stack, OP_LPAREN) && arguments(r_stack, func_entries);
@@ -444,9 +494,9 @@ static bool check_rule(sstack_t * r_stack, int * func_entries) {
  * @param top pointer to pointer to item on top of the stack (double pointer for rewriting).
  * @return stack_item_t *
  */
-static stack_item_t * pop_expr (sstack_t * stack, stack_item_t ** top) {
-    stack_item_t * expr = NULL;
-    stack_item_t * tmp;
+static stack_item_t *pop_expr(sstack_t *stack, stack_item_t **top) {
+    stack_item_t *expr = NULL;
+    stack_item_t *tmp;
 
     if ((*top)->type == ITEM_TYPE_EXPR) {
         debug_msg("Expression popped\n");
@@ -469,7 +519,7 @@ static stack_item_t * pop_expr (sstack_t * stack, stack_item_t ** top) {
  * @param expr pointer to expression.
  * @param cmp comparison result.
  */
-static void shift (pfile_t * pfile, sstack_t * stack, stack_item_t * expr, int const cmp) {
+static void shift(pfile_t *pfile, sstack_t *stack, stack_item_t *expr, int const cmp) {
     debug_msg("SHIFT < | SHIFT =\n");
 
     // If first_op has a lower precedence, then push less than symbol
@@ -499,7 +549,7 @@ static void shift (pfile_t * pfile, sstack_t * stack, stack_item_t * expr, int c
  * @param func_entries count of entries to functions.
  * @return bool.
  */
-static bool reduce (sstack_t * stack, stack_item_t * expr, stack_item_t * top, int * func_entries) {
+static bool reduce(sstack_t *stack, stack_item_t *expr, stack_item_t *top, int *func_entries) {
     debug_msg("REDUCE >\n");
 
     // Push expression if exists
@@ -510,7 +560,7 @@ static bool reduce (sstack_t * stack, stack_item_t * expr, stack_item_t * top, i
     }
 
     // Reduce rule
-    sstack_t * r_stack = Stack.ctor();
+    sstack_t *r_stack = Stack.ctor();
     while (top->type != ITEM_TYPE_LT && top->type != ITEM_TYPE_DOLLAR) {
         Stack.push(r_stack, (stack_item_t *) stack_item_copy(top));
         Stack.pop(stack, stack_item_dtor);
@@ -543,8 +593,8 @@ static bool reduce (sstack_t * stack, stack_item_t * expr, stack_item_t * top, i
  * @param second_op second operator.
  * @return
  */
-static bool is_function_call (op_list_t first_op, op_list_t second_op) {
-    return  first_op == OP_ID && second_op == OP_LPAREN;
+static bool is_function_call(op_list_t first_op, op_list_t second_op) {
+    return first_op == OP_ID && second_op == OP_LPAREN;
 }
 
 /**
@@ -555,18 +605,18 @@ static bool is_function_call (op_list_t first_op, op_list_t second_op) {
  * @param func_cnt count of function entries.
  * @return bool.
  */
-static bool is_expr_end (op_list_t first_op, op_list_t second_op, int func_cnt) {
-    return  (
-                first_op == OP_ID && (
-                        Scanner.get_curr_token().type == TOKEN_ID
-                )
-            ) ||
-            (
-                first_op == OP_RPAREN && (
-                        Scanner.get_curr_token().type == TOKEN_ID
-                )
-            ) ||
-            (second_op == OP_COMMA && func_cnt == 0);
+static bool is_expr_end(op_list_t first_op, op_list_t second_op, int func_cnt) {
+    return (
+                   first_op == OP_ID && (
+                           Scanner.get_curr_token().type == TOKEN_ID
+                   )
+           ) ||
+           (
+                   first_op == OP_RPAREN && (
+                           Scanner.get_curr_token().type == TOKEN_ID
+                   )
+           ) ||
+           (second_op == OP_COMMA && func_cnt == 0);
 }
 
 /**
@@ -577,10 +627,10 @@ static bool is_expr_end (op_list_t first_op, op_list_t second_op, int func_cnt) 
  * @param hard_reduce flag to reduce without comparison.
  * @return bool.
  */
-static bool is_parse_success (op_list_t first_op, op_list_t second_op, bool hard_reduce) {
-    return  (first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
-            (first_op == OP_DOLLAR && (second_op == OP_ID || second_op == OP_FUNC) && hard_reduce) ||
-            (first_op == OP_DOLLAR && second_op == OP_COMMA && hard_reduce);
+static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_reduce) {
+    return (first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
+           (first_op == OP_DOLLAR && (second_op == OP_ID || second_op == OP_FUNC) && hard_reduce) ||
+           (first_op == OP_DOLLAR && second_op == OP_COMMA && hard_reduce);
 }
 
 /**
@@ -591,20 +641,20 @@ static bool is_parse_success (op_list_t first_op, op_list_t second_op, bool hard
  * @param expr_type type of expression to parse.
  * @return bool.
  */
-static bool parse (pfile_t * pfile, sstack_t * stack, expr_type_t expr_type) {
+static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
     bool hard_reduce = false;
     int func_entries = (expr_type == EXPR_FUNC) ? 1 : 0;
     int cmp;
 
     while (Scanner.get_curr_token().type != TOKEN_DEAD) {
         // Peek item from the stack
-        stack_item_t * top = (stack_item_t *) Stack.peek(stack);
+        stack_item_t *top = (stack_item_t *) Stack.peek(stack);
 
         debug_msg("Function entries: %d\n", func_entries);
         debug_msg("Next: \"%s\"\n", Scanner.to_string(Scanner.get_curr_token().type));
 
         // Pop expression if we have it on the top of the stack
-        stack_item_t * expr = pop_expr(stack, &top);
+        stack_item_t *expr = pop_expr(stack, &top);
 
         debug_msg("Top: \"%s\"\n", to_str(top));
 
@@ -665,17 +715,17 @@ static bool parse (pfile_t * pfile, sstack_t * stack, expr_type_t expr_type) {
  * @param prev_token previous token.
  * @return bool.
  */
-static bool parse_init(pfile_t * pfile, expr_type_t expr_type, token_t * prev_token) {
-    sstack_t * stack = Stack.ctor();
+static bool parse_init(pfile_t *pfile, expr_type_t expr_type, token_t *prev_token) {
+    sstack_t *stack = Stack.ctor();
 
     // Push $ on stack
-    stack_item_t * dollar = stack_item_ctor(ITEM_TYPE_DOLLAR, NULL);
+    stack_item_t *dollar = stack_item_ctor(ITEM_TYPE_DOLLAR, NULL);
     Stack.push(stack, dollar);
 
     // Push id and ( if expression is a function call
     if (expr_type == EXPR_FUNC) {
         prev_token->type = TOKEN_FUNC;
-        token_t tok_lparen = { .type = TOKEN_LPAREN };
+        token_t tok_lparen = {.type = TOKEN_LPAREN};
         Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_TOKEN, prev_token));
         Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_TOKEN, &tok_lparen));
     }
@@ -696,7 +746,7 @@ static bool parse_init(pfile_t * pfile, expr_type_t expr_type, token_t * prev_to
  * @param pfile program file to pass in to scanner.
  * @return bool.
  */
-static bool other_expr (pfile_t * pfile) {
+static bool other_expr(pfile_t *pfile) {
     debug_msg("EXPECTED: , E <other_expr>\n");
 
     // ,
@@ -744,7 +794,7 @@ static bool Expr_list(pfile_t *pfile) {
  * @param pfile program file to pass in to scanner.
  * @return bool.
  */
-static bool id_list (pfile_t * pfile) {
+static bool id_list(pfile_t *pfile) {
     debug_msg("EXPECTED: , id <id_list> | = <expr_list>\n");
 
     // DEAD TOKEN
@@ -783,7 +833,7 @@ static bool id_list (pfile_t * pfile) {
  * @param prev_token previous token.
  * @return bool.
  */
-static bool expr_stmt_next (pfile_t * pfile, token_t * prev_token) {
+static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token) {
     debug_msg("EXPECTED: = E | ( E | <id_list>\n");
 
     // DEAD TOKEN
@@ -816,7 +866,7 @@ static bool expr_stmt_next (pfile_t * pfile, token_t * prev_token) {
  * @param pfile program file to pass in to scanner.
  * @return bool.
  */
-static bool expr_stmt (pfile_t * pfile) {
+static bool expr_stmt(pfile_t *pfile) {
     debug_msg("rule: id <expr_stmt_next>\n");
 
     // DEAD TOKEN
@@ -855,7 +905,7 @@ static bool expr_stmt (pfile_t * pfile) {
  * @param inside_stmt true when the function is called from parser.
  * @return bool.
  */
-static bool Parse_expression(pfile_t * pfile, bool inside_stmt) {
+static bool Parse_expression(pfile_t *pfile, bool inside_stmt) {
     if (inside_stmt == true) {
         return parse_init(pfile, EXPR_DEFAULT, NULL);
     } else {
