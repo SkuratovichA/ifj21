@@ -1,3 +1,10 @@
+/**
+ * @file stack.h
+ *
+ * @brief The file contains ...
+ *
+ * @author Lucie Svobodova <xplagiat01@vutbr.cz
+ */
 #pragma once
 
 #include "list.h"

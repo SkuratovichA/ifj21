@@ -1,3 +1,10 @@
+/**
+ * @file parser.h
+ *
+ * @brief Header file for parser.
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #pragma once
 
 

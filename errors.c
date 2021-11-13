@@ -1,20 +1,25 @@
+/**
+ * @file errors.c
+ *
+ * @brief
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #include "errors.h"
 #include "debug.h"
 
 static int error = 0;
 static char *errmsg = "";
 
-/**
- * @brief Error getter.
-
+/** Error getter.
+ *
  * @return return errorcode defined in error.h, which has been set or 0.
  */
 static int Get_error() {
     return error;
 }
 
-/**
- * @brief Error setter.
+/** Error setter.
  *
  * @param errcode Errors codes are defined in errors.h.
  */
@@ -79,8 +84,7 @@ static char *Get_error_msg() {
     return errmsg;
 }
 
-/**
- * Functions are in struct so we can use them in different files.
+/** Functions are in struct so we can use them in different files.
  */
 const struct error_interface Errors = {
         .get_errmsg = Get_error_msg,

@@ -1,3 +1,10 @@
+/**
+ * @file expressions.h
+ *
+ * @brief
+ *
+ * @author
+ */
 #pragma once
 
 #include "progfile.h"

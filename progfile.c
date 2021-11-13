@@ -1,14 +1,16 @@
+/**
+ * @file progfile.h
+ *
+ * @brief Program file implementation. (buffered file)
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ *
+ */
 #include "progfile.h"
-
-#include "progfile.h"
-#include "macros.h"
-#include <assert.h>
 #include "dynstring.h"
 
 
-// opaque structure
-/**
- * An opaque structure representing a file.
+/** An opaque structure representing a file.
  */
 struct c_progfile {
     size_t size; // File size
@@ -16,8 +18,7 @@ struct c_progfile {
     char tape[];
 };
 
-/**
- * @brief Pfile constructor. Create a pfile object using memcpy from a char *. FIts for tests.
+/** Pfile constructor. Create a pfile object using memcpy from a char *. FIts for tests.
  *
  * @param pfile char array which become a tape.
  * @return new pfile object.
@@ -43,9 +44,9 @@ static pfile_t *Ctor(char *tape) {
     return NULL;
 }
 
-/**
- * @brief Move the head of the tape by step @param step. 0 means the next char will be returned, because previous pgetc()
- * has post-increased pos.
+/** Move the head of the tape by step @param step.
+ *  0 means the next char will be returned,
+ *  because previous pgetc() has post-increased pos.
  *
  * @param pfile char array
  * @param step
@@ -65,8 +66,7 @@ static char Peek_at(pfile_t *pfile, size_t step) {  //MAYBE RENAME TO MOVE_FILE_
     //return (newpos < pfile->size) ? pfile->tape[newpos] : EOF;
 }
 
-/**
- * @brief Get actual character and move to next one.
+/** Get actual character and move to next one.
  *
  * @param pfile
  * @return Actual character. If end or empty return EOF.
@@ -82,8 +82,7 @@ static int Getc(pfile_t *pfile) {
     return EOF;;
 }
 
-/**
- * @brief move tape head one character backward, and return a current character
+/** Move tape head one character backward, and return a current character
  *
  * @param pfile
  * @return character before or EOF
@@ -93,8 +92,7 @@ static int Ungetc(pfile_t *pfile) {
     return (pfile->pos > 0) ? pfile->tape[--pfile->pos] : EOF;
 }
 
-/**
- * @brief Free data structure.
+/** Free data structure.
  *
  * @param pfile struct that will be freed
  * @return void
@@ -107,8 +105,7 @@ static void Free(pfile_t *pfile) {
     free(pfile);
 }
 
-/**
- * @brief Get tape.
+/** Get tape.
  *
  * @param pfile
  * @return pfile->tape
@@ -118,8 +115,7 @@ static char *Get_tape(pfile_t *pfile) {
     return pfile->tape;
 }
 
-/**
- * @brief Get current tape at the pos position.
+/** Get current tape at the pos position.
  *
  * @param pfile
  * @return pfile->tape + pfile->pos
@@ -129,8 +125,7 @@ static char *Get_tape_current(pfile_t *pfile) {
     return (pfile->tape + pfile->pos);
 }
 
-/**
- * @brief Refresh pfile->tape to the new value.
+/** Refresh pfile->tape to the new value.
  * NOTE: new @param tape must be the part of pfile->tape, e.g. it can be strchr(gettape(pfile), some_char).
  * Otherfise it won't work.
  *
@@ -148,8 +143,7 @@ static void Set_tape(pfile_t *pfile, char *tape) {
     }
 }
 
-/**
- * @brief Reads a file from stdin to progfile structure.
+/** Reads a file from stdin to progfile structure.
  *
  * @return File stored in pfile structure. If error_interface return NULL.
  */
@@ -185,8 +179,7 @@ static pfile_t *Getfile_stdin() {
     return NULL;
 }
 
-/**
- * @brief Store file to progfile structure.
+/** Store file to progfile structure.
  *
  * @param filename
  * @param mode File opening mode.
@@ -229,9 +222,6 @@ static pfile_t *Getfile(const char *filename, const char *mode) {
 }
 
 
-/**
- * Pfile interface.
- */
 const struct pfile_interface_t Pfile = {
         .getfile = Getfile,
         .getfile_stdin  = Getfile_stdin,

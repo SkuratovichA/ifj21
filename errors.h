@@ -1,3 +1,10 @@
+/**
+ * @file errors.h
+ *
+ * @brief
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #pragma once
 
 // assert a condition and exit with an error code if condition is false
@@ -13,8 +20,7 @@ do { \
     } \
 } while (0)
 
-/**
- * All error_interface codes.
+/** All error_interface codes.
  */
 enum errors {
     ERROR_NOERROR,
@@ -31,9 +37,6 @@ enum errors {
 };
 
 
-/**
- * A structure that store pointers to all the functions from errors.c. So we can use them in different files.
- */
 struct error_interface {
     void (*set_error)(int);
 

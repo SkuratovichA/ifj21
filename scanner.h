@@ -1,3 +1,10 @@
+/**
+ * @file scanner.h
+ *
+ * @brief Header file for scanner.
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #pragma once
 
 #include <stdio.h>
@@ -22,6 +29,8 @@ typedef union token_attribute {
     double num_f; ///< fp number representation
 } attribute_t;
 
+/** Token produced by a scanner.
+ */
 typedef struct token {
     int type;
     attribute_t attribute;
@@ -141,6 +150,7 @@ typedef enum token_type {
     TOKEN(COMMA) = ',',
 } token_type_t;
 
+
 typedef enum states {
 #define X(name) STATE(name),
     STATES(X)
@@ -154,16 +164,13 @@ typedef enum keywords {
 #undef X
 } keyword_t;
 
+
 extern const struct scanner_interface Scanner;
 
 struct scanner_interface {
     void (*free)();
 
-    pfile_t *(*initialize)(void);
-
     struct token (*get_next_token)(pfile_t *);
-
-    token_t (*get_prev_token)(void);
 
     token_t (*get_curr_token)(void);
 

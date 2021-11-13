@@ -1,8 +1,17 @@
-#include <stdio.h>
+/**
+ * @file ifj21.c
+ *
+ * @brief main() program.
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
+
 #include "errors.h"
 #include "parser.h"
 #include "progfile.h"
-#include "symtable.h"
 
 int main() {
     pfile_t *pfile;

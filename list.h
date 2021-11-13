@@ -1,3 +1,10 @@
+/**
+ * @file list.h
+ *
+ * @brief
+ *
+ * @author Svobodova Lucie
+ */
 #pragma once
 
 #include <stdlib.h>
@@ -15,9 +22,9 @@ typedef struct list_item list_item_t;
 /**
  * A structure that represents a singly linked list.
  */
- typedef struct list {
-     list_item_t *head;
- } list_t;
+typedef struct list {
+    list_item_t *head;
+} list_t;
 
 /**
  * A structure that store pointers to all functions from list.c.

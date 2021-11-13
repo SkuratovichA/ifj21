@@ -1,3 +1,11 @@
+/**
+ * @file expressions.c
+ *
+ * @brief
+ *
+ * @author
+ */
+
 #include "expressions.h"
 #include "parser.h"
 #include "scanner.h"
@@ -484,18 +492,18 @@ static bool check_rule(sstack_t *r_stack, int *func_entries) {
             case OP_HASH:
                 Stack.pop(r_stack, stack_item_dtor);
                 EXPR_ERROR(expression(r_stack));
-            // ( expr ) | ( )
+                // ( expr ) | ( )
             case OP_LPAREN:
                 Stack.pop(r_stack, stack_item_dtor);
                 if (single_op(r_stack, OP_RPAREN)) {
                     return true;
                 }
                 EXPR_ERROR(expression(r_stack) && single_op(r_stack, OP_RPAREN));
-            // id
+                // id
             case OP_ID:
                 Stack.pop(r_stack, stack_item_dtor);
                 return true;
-            // id ( <arguments>
+                // id ( <arguments>
             case OP_FUNC:
                 Stack.pop(r_stack, stack_item_dtor);
                 EXPR_ERROR(single_op(r_stack, OP_LPAREN) && arguments(r_stack, func_entries));
@@ -631,8 +639,8 @@ static bool is_function_call(op_list_t first_op, op_list_t second_op) {
  */
 static bool is_expr_end(op_list_t first_op, op_list_t second_op, int func_cnt) {
     return  (first_op == OP_ID && Scanner.get_curr_token().type == TOKEN_ID) ||
-            (first_op == OP_RPAREN && Scanner.get_curr_token().type == TOKEN_ID) ||
-            (second_op == OP_COMMA && func_cnt == 0);
+                                                                             (first_op == OP_RPAREN && Scanner.get_curr_token().type == TOKEN_ID) ||
+                                                                             (second_op == OP_COMMA && func_cnt == 0);
 }
 
 /**
@@ -645,8 +653,8 @@ static bool is_expr_end(op_list_t first_op, op_list_t second_op, int func_cnt) {
  */
 static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_reduce) {
     return  (first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
-            (first_op == OP_DOLLAR && second_op == OP_ID && hard_reduce) ||
-            (first_op == OP_DOLLAR && second_op == OP_COMMA && hard_reduce);
+                                                              (first_op == OP_DOLLAR && second_op == OP_ID && hard_reduce) ||
+                                                              (first_op == OP_DOLLAR && second_op == OP_COMMA && hard_reduce);
 }
 
 /**
@@ -930,12 +938,25 @@ static bool Parse_expression(pfile_t *pfile, bool inside_stmt) {
     }
 }
 
+static bool dummy_expr(pfile_t *p, bool dummy_bool) {
+    (void) dummy_bool;
+    Scanner.get_next_token(p);
+    return true;
+}
+
+static bool dummy_expr_list(pfile_t *p) {
+    Scanner.get_next_token(p);
+    return true;
+}
+
+
 /**
  * Functions are in struct so we can use them in different files.
  */
 const struct expr_interface_t Expr = {
-        .parse = Parse_expression,
-        .parse_expr_list = Expr_list,
+        .parse = dummy_expr,
+        //.parse_expr_list = Expr_list,
+        .parse_expr_list = dummy_expr_list,
 };
 
 #ifdef SELFTEST_expressions
