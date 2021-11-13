@@ -9,15 +9,25 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmacro-redefined"
 // undef debug macros
-#define debug_err(...)
-#define debug_msg(...)
-#define debug_msg_stdout(...)
-#define debug_msg_stderr(...)
-#define debug_todo(...)
-#define debug_assert(cond)
-#define debug_msg_s(...)
-#define DEBUG_SEP
+//#define debug_err(...)
+//#define debug_msg(...)
+//#define debug_msg_stdout(...)
+//#define debug_msg_stderr(...)
+//#define debug_todo(...)
+//#define debug_assert(cond)
+//#define debug_msg_s(...)
+//#define DEBUG_SEP
 #pragma GCC diagnostic pop
+
+#define EXPR_ERROR(cond)                    \
+    do {                                    \
+        if ( !(cond) ) {                    \
+            Errors.set_error(ERROR_SYNTAX); \
+            return false;                   \
+        } else {                            \
+            return true;                    \
+        }                                   \
+    } while (0)
 
 /**
  * Precedence function table.
@@ -160,7 +170,7 @@ static char *op_to_string(op_list_t op) {
 static char *item_to_string(item_type_t type) {
     switch (type) {
         case ITEM_TYPE_EXPR:
-            return "E";
+            return "expr";
             break;
         case ITEM_TYPE_LT:
             return "<";
@@ -299,12 +309,11 @@ static bool precedence_cmp(op_list_t first_op, op_list_t second_op, int *cmp) {
  * @return bool.
  */
 static bool expression(sstack_t *r_stack) {
-    debug_msg("EXPECTED: E\n");
+    debug_msg("EXPECTED: expr\n");
 
     stack_item_t *item = Stack.peek(r_stack);
 
     if (!item) {
-        Errors.set_error(ERROR_SYNTAX);
         return false;
     }
 
@@ -313,7 +322,6 @@ static bool expression(sstack_t *r_stack) {
         return true;
     }
 
-    Errors.set_error(ERROR_SYNTAX);
     return false;
 }
 
@@ -331,7 +339,6 @@ static bool single_op(sstack_t *r_stack, op_list_t exp_op) {
 
     if (!item) {
         debug_msg("Failed to analyze expression with a token '%s'\n", Scanner.to_string(Scanner.get_curr_token().type));
-        Errors.set_error(ERROR_SYNTAX);
         return false;
     }
 
@@ -364,7 +371,6 @@ static bool operator(sstack_t *r_stack) {
     stack_item_t *item = Stack.peek(r_stack);
 
     if (!item) {
-        Errors.set_error(ERROR_SYNTAX);
         return false;
     }
 
@@ -389,7 +395,6 @@ static bool operator(sstack_t *r_stack) {
         }
     }
 
-    Errors.set_error(ERROR_SYNTAX);
     return false;
 }
 
@@ -403,11 +408,11 @@ static bool operator(sstack_t *r_stack) {
  * @return bool.
  */
 static bool other_arguments(sstack_t *r_stack, int *func_entries) {
-    debug_msg("rule: , E <other_arguments> | )\n");
+    debug_msg("rule: , expr <other_arguments> | )\n");
 
     // ,
     if (single_op(r_stack, OP_COMMA)) {
-        // E <other_arguments>
+        // expr <other_arguments>
         return expression(r_stack) && other_arguments(r_stack, func_entries);
     } else {
         // )
@@ -430,9 +435,9 @@ static bool other_arguments(sstack_t *r_stack, int *func_entries) {
  * @return bool.
  */
 static bool arguments(sstack_t *r_stack, int *func_entries) {
-    debug_msg("EXPECTED: E <other_arguments> | )\n");
+    debug_msg("EXPECTED: expr <other_arguments> | )\n");
 
-    // E
+    // expr
     if (expression(r_stack)) {
         // <other_arguments>
         return other_arguments(r_stack, func_entries);
@@ -457,45 +462,50 @@ static bool arguments(sstack_t *r_stack, int *func_entries) {
  * @return bool.
  */
 static bool check_rule(sstack_t *r_stack, int *func_entries) {
-    debug_msg("EXPECTED: E <operator> | # E | ( E ) | id | id ( <arguments>\n");
+    debug_msg("EXPECTED: expr <operator> | # expr | ( expr ) | ( ) | id | id ( <arguments>\n");
 
     stack_item_t *item = Stack.peek(r_stack);
 
     if (!item) {
+        // or EXPR_ERROR(true);
         Errors.set_error(ERROR_SYNTAX);
         return false;
     }
 
-    // E <operator>
+    // expr <operator>
     if (item->type == ITEM_TYPE_EXPR) {
         Stack.pop(r_stack, stack_item_dtor);
-        return operator(r_stack);
+        EXPR_ERROR(operator(r_stack));
     }
 
     if (item->type == ITEM_TYPE_TOKEN) {
         switch (get_op(item->token)) {
-            // # E
+            // # expr
             case OP_HASH:
                 Stack.pop(r_stack, stack_item_dtor);
-                return expression(r_stack);
-                // ( E )
+                EXPR_ERROR(expression(r_stack));
+            // ( expr ) | ( )
             case OP_LPAREN:
                 Stack.pop(r_stack, stack_item_dtor);
-                return expression(r_stack) && single_op(r_stack, OP_RPAREN);
-                // id
+                if (single_op(r_stack, OP_RPAREN)) {
+                    return true;
+                }
+                EXPR_ERROR(expression(r_stack) && single_op(r_stack, OP_RPAREN));
+            // id
             case OP_ID:
                 Stack.pop(r_stack, stack_item_dtor);
                 return true;
-                // id ( <arguments>
+            // id ( <arguments>
             case OP_FUNC:
                 Stack.pop(r_stack, stack_item_dtor);
-                return single_op(r_stack, OP_LPAREN) && arguments(r_stack, func_entries);
+                EXPR_ERROR(single_op(r_stack, OP_LPAREN) && arguments(r_stack, func_entries));
             default:
                 break;
         }
     }
 
     // Otherwise
+    // or EXPR_ERROR(true);
     Errors.set_error(ERROR_SYNTAX);
     return false;
 }
@@ -620,17 +630,9 @@ static bool is_function_call(op_list_t first_op, op_list_t second_op) {
  * @return bool.
  */
 static bool is_expr_end(op_list_t first_op, op_list_t second_op, int func_cnt) {
-    return (
-                   first_op == OP_ID && (
-                           Scanner.get_curr_token().type == TOKEN_ID
-                   )
-           ) ||
-           (
-                   first_op == OP_RPAREN && (
-                           Scanner.get_curr_token().type == TOKEN_ID
-                   )
-           ) ||
-           (second_op == OP_COMMA && func_cnt == 0);
+    return  (first_op == OP_ID && Scanner.get_curr_token().type == TOKEN_ID) ||
+            (first_op == OP_RPAREN && Scanner.get_curr_token().type == TOKEN_ID) ||
+            (second_op == OP_COMMA && func_cnt == 0);
 }
 
 /**
@@ -642,9 +644,9 @@ static bool is_expr_end(op_list_t first_op, op_list_t second_op, int func_cnt) {
  * @return bool.
  */
 static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_reduce) {
-    return (first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
-           (first_op == OP_DOLLAR && (second_op == OP_ID || second_op == OP_FUNC) && hard_reduce) ||
-           (first_op == OP_DOLLAR && second_op == OP_COMMA && hard_reduce);
+    return  (first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
+            (first_op == OP_DOLLAR && second_op == OP_ID && hard_reduce) ||
+            (first_op == OP_DOLLAR && second_op == OP_COMMA && hard_reduce);
 }
 
 /**
@@ -700,6 +702,7 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
                 if (expr) {
                     stack_item_dtor(expr);
                 }
+                Errors.set_error(ERROR_SYNTAX);
                 debug_msg("Precedence error!\n");
                 return false;
             }
@@ -761,7 +764,7 @@ static bool parse_init(pfile_t *pfile, expr_type_t expr_type, token_t *prev_toke
  * @return bool.
  */
 static bool other_expr(pfile_t *pfile) {
-    debug_msg("EXPECTED: , E <other_expr>\n");
+    debug_msg("EXPECTED: , expr <other_expr>\n");
 
     // ,
     if (Scanner.get_curr_token().type == TOKEN_COMMA) {
@@ -788,7 +791,7 @@ static bool other_expr(pfile_t *pfile) {
  * @return bool.
  */
 static bool Expr_list(pfile_t *pfile) {
-    debug_msg("EXPECTED: E <other_expr>\n");
+    debug_msg("EXPECTED: expr <other_expr>\n");
 
     // expr
     if (parse_init(pfile, EXPR_DEFAULT, NULL)) {
@@ -848,7 +851,7 @@ static bool id_list(pfile_t *pfile) {
  * @return bool.
  */
 static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token) {
-    debug_msg("EXPECTED: = E | ( E | <id_list>\n");
+    debug_msg("EXPECTED: = expr | ( expr | <id_list>\n");
 
     // DEAD TOKEN
     if (Scanner.get_curr_token().type == TOKEN_DEAD) {
