@@ -1206,7 +1206,7 @@ int main() {
             REPEAT
             REPEAT
             REPEAT
-            " live_is_beautiful "
+            " live_is_beautiful() "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
