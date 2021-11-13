@@ -253,6 +253,42 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
     debug_msg("\t[BUILTIN]: builtin function is set.\n");
 }
 
+/** auxilary function to traverse a symtable(BST)
+ *
+ * Function returns the conjunction of @param acc and its application on the children.
+ *
+ * @param self symtable to traverse.
+ * @param predicate predicate to apply.
+ * @param acc accumulator.
+ * @return
+ */
+static bool _traverse(node_t *self, bool (*predicate)(symbol_t *), bool acc) {
+    if (self == NULL) {
+        return true;
+    }
+
+    acc &= predicate(&self->symbol);
+    acc &= _traverse(self->left, predicate, acc);
+    acc &= _traverse(self->right, predicate, acc);
+    return acc;
+}
+
+/** Traverse a symtable and apply a predicate on all the symbols.
+ *
+ * Function store the conjunction of all predicates.
+ *
+ * @param self symtable to traverse.
+ * @param predicate predicate to apply.
+ * @return
+ */
+static bool Traverse(symtable_t *self, bool (*predicate)(symbol_t *)) {
+    if (self && predicate == NULL) {
+        return false;
+    }
+    bool acc = true;
+    return _traverse(self->root, predicate, acc);
+}
+
 
 const struct symtable_interface_t Symtable = {
         .get_symbol = ST_Get,
@@ -261,6 +297,7 @@ const struct symtable_interface_t Symtable = {
         .ctor = ST_Ctor,
         .id_type_of_token_type = id_type_of_token_type,
         .add_builtin_function = Add_builtin_function,
+        .traverse = Traverse,
 };
 
 

@@ -910,6 +910,18 @@ static bool stmt_list(pfile_t *pfile) {
     return stmt(pfile) && stmt_list(pfile);
 }
 
+/** Predicate to check if every declared function is also defined.
+ * @return bool
+ */
+static bool declared_implies_defined(symbol_t *symbol) {
+    if (symbol->type == ID_TYPE_func_decl) {
+        if (false == symbol->function_semantics->is_defined) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /** Program(start) rule.
  * !rule <program> -> require "ifj21" <stmt_list>
  *
@@ -939,7 +951,17 @@ static bool program(pfile_t *pfile) {
     Dynstring.dtor(prolog_str);
 
     // <stmt_list>
-    return stmt_list(pfile);
+    if (!stmt_list(pfile)) {
+        return false;
+    }
+
+    //TODO: every declared function must be defined also
+    if (!Symstack.traverse(symstack, declared_implies_defined)) {
+        assert(ERROR_DEFINITION == 3); // i dont remember :(
+        Errors.set_error(ERROR_DEFINITION);
+        return false;
+    }
+    return true;
 }
 
 /** Initialize symstack and global_frame structures

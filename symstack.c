@@ -240,6 +240,28 @@ static char *SS_Get_parent_func_name(symstack_t *self) {
     return NULL;
 }
 
+/** Traverse a symstack and apply a predicate on all the symbols.
+ *
+ * Function store the conjunction of all predicates.
+ *
+ * @param self symstack to traverse.
+ * @param predicate predicate to apply.
+ * @return
+ */
+static bool Traverse(symstack_t *self, bool (*predicate)(symbol_t *)) {
+    if (self && predicate == NULL) {
+        return false;
+    }
+    stack_el_t *stack_iter = self->head;
+    bool acc = true;
+
+    while (stack_iter != NULL) {
+        acc &= Symtable.traverse(stack_iter->table, predicate);
+    }
+
+    return acc;
+}
+
 
 const struct symstack_interface_t Symstack = {
         .init = SS_Init,
@@ -251,4 +273,5 @@ const struct symstack_interface_t Symstack = {
         .top = SS_Top,
         .get_scope_info = SS_Get_scope_info,
         .get_parent_func_name = SS_Get_parent_func_name,
+        .traverse = Traverse,
 };

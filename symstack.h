@@ -58,7 +58,7 @@ struct symstack_interface_t {
      *
      * @return Pointer to allocated memory.
      */
-    void *(*init)();
+    symstack_t *(*init)();
 
     /** Push a new symbol table on the stack.
      *
@@ -119,4 +119,14 @@ struct symstack_interface_t {
      * @return scope_info_t structure.
      */
     scope_info_t (*get_scope_info)(symstack_t *);
+
+    /** Traverse a symstack and apply a predicate on all the symbols.
+     *
+     * Function store the conjunction of all predicates.
+     *
+     * @param self symstack to traverse.
+     * @param predicate predicate to apply.
+     * @return
+     */
+    bool (*traverse)(symstack_t *, bool (*predicate)(symbol_t *));
 };
