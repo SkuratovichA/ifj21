@@ -467,7 +467,7 @@ static bool while_cycle(pfile_t *pfile) {
 static bool return_stmt(pfile_t *pfile) {
     EXPECTED(KEYWORD_return);
     // return expr
-    if (!return_expr_list(pfile)) {
+    if (!Expr.parse_expr_list(pfile)) {
         return false;
     }
 
