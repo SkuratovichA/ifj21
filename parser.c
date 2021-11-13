@@ -1037,6 +1037,8 @@ int main() {
             GLOBAL "baz : function(string)"
             GLOBAL "bar : function(string, integer)"
             GLOBAL "arst : function(string, integer, number, number, integer, string)"
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+
             GLOBAL "foo:function()"
             GLOBAL "baz:function(string)"
             GLOBAL "bar:function(string, integer)"
@@ -1048,7 +1050,6 @@ int main() {
             GLOBAL "foo : function() : string\n"
             GLOBAL "baz : function(number) : integer, integer, integer, integer\n"
             GLOBAL "bar : function(string, integer, number) : number\n"
-            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
             GLOBAL "foo : function():string\n"
             GLOBAL "baz : function(number):integer, integer, integer, integer\n"
             GLOBAL "bar : function(string, integer, number):number\n"
@@ -1060,6 +1061,29 @@ int main() {
             GLOBAL "foo : function()\n"
             GLOBAL "foo : function()\n"
             GLOBAL "foo : function()\n"
+    );
+     pfile_t *pf_semantics_good = Pfile.ctor(
+            PROLOG
+            GLOBAL "foo : function()"
+            GLOBAL "baz : function(string)"
+            GLOBAL "bar : function(string, integer)"
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+
+            FUN "foo()"
+            END
+
+            FUN "baz(str : string)"
+            END
+
+            FUN "bar(str : string, int : integer)"
+            END
+
+            GLOBAL "arst : function(string,         integer,             number,       number,     integer, string)"
+            FUN               "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)"
+            END
+
+            FUN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (str : string) : string, string, string\n"
+            END
     );
     //4
     pfile_t *pf4 = Pfile.ctor(
@@ -1217,10 +1241,6 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf2), false, "Second test. Lixecal error handled.");
     TEST_EXPECT(Errors.get_error() == ERROR_LEXICAL, true, "This error must be a lexical one.");
 
-    Tests.warning("3: function declarations.");
-    TEST_EXPECT(Parser.analyse(pf3), true, "Function declarations OK.");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
-
     Tests.warning("4: Mutually recursive functions.");
     TEST_EXPECT(Parser.analyse(pf4), true, "Mutually recursive functions. Return statement.");
     TEST_EXPECT((Errors.get_error() == ERROR_NOERROR), true, "There's no error.");
@@ -1263,7 +1283,6 @@ int main() {
     Tests.warning("14: Function with a wrong expression as a body.");
     TEST_EXPECT(Parser.analyse(pf14), false, "function which body is only one wrong expression.");
     TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error..");
-#endif
 
     Tests.warning("10: repeat until statements");
     TEST_EXPECT(Parser.analyse(pf10), true, "Repeat until statements");
@@ -1273,9 +1292,18 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf5), true, "curve's program(bigger).");
     TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's an error.");
 
+#endif
+    Tests.warning("42: good function semantics");
+    TEST_EXPECT(Parser.analyse(pf_semantics_good), true, " decl & def semantics good");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There are no errors.");
+
+    Tests.warning("3: function declarations SEMANTIC ERROR.");
+    TEST_EXPECT(Parser.analyse(pf3), false, "Function declarations SEMANTIC ERROR.");
+    TEST_EXPECT(Errors.get_error() == ERROR_DEFINITION, true, "Definition error must be handled.");
 
     // destructors
     Pfile.dtor(pf1);
+    Pfile.dtor(pf_semantics_good);
     Pfile.dtor(pf2);
     Pfile.dtor(pf3);
     Pfile.dtor(pf4);
