@@ -17,6 +17,9 @@
 //#pragma GCC diagnostic pop
 #endif
 
+
+#define hex2dec(ch) ((uint8_t)((ch) -(((ch) > '9') ? (-10 + (((ch) > 'Z' ) ? 'a': 'A')): '0')))
+
 /**
  * @brief Covert state to string.
  *
@@ -167,12 +170,15 @@ static token_t lex_string(pfile_t *pfile) {
                 escaped_char = 0;
                 switch (ch) {
                     case '0':
+                        escaped_char += (ch - '0') * 100;
                         state = STATE_STR_DEC_0_0;
                         break;
                     case '1':
+                        escaped_char += (ch - '0') * 100;
                         state = STATE_STR_DEC_0_1;
                         break;
                     case '2':
+                        escaped_char += (ch - '0') * 100;
                         state = STATE_STR_DEC_0_2;
                         break;
                     case 't':
@@ -183,6 +189,9 @@ static token_t lex_string(pfile_t *pfile) {
                         Dynstring.append(token.attribute.id, '\t');
                         state = STATE_STR_INIT;
                         break;
+                    case 'x':
+                        state = STATE_STR_HEX_1;
+                        break;
                     case_2('\\', '\"'):
                         Dynstring.append(token.attribute.id, (char) ch);
                         state = STATE_STR_INIT;
@@ -191,7 +200,23 @@ static token_t lex_string(pfile_t *pfile) {
                         accepted = true;
                         break;
                 }
-                escaped_char += (ch - '0') * 100;
+                break;
+
+            case STATE_STR_HEX_1:
+                if (!ishexnumber(ch)) {
+                    accepted = true;
+                }
+                escaped_char = hex2dec(ch) << 4;
+                state = STATE_STR_HEX_2;
+                break;
+
+            case STATE_STR_HEX_2:
+                if (!ishexnumber(ch)) {
+                    accepted = true;
+                }
+                escaped_char |= hex2dec(ch);
+                Dynstring.append(token.attribute.id, (char) escaped_char);
+                state = STATE_STR_INIT;
                 break;
 
             case STATE_STR_DEC_0_0:
