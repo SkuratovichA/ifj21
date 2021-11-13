@@ -1082,7 +1082,7 @@ int main() {
     char *description2 = "lexical error";
     pfile_t *pf2 = Pfile.ctor("1234.er" PROLOG);
 
-    char *description3 = "Redefinition error";
+    char *description3 = "Redeclaration error";
     pfile_t *pf3 = Pfile.ctor(
             PROLOG
             GLOBAL "foo : function()"
@@ -1161,13 +1161,13 @@ int main() {
             FUN "main()"
                 LOCAL "s1 : string =" SOME_STRING
                 LOCAL "s2 : string = s1" CONCAT SOME_STRING
-                "print("SOME_STRING")"
-                LOCAL "s1len : integer = #s1"
-                "s1len = s1len - 4"
-                "s1 = "SUBSTR"(s2, s1len, s1len + 4)"
+                " print("SOME_STRING") "
+                LOCAL "s1len : integer = #s1 "
+                " s1len = s1len - 4 "
+                " s1 = "SUBSTR"(s2, s1len, s1len + 4) "
                 WRITE"("SOME_STRING")"
                 WRITE"("SOME_STRING")"
-            "   s1 = "READS"()"
+                " s1 = "READS"() "
             END
     );
 
@@ -1228,7 +1228,7 @@ int main() {
             REPEAT
             REPEAT
             REPEAT
-            " live_is_beautiful "
+            " live_is_beautiful() "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
@@ -1288,7 +1288,7 @@ int main() {
             //"main()" uncoment iff expressions are done
             );
 
-    char *description16 = "error";
+    char *description16 = "builtin functions 2";
     pfile_t *pf16 = Pfile.ctor(
             "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
             PROLOG
@@ -1297,9 +1297,9 @@ int main() {
                 LOCAL "s2 : string = s1"
                 "print" //(s1,"SOME_STRING", s2)"
                 LOCAL "s1len : integer = 10"
-                //"s1 =" SUBSTR"(s2, s1len, s1len + 4)"
-                "main"
-            //"main()" uncoment iff expressions are done
+                "s1 =" SUBSTR"(s2, s1len, s1len + 4)"
+            END
+            "main()"
     );
 
     // tests.
@@ -1313,9 +1313,9 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf2), false, description2);
     TEST_EXPECT(Errors.get_error() == ERROR_LEXICAL, true, description2);
 
-    Tests.warning(description3);
-    TEST_EXPECT(Parser.analyse(pf3), true, description3);
-    TEST_EXPECT((Errors.get_error() == ERROR_NOERROR), true, description3);
+//    Tests.warning(description3);
+//    TEST_EXPECT(Parser.analyse(pf3), false, description3);
+//    TEST_EXPECT((Errors.get_error() == ERROR_DEFINITION), true, description3);
 
     Tests.warning(description4);
     TEST_EXPECT(Parser.analyse(pf4), true, description4);
@@ -1350,8 +1350,8 @@ int main() {
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description11);
 
     Tests.warning(description12);
-    TEST_EXPECT(Parser.analyse(pf12), false, description12);
-    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, description12);
+    TEST_EXPECT(Parser.analyse(pf12), true, description12);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description12);
 
     Tests.warning(description13);
     TEST_EXPECT(Parser.analyse(pf13), true, description13);
@@ -1362,8 +1362,8 @@ int main() {
     TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, description14);
 
     Tests.warning(description16);
-    TEST_EXPECT(Parser.analyse(pf16), false, description16);
-    TEST_EXPECT(Errors.get_error() == ERROR_DEFINITION, true, description16);
+    TEST_EXPECT(Parser.analyse(pf16), true, description16);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description16);
 #endif
 
     Tests.warning(description15);
