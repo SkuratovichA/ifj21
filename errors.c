@@ -24,10 +24,13 @@ static int Get_error() {
  * @param errcode Errors codes are defined in errors.h.
  */
 static void Set_error(int errcode) {
-    if (errcode != ERROR_NOERROR)
-        debug_msg("#######################################################\n"
+    if (errcode != ERROR_NOERROR) {
+        debug_msg("\n#######################################################\n"
                   "################ Error will be set NOW! ###############\n"
                   "#######################################################\n");
+    } else {
+        errmsg = "";
+    }
 
     switch (errcode) {
         case ERROR_LEXICAL:
@@ -76,6 +79,15 @@ static void Set_error(int errcode) {
             break;
     }
     //fprintf(stderr, "ERROR: %s\n", errmsg);
+
+    if (errcode != ERROR_NOERROR) {
+        debug_msg("\n################################################################################\n"
+                  "######## ERROR = '%s' #########\n"
+                  "######## CODE  = '%d' #########\n"
+                  "##################################################################################\n", errmsg,
+                  errcode);
+        (void) (2 + 2 == 5);
+    }
 
     error = errcode;
 }
