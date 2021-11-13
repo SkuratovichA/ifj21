@@ -584,7 +584,7 @@ static bool fun_body(pfile_t *pfile) {
                 }
                 break;
             case SCOPE_TYPE_function:
-                Generator.func_end();
+                Generator.func_end(Symstack.get_function_name());
                 break;
             default:
                 debug_msg("Shouldn't be here.\n");
@@ -611,7 +611,7 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
-
+    token_t token_func = Scanner.get_curr_token();
     id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     // id
     EXPECTED(TOKEN_ID);
@@ -628,6 +628,8 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
     }
 
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
+
+    Generator.func_start_param(Dynstring.get_str(id_name), 1);      // FIXME counter
 
     Dynstring.dtor(id_name);
     return other_funparams(pfile, function_def_info);
@@ -648,6 +650,9 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
     EXPECTED_OPT(TOKEN_RPAREN);
 
     id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
+
+    Generator.func_start_param(Dynstring.get_str(id_name), 0);    // need index of the param to the code generator, not the name
+
     // id
     EXPECTED(TOKEN_ID);
     // :
@@ -664,7 +669,6 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
 
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
-    // Generator.func_pass_param(0);    // need index of the param to the code generator, not the name
 
     Dynstring.dtor(id_name);
     // <other_funparams>
@@ -727,6 +731,10 @@ static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
     EXPECTED(TOKEN_COMMA);
 
     Semantics.add_return(function_info, Scanner.get_curr_token().type);
+
+    // generate return var
+    Generator.func_return_value(1);         // FIXME counter
+
     // <datatype> <other_funrets>
     return datatype(pfile) && other_funrets(pfile, function_info);
 }
@@ -747,6 +755,10 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
     EXPECTED(TOKEN_COLON);
 
     Semantics.add_return(function_info, Scanner.get_curr_token().type);
+
+    // generate return var
+    Generator.func_return_value(0);
+
     // <datatype> <other_funrets>
     return datatype(pfile) && other_funrets(pfile, function_info);
 }
@@ -815,8 +827,10 @@ static bool function_definition(pfile_t *pfile) {
     // We need to have a pointer to the symbol in the symbol table.
     symbol_t *symbol = NULL;
 
+
     soft_assert((local_table == global_table) && "tables must be equal now", ERROR_SYNTAX);
     id_name = Scanner.get_curr_token().attribute.id;
+    debug_msg("[define] function %s\n", Dynstring.get_str(id_name));
     // Semantic control.
     // if we find a symbol on the stack, check it.
     if (Symstack.get_symbol(symstack, id_name, &symbol)) {
@@ -831,6 +845,8 @@ static bool function_definition(pfile_t *pfile) {
     }
     symbol = Symstack.put_symbol(symstack, id_name, ID_TYPE_func_def);
 
+    // generate code for new function start
+    Generator.func_start(Dynstring.get_str(id_name));
     // id
     EXPECTED(TOKEN_ID);
     // (
@@ -842,6 +858,8 @@ static bool function_definition(pfile_t *pfile) {
     if (!funparam_def_list(pfile, symbol->function_semantics->definition)) {
         return false;
     }
+
+    // pass params
 
     // <funretopt>
     if (!funretopt(pfile, symbol->function_semantics->definition)) {
@@ -876,6 +894,7 @@ static bool function_definition(pfile_t *pfile) {
     static bool stmt(pfile_t *pfile) {
         debug_msg("<stmt> ->\n");
         token_t token = Scanner.get_curr_token();
+        dynstring_t *id_name = Dynstring.ctor("");
 
         switch (token.type) {
             // function declaration: global id : function ( <datatype_list> <funretopt>
@@ -888,12 +907,15 @@ static bool function_definition(pfile_t *pfile) {
 
                 // function calling: id ( <list_expr> )
             case TOKEN_ID:
+                id_name = Dynstring.cat(id_name, token.attribute.id);
                 if (!Expr.parse(pfile, true)) {
                     return false;
                 }
                 // in expressions we pass the parameters
                 // function call
-                // Generator.func_call(func_id);
+                Generator.func_call(Dynstring.get_str(id_name));
+                Dynstring.dtor(id_name);
+
                 break;
 
                 // FIXME. I dont know how to solve this recursion.

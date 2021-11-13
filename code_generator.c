@@ -183,10 +183,10 @@ static void generate_func_substr() {
 /*
  * @brief Generates function call.
  */
-static void generate_func_call() {
+static void generate_func_call(char *func_name) {
     ADD_INSTR_PART("CALL $");
     // add function id
-    ADD_INSTR_PART("CHR");
+    ADD_INSTR_PART(func_name);
     ADD_INSTR_TMP;
 }
 
@@ -212,31 +212,63 @@ static void generate_main_end() {
 
 /*
  * @brief Generates function start.
+ * generates sth like: LABEL $foo
+ *                     PUSHFRAME
  */
-static void generate_func_start() {
+static void generate_func_start(char *func_name) {
     INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
-    ADD_INSTR("LABEL $");   // add name of function
+    ADD_INSTR_PART("LABEL $");   // add name of function
+    ADD_INSTR_PART(func_name);
+    ADD_INSTR_TMP;
+
     ADD_INSTR("PUSHFRAME");
 }
 
 /*
  * @brief Generates function end.
  */
-static void generate_func_end() {
-    ADD_INSTR("LABEL $main$end");
+static void generate_func_end(char *func_name) {
+    ADD_INSTR_PART("LABEL $");
+    ADD_INSTR_PART(func_name);
+    ADD_INSTR_PART("$end");
+    ADD_INSTR_TMP;
+
     ADD_INSTR("POPFRAME");
-    ADD_INSTR("RETURN");
+    ADD_INSTR("RETURN\n");
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
 }
 
 /*
- * @brief Defines return value of return parameter with index.
+ * @brief Generates saving param from TF to LF.
+ * generates sth like:
+ *      DEFVAR LF@%p0
+ *      MOVE LF@%p0 LF@%0
+ */
+static void generate_func_start_param(char *param_name, unsigned index) {
+    ADD_INSTR_PART("DEFVAR LF@%");
+    ADD_INSTR_PART(param_name);
+    ADD_INSTR_TMP;
+
+    ADD_INSTR_PART("MOVE LF@%");
+    ADD_INSTR_PART(param_name);
+    ADD_INSTR_PART(" LF@%");
+    ADD_INSTR_INT(index);
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates return value of return parameter with index.
  * generates sth like:
  *      DEFVAR LF@%result0
  */
 static void generate_func_return_value(unsigned index) {
     ADD_INSTR_PART("DEFVAR LF@%result");
     ADD_INSTR_INT(index);
+    ADD_INSTR_TMP;
+
+    ADD_INSTR_PART("MOVE LF@%result");
+    ADD_INSTR_INT(index);
+    ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP;
 }
 
@@ -507,6 +539,7 @@ const struct code_generator_interface_t Generator = {
         .prog_start = generate_prog_start,
         .func_start = generate_func_start,
         .func_end = generate_func_end,
+        .func_start_param = generate_func_start_param,
         .func_return_value = generate_func_return_value,
         .func_pass_param = generate_func_pass_param,
         .func_createframe = generate_func_createframe,

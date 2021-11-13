@@ -76,13 +76,14 @@ do {                                        \
  */
 struct code_generator_interface_t {
     void (*prog_start)(void);
-    void (*func_start)(void);
-    void (*func_end)(void);
+    void (*func_start)(char *func_name);
+    void (*func_end)(char *func_name);
+    void (*func_start_param)(char *param_name, unsigned index);
     void (*func_return_value)(unsigned index);
     void (*func_pass_param)(int param_index);
     void (*func_createframe)(void);
     void (*main_end)(void);
-    void (*func_call)(void);
+    void (*func_call)(char *func_name);
     void (*var_declaration)(token_t token_id);
     void (*var_definition)(token_t token_id, token_t token_value);
     void (*cond_if)(size_t if_scope_id, size_t cond_num);

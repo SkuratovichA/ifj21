@@ -86,6 +86,8 @@ struct symstack_interface_t {
     symtable_t *(*top)(symstack_t *);
 
     scope_info_t (*get_scope_info)(symstack_t *);
+
+    char *(*get_function_name)(void);
 };
 
 struct symtable_interface_t {

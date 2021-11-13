@@ -34,7 +34,8 @@ int main() {
 
 
     // Print instructions only when everything was ok
-    if (ret == 0) {
+    printf("\n\n <<<<<<<<<< Return code: %d >>>>>>>>>>\n\n\n", ret);
+    //if (ret == 0) {
         // Prints the list of instructions to stdout
         printf("# ---------- Instructions List ----------\n");
         INSTR_CHANGE_ACTIVE_LIST(instructions.startList);
@@ -52,7 +53,7 @@ int main() {
         for (list_item_t *tmp = instrList->head; tmp != NULL; tmp = tmp->next) {
             printf("%s\n", Dynstring.c_str(tmp->data));
         }
-    }
+    //}
 
     List.dtor(instructions.startList, Dynstring.dtor); // use Dynstring.dtor or free?
     List.dtor(instructions.instrListFunctions, Dynstring.dtor); // use Dynstring.dtor or free?

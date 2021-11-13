@@ -305,6 +305,10 @@ static scope_info_t SS_Get_scope_info(symstack_t *self) {
            : (scope_info_t) {.scope_type = SCOPE_TYPE_UNDEF, .scope_level = 0};
 }
 
+static char *SS_Get_function_name(void) {
+    return "buzz";
+}
+
 static void Add_builtin_function(symtable_t *self, char *name, char *params, char *returns) {
     debug_msg("\n");
     if ((bool) self && (bool) name == 0) {
@@ -341,6 +345,7 @@ const struct symstack_interface_t Symstack = {
         .put_symbol = SS_Put_symbol,
         .top = SS_Top,
         .get_scope_info = SS_Get_scope_info,
+        .get_function_name = SS_Get_function_name,
 };
 
 const struct symtable_interface_t Symtable = {
