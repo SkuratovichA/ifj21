@@ -7,7 +7,6 @@
  */
 
 #include "expressions.h"
-#include "parser.h"
 #include "scanner.h"
 #include "stack.h"
 #include "errors.h"
@@ -76,6 +75,8 @@ static op_list_t get_op(token_t token) {
         case TOKEN_NUM_F:
         case TOKEN_NUM_I:
         case KEYWORD_nil:
+        case KEYWORD_0:
+        case KEYWORD_1:
         case TOKEN_ID:
             return OP_ID;
         case TOKEN_LPAREN:
@@ -84,6 +85,8 @@ static op_list_t get_op(token_t token) {
             return OP_RPAREN;
         case TOKEN_HASH:
             return OP_HASH;
+        case KEYWORD_not:
+            return OP_NOT;
         case TOKEN_MUL:
             return OP_MUL;
         case TOKEN_DIV_F:
@@ -108,6 +111,10 @@ static op_list_t get_op(token_t token) {
             return OP_NE;
         case TOKEN_STRCAT:
             return OP_STRCAT;
+        case KEYWORD_and:
+            return OP_AND;
+        case KEYWORD_or:
+            return OP_OR;
         case TOKEN_COMMA:
             return OP_COMMA;
         case TOKEN_FUNC:
@@ -133,6 +140,8 @@ static char *op_to_string(op_list_t op) {
             return ")";
         case OP_HASH:
             return "#";
+        case OP_NOT:
+            return "not";
         case OP_MUL:
             return "*";
         case OP_DIV_I:
@@ -157,6 +166,10 @@ static char *op_to_string(op_list_t op) {
             return "~=";
         case OP_STRCAT:
             return "..";
+        case OP_AND:
+            return "and";
+        case OP_OR:
+            return "or";
         case OP_FUNC:
             return "func";
         case OP_COMMA:
@@ -390,6 +403,8 @@ static bool operator(sstack_t *r_stack) {
             case OP_DIV_I:
             case OP_DIV_F:
             case OP_STRCAT:
+            case OP_AND:
+            case OP_OR:
             case OP_LT:
             case OP_LE:
             case OP_GT:
@@ -492,18 +507,22 @@ static bool check_rule(sstack_t *r_stack, int *func_entries) {
             case OP_HASH:
                 Stack.pop(r_stack, stack_item_dtor);
                 EXPR_ERROR(expression(r_stack));
-                // ( expr ) | ( )
+            // not expr
+            case OP_NOT:
+                Stack.pop(r_stack, stack_item_dtor);
+                EXPR_ERROR(expression(r_stack));
+            // ( expr ) | ( )
             case OP_LPAREN:
                 Stack.pop(r_stack, stack_item_dtor);
                 if (single_op(r_stack, OP_RPAREN)) {
                     return true;
                 }
                 EXPR_ERROR(expression(r_stack) && single_op(r_stack, OP_RPAREN));
-                // id
+            // id
             case OP_ID:
                 Stack.pop(r_stack, stack_item_dtor);
                 return true;
-                // id ( <arguments>
+            // id ( <arguments>
             case OP_FUNC:
                 Stack.pop(r_stack, stack_item_dtor);
                 EXPR_ERROR(single_op(r_stack, OP_LPAREN) && arguments(r_stack, func_entries));
@@ -902,18 +921,11 @@ static bool expr_stmt(pfile_t *pfile) {
     }
 
     // id or name of a builtin function
-    switch (Scanner.get_curr_token().type) {
-        // probably(not sure we well have to perform some semantic actions on this, so i left it as is).
-        case TOKEN_ID:
-        case KEYWORD_0: // for false
-        case KEYWORD_1: // for true
-        case KEYWORD_nil: // do we need to use nil? IDK.
-            break;
-        default:
-            debug_msg("must be id, but we got something different:\n");
-            debug_msg_s("actual token: \t%s\n", Scanner.to_string(Scanner.get_curr_token().type));
-            Errors.set_error(ERROR_SYNTAX);
-            return false;
+    if (Scanner.get_curr_token().type != TOKEN_ID) {
+        debug_msg("must be id, but we got something different:\n");
+        debug_msg_s("actual token: \t%s\n", Scanner.to_string(Scanner.get_curr_token().type));
+        Errors.set_error(ERROR_SYNTAX);
+        return false;
     }
 
     // <expr_stmt_next>
@@ -954,9 +966,9 @@ static bool dummy_expr_list(pfile_t *p) {
  * Functions are in struct so we can use them in different files.
  */
 const struct expr_interface_t Expr = {
-        .parse = dummy_expr,
+        .parse = Parse_expression,
         //.parse_expr_list = Expr_list,
-        .parse_expr_list = dummy_expr_list,
+        .parse_expr_list = Expr_list
 };
 
 #ifdef SELFTEST_expressions
