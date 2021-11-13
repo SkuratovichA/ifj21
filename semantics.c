@@ -189,17 +189,22 @@ static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin
 
     if (is_defined) { Define(newbe); }
     if (is_declared) { Declare(newbe); }
-    if (is_builtin) { Builtin(newbe); }
 
-    newbe->declaration.returns = Dynstring.ctor("");
-    soft_assert(newbe->declaration.returns != NULL, ERROR_INTERNAL);
-    newbe->declaration.params = Dynstring.ctor("");
-    soft_assert(newbe->declaration.params != NULL, ERROR_INTERNAL);
+    // set params and returns manually if there's a builtin function.
+    if (is_builtin) {
+        Builtin(newbe);
+    } else {
+        debug_msg("In case of builtin function, there's need to set parameters manually\n");
+        newbe->declaration.returns = Dynstring.ctor("");
+        soft_assert(newbe->declaration.returns != NULL, ERROR_INTERNAL);
+        newbe->declaration.params = Dynstring.ctor("");
+        soft_assert(newbe->declaration.params != NULL, ERROR_INTERNAL);
 
-    newbe->definition.returns = Dynstring.ctor("");
-    soft_assert(newbe->definition.returns != NULL, ERROR_INTERNAL);
-    newbe->definition.params = Dynstring.ctor("");
-    soft_assert(newbe->definition.params != NULL, ERROR_INTERNAL);
+        newbe->definition.returns = Dynstring.ctor("");
+        soft_assert(newbe->definition.returns != NULL, ERROR_INTERNAL);
+        newbe->definition.params = Dynstring.ctor("");
+        soft_assert(newbe->definition.params != NULL, ERROR_INTERNAL);
+    }
 
     //debug_msg("[ctor] Create a function semantics:\n"
     //          "\t{ "
