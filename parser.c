@@ -1304,12 +1304,12 @@ int main() {
 
     // tests.
 
-#if 0
-    Tests.warning(descriptiond1);
-    TEST_EXPECT(Parser.analyse(pf1), true, descriptiond1);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, descriptiond1);
+#if 1
+    Tests.warning(description1);
+    TEST_EXPECT(Parser.analyse(pf1), true, description1);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description1);
 
-    Tests.warning(descriptiond2);
+    Tests.warning(description2);
     TEST_EXPECT(Parser.analyse(pf2), false, description2);
     TEST_EXPECT(Errors.get_error() == ERROR_LEXICAL, true, description2);
 
@@ -1358,7 +1358,7 @@ int main() {
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description13);
 
     Tests.warning(description14);
-    TEST_EXPECT(Parser.analyse(pf14), true, description14);
+    TEST_EXPECT(Parser.analyse(pf14), false, description14);
     TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, description14);
 
     Tests.warning(description16);

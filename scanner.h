@@ -99,6 +99,9 @@ typedef struct token {
     X(global)   \
     X(require)  \
     X(for)      \
+    X(and)      \
+    X(or)       \
+    X(not)      \
     X(UNDEF)
 
 #define SINGLE_CHAR_TOKENS(X) \
@@ -135,6 +138,11 @@ typedef enum token_type {
     TOKEN(DIV_F),   // '//'
     TOKEN(SUB),     // '-'
     TOKEN(STRCAT),  // ..
+
+    // BOOLTHEN
+//    TOKEN(AND),
+//    TOKEN(OR),
+//    TOKEN(NOT),
 
     // my sweet fucking token for expression parsing
     TOKEN(FUNC),
