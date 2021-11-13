@@ -261,6 +261,8 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
     Semantics.set_params(&symbol->function_semantics->declaration, declparamvec);
     Semantics.set_returns(&symbol->function_semantics->declaration, declreturnvec);
 
+
+    Dynstring.dtor(dname);
     debug_msg("\t[BUILTIN]: builtin function is set.\n");
 }
 
