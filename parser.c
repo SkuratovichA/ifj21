@@ -808,7 +808,7 @@ static bool function_definition(pfile_t *pfile) {
         // to be a function.
         // If function has been defined, return false and set an error code.
         if (Semantics.is_defined(symbol->function_semantics)) {
-            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+            Errors.set_error(ERROR_DEFINITION);
             return false;
         }
     }
@@ -1047,6 +1047,7 @@ const struct parser_interface_t Parser = {
         .analyse = Analyse,
 };
 
+#define SELFTEST_parser
 #ifdef SELFTEST_parser
 
 #include "tests/tests.h"
@@ -1077,12 +1078,18 @@ const struct parser_interface_t Parser = {
 
 int main() {
     char *description1 = "prolog string";
+    bool result1 = true;
+    int retcode1 = ERROR_NOERROR;
     pfile_t *pf1 = Pfile.ctor(PROLOG);
 
     char *description2 = "lexical error";
+    bool result2 = false;
+    int retcode2 = ERROR_LEXICAL;
     pfile_t *pf2 = Pfile.ctor("1234.er" PROLOG);
 
     char *description3 = "Redeclaration error";
+    bool result3 = false;
+    int retcode3 = ERROR_DEFINITION;
     pfile_t *pf3 = Pfile.ctor(
             PROLOG
             GLOBAL "foo : function()"
@@ -1116,6 +1123,8 @@ int main() {
     );
 
     char *description4 = "no error, parsing definitions, declarations";
+    bool result4 = true;
+    int retcode4 = ERROR_NOERROR;
     pfile_t *pf4 = Pfile.ctor(
             PROLOG
             GLOBAL "foo : function()"
@@ -1141,86 +1150,101 @@ int main() {
     );
 
     char *description5 = "mutual recursion";
+    bool result5 = true;
+    int retcode5 = ERROR_NOERROR;
     pfile_t *pf5 = Pfile.ctor(
             PROLOG
             GLOBAL " foo : " FUN "(string) : string\n"
 
             FUN "bar(param : string) : string\n"
-                RETURN "foo(param)\n"
+            RETURN "foo(param)\n"
             END
 
             FUN "foo(param:string):string \n"
-                RETURN "bar(param)\n"
+            RETURN "bar(param)\n"
             END
     );
 
     char *description6 = "strings, builtin functions";
+    bool result6 = true;
+    int retcode6 = ERROR_NOERROR;
     pfile_t *pf6 = Pfile.ctor(
             "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
             PROLOG
             FUN "main()"
-                LOCAL "s1 : string =" SOME_STRING
-                LOCAL "s2 : string = s1" CONCAT SOME_STRING
-                " print("SOME_STRING") "
-                LOCAL "s1len : integer = #s1 "
-                " s1len = s1len - 4 "
-                " s1 = "SUBSTR"(s2, s1len, s1len + 4) "
-                WRITE"("SOME_STRING")"
-                WRITE"("SOME_STRING")"
-                " s1 = "READS"() "
+            LOCAL "s1 : string =" SOME_STRING
+            LOCAL "s2 : string = s1" CONCAT SOME_STRING
+            " print("SOME_STRING") "
+            LOCAL "s1len : integer = #s1 "
+            " s1len = s1len - 4 "
+            " s1 = "SUBSTR"(s2, s1len, s1len + 4) "
+            WRITE"("SOME_STRING")"
+            WRITE"("SOME_STRING")"
+            " s1 = "READS"() "
             END
     );
 
     char *description7 = "nested while";
+    bool result7 = true;
+    int retcode7 = ERROR_NOERROR;
     pfile_t *pf7 = Pfile.ctor(
             PROLOG
             FUN "mein()"
             LOCAL "myself" " : " STRING " = " "\"me\""
             WHILE "opposite(love, hate) == false and opposite(love, indifference)" DO
-                WHILE "opposite(art, ugliness) == false and opposite(art, indifference)" DO
-                    WHILE "opposite(faith, heresy) == false and opposite(faith, indifference)" DO
-                        WHILE "opposite(life, death) == false and opposite(life, indifference)" DO
-                                "is_beautiful(life)"
-                        END
-                    END
-                END
+            WHILE "opposite(art, ugliness) == false and opposite(art, indifference)" DO
+            WHILE "opposite(faith, heresy) == false and opposite(faith, indifference)" DO
+            WHILE "opposite(life, death) == false and opposite(life, indifference)" DO
+            "is_beautiful(life)"
+            END
+            END
+            END
             END
             END // fun
     );
 
-    char *description8 = "elsif, if";
+    char *description8 = "elsif, if, NO ERRROR";
+    bool result8 = true;
+    int retcode8 = ERROR_NOERROR;
     pfile_t *pf8 = Pfile.ctor(
             PROLOG
             FUN "main()"
-                LOCAL "suka" ":" NUMBER
+            LOCAL "suka" ":" NUMBER
 
-                IF "suka > 10" THEN
-                    WRITE"("SOME_STRING")"
-                    LOCAL "suka" ":" STRING "=" SOME_STRING
-                    IF "suka > 10" THEN
-                        "fuck()"
-                    ELSIF "suka < 10" THEN
-                        WRITE"("SOME_STRING")"
-                    ELSE
-                        "die()"
-                    END
-                END
+            IF "suka > 10" THEN
+            WRITE"("SOME_STRING")"
+            LOCAL "suka" ":" STRING "=" SOME_STRING
+            IF "suka > 10" THEN
+            "fuck()"
+            ELSIF "suka < 10" THEN
+            WRITE"("SOME_STRING")"
+            ELSE
+            "die()"
+            END
+            END
             END // fun
     );
 
     char *description9 = "repeat_until";
+    bool result9 = true;
+    int retcode9 = ERROR_NOERROR;
     pfile_t *pf9 = Pfile.ctor(
             PROLOG
             FUN "yours()"
-                REPEAT
-                    "to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"
-                UNTIL " true "
+            REPEAT
+            "to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"
+            UNTIL " true "
             END
     );
 
-    char *description10 = "more repuntil ";
+    char *description10 = "more repuntil, but with an error";
+    bool result10 = false;
+    int retcode10 = ERROR_DEFINITION;
     pfile_t *pf10 = Pfile.ctor(
             PROLOG
+            FUN "me() :string"
+            END
+
             FUN "yours() : string "
             REPEAT
             REPEAT
@@ -1228,147 +1252,321 @@ int main() {
             REPEAT
             REPEAT
             REPEAT
-            " live_is_beautiful() "
+            LOCAL "me : string = \"arst\""
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
+
             RETURN "you"
             END
     );
 
     char *description11 = "for cycles";
+    bool result11 = true;
+    int retcode11 = ERROR_NOERROR;
     pfile_t *pf11 = Pfile.ctor(
             PROLOG
             FUN "healthy()"
             FOR "i=0" "," "i<3" DO
             FOR "j=0" "," "j<12" DO
-            "push_up()"
+            "smoke()"
             END
             END
             END
     );
 
     char *description12 = "empty function";
+    bool result12 = true;
+    int retcode12 = ERROR_NOERROR;
     pfile_t *pf12 = Pfile.ctor(
             PROLOG
-                FUN "funnnn()"
-                END
-            );
+            FUN "funnnn()"
+            END
+    );
 
     char *description13 = "stupid function";
+    bool result13 = true;
+    int retcode13 = ERROR_NOERROR;
     pfile_t *pf13 = Pfile.ctor(
             PROLOG
             FUN "funnnn()"
-                "AAAAAA()"
+            "AAAAAA()"
             END
-            );
+    );
 
     char *description14 = "expression error";
+    bool result14 = false;
+    int retcode14 = ERROR_SYNTAX;
     pfile_t *pf14 = Pfile.ctor(
             PROLOG
             FUN "funnnn()"
-                "AAAAA_ERRORRR() +++ lol"
+            "AAAAA_ERRORRR() +++ lol"
             END
-            );
+    );
 
 
     char *description15 = "whiles, no error";
+    bool result15 = true;
+    int retcode15 = ERROR_NOERROR;
     pfile_t *pf15 = Pfile.ctor(
             PROLOG
             FUN "funnnn()"
-                WHILE "1" DO
-                    WHILE "1" DO
-                    END
-                END
+            WHILE "1" DO
+            WHILE "1" DO
             END
-                "main"
-            //"main()" uncoment iff expressions are done
-            );
+            END
+            END
+            "main()"// uncoment iff expressions are done
+    );
 
     char *description16 = "builtin functions 2";
+    bool result16 = true;
+    int retcode16 = ERROR_NOERROR;
     pfile_t *pf16 = Pfile.ctor(
             "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
             PROLOG
             FUN "main()"
-                LOCAL "s1 : string = " SOME_STRING
-                LOCAL "s2 : string = s1"
-                "print" //(s1,"SOME_STRING", s2)"
-                LOCAL "s1len : integer = 10"
-                "s1 =" SUBSTR"(s2, s1len, s1len + 4)"
+            LOCAL "s1 : string = "
+            LOCAL "s2 : string = s1"
+            "print (s1,"SOME_STRING", s2)"
+            LOCAL "s1len : integer = 10"
+            "s1 ="SUBSTR"(s2, s1len, s1len + 4)"
             END
             "main()"
     );
 
-    // tests.
+    char *description17 = "nested whiles, but with an error";
+    bool result17 = false;
+    int retcode17 = ERROR_SYNTAX;
+    pfile_t *pf17 = Pfile.ctor(
+            PROLOG
+            FUN "mein()"
+            LOCAL "myself" " : " STRING " = " "\"me\""
+            WHILE "opposite(love, hate) == false and opposite(love, indifference)" DO
+            WHILE "opposite(art, ugliness) == false and opposite(art, indifference)" DO
+            WHILE "opposite(faith, heresy) == false and opposite(faith, indifference)" DO
+            WHILE "opposite(life, death) == false and opposite(life, indifference)" DO
+            "is_beautiful(life)"
+            END
+            END
+            END
+            //END
+            END // fun
+    );
 
-#if 1
+    char *description18 = "more repuntil. Withou an error";
+    bool result18 = true;
+    int retcode18 = ERROR_DEFINITION;
+    pfile_t *pf18 = Pfile.ctor(
+            PROLOG
+            FUN "me() :string"
+            END
+
+            FUN "yours() : string "
+            REPEAT
+            REPEAT
+            REPEAT
+            REPEAT
+            REPEAT
+            REPEAT
+            LOCAL "memes : string = \"arst\""
+            UNTIL " true "
+            UNTIL " true "
+            UNTIL " true "
+            UNTIL " true "
+            UNTIL " true "
+            UNTIL " true "
+
+            RETURN "you"
+            END
+    );
+
+    char *description19 = "semantic: more than one declaration (error)";
+    bool result19 = false;
+    int retcode19 = ERROR_DEFINITION;
+    pfile_t *pf19 = Pfile.ctor(
+            PROLOG
+            FUN "me() : string"
+            END
+
+            FUN "me() : integer"
+            END
+
+            FUN "me() : boolean"
+            END
+    );
+
+    char *description20 = "semantic: declare builtin function (error)";
+    bool result20 = false;
+    int retcode20 = ERROR_DEFINITION;
+    pfile_t *pf20 = Pfile.ctor(
+            PROLOG
+            FUN "me() :write"
+            END
+    );
+
+    char *description21 = "function semantic: define builtin function(error)";
+    bool result21 = false;
+    int retcode21 = ERROR_DEFINITION;
+    pfile_t *pf21 = Pfile.ctor(
+            PROLOG
+            FUN "me() :write"
+            END
+    );
+
+    char *description22 = "function semantic: declare builtin function(error)";
+    bool result22 = false;
+    int retcode22 = ERROR_DEFINITION;
+    pfile_t *pf22 = Pfile.ctor(
+            PROLOG
+            GLOBAL "readi : function()"
+            FUN "me() :write"
+            END
+    );
+
+    char *description23 = "functino semantic: signature missmatch(error)";
+    bool result23 = false;
+    int retcode23 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf23 = Pfile.ctor(
+            PROLOG
+            GLOBAL "foo : function( string, string ) : string, number"
+
+            FUN "foo(a : string, b : string) : string, number "
+            END
+    );
+
+    char *description24 = "functino semantic: declaration without definiton (error)";
+    bool result24 = false;
+    int retcode24 = ERROR_DEFINITION;
+    pfile_t *pf24 = Pfile.ctor(
+            PROLOG
+            GLOBAL "foo : function( string, string ) : string, number"
+
+            END
+    );
+
+    // tests.
+#if 0
     Tests.warning(description1);
-    TEST_EXPECT(Parser.analyse(pf1), true, description1);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description1);
+    TEST_EXPECT(Parser.analyse(pf1), result1, description1);
+    TEST_EXPECT(Errors.get_error() == retcode1, true, description1);
+    Tests.warning(description1);
 
     Tests.warning(description2);
-    TEST_EXPECT(Parser.analyse(pf2), false, description2);
-    TEST_EXPECT(Errors.get_error() == ERROR_LEXICAL, true, description2);
-
-//    Tests.warning(description3);
-//    TEST_EXPECT(Parser.analyse(pf3), false, description3);
-//    TEST_EXPECT((Errors.get_error() == ERROR_DEFINITION), true, description3);
-
-    Tests.warning(description4);
-    TEST_EXPECT(Parser.analyse(pf4), true, description4);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description4);
+    TEST_EXPECT(Parser.analyse(pf2), result2, description2);
+    TEST_EXPECT(Errors.get_error() == retcode2, true, description2);
+    Tests.warning(description2);
 
     Tests.warning(description5);
-    TEST_EXPECT(Parser.analyse(pf5), true, description5);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description5);
+    TEST_EXPECT(Parser.analyse(pf5), result5, description5);
+    TEST_EXPECT(Errors.get_error() == retcode5, true, description5);
+    Tests.warning(description5);
 
     Tests.warning(description6);
-    TEST_EXPECT(Parser.analyse(pf6), true, description6);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description6);
+    TEST_EXPECT(Parser.analyse(pf6), result6, description6);
+    TEST_EXPECT(Errors.get_error() == retcode6, true, description6);
+    Tests.warning(description6);
 
     Tests.warning(description7);
-    TEST_EXPECT(Parser.analyse(pf7), true, description7);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description7);
+    TEST_EXPECT(Parser.analyse(pf7), result7, description7);
+    TEST_EXPECT(Errors.get_error() == retcode7, true, description7);
+    Tests.warning(description7);
 
     Tests.warning(description8);
-    TEST_EXPECT(Parser.analyse(pf8), true, description8);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description9);
+    TEST_EXPECT(Parser.analyse(pf8), result8, description8);
+    TEST_EXPECT(Errors.get_error() == retcode8, true, description9);
+    Tests.warning(description8);
 
     Tests.warning(description9);
-    TEST_EXPECT(Parser.analyse(pf9), true, description9);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description9);
+    TEST_EXPECT(Parser.analyse(pf9), result9, description9);
+    TEST_EXPECT(Errors.get_error() == retcode9, true, description9);
+    Tests.warning(description9);
 
     Tests.warning(description10);
-    TEST_EXPECT(Parser.analyse(pf10), true, description10);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description10);
+    TEST_EXPECT(Parser.analyse(pf10), result10, description10);
+    TEST_EXPECT(Errors.get_error() == retcode10, true, description10);
+    Tests.warning(description10);
 
     Tests.warning(description11);
-    TEST_EXPECT(Parser.analyse(pf11), true, description11);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description11);
+    TEST_EXPECT(Parser.analyse(pf11), result11, description11);
+    TEST_EXPECT(Errors.get_error() == retcode11, true, description11);
+    Tests.warning(description11);
 
     Tests.warning(description12);
-    TEST_EXPECT(Parser.analyse(pf12), true, description12);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description12);
+    TEST_EXPECT(Parser.analyse(pf12), result12, description12);
+    TEST_EXPECT(Errors.get_error() == retcode12, true, description12);
+    Tests.warning(description12);
+
 
     Tests.warning(description13);
-    TEST_EXPECT(Parser.analyse(pf13), true, description13);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description13);
+    TEST_EXPECT(Parser.analyse(pf13), result13, description13);
+    TEST_EXPECT(Errors.get_error() == retcode13, true, description13);
+    Tests.warning(description13);
 
     Tests.warning(description14);
-    TEST_EXPECT(Parser.analyse(pf14), false, description14);
-    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, description14);
+    TEST_EXPECT(Parser.analyse(pf14), result14, description14);
+    TEST_EXPECT(Errors.get_error() == retcode14, true, description14);
+    Tests.warning(description14);
+
+    Tests.warning(description4);
+    TEST_EXPECT(Parser.analyse(pf4), result4, description4);
+    TEST_EXPECT(Errors.get_error() == retcode4, true, description4);
+    Tests.warning(description4);
 
     Tests.warning(description16);
-    TEST_EXPECT(Parser.analyse(pf16), true, description16);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description16);
-#endif
+    TEST_EXPECT(Parser.analyse(pf16), result16, description16);
+    TEST_EXPECT(Errors.get_error() == retcode16, true, description16);
+    Tests.warning(description16);
 
     Tests.warning(description15);
-    TEST_EXPECT(Parser.analyse(pf15), true, description15);
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description15);
+    TEST_EXPECT(Parser.analyse(pf15), result15, description15);
+    TEST_EXPECT((Errors.get_error() == retcode15), true, description15);
+    Tests.warning(description15);
+
+    Tests.warning(description17);
+    TEST_EXPECT(Parser.analyse(pf17), result17, description17);
+    TEST_EXPECT((Errors.get_error() == retcode17), true, description17);
+    Tests.warning(description17);
+
+    Tests.warning(description3);
+    TEST_EXPECT(Parser.analyse(pf3), result3, description3);
+    TEST_EXPECT((Errors.get_error() == retcode3), true, description3);
+    Tests.warning(description3);
+
+
+    Tests.warning(description20);
+    TEST_EXPECT(Parser.analyse(pf20), result20, description20);
+    TEST_EXPECT((Errors.get_error() == retcode20), true, description20);
+    Tests.warning(description20);
+
+    Tests.warning(description21);
+    TEST_EXPECT(Parser.analyse(pf21), result21, description21);
+    TEST_EXPECT((Errors.get_error() == retcode21), true, description21);
+    Tests.warning(description21);
+
+    Tests.warning(description22);
+    TEST_EXPECT(Parser.analyse(pf22), result22, description22);
+    TEST_EXPECT((Errors.get_error() == retcode22), true, description22);
+    Tests.warning(description22);
+
+    Tests.warning(description23);
+    TEST_EXPECT(Parser.analyse(pf23), result23, description23);
+    TEST_EXPECT((Errors.get_error() == retcode23), true, description23);
+    Tests.warning(description23);
+
+    Tests.warning(description24);
+    TEST_EXPECT(Parser.analyse(pf24), result24, description24);
+    TEST_EXPECT((Errors.get_error() == retcode24), true, description24);
+    Tests.warning(description24);
+#endif
+
+    Tests.warning(description19);
+    TEST_EXPECT(Parser.analyse(pf19), result19, description19);
+    TEST_EXPECT((Errors.get_error() == retcode19), true, description19);
+    Tests.warning(description19);
 
     // destructors
     Pfile.dtor(pf1);
@@ -1387,6 +1585,14 @@ int main() {
     Pfile.dtor(pf14);
     Pfile.dtor(pf15);
     Pfile.dtor(pf16);
+    Pfile.dtor(pf17);
+    Pfile.dtor(pf18);
+    Pfile.dtor(pf19);
+    Pfile.dtor(pf20);
+    Pfile.dtor(pf21);
+    Pfile.dtor(pf22);
+    Pfile.dtor(pf23);
+    Pfile.dtor(pf24);
 
     return 0;
 }

@@ -30,7 +30,7 @@
     } while(0)
 
 #define debug_print(_dst, ...) do {                     \
-        fprintf((_dst), /*__FILE__ */":%.4d in %s %*s%s: ",  \
+        fprintf((_dst), __FILE__ ":%.4d in %s %*s%s: ",  \
             __LINE__,                                   \
             __FUNCTION__,                               \
             (int)(25 - strlen(__FUNCTION__))/*an indentation number*/, \

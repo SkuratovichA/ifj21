@@ -80,6 +80,15 @@ static void Set_error(int errcode) {
     }
     //fprintf(stderr, "ERROR: %s\n", errmsg);
 
+    if (errcode != ERROR_NOERROR) {
+        debug_msg("\n################################################################################\n"
+                  "######## ERROR = '%s' #########\n"
+                  "######## CODE  = '%d' #########\n"
+                  "##################################################################################\n", errmsg,
+                  errcode);
+        (void) (2 + 2 == 5);
+    }
+
     error = errcode;
 }
 
