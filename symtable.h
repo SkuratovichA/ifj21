@@ -58,6 +58,7 @@ extern const struct symtable_interface_t Symtable;
 extern const struct symstack_interface_t Symstack;
 typedef struct symstack symstack_t;
 typedef struct symtable symtable_t;
+typedef struct stack_el stack_el_t;
 
 struct symstack_interface_t {
     // init once.
@@ -78,7 +79,7 @@ struct symstack_interface_t {
 
     // get_symbol an item from symstack through the pointer.
     // true if we find an element.
-    bool (*get_symbol)(symstack_t *, dynstring_t *, symbol_t **);
+    bool (*get_symbol)(symstack_t *, dynstring_t *, symbol_t **, stack_el_t **);
 
     // put_symbol symbol in to symtable on the top of the stack.
     symbol_t *(*put_symbol)(symstack_t *, dynstring_t *, id_type_t);
@@ -86,6 +87,8 @@ struct symstack_interface_t {
     symtable_t *(*top)(symstack_t *);
 
     scope_info_t (*get_scope_info)(symstack_t *);
+
+    char *(*get_parent_func_name)(symstack_t *);
 };
 
 struct symtable_interface_t {

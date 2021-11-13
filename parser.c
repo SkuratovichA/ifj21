@@ -717,7 +717,7 @@ static bool function_declaration(pfile_t *pfile) {
 
     // Semantic control.
     // if we find a symbol on the stack, check it.
-    if (Symstack.get_symbol(symstack, id_name, &symbol)) {
+    if (Symstack.get_symbol(symstack, id_name, &symbol, NULL)) {
         // If function has been defined or declared.
         if (Semantics.is_defined(symbol->function_semantics) || Semantics.is_declared(symbol->function_semantics)) {
             Errors.set_error(ERROR_DEFINITION);
@@ -766,7 +766,7 @@ static bool function_definition(pfile_t *pfile) {
     id_name = Scanner.get_curr_token().attribute.id;
     // Semantic control.
     // if we find a symbol on the stack, check it.
-    if (Symstack.get_symbol(symstack, id_name, &symbol)) {
+    if (Symstack.get_symbol(symstack, id_name, &symbol, NULL)) {
         // we don't have to control if the symbol is a function,
         // because in the grammar, there's only one options and this option is
         // to be a function.
