@@ -284,7 +284,11 @@ static bool assignment(pfile_t *pfile) {
 static bool other_return_expr(pfile_t *pfile) {
     debug_msg_s("<other_return_expr> -> \n");
     // , |
-    EXPECTED_OPT(TOKEN_COMMA);
+    if (Scanner.get_curr_token().type != TOKEN_COMMA) {
+        return true;
+    }
+
+    EXPECTED(TOKEN_COMMA);
     if (!Expr.parse(pfile, true)) {
         return false;
     }
@@ -305,6 +309,7 @@ static bool return_expr_list(pfile_t *pfile) {
         debug_msg("Expression analysis failed.\n");
         return false;
     }
+
     return other_return_expr(pfile);
 }
 
@@ -319,7 +324,7 @@ static bool for_assignment(pfile_t *pfile) {
     EXPECTED_OPT(KEYWORD_do);
     EXPECTED(TOKEN_COMMA);
     if (!Expr.parse(pfile, true)) {
-        debug_msg("Expression parsing failed.\n");
+        debug_msg("[error] Expression parsing failed.\n");
         return false;
     }
     EXPECTED(KEYWORD_do);
@@ -783,7 +788,7 @@ static bool function_declaration(pfile_t *pfile) {
 
     // Semantic control.
     // if we find a symbol on the stack, check it.
-    if (Symstack.get_symbol(symstack, id_name, &symbol)) {
+    if (Symstack.get_symbol(symstack, id_name, &symbol, NULL)) {
         // If function has been defined or declared.
         if (Semantics.is_defined(symbol->function_semantics) || Semantics.is_declared(symbol->function_semantics)) {
             Errors.set_error(ERROR_DEFINITION);
@@ -791,7 +796,7 @@ static bool function_declaration(pfile_t *pfile) {
         }
     }
     // normally put id on the stack.
-    Symstack.put_symbol(symstack, id_name, ID_TYPE_func_decl);
+    symbol = Symstack.put_symbol(symstack, id_name, ID_TYPE_func_decl);
 
     // function name
     EXPECTED(TOKEN_ID);
@@ -802,6 +807,7 @@ static bool function_declaration(pfile_t *pfile) {
 
     // (
     EXPECTED(TOKEN_LPAREN);
+
     // <funparam_decl_list>
     if (!datatype_list(pfile, symbol->function_semantics->declaration)) {
         return false;
@@ -833,7 +839,7 @@ static bool function_definition(pfile_t *pfile) {
     debug_msg("[define] function %s\n", Dynstring.get_str(id_name));
     // Semantic control.
     // if we find a symbol on the stack, check it.
-    if (Symstack.get_symbol(symstack, id_name, &symbol)) {
+    if (Symstack.get_symbol(symstack, id_name, &symbol, NULL)) {
         // we don't have to control if the symbol is a function,
         // because in the grammar, there's only one options and this option is
         // to be a function.
@@ -1013,11 +1019,10 @@ static bool Init_parser() {
     // TODO: should we add parameters?
     // add builtin functions.
     Symtable.add_builtin_function(global_table, "write", "", "");
-    Symtable.add_builtin_function(global_table, "read", "", "");
 
-    Symtable.add_builtin_function(global_table, "readi", "", ""); // string
-    Symtable.add_builtin_function(global_table, "readn", "", ""); // integer
-    Symtable.add_builtin_function(global_table, "reads", "", ""); // number
+    Symtable.add_builtin_function(global_table, "readi", "", "i"); // string
+    Symtable.add_builtin_function(global_table, "readn", "", "f"); // integer
+    Symtable.add_builtin_function(global_table, "reads", "", "s"); // number
 
     Symtable.add_builtin_function(global_table, "tointeger", "f", "i"); // (f : number) : integer
     Symtable.add_builtin_function(global_table, "substr", "sff",
@@ -1146,39 +1151,11 @@ int main() {
             PROLOG
             GLOBAL " foo : " FUN "(string) : string\n"
             FUN "bar(param : string) : string\n"
-            RETURN "foo (param)\n"
+                RETURN "foo\n"
             END
             FUN "foo(param:string):string \n"
-            RETURN "bar(param)\n"
+                RETURN "bar\n"
             END
-    );
-
-
-    //5
-    pfile_t *pf5 = Pfile.ctor(
-            "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
-            PROLOG
-            FUN "main()"
-            LOCAL "s1" ": string = " SOME_STRING
-            LOCAL "s2" ": string = s1 .." SOME_STRING
-            "print(s1,"SOME_STRING", s2)"
-            LOCAL "s1len : integer=#s1"
-            "s1len = s1len - 4 "
-            "s1" "=" SUBSTR"(s2, s1len, s1len + 4)"
-            "s1len = s1len + 1 "
-            WRITE "("SOME_STRING")"
-            WRITE "("SOME_STRING")"
-            WRITE "("SOME_STRING")"
-            "s1 = reads()"
-            IF "s1 ~= nil" THEN
-            WHILE "s1" "~=" SOME_STRING DO
-            WRITE "("SOME_STRING")"
-            "s1" "=" READS"()"
-            END
-            ELSE
-            END
-            END
-            "main()"
     );
 
     //5
@@ -1203,13 +1180,13 @@ int main() {
             FUN "mein()"
             LOCAL "myself" " : " STRING " = " "\"me\""
             WHILE "opposite(love, hate) == false and opposite(love, indifference)" DO
-            WHILE "opposite(art, ugliness) == false and opposite(art, indifference)" DO
-            WHILE "opposite(faith, heresy) == false and opposite(faith, indifference)" DO
-            WHILE "opposite(life, death) == false and opposite(life, indifference)" DO
-            "is_beautiful(life)"
-            END
-            END
-            END
+                WHILE "opposite(art, ugliness) == false and opposite(art, indifference)" DO
+                    WHILE "opposite(faith, heresy) == false and opposite(faith, indifference)" DO
+                        WHILE "opposite(life, death) == false and opposite(life, indifference)" DO
+                                "is_beautiful(life)"
+                        END
+                    END
+                END
             END
             END // fun
     );
@@ -1244,20 +1221,21 @@ int main() {
 
     pfile_t *pf10 = Pfile.ctor(
             PROLOG
-            FUN "yours()"
+            FUN "yours() : string "
             REPEAT
             REPEAT
             REPEAT
             REPEAT
             REPEAT
             REPEAT
-            " live_is_beautiful() "
+            " live_is_beautiful "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
+            RETURN "you"
             END
     );
 
@@ -1299,6 +1277,20 @@ int main() {
             "main()"
             );
 
+
+    //5
+    pfile_t *pf5 = Pfile.ctor(
+            "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
+            PROLOG
+            FUN "main()"
+                LOCAL "s1 : string = " SOME_STRING
+                LOCAL "s2 : string = s1"
+                "print" //(s1,"SOME_STRING", s2)"
+                LOCAL "s1len : integer = 10"
+                //"s1 =" SUBSTR"(s2, s1len, s1len + 4)"
+            "main()"
+    );
+
     // tests.
 
 #if 0
@@ -1330,16 +1322,8 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf9), true, "Repeat until statement");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
-    Tests.warning("10: repeat until statements");
-    TEST_EXPECT(Parser.analyse(pf10), true, "Repeat until statements");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
-
-    Tests.warning("11: for statements");
+   Tests.warning("11: for statements");
     TEST_EXPECT(Parser.analyse(pf11), true, "For statements");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
-
-    Tests.warning("5: Curve's test");
-    TEST_EXPECT(Parser.analyse(pf5), true, "curve's program(bigger).");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
     Tests.warning("6: Curve's test simplified");
@@ -1354,17 +1338,26 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf13), true, "function which body is only one expression");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
-    Tests.warning("14: Function with a wrong expression as a body.");
-    TEST_EXPECT(Parser.analyse(pf14), false, "unction which body is only one wrong expression.");
-    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error..");
-#endif
-
     Tests.warning("8: if statements");
     TEST_EXPECT(Parser.analyse(pf8), true, "If statements");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
     TEST_EXPECT(Parser.analyse(pf_nested_whiles), true, "nested whiles");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("14: Function with a wrong expression as a body.");
+    TEST_EXPECT(Parser.analyse(pf14), false, "function which body is only one wrong expression.");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error..");
+#endif
+
+    Tests.warning("10: repeat until statements");
+    TEST_EXPECT(Parser.analyse(pf10), true, "Repeat until statements");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+
+    Tests.warning("5: ERROR");
+    TEST_EXPECT(Parser.analyse(pf5), true, "curve's program(bigger).");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's an error.");
+
 
     // destructors
     Pfile.dtor(pf1);

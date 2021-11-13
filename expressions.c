@@ -6,6 +6,20 @@
 #include "stdbool.h"
 #include "code_generator.h"
 
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmacro-redefined"
+// undef debug macros
+#define debug_err(...)
+#define debug_msg(...)
+#define debug_msg_stdout(...)
+#define debug_msg_stderr(...)
+#define debug_todo(...)
+#define debug_assert(cond)
+#define debug_msg_s(...)
+#define DEBUG_SEP
+#pragma GCC diagnostic pop
+
 /**
  * Precedence function table.
  * f, g - precedence functions.

@@ -9,7 +9,7 @@ static bool Check_signatures(func_semantics_t *func) {
     res = Dynstring.cmp(func->declaration.params, func->definition.params) == 0;
     res &= (Dynstring.cmp(func->declaration.returns, func->definition.returns) == 0);
 
-    debug_msg("Signatures are %s\n", res ? "same" : "different");
+    debug_msg("[semantics] function signatures are %s\n", res ? "same" : "different");
     return res;
 }
 
@@ -27,7 +27,6 @@ static bool Is_builtin(func_semantics_t *self) {
 
 static void Declare(func_semantics_t *self) {
     if (self == NULL) {
-        debug_msg("Trying to access null.\n");
         return;
     }
     self->is_declared = true;
@@ -35,7 +34,6 @@ static void Declare(func_semantics_t *self) {
 
 static void Define(func_semantics_t *self) {
     if (self == NULL) {
-        debug_msg("Trying to access null.\n");
         return;
     }
     self->is_defined = true;
@@ -43,7 +41,6 @@ static void Define(func_semantics_t *self) {
 
 static void Builtin(func_semantics_t *self) {
     if (self == NULL) {
-        debug_msg("Trying to access null.\n");
         return;
     }
     self->is_builtin = true;
@@ -77,7 +74,7 @@ static char of_id_type(id_type_t type) {
  */
 static void Add_return(func_info_t self, int type) {
     Dynstring.append(self.returns, of_id_type(type));
-    debug_msg("add return\n");
+    debug_msg("[semantics] add return\n");
 }
 
 /**
@@ -87,16 +84,16 @@ static void Add_return(func_info_t self, int type) {
  */
 static void Add_param(func_info_t self, int type) {
     Dynstring.append(self.params, of_id_type(type));
-    debug_msg("add return\n");
+    debug_msg("[semantics] add return\n");
 }
 
 static void Set_returns(func_info_t self, dynstring_t *vec) {
-    debug_msg("Set params: %s\n", Dynstring.c_str(vec));
+    debug_msg("[semantics] Set params: %s\n", Dynstring.c_str(vec));
     self.returns = vec;
 }
 
 static void Set_params(func_info_t self, dynstring_t *vec) {
-    debug_msg("Set returns: %s\n", Dynstring.c_str(vec));
+    debug_msg("[semantics] Set returns: %s\n", Dynstring.c_str(vec));
     self.params = vec;
 }
 
@@ -110,31 +107,43 @@ static void Dtor(func_semantics_t *self) {
     Dynstring.dtor(self->definition.params);
     Dynstring.dtor(self->declaration.params);
     free(self);
-    debug_msg("\ndelete function semantics\n");
+    debug_msg("[dtor] delete function semantic\n");
 }
 
 static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin) {
-    debug_msg("\n");
     func_semantics_t *newbe = calloc(1, sizeof(func_semantics_t));
     soft_assert(newbe != NULL, ERROR_INTERNAL);
 
     if (is_defined) { Define(newbe); }
     if (is_declared) { Declare(newbe); }
     if (is_builtin) { Builtin(newbe); }
-    debug_msg("\tset flags\n");
 
     newbe->declaration.returns = Dynstring.ctor("");
     soft_assert(newbe->declaration.returns != NULL, ERROR_INTERNAL);
     newbe->declaration.params = Dynstring.ctor("");
     soft_assert(newbe->declaration.params != NULL, ERROR_INTERNAL);
-    debug_msg("\tCreate lists for declaration\n");
 
     newbe->definition.returns = Dynstring.ctor("");
     soft_assert(newbe->definition.returns != NULL, ERROR_INTERNAL);
     newbe->definition.params = Dynstring.ctor("");
     soft_assert(newbe->definition.params != NULL, ERROR_INTERNAL);
-    debug_msg("\tCreate lists for definition\n");
 
+    //debug_msg("[ctor] Create a function semantics:\n"
+    //          "\t{ "
+    //          "\t\t\t.is_defined = '%s', .is_declared = '%s', is_builtin = '%s'\n"
+    //          "\t\t\tdefinition{ .params ='%s', returns ='%s'}\n"
+    //          "\t\t\tdeclaration{ .params ='%s', returns ='%s'}\n"
+    //          "\t}\n",
+    //          newbe->is_defined ? "true" : "false",
+    //          newbe->is_declared ? "true" : "false",
+    //          newbe->is_builtin ? "true" : "false",
+
+    //          Dynstring.c_str(newbe->definition.params),
+    //          Dynstring.c_str(newbe->definition.returns),
+
+    //          Dynstring.c_str(newbe->declaration.params),
+    //          Dynstring.c_str(newbe->declaration.returns)
+    //          );
     return newbe;
 }
 
