@@ -490,7 +490,7 @@ static void generate_while_cond() {
 
 /*
  * @brief Generates while loop end.
- * generates sth like: JUMP $id$while
+ * generates sth like: JUMP $while$id
  *                     LABEL $end$id
  */
 static void generate_while_end() {
@@ -531,6 +531,47 @@ static void generate_repeat_until_cond() {
     ADD_INSTR_PART("JUMPIFEQ $repeat$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART(" LF@%result bool@true");
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates for loop header.
+ * generates sth like: LABEL $for$id
+ */
+static void generate_for_header(token_t token_id, token_t token_value/*, token_t cond, token_t incr*/) {
+    generate_var_definition(token_id, token_value);
+    // generate_var_definition(cond, );
+    ADD_INSTR_PART("LABEL $for$");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates for loop condition check.
+ * generates sth like: JUMPIFEQ $end$id LF@%result bool@true
+ */
+static void generate_for_cond() {
+    ADD_INSTR_PART("JUMPIFNEQ $end$");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART(" LF@%result bool@true");
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates for loop end.
+ * generates sth like: ADD %var value
+ *                     JUMP $for$id
+ *                     LABEL $end$id
+ */
+static void generate_for_end() {
+    //ADD_INSTR_PART("ADD LF");
+
+    ADD_INSTR_PART("JUMP $for$");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_TMP;
+
+    ADD_INSTR_PART("LABEL $end$");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP;
 }
 
@@ -583,4 +624,6 @@ const struct code_generator_interface_t Generator = {
         .end = generate_end,
         .repeat_until_header = generate_repeat_until_header,
         .repeat_until_cond = generate_repeat_until_cond,
+        .for_header = generate_for_header,
+        .for_cond = generate_for_cond,
 };

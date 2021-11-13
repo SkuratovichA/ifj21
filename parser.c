@@ -347,6 +347,10 @@ static bool for_cycle(pfile_t *pfile) {
 
     // id
     EXPECTED(TOKEN_ID);
+
+    //Generator.for_header(Scanner.get_curr_token(), token);
+
+
     // =
     EXPECTED(TOKEN_ASSIGN);
     if (!Expr.parse(pfile, true)) {
@@ -362,6 +366,10 @@ static bool for_cycle(pfile_t *pfile) {
         debug_msg("Expression function returned false\n");
         return false;
     }
+
+    // expr result in LF@%result
+    //Generator.for_cond();
+
     // do | , `expr` do
     if (!for_assignment(pfile)) {
         return false;
@@ -602,6 +610,8 @@ static bool fun_body(pfile_t *pfile) {
                 break;
             case SCOPE_TYPE_function:
                 Generator.func_end(Symstack.get_parent_func_name(symstack));
+                break;
+            case SCOPE_TYPE_do_cycle:
                 break;
             default:
                 debug_msg("Shouldn't be here.\n");
