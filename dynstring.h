@@ -1,3 +1,10 @@
+/**
+ * @file dynstring.h
+ *
+ * @brief header for dynamic string
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #pragma once
 
 #include <stdint.h>

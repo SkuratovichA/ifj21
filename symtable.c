@@ -1,3 +1,13 @@
+/**
+ * @file symtable.c
+ *
+ * @brief The file contains implementation of the symbol table using a BST.
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ * @author Kuznik Jakub <xkuzni04@vutbr.cz>
+ *
+ * TODO: move global_table, local_table here. From parser.c
+ */
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "bugprone-reserved-identifier"
 
@@ -5,32 +15,26 @@
 #include "tests/tests.h"
 #include "errors.h"
 
-// TODO: move global_table, local_table here.
 
-static size_t __unique__id;
-
-// private structures
+/** A node of a symbol table which is a binary search tree.
+ */
 typedef struct node {
-    symbol_t symbol;
-    struct node *left, *right;
+    symbol_t symbol; ///< symbol structure with information about the variable.
+    struct node *left, *right; ///< children.
 } node_t;
 
+/** Symbol table shell to represent program scopes.
+ */
 typedef struct symtable {
-    node_t *root;
+    node_t *root; ///< root the the binary tree.
 } symtable_t;
 
-typedef struct stack_el {
-    struct stack_el *next;
-    symtable_t *table;
-    dynstring_t *fun_name; // is not NULL iff info == SCOPE_TYPE_function
-    scope_info_t info;
-} stack_el_t;
 
-typedef struct symstack {
-    stack_el_t *head;
-} symstack_t;
-
-
+/** Enum types casting function.
+ *
+ * @param token_type token from scanner.
+ * @return id_type_t from a token_type.
+ */
 static id_type_t id_type_of_token_type(int token_type) {
     switch (token_type) {
         case KEYWORD_string:
@@ -46,16 +50,11 @@ static id_type_t id_type_of_token_type(int token_type) {
     }
 }
 
-static char *scope_to_str(scope_type_t scope) {
-    switch (scope) {
-        #define X(s) case SCOPE_TYPE_##s: return #s;
-        SCOPE_TYPE_T(X)
-        #undef X
-        default:
-            return "undefined";
-    }
-}
-
+/** Pretty print function used for debugging purposes.
+ *
+ * @param type id_type
+ * @return string representation.
+ */
 static char *type_to_str(id_type_t type) {
     switch (type) {
         #define X(t) case ID_TYPE_##t: return #t;
@@ -66,7 +65,10 @@ static char *type_to_str(id_type_t type) {
     }
 }
 
-// symbol table
+/** Create a symbol table.
+ *
+ * @return pointer on initialized memory.
+ */
 static symtable_t *ST_Ctor() {
     symtable_t *table = calloc(1, sizeof(symtable_t));
     soft_assert(table, ERROR_INTERNAL);
@@ -74,6 +76,14 @@ static symtable_t *ST_Ctor() {
     return table;
 }
 
+/** Helping function to find a symbol in the symtable.
+ *  Using binary search tree as a data structure.
+ *
+ * @param node current node.
+ * @param id name to search the node by.
+ * @param storage will contain a pointer on the symbol in the binary tree.
+ * @return true/false.
+ */
 static bool _st_get(node_t *node, dynstring_t *id, symbol_t **storage) {
     if (node == NULL) {
         return false;
@@ -92,7 +102,7 @@ static bool _st_get(node_t *node, dynstring_t *id, symbol_t **storage) {
 /** Get a symbol from the symtable.
  *
  * @param self symtable.
- * @param id
+ * @param id name to search the node by.
  * @param storage storage will contain a pointer to the symbol.
  * @return bool.
  */
@@ -107,12 +117,24 @@ static bool ST_Get(symtable_t *self, dynstring_t *id, symbol_t **storage) {
     return found;
 }
 
+/** Check if name is builtin function.
+ *
+ * @param name str to check.
+ * @return bool.
+ */
 static bool builtin_name(dynstring_t *name) {
     //TODO add more builtin names? or suppress the function.
     return strcmp(Dynstring.c_str(name), "read") == 0 ||
-           strcmp(Dynstring.c_str(name), "write") == 0;
+                                                      strcmp(Dynstring.c_str(name), "write") == 0;
 }
 
+/** Put a symbol into the symbol table.
+ *
+ * @param self BST.
+ * @param id symbol name.
+ * @param type symbol type.
+ * @return pointer on the symbol in the binary tree. Newly created or already existed.
+ */
 static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
     if (self == NULL) {
         return NULL;
@@ -157,23 +179,30 @@ static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
     return &(*iterator)->symbol;
 }
 
+/** Recursive helping function to destroy all nodes in the tree.
+ *
+ * @param node node to destroy(with 2 children).
+ */
 static void _st_dtor(node_t *node) {
     if (node == NULL) {
         return;
     }
-    _st_dtor(node->left);
-    _st_dtor(node->right);
-
     if (node->symbol.type == ID_TYPE_func_decl ||
-        node->symbol.type == ID_TYPE_func_def
+                                               node->symbol.type == ID_TYPE_func_def
             ) {
         Semantics.dtor(node->symbol.function_semantics);
     }
-
     Dynstring.dtor(node->symbol.id);
+
+    _st_dtor(node->left);
+    _st_dtor(node->right);
     free(node);
 }
 
+/** Symbol table destructor.
+ *
+ * @param self symbol table to free memory.
+ */
 static void ST_Dtor(symtable_t *self) {
     if (self == NULL) {
         return;
@@ -183,142 +212,19 @@ static void ST_Dtor(symtable_t *self) {
     debug_msg("[dtor] Symtable deleted\n");
 }
 
-static void *SS_Init() {
-    debug_msg("\n[ctor] Init a symstack.\n");
-    return calloc(1, sizeof(symstack_t));
-}
-
-
-static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type, char *fun_name) {
-    // create a new elment.
-    stack_el_t *stack_element = calloc(1, sizeof(stack_el_t));
-    soft_assert(stack_element != NULL, ERROR_INTERNAL);
-
-    // map a symtable.
-    stack_element->table = table;
-    // set info.
-    stack_element->info.scope_type = scope_type;
-    // set scope level. Either 0 or 1 + previous level.
-    stack_element->info.scope_level = self->head != NULL ? self->head->info.scope_level + 1 : 0;
-    // set a unique id for code generation.
-    stack_element->info.unique_id = __unique__id++;
-
-    if (scope_type == SCOPE_TYPE_function) {
-        stack_element->fun_name = fun_name ? Dynstring.ctor(fun_name) : Dynstring.ctor("nameless_function");
-        if (fun_name == NULL) {
-            debug_msg("function name is NULL?\n");
-        }
-    }
-
-    // prepend new stack element.
-    stack_element->next = self->head;
-    self->head = stack_element;
-
-    debug_msg("[push] { .unique_id = '%zu', scope_level = '%zu', scope_type = '%s' }\n",
-              stack_element->info.unique_id,
-              stack_element->info.scope_level,
-              scope_to_str(stack_element->info.scope_type)
-    );
-}
-
-static void SS_Pop(symstack_t *self) {
-    if (self == NULL) {
-        debug_msg("\tTrying to pop from uninitialized stack. DONT!\n");
-        return;
-    }
-
-    if (self->head == NULL) {
-        debug_msg("\tTrying to pop from a headless stack. DONT!\n");
-        return;
-    }
-
-    ST_Dtor(self->head->table);
-    self->head = self->head->next;
-    debug_msg("[pop] popped a symtable\n");
-}
-
-static void SS_Dtor(symstack_t *self) {
-    debug_msg("\n");
-    stack_el_t *iter = self->head, *ptr;
-
-    // iterate the whole stack and delete each element.
-    while (iter != NULL) {
-        ptr = iter->next;
-        if (iter->info.scope_type == SCOPE_TYPE_function) {
-            Dynstring.dtor(iter->fun_name);
-        }
-        ST_Dtor(iter->table);
-        free(iter);
-        iter = ptr;
-    }
-
-    free(self);
-    debug_msg("[dtor] deleted symstack.\n");
-}
-
-/** Get a symbol from the symbol stack.
+/** Function to add builtin functions on the symbol table.
  *
- * @param self symstack.
- * @param id key.
- * @param sym a pointer to symbol to store a pointer to the object if we find it.
- * @return
+ * 's' for string
+ * 'b' for boolean
+ * 'i' for integer
+ * 'f' for number
+ * 'n' for nil
+ *
+ * @param self symbol table.
+ * @param name name of the function.
+ * @param params vector of the parameters of the function.
+ * @param returns vector with return values of the function.
  */
-static bool
-SS_Get_symbol(
-        symstack_t *self, dynstring_t *id,
-        symbol_t **sym, stack_el_t **def_scope
-) {
-    debug_msg("\n");
-    if (self == NULL) {
-        debug_msg("[getter] Stack is null. Returning false.\n");
-        return false;
-    }
-
-    stack_el_t *st = self->head;
-    while (st != NULL) {
-        if (ST_Get(st->table, id, sym)) {
-            debug_msg("[getter] symbol found\n");
-            if (def_scope != NULL) {
-                *def_scope = st;
-            }
-            return true;
-        }
-        st = st->next;
-    }
-    return false;
-}
-
-static symtable_t *SS_Top(symstack_t *self) {
-    if (self == NULL) {
-        debug_msg("\tStack is null.\n");
-        return NULL;
-    }
-    if (self->head == NULL) {
-        debug_msg("\tHead is null.\n");
-        return NULL;
-    }
-    return self->head->table;
-}
-
-static symbol_t *SS_Put_symbol(symstack_t *self, dynstring_t *id, id_type_t type) {
-    soft_assert(self != NULL, ERROR_INTERNAL);
-
-    // stack did not have a head.
-    if (self->head == NULL) {
-        debug_msg("\tStack has been empty. Create a frame(Symstack.push) before putting a symbol.\n");
-        return NULL;
-    }
-
-    return ST_Put(self->head->table, id, type);
-}
-
-static scope_info_t SS_Get_scope_info(symstack_t *self) {
-    debug_msg("\n");
-    return self != NULL && self->head != NULL
-           ? self->head->info
-           : (scope_info_t) {.scope_type = SCOPE_TYPE_UNDEF, .scope_level = 0};
-}
-
 static void Add_builtin_function(symtable_t *self, char *name, char *params, char *returns) {
     if ((bool) self && (bool) name == 0) {
         debug_msg("\tnull passed into a function...\n");
@@ -327,11 +233,12 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
     dynstring_t *dname = Dynstring.ctor(name);
     dynstring_t *paramvec = Dynstring.ctor(params);
     dynstring_t *returnvec = Dynstring.ctor(returns);
+
     ST_Put(self, dname, ID_TYPE_func_decl);
     ST_Put(self, dname, ID_TYPE_func_def);
 
     symbol_t *symbol;
-    ST_Get(self, dname, &symbol);
+    Symtable.get_symbol(self, dname, &symbol);
 
     Semantics.builtin(symbol->function_semantics);
     Semantics.set_params(symbol->function_semantics->definition, paramvec);
@@ -340,41 +247,48 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
     Semantics.set_params(symbol->function_semantics->declaration, paramvec);
     Semantics.set_returns(symbol->function_semantics->declaration, returnvec);
 
+    Dynstring.dtor(dname);
+    Dynstring.dtor(paramvec);
+    Dynstring.dtor(returnvec);
     debug_msg("\t[BUILTIN]: builtin function is set.\n");
 }
 
-/** Get a parent function name.
+/** auxilary function to traverse a symtable(BST)
  *
- * @param self
- * @return NULl if there is a global frame.
+ * Function returns the conjunction of @param acc and its application on the children.
+ *
+ * @param self symtable to traverse.
+ * @param predicate predicate to apply.
+ * @param acc accumulator.
+ * @return
  */
-static char *SS_Get_parent_func_name(symstack_t *self) {
+static bool _traverse(node_t *self, bool (*predicate)(symbol_t *), bool acc) {
     if (self == NULL) {
-        return NULL;
+        return true;
     }
-    stack_el_t *iter = self->head;
 
-    while (iter != NULL) {
-        if (iter->info.scope_type == SCOPE_TYPE_function) {
-            return Dynstring.c_str(iter->fun_name);
-        }
-        iter = iter->next;
-    }
-    return NULL;
+    acc &= predicate(&self->symbol);
+    acc &= _traverse(self->left, predicate, acc);
+    acc &= _traverse(self->right, predicate, acc);
+    return acc;
 }
 
-//=================================================
-const struct symstack_interface_t Symstack = {
-        .init = SS_Init,
-        .push = SS_Push,
-        .pop = SS_Pop,
-        .dtor = SS_Dtor,
-        .get_symbol = SS_Get_symbol,
-        .put_symbol = SS_Put_symbol,
-        .top = SS_Top,
-        .get_scope_info = SS_Get_scope_info,
-        .get_parent_func_name = SS_Get_parent_func_name,
-};
+/** Traverse a symtable and apply a predicate on all the symbols.
+ *
+ * Function store the conjunction of all predicates.
+ *
+ * @param self symtable to traverse.
+ * @param predicate predicate to apply.
+ * @return
+ */
+static bool Traverse(symtable_t *self, bool (*predicate)(symbol_t *)) {
+    if (self && predicate == NULL) {
+        return false;
+    }
+    bool acc = true;
+    return _traverse(self->root, predicate, acc);
+}
+
 
 const struct symtable_interface_t Symtable = {
         .get_symbol = ST_Get,
@@ -383,6 +297,7 @@ const struct symtable_interface_t Symtable = {
         .ctor = ST_Ctor,
         .id_type_of_token_type = id_type_of_token_type,
         .add_builtin_function = Add_builtin_function,
+        .traverse = Traverse,
 };
 
 
@@ -392,43 +307,8 @@ const struct symtable_interface_t Symtable = {
 int main() {
     debug_msg("symtable selfdebug\n");
 
-    symtable_t *t = Symtable.ctor();
-    symstack_t *stack = Symstack.init();
-    symbol_t *symbol;
-    dynstring_t *hello = Dynstring.ctor(HELLO);
-
-    char *strs[6] = {"aaa", "bbb", "ccc", "ddd", "eee", "fff"};
-
-    // put_symbol an item on the "global frame"
-    Symstack.push(stack, t, SCOPE_TYPE_global);
-    Symstack.put_symbol(stack, hello, ID_TYPE_number);
-
-    // create a new frame.
-    Symstack.push(stack, Symtable.ctor(), SCOPE_TYPE_function);
-
-    // push on new frame.
-    for (int i = 0; i < 6; i++) {
-        Symstack.put_symbol(stack, Dynstring.ctor(strs[i]), ID_TYPE_string);
-    }
-
-    // find elements.
-    for (int i = 0; i < 6; i++) {
-        if (Symstack.get_symbol(stack, Dynstring.ctor(strs[i]), &symbol, NULL)) {
-            printf("found: %s\n", Dynstring.c_str(symbol->id));
-        } else {
-            printf("not found.\n");
-        }
-    }
-
-    if (Symstack.get_symbol(stack, hello, &symbol, NULL)) {
-        printf("Ready to push :)\n");
-    }
-
-    //Symstack.pop(stack);
-    Symstack.dtor(stack);
     return 0;
 }
-
 #endif
 
 #pragma clang diagnostic pop

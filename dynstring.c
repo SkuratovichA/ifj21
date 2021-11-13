@@ -1,3 +1,11 @@
+/**
+ * @file dynstring.c
+ *
+ * @brief Dynamic string implementation.
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
+
 #include "dynstring.h"
 #include <stdlib.h>
 #include "errors.h"

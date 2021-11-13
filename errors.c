@@ -1,28 +1,36 @@
+/**
+ * @file errors.c
+ *
+ * @brief
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #include "errors.h"
 #include "debug.h"
 
 static int error = 0;
 static char *errmsg = "";
 
-/**
- * @brief Error getter.
-
+/** Error getter.
+ *
  * @return return errorcode defined in error.h, which has been set or 0.
  */
 static int Get_error() {
     return error;
 }
 
-/**
- * @brief Error setter.
+/** Error setter.
  *
  * @param errcode Errors codes are defined in errors.h.
  */
 static void Set_error(int errcode) {
-    if (errcode != ERROR_NOERROR)
-        debug_msg("#######################################################\n"
+    if (errcode != ERROR_NOERROR) {
+        debug_msg("\n#######################################################\n"
                   "################ Error will be set NOW! ###############\n"
                   "#######################################################\n");
+    } else {
+        errmsg = "";
+    }
 
     switch (errcode) {
         case ERROR_LEXICAL:
@@ -72,6 +80,15 @@ static void Set_error(int errcode) {
     }
     //fprintf(stderr, "ERROR: %s\n", errmsg);
 
+    if (errcode != ERROR_NOERROR) {
+        debug_msg("\n################################################################################\n"
+                  "######## ERROR = '%s' #########\n"
+                  "######## CODE  = '%d' #########\n"
+                  "##################################################################################\n", errmsg,
+                  errcode);
+        (void) (2 + 2 == 5);
+    }
+
     error = errcode;
 }
 
@@ -79,8 +96,7 @@ static char *Get_error_msg() {
     return errmsg;
 }
 
-/**
- * Functions are in struct so we can use them in different files.
+/** Functions are in struct so we can use them in different files.
  */
 const struct error_interface Errors = {
         .get_errmsg = Get_error_msg,

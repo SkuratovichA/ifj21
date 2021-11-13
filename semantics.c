@@ -1,9 +1,21 @@
-
+/**
+ * @file semantics.c
+ *
+ * @brief Function semantics structure and functions.
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #include "semantics.h"
 #include "dynstring.h"
 #include "symtable.h"
 
 
+/** Function checks if return values and parameters
+ *  of the function are equal.
+ *
+ * @param func function definition or declaration semantics.
+ * @return bool.
+ */
 static bool Check_signatures(func_semantics_t *func) {
     bool res;
     res = Dynstring.cmp(func->declaration.params, func->definition.params) == 0;
@@ -13,18 +25,40 @@ static bool Check_signatures(func_semantics_t *func) {
     return res;
 }
 
+/** A predicate.
+ *
+ * @param self an atom.
+ * @return the truth.
+ */
 static bool Is_declared(func_semantics_t *self) {
     return self->is_declared;
 }
 
+/** A predicate.
+ *
+ * @param self an atom.
+ * @return the truth.
+ */
 static bool Is_defined(func_semantics_t *self) {
     return self->is_defined;
 }
 
+/** A predicate.
+ *
+ * @param self an atom.
+ * @return the truth.
+ */
 static bool Is_builtin(func_semantics_t *self) {
     return self->is_builtin;
 }
 
+/** Set is_declared.
+ *
+ * TODO: depricate?
+ *
+ * @param self semantics to change it_declared flag.
+ * @return void.
+ */
 static void Declare(func_semantics_t *self) {
     if (self == NULL) {
         return;
@@ -32,6 +66,13 @@ static void Declare(func_semantics_t *self) {
     self->is_declared = true;
 }
 
+/** Set is_defined.
+ *
+ * TODO: depricate?
+ *
+ * @param self semantics to change it_defined flag.
+ * @return void.
+ */
 static void Define(func_semantics_t *self) {
     if (self == NULL) {
         return;
@@ -39,6 +80,13 @@ static void Define(func_semantics_t *self) {
     self->is_defined = true;
 }
 
+/** Set is_builtin.
+ *
+ * TODO: depricate?
+ *
+ * @param self semantics to change it_builtin flag.
+ * @return void.
+ */
 static void Builtin(func_semantics_t *self) {
     if (self == NULL) {
         return;
@@ -46,6 +94,11 @@ static void Builtin(func_semantics_t *self) {
     self->is_builtin = true;
 }
 
+/** Convert an id_type to a character for vector representation of types.
+ *
+ * @param type id_type to convert.
+ * @return a converted char.
+ */
 static char of_id_type(id_type_t type) {
     switch (type) {
         case ID_TYPE_string:
@@ -58,7 +111,6 @@ static char of_id_type(id_type_t type) {
             return 'f';
         case ID_TYPE_nil:
             return 'n';
-
         default:
             //ID_TYPE_func_def
             //ID_TYPE_func_decl
@@ -67,39 +119,49 @@ static char of_id_type(id_type_t type) {
     }
 }
 
-/**
- * @brief Add a return type.
- * @param info either declaration or definition info.
- * @param type datatype
+/** Add a return type to a function semantics.
+ *
+ * @param self info to add a param.
+ * @param type param to add.
  */
 static void Add_return(func_info_t self, int type) {
     Dynstring.append(self.returns, of_id_type(type));
     debug_msg("[semantics] add return\n");
 }
 
-/**
- * @brief Add an argument datatype.
- * @param info either declaration or definition info.
- * @param type datatype
+/** Add a function parameter to a function semantics.
+ *
+ * @param self info to add a param.
+ * @param type param to add.
  */
 static void Add_param(func_info_t self, int type) {
     Dynstring.append(self.params, of_id_type(type));
     debug_msg("[semantics] add return\n");
 }
 
+/** Add a function parameter to a function semantics.
+ *
+ * @param self info to set a vector.
+ * @param vec vector to add.
+ */
 static void Set_returns(func_info_t self, dynstring_t *vec) {
     debug_msg("[semantics] Set params: %s\n", Dynstring.c_str(vec));
     self.returns = vec;
 }
 
+/** Directly set a vector with function parameters.
+ *
+ * @param self info to set a vector.
+ * @param vec vector to add.
+ */
 static void Set_params(func_info_t self, dynstring_t *vec) {
     debug_msg("[semantics] Set returns: %s\n", Dynstring.c_str(vec));
     self.params = vec;
 }
 
-/**
- * @brief Delete all information about a function.
- * @param self
+/** Function semantics destructor.
+ *
+ * @param self a victim.
  */
 static void Dtor(func_semantics_t *self) {
     Dynstring.dtor(self->definition.returns);
@@ -110,6 +172,13 @@ static void Dtor(func_semantics_t *self) {
     debug_msg("[dtor] delete function semantic\n");
 }
 
+/** Function semantics constructor.
+ *
+ * @param is_defined flag to set.
+ * @param is_declared flag to set.
+ * @param is_builtin flag to set.
+ * @return new function semantics.
+ */
 static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin) {
     func_semantics_t *newbe = calloc(1, sizeof(func_semantics_t));
     soft_assert(newbe != NULL, ERROR_INTERNAL);
@@ -146,6 +215,7 @@ static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin
     //          );
     return newbe;
 }
+
 
 const struct semantics_interface_t Semantics = {
         .dtor = Dtor,

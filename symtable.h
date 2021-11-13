@@ -1,20 +1,24 @@
+/**
+ * @file symtable.h
+ *
+ * @brief Symbol table header.
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ * @author Kuznik Jakub <xkuzni04@vutbr.cz>
+ */
 #pragma once
 
-// Includes
 #include "scanner.h"
 #include "debug.h"
 #include "errors.h"
 #include "dynstring.h"
 #include "semantics.h"
 
-// types of scope
-#define SCOPE_TYPE_T(X) \
-    X(function)          \
-    X(cycle)             \
-    X(do_cycle)          \
-    X(condition)         \
-    X(global)            \
-    X(UNDEF)         \
+
+/** Magic with aliasing
+ */
+#define KEYWORD_func_def (KEYWORD_UNDEF + 1)
+#define KEYWORD_func_decl (KEYWORD_func_def + 1)
 
 #define ID_TYPE_T(X)   \
     X(string)          \
@@ -24,17 +28,10 @@
     X(func_def)        \
     X(func_decl)       \
     X(nil)             \
-    X(UNDEF)       \
+    X(UNDEF)
 
-typedef enum scope_type {
-    #define X(a) SCOPE_TYPE_##a ,
-    SCOPE_TYPE_T(X)
-    #undef X
-} scope_type_t;
-
-#define KEYWORD_func_def (KEYWORD_UNDEF + 1)
-#define KEYWORD_func_decl (KEYWORD_func_def + 1)
-
+/** Types of symbol ids
+ */
 typedef enum id_type {
     #define X(a) ID_TYPE_##a = KEYWORD_##a,
     ID_TYPE_T(X)
@@ -42,66 +39,85 @@ typedef enum id_type {
 } id_type_t;
 
 
+/** Symbol is not opaque because fuck it.
+ */
 typedef struct symbol {
     id_type_t type;
     dynstring_t *id;
     func_semantics_t *function_semantics;
 } symbol_t;
 
-typedef struct scope_info {
-    scope_type_t scope_type;
-    size_t scope_level;
-    size_t unique_id;
-} scope_info_t;
 
-extern const struct symtable_interface_t Symtable;
-extern const struct symstack_interface_t Symstack;
-typedef struct symstack symstack_t;
+/** Opaque structure.
+ */
 typedef struct symtable symtable_t;
-typedef struct stack_el stack_el_t;
 
-struct symstack_interface_t {
-    // init once.
-    void *(*init)();
 
-    // caller pushes.
-    // Symstack.push(...)
-    // some_body(...)
-    void (*push)(symstack_t *, symtable_t *, scope_type_t, char *fun_name);
-
-    // caller pops.
-    // some_body(...)
-    // Symstack.pop(...)
-    void (*pop)(symstack_t *);
-
-    // destruct once.
-    void (*dtor)(symstack_t *);
-
-    // get_symbol an item from symstack through the pointer.
-    // true if we find an element.
-    bool (*get_symbol)(symstack_t *, dynstring_t *, symbol_t **, stack_el_t **);
-
-    // put_symbol symbol in to symtable on the top of the stack.
-    symbol_t *(*put_symbol)(symstack_t *, dynstring_t *, id_type_t);
-
-    symtable_t *(*top)(symstack_t *);
-
-    scope_info_t (*get_scope_info)(symstack_t *);
-
-    char *(*get_parent_func_name)(symstack_t *);
-};
+/** Python-like interface.
+ */
+extern const struct symtable_interface_t Symtable;
 
 struct symtable_interface_t {
+    /** Create a symbol table.
+     *
+     * @return pointer on initialized memory.
+     */
     symtable_t *(*ctor)();
 
+    /** Enum types casting function.
+     *
+     * @param token_type token from scanner.
+     * @return id_type_t from a token_type.
+     */
     id_type_t (*id_type_of_token_type)(int);
 
+    /** Get a symbol from the symtable.
+     *
+     * @param self symtable.
+     * @param id name to search the node by.
+     * @param storage storage will contain a pointer to the symbol.
+     * @return bool.
+     */
     bool (*get_symbol)(symtable_t *, dynstring_t *, symbol_t **);
 
+    /** Put a symbol into the symbol table.
+     *
+     * @param self BST.
+     * @param id symbol name.
+     * @param type symbol type.
+     * @return pointer on the symbol in the binary tree. Newly created or already existed.
+     */
     symbol_t *(*put)(symtable_t *, dynstring_t *, id_type_t);
 
-    void (*add_builtin_function)(symtable_t *, char *, char *, char *);
-
+    /** Symbol table destructor.
+     *
+     * @param self symbol table to free memory.
+     */
     void (*dtor)(symtable_t *);
 
+    /** Function to add builtin functions on the symbol table.
+     *
+     * 's' for string
+     * 'b' for boolean
+     * 'i' for integer
+     * 'f' for number
+     * 'n' for nil
+     *
+     * @param self symbol table.
+     * @param name name of the function.
+     * @param params vector of the parameters of the function.
+     * @param returns vector with return values of the function.
+     */
+    void (*add_builtin_function)(symtable_t *, char *, char *, char *);
+
+
+    /** Traverse a symtable and apply a predicate on all the symbols.
+     *
+     * Function store the conjunction of all predicates.
+     *
+     * @param self symtable to traverse.
+     * @param predicate predicate to apply.
+     * @return
+     */
+    bool (*traverse)(symtable_t *, bool (*predicate)(symbol_t *));
 };

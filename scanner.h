@@ -1,3 +1,10 @@
+/**
+ * @file scanner.h
+ *
+ * @brief Header file for scanner.
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #pragma once
 
 #include <stdio.h>
@@ -22,6 +29,8 @@ typedef union token_attribute {
     double num_f; ///< fp number representation
 } attribute_t;
 
+/** Token produced by a scanner.
+ */
 typedef struct token {
     int type;
     attribute_t attribute;
@@ -90,6 +99,9 @@ typedef struct token {
     X(global)   \
     X(require)  \
     X(for)      \
+    X(and)      \
+    X(or)       \
+    X(not)      \
     X(UNDEF)
 
 #define SINGLE_CHAR_TOKENS(X) \
@@ -127,6 +139,11 @@ typedef enum token_type {
     TOKEN(SUB),     // '-'
     TOKEN(STRCAT),  // ..
 
+    // BOOLTHEN
+//    TOKEN(AND),
+//    TOKEN(OR),
+//    TOKEN(NOT),
+
     // my sweet fucking token for expression parsing
     TOKEN(FUNC),
 
@@ -141,6 +158,7 @@ typedef enum token_type {
     TOKEN(COMMA) = ',',
 } token_type_t;
 
+
 typedef enum states {
 #define X(name) STATE(name),
     STATES(X)
@@ -154,16 +172,13 @@ typedef enum keywords {
 #undef X
 } keyword_t;
 
+
 extern const struct scanner_interface Scanner;
 
 struct scanner_interface {
     void (*free)();
 
-    pfile_t *(*initialize)(void);
-
     struct token (*get_next_token)(pfile_t *);
-
-    token_t (*get_prev_token)(void);
 
     token_t (*get_curr_token)(void);
 
@@ -172,5 +187,7 @@ struct scanner_interface {
     size_t (*get_line)(void);
 
     size_t (*get_charpos)(void);
+
+    void (*init)();
 };
 

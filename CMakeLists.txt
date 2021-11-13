@@ -1,4 +1,9 @@
-cmake_minimum_required(VERSION 3.19)
+# @file scanner.h
+#
+# @brief Header file for scanner.
+#
+# @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+cmake_minimum_required(VERSION 3.16)
 project(ifj21 C)
 set(CMAKE_C_STANDARD 11)
 set(PROJECT_NAME ifj21)
@@ -10,6 +15,7 @@ set(UTILS_SOURCES
         errors.c
         progfile.c
         scanner.c
+        symstack.c
         tests/tests.c
         parser.c
         expressions.c

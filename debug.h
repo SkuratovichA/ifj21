@@ -1,3 +1,10 @@
+/**
+ * @file debug.c
+ *
+ * @brief Macros for debugging.
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #pragma once
 
 #ifndef __APPLE__
@@ -23,7 +30,7 @@
     } while(0)
 
 #define debug_print(_dst, ...) do {                     \
-        fprintf((_dst), /*__FILE__ */":%.4d in %s %*s%s: ",  \
+        fprintf((_dst), __FILE__ ":%.4d in %s %*s%s: ",  \
             __LINE__,                                   \
             __FUNCTION__,                               \
             (int)(25 - strlen(__FUNCTION__))/*an indentation number*/, \
@@ -32,7 +39,7 @@
         fprintf((_dst), __VA_ARGS__);                   \
     } while(0)
 
-    #define debug_assert(cond) assert((cond))
+#define debug_assert(cond) assert((cond))
 #else
 // undef debug macros
 #define debug_err(...)

@@ -1,3 +1,10 @@
+/**
+ * @file list.h
+ *
+ * @brief
+ *
+ * @author Svobodova Lucie
+ */
 #pragma once
 
 #include <stdlib.h>
