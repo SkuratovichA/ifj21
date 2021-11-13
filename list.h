@@ -49,6 +49,14 @@ struct list_interface_t {
     void (*append)(list_t *list, void *data);
 
     /**
+     * @brief Inserts new element after "item".
+     *
+     * @param item New element will be inserted after this item.
+     * @param data Data to insert.
+     */
+    void (*insert_after)(list_item_t *item, void *data);
+
+    /**
      * @brief Delete the first item in list.
      *
      * @param list singly linked list.

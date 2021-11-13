@@ -54,6 +54,20 @@ static void Append(list_t *list, void *data) {
     new_item->next = NULL;
 }
 
+static void Insert_after(list_item_t *item, void *data) {
+    soft_assert(item, ERROR_INTERNAL);
+    list_item_t *new_item = calloc(1, sizeof (list_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    if (List.copy_data != NULL) {
+        List.copy_data(new_item, data);
+    } else {
+        new_item->data = data;
+    }
+    new_item->next = item->next;
+    item->next = new_item;
+}
+
 /**
  * @brief Delete the first item in list.
  *
@@ -169,6 +183,7 @@ const struct list_interface_t List = {
         .ctor = Ctor,
         .dtor = Dtor,
         .equal = Equal,
+        .insert_after = Insert_after,
 };
 
 #ifdef SELFTEST_list
