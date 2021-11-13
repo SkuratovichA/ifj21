@@ -233,20 +233,24 @@ static void SS_Pop(symstack_t *self) {
     }
 
     ST_Dtor(self->head->table);
+    Dynstring.dtor(self->head->fun_name);
+
+    stack_el_t *del = self->head;
     self->head = self->head->next;
+    free(del);
     debug_msg("[pop] popped a symtable\n");
 }
 
 static void SS_Dtor(symstack_t *self) {
-    stack_el_t *iter = self->head, *ptr;
+    stack_el_t *iter = self->head;
+    stack_el_t *ptr = NULL;
 
     // iterate the whole stack and delete each element.
     while (iter != NULL) {
         ptr = iter->next;
-        if (iter->info.scope_type == SCOPE_TYPE_function) {
-            Dynstring.dtor(iter->fun_name);
-        }
+        Dynstring.dtor(iter->fun_name);
         ST_Dtor(iter->table);
+
         free(iter);
         iter = ptr;
     }

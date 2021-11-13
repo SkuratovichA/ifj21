@@ -960,8 +960,8 @@ static bool Init_parser() {
  * @return void
  */
 static void Free_parser() {
-    Scanner.free();
     Symstack.dtor(symstack);
+    Scanner.free();
 }
 
 /**
