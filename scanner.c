@@ -18,6 +18,7 @@
 #endif
 
 
+#define is_hexnumber(ch) (((ch) >= '0' && (ch) <= '9') || ((ch) >= 'A' && (ch) <= 'F') || ((ch) >= 'a' && (ch) <= 'f'))
 #define hex2dec(ch) ((uint8_t)((ch) -(((ch) > '9') ? (-10 + (((ch) > 'Z' ) ? 'a': 'A')): '0')))
 
 /**
@@ -203,7 +204,7 @@ static token_t lex_string(pfile_t *pfile) {
                 break;
 
             case STATE_STR_HEX_1:
-                if (!ishexnumber(ch)) {
+                if (!is_hexnumber(ch)) {
                     accepted = true;
                 }
                 escaped_char = hex2dec(ch) << 4;
@@ -211,7 +212,7 @@ static token_t lex_string(pfile_t *pfile) {
                 break;
 
             case STATE_STR_HEX_2:
-                if (!ishexnumber(ch)) {
+                if (!is_hexnumber(ch)) {
                     accepted = true;
                 }
                 escaped_char |= hex2dec(ch);
