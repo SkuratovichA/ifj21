@@ -103,7 +103,7 @@ static bool ST_Get(symtable_t *self, dynstring_t *id, symbol_t **storage) {
 
     bool found = _st_get(self->root, id, storage);
 
-    debug_msg("\t[get]%s\n", found ? "found" : "not found");
+    debug_msg("[symtab_get] %s\n", found ? "found" : "not found");
     return found;
 }
 
@@ -133,7 +133,7 @@ static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
             } else {
                 debug_msg("\t[put] {%s, %d} is already in the table\n", Dynstring.c_str(id), type);
             }
-            return NULL;
+            return &(*iterator)->symbol;
         }
         iterator = res > 0 ? &(*iterator)->right : &(*iterator)->left;
     }
