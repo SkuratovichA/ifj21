@@ -141,11 +141,18 @@ typedef enum token_type {
     TOKEN(COMMA) = ',',
 } token_type_t;
 
-enum states {
+typedef enum states {
 #define X(name) STATE(name),
     STATES(X)
 #undef X
-};
+} states_t;
+
+typedef enum keywords {
+    dummy_keyword = 666,
+#define X(n) KEYWORD(n),
+    KEYWORDS(X)
+#undef X
+} keyword_t;
 
 extern const struct scanner_interface Scanner;
 
