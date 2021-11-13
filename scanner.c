@@ -817,6 +817,13 @@ static void Free_scanner() {
     }
 }
 
+/** Scanner initialization.
+ */
+static void Init_scanner() {
+    memset(&prev, 0x0, sizeof(prev));
+    memset(&curr, 0x0, sizeof(prev));
+}
+
 
 const struct scanner_interface Scanner = {
         .free = Free_scanner,
@@ -825,6 +832,7 @@ const struct scanner_interface Scanner = {
         .to_string = To_string,
         .get_line = Get_line,
         .get_charpos = Get_charpos,
+        .init = Init_scanner,
 };
 
 

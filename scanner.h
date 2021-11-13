@@ -187,5 +187,7 @@ struct scanner_interface {
     size_t (*get_line)(void);
 
     size_t (*get_charpos)(void);
+
+    void (*init)();
 };
 

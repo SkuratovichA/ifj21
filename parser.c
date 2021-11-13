@@ -50,7 +50,7 @@ static void print_error_unexpected_token(const char *a, const char *b) {
 #define SYMSTACK_PUSH(_scope_type, _id_fun_name) \
     do {                                                   \
         char *_str = NULL;                                 \
-        local_table = Symtable.ctor();                     \
+        local_table = Symtable.ctor();           \
         if ((_id_fun_name) != NULL) {                      \
             _str = Dynstring.c_str(_id_fun_name);          \
         }                         \
@@ -206,7 +206,7 @@ static bool cond_body(pfile_t *pfile) {
  * @return bool.
  */
 static bool cond_stmt(pfile_t *pfile) {
-    debug_msg_s("<cond_stmt> -> \n");
+    debug_msg("<cond_stmt> -> \n");
     if (!Expr.parse(pfile, true)) {
         return false;
     }
@@ -254,7 +254,7 @@ static inline bool datatype(pfile_t *pfile) {
  * @return bool.
  */
 static bool repeat_body(pfile_t *pfile) {
-    debug_msg_s("<repeat_body> -> \n");
+    debug_msg("<repeat_body> -> \n");
     // until |
     EXPECTED_OPT(KEYWORD_until);
     // a new solution which doesnt have to cause problems. But not tested yet, so i dont know.
@@ -271,7 +271,7 @@ static bool repeat_body(pfile_t *pfile) {
  * @return bool.
  */
 static bool assignment(pfile_t *pfile) {
-    debug_msg_s("<assignment> -> \n");
+    debug_msg("<assignment> -> \n");
     // e |
     if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
         return true;
@@ -293,7 +293,7 @@ static bool assignment(pfile_t *pfile) {
  * @return bool.
  */
 static bool other_return_expr(pfile_t *pfile) {
-    debug_msg_s("<other_return_expr> -> \n");
+    debug_msg("<other_return_expr> -> \n");
     // , |
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
         return true;
@@ -314,7 +314,7 @@ static bool other_return_expr(pfile_t *pfile) {
  * @return bool.
  */
 static bool return_expr_list(pfile_t *pfile) {
-    debug_msg_s("<return_expr_list> -> \n");
+    debug_msg("<return_expr_list> -> \n");
     if (!Expr.parse(pfile, true)) {
         debug_msg("Expression analysis failed.\n");
         return false;
@@ -512,12 +512,7 @@ static bool repeat_until_cycle(pfile_t *pfile) {
  * @return bool.
  */
 static bool fun_stmt(pfile_t *pfile) {
-    debug_msg("<fun_stmt> ->");
-    debug_msg_s(" (token = %s %s ) -> \n",
-                Scanner.to_string(Scanner.get_curr_token().type),
-                Scanner.get_curr_token().type == TOKEN_ID || Scanner.get_curr_token().type == TOKEN_STR ?
-                Dynstring.c_str(Scanner.get_curr_token().attribute.id) : ""
-    );
+    debug_msg("<fun_stmt> ->\n");
 
     switch (Scanner.get_curr_token().type) {
         // for <for_def>, `expr` <for_assignment> <fun_body>
@@ -798,7 +793,8 @@ static bool function_definition(pfile_t *pfile) {
     // We need to have a pointer to the symbol in the symbol table.
     symbol_t *symbol = NULL;
 
-    soft_assert((local_table == global_table) && "tables must be equal now", ERROR_SYNTAX);
+    debug_assert((local_table == global_table) && "tables must be equal now");
+
     id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     // Semantic control.
     // if we find a symbol on the stack, check it.
@@ -809,6 +805,7 @@ static bool function_definition(pfile_t *pfile) {
         // If function has been defined, return false and set an error code.
         if (Semantics.is_defined(symbol->function_semantics)) {
             Errors.set_error(ERROR_DEFINITION);
+            Dynstring.dtor(id_name); // free the name.
             return false;
         }
     }
@@ -818,9 +815,9 @@ static bool function_definition(pfile_t *pfile) {
     EXPECTED(TOKEN_ID);
     // (
     EXPECTED(TOKEN_LPAREN);
-    // symtable for a function.
+
+    // push a symtable on to the stack.
     SYMSTACK_PUSH(SCOPE_TYPE_function, id_name);
-    // no more need of id_name
     Dynstring.dtor(id_name);
 
     // <funparam_def_list>
@@ -970,6 +967,7 @@ static bool program(pfile_t *pfile) {
  * @return true/false.
  */
 static bool Init_parser() {
+    Scanner.init();
     // create a stack with symtables.
     symstack = Symstack.init();
     soft_assert(symstack != NULL, ERROR_INTERNAL);
@@ -1399,12 +1397,12 @@ int main() {
             END
     );
 
-    char *description20 = "semantic: declare builtin function (error)";
+    char *description20 = "Syntax: id after as a function return";
     bool result20 = false;
-    int retcode20 = ERROR_DEFINITION;
+    int retcode20 = ERROR_SYNTAX;
     pfile_t *pf20 = Pfile.ctor(
             PROLOG
-            FUN "me() :write"
+            FUN "me() : write"
             END
     );
 
@@ -1413,7 +1411,7 @@ int main() {
     int retcode21 = ERROR_DEFINITION;
     pfile_t *pf21 = Pfile.ctor(
             PROLOG
-            FUN "me() :write"
+            FUN "write() : string"
             END
     );
 
@@ -1423,7 +1421,7 @@ int main() {
     pfile_t *pf22 = Pfile.ctor(
             PROLOG
             GLOBAL "readi : function()"
-            FUN "me() :write"
+            FUN "me() : string "
             END
     );
 
@@ -1537,16 +1535,6 @@ int main() {
     Tests.warning(description3);
 
 
-    Tests.warning(description20);
-    TEST_EXPECT(Parser.analyse(pf20), result20, description20);
-    TEST_EXPECT((Errors.get_error() == retcode20), true, description20);
-    Tests.warning(description20);
-
-    Tests.warning(description21);
-    TEST_EXPECT(Parser.analyse(pf21), result21, description21);
-    TEST_EXPECT((Errors.get_error() == retcode21), true, description21);
-    Tests.warning(description21);
-
     Tests.warning(description22);
     TEST_EXPECT(Parser.analyse(pf22), result22, description22);
     TEST_EXPECT((Errors.get_error() == retcode22), true, description22);
@@ -1561,12 +1549,22 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf24), result24, description24);
     TEST_EXPECT((Errors.get_error() == retcode24), true, description24);
     Tests.warning(description24);
-#endif
 
     Tests.warning(description19);
     TEST_EXPECT(Parser.analyse(pf19), result19, description19);
     TEST_EXPECT((Errors.get_error() == retcode19), true, description19);
     Tests.warning(description19);
+#endif
+
+    Tests.warning(description20);
+    TEST_EXPECT(Parser.analyse(pf20), result20, description20);
+    TEST_EXPECT((Errors.get_error() == retcode20), true, description20);
+    Tests.warning(description20);
+
+    Tests.warning(description21);
+    TEST_EXPECT(Parser.analyse(pf21), result21, description21);
+    TEST_EXPECT((Errors.get_error() == retcode21), true, description21);
+    Tests.warning(description21);
 
     // destructors
     Pfile.dtor(pf1);
