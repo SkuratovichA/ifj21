@@ -487,6 +487,14 @@ static bool repeat_until_cycle(pfile_t *pfile) {
     EXPECTED(KEYWORD_repeat);
     SYMSTACK_PUSH(SCOPE_TYPE_do_cycle, NULL);
 
+    // nested while
+    if (!instructions.in_loop) {
+        instructions.in_loop = true;
+        instructions.outer_loop_id = Symstack.get_scope_info(symstack).unique_id;
+        instructions.before_loop_start = instrList->tail;   // use when declaring vars in loop
+    }
+    Generator.repeat_until_header();
+
     if (!repeat_body(pfile)) {
         return false;
     }
@@ -495,6 +503,9 @@ static bool repeat_until_cycle(pfile_t *pfile) {
         debug_msg("Expression function returned false\n");
         return false;
     }
+
+    // expression result in LF@%result
+    Generator.repeat_until_cond();
 
     SYMSTACK_POP();
     return true;

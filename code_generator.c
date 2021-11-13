@@ -479,7 +479,7 @@ static void generate_while_header() {
 
 /*
  * @brief Generates while loop condition check.
- * generates sth like: JUMPIFEQ $while$end$id LF@%result bool@true
+ * generates sth like: JUMPIFEQ $end$id LF@%result bool@true
  */
 static void generate_while_cond() {
     ADD_INSTR_PART("JUMPIFEQ $end$");
@@ -491,7 +491,7 @@ static void generate_while_cond() {
 /*
  * @brief Generates while loop end.
  * generates sth like: JUMP $id$while
- *                     LABEL $while$end$id
+ *                     LABEL $end$id
  */
 static void generate_while_end() {
     ADD_INSTR_PART("JUMP $while$");
@@ -504,13 +504,33 @@ static void generate_while_end() {
 }
 
 /*
- * @brief Generates while loop end.
- * generates sth like: JUMP $id$while
- *                     LABEL $while$end$id
+ * @brief Generates end.
+ *        LABEL $end$id
  */
 static void generate_end() {
     ADD_INSTR_PART("LABEL $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates repeat until loop header.
+ * generates sth like: LABEL $repeat$id
+ */
+static void generate_repeat_until_header() {
+    ADD_INSTR_PART("LABEL $repeat$");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_TMP;
+}
+
+/*
+ * @brief Generates repeat until loop condition check.
+ * generates sth like: JUMPIFEQ $repeat$id LF@%result bool@true
+ */
+static void generate_repeat_until_cond() {
+    ADD_INSTR_PART("JUMPIFEQ $repeat$");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART(" LF@%result bool@true");
     ADD_INSTR_TMP;
 }
 
@@ -561,4 +581,6 @@ const struct code_generator_interface_t Generator = {
         .while_cond = generate_while_cond,
         .while_end = generate_while_end,
         .end = generate_end,
+        .repeat_until_header = generate_repeat_until_header,
+        .repeat_until_cond = generate_repeat_until_cond,
 };

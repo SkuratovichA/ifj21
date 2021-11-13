@@ -104,6 +104,8 @@ struct code_generator_interface_t {
     void (*while_cond)(void);
     void (*while_end)(void);
     void (*end)(void);
+    void (*repeat_until_header)(void);
+    void (*repeat_until_cond)(void);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.
