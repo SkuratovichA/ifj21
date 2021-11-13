@@ -20,7 +20,10 @@ static int Get_error() {
  */
 static void Set_error(int errcode) {
     if (errcode != ERROR_NOERROR)
-        debug_msg("-------Error is about to be set.\n");;
+        debug_msg("#######################################################\n"
+                  "################ Error will be set NOW! ###############\n"
+                  "#######################################################\n");
+
     switch (errcode) {
         case ERROR_LEXICAL:
             // 1 - lexical error

@@ -22,6 +22,7 @@ typedef struct symtable {
 typedef struct stack_el {
     struct stack_el *next;
     symtable_t *table;
+    dynstring_t *fun_name; // is not NULL iff info == SCOPE_TYPE_function
     scope_info_t info;
 } stack_el_t;
 
@@ -102,7 +103,7 @@ static bool ST_Get(symtable_t *self, dynstring_t *id, symbol_t **storage) {
 
     bool found = _st_get(self->root, id, storage);
 
-    debug_msg("\t[get]%s\n", found ? "found" : "not found");
+    debug_msg("[symtab_get] %s\n", found ? "found" : "not found");
     return found;
 }
 
@@ -132,7 +133,7 @@ static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
             } else {
                 debug_msg("\t[put] {%s, %d} is already in the table\n", Dynstring.c_str(id), type);
             }
-            return NULL;
+            return &(*iterator)->symbol;
         }
         iterator = res > 0 ? &(*iterator)->right : &(*iterator)->left;
     }
@@ -188,7 +189,7 @@ static void *SS_Init() {
 }
 
 
-static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type) {
+static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type, char *fun_name) {
     // create a new elment.
     stack_el_t *stack_element = calloc(1, sizeof(stack_el_t));
     soft_assert(stack_element != NULL, ERROR_INTERNAL);
@@ -201,6 +202,13 @@ static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type
     stack_element->info.scope_level = self->head != NULL ? self->head->info.scope_level + 1 : 0;
     // set a unique id for code generation.
     stack_element->info.unique_id = __unique__id++;
+
+    if (scope_type == SCOPE_TYPE_function) {
+        stack_element->fun_name = fun_name ? Dynstring.ctor(fun_name) : Dynstring.ctor("nameless_function");
+        if (fun_name == NULL) {
+            debug_msg("function name is NULL?\n");
+        }
+    }
 
     // prepend new stack element.
     stack_element->next = self->head;
@@ -236,6 +244,9 @@ static void SS_Dtor(symstack_t *self) {
     // iterate the whole stack and delete each element.
     while (iter != NULL) {
         ptr = iter->next;
+        if (iter->info.scope_type == SCOPE_TYPE_function) {
+            Dynstring.dtor(iter->fun_name);
+        }
         ST_Dtor(iter->table);
         free(iter);
         iter = ptr;
@@ -252,7 +263,11 @@ static void SS_Dtor(symstack_t *self) {
  * @param sym a pointer to symbol to store a pointer to the object if we find it.
  * @return
  */
-static bool SS_Get_symbol(symstack_t *self, dynstring_t *id, symbol_t **sym) {
+static bool
+SS_Get_symbol(
+        symstack_t *self, dynstring_t *id,
+        symbol_t **sym, stack_el_t **def_scope
+) {
     debug_msg("\n");
     if (self == NULL) {
         debug_msg("[getter] Stack is null. Returning false.\n");
@@ -263,6 +278,9 @@ static bool SS_Get_symbol(symstack_t *self, dynstring_t *id, symbol_t **sym) {
     while (st != NULL) {
         if (ST_Get(st->table, id, sym)) {
             debug_msg("[getter] symbol found\n");
+            if (def_scope != NULL) {
+                *def_scope = st;
+            }
             return true;
         }
         st = st->next;
@@ -290,6 +308,7 @@ static symbol_t *SS_Put_symbol(symstack_t *self, dynstring_t *id, id_type_t type
         debug_msg("\tStack has been empty. Create a frame(Symstack.push) before putting a symbol.\n");
         return NULL;
     }
+
     return ST_Put(self->head->table, id, type);
 }
 
@@ -324,6 +343,26 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
     debug_msg("\t[BUILTIN]: builtin function is set.\n");
 }
 
+/** Get a parent function name.
+ *
+ * @param self
+ * @return NULl if there is a global frame.
+ */
+static char *SS_Get_parent_func_name(symstack_t *self) {
+    if (self == NULL) {
+        return NULL;
+    }
+    stack_el_t *iter = self->head;
+
+    while (iter != NULL) {
+        if (iter->info.scope_type == SCOPE_TYPE_function) {
+            return Dynstring.c_str(iter->fun_name);
+        }
+        iter = iter->next;
+    }
+    return NULL;
+}
+
 //=================================================
 const struct symstack_interface_t Symstack = {
         .init = SS_Init,
@@ -334,6 +373,7 @@ const struct symstack_interface_t Symstack = {
         .put_symbol = SS_Put_symbol,
         .top = SS_Top,
         .get_scope_info = SS_Get_scope_info,
+        .get_parent_func_name = SS_Get_parent_func_name,
 };
 
 const struct symtable_interface_t Symtable = {
@@ -360,11 +400,11 @@ int main() {
     char *strs[6] = {"aaa", "bbb", "ccc", "ddd", "eee", "fff"};
 
     // put_symbol an item on the "global frame"
-    Symstack.push(stack, t, SCOPE_TYPE_global);
+    Symstack.push(stack, t, SCOPE_TYPE_global, NULL);
     Symstack.put_symbol(stack, hello, ID_TYPE_number);
 
     // create a new frame.
-    Symstack.push(stack, Symtable.ctor(), SCOPE_TYPE_function);
+    Symstack.push(stack, Symtable.ctor(), SCOPE_TYPE_function, NULL);
 
     // push on new frame.
     for (int i = 0; i < 6; i++) {
@@ -373,14 +413,14 @@ int main() {
 
     // find elements.
     for (int i = 0; i < 6; i++) {
-        if (Symstack.get_symbol(stack, Dynstring.ctor(strs[i]), &symbol)) {
+        if (Symstack.get_symbol(stack, Dynstring.ctor(strs[i]), &symbol, NULL)) {
             printf("found: %s\n", Dynstring.c_str(symbol->id));
         } else {
             printf("not found.\n");
         }
     }
 
-    if (Symstack.get_symbol(stack, hello, &symbol)) {
+    if (Symstack.get_symbol(stack, hello, &symbol, NULL)) {
         printf("Ready to push :)\n");
     }
 

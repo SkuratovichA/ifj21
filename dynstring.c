@@ -62,7 +62,9 @@ static dynstring_t *Str_ctor(const char *s) {
  * @return c dynstring_t representation.
  */
 static char *Str_c_str(dynstring_t *str) {
-    soft_assert(str, ERROR_INTERNAL);
+    if (str == NULL) {
+        return NULL;
+    }
     return str->str;
 }
 

@@ -15,10 +15,10 @@ static void print_error_unexpected_token(const char *a, const char *b) {
 }
 
 // push a new symtable on symstack
-#define SYMSTACK_PUSH(_scope_type)                          \
+#define SYMSTACK_PUSH(_scope_type, _id_name)                \
     do {                                                   \
         local_table = Symtable.ctor();                     \
-        Symstack.push(symstack, local_table, _scope_type); \
+        Symstack.push(symstack, local_table, _scope_type, Dynstring.c_str(_id_name)); \
     } while (0)
 
 #define SYMSTACK_POP()                          \
@@ -127,7 +127,7 @@ static bool cond_body(pfile_t *pfile) {
             // pop an existent symtable, because we ara in the if statement(scope).
             SYMSTACK_POP();
             // also, we need to create a new symtable for 'else' scope.
-            SYMSTACK_PUSH(SCOPE_TYPE_condition);
+            SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
             if (!fun_body(pfile)) {
                 return false;
             }
@@ -139,7 +139,7 @@ static bool cond_body(pfile_t *pfile) {
             // pop an existent symtable, because we ara in the if statement(scope).
             SYMSTACK_POP();
             // also, we need to create a new symtable for 'elseif' scope.
-            SYMSTACK_PUSH(SCOPE_TYPE_condition);
+            SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
             return cond_stmt(pfile);
 
         case KEYWORD_end:
@@ -257,7 +257,11 @@ static bool assignment(pfile_t *pfile) {
 static bool other_return_expr(pfile_t *pfile) {
     debug_msg_s("<other_return_expr> -> \n");
     // , |
-    EXPECTED_OPT(TOKEN_COMMA);
+    if (Scanner.get_curr_token().type != TOKEN_COMMA) {
+        return true;
+    }
+
+    EXPECTED(TOKEN_COMMA);
     if (!Expr.parse(pfile, true)) {
         return false;
     }
@@ -278,6 +282,7 @@ static bool return_expr_list(pfile_t *pfile) {
         debug_msg("Expression analysis failed.\n");
         return false;
     }
+
     return other_return_expr(pfile);
 }
 
@@ -290,7 +295,9 @@ static bool return_expr_list(pfile_t *pfile) {
 static bool for_assignment(pfile_t *pfile) {
     debug_msg("<for_assignment> ->\n");
     EXPECTED_OPT(KEYWORD_do);
+
     EXPECTED(TOKEN_COMMA);
+
     if (!Expr.parse(pfile, true)) {
         debug_msg("[error] Expression parsing failed.\n");
         return false;
@@ -307,7 +314,7 @@ static bool for_assignment(pfile_t *pfile) {
  */
 static bool for_cycle(pfile_t *pfile) {
     EXPECTED(KEYWORD_for); // for
-    SYMSTACK_PUSH(SCOPE_TYPE_cycle);
+    SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
 
     dynstring_t *id_name = Scanner.get_curr_token().attribute.id;
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, ID_TYPE_integer);
@@ -350,7 +357,7 @@ static bool for_cycle(pfile_t *pfile) {
  */
 static bool if_statement(pfile_t *pfile) {
     EXPECTED(KEYWORD_if);
-    SYMSTACK_PUSH(SCOPE_TYPE_condition);
+    SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
 
     return cond_stmt(pfile);
 }
@@ -397,7 +404,7 @@ static bool while_cycle(pfile_t *pfile) {
     EXPECTED(KEYWORD_while);
 
     // create a new symtable for while cycle.
-    SYMSTACK_PUSH(SCOPE_TYPE_cycle);
+    SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
 
     // parse expressions
     if (!Expr.parse(pfile, true)) {
@@ -438,7 +445,7 @@ static bool return_stmt(pfile_t *pfile) {
  */
 static bool repeat_until_cycle(pfile_t *pfile) {
     EXPECTED(KEYWORD_repeat);
-    SYMSTACK_PUSH(SCOPE_TYPE_do_cycle);
+    SYMSTACK_PUSH(SCOPE_TYPE_do_cycle, NULL);
 
     if (!repeat_body(pfile)) {
         return false;
@@ -712,7 +719,7 @@ static bool function_declaration(pfile_t *pfile) {
 
     // Semantic control.
     // if we find a symbol on the stack, check it.
-    if (Symstack.get_symbol(symstack, id_name, &symbol)) {
+    if (Symstack.get_symbol(symstack, id_name, &symbol, NULL)) {
         // If function has been defined or declared.
         if (Semantics.is_defined(symbol->function_semantics) || Semantics.is_declared(symbol->function_semantics)) {
             Errors.set_error(ERROR_DEFINITION);
@@ -758,10 +765,10 @@ static bool function_definition(pfile_t *pfile) {
     symbol_t *symbol = NULL;
 
     soft_assert((local_table == global_table) && "tables must be equal now", ERROR_SYNTAX);
-    id_name = Scanner.get_curr_token().attribute.id;
+    id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     // Semantic control.
     // if we find a symbol on the stack, check it.
-    if (Symstack.get_symbol(symstack, id_name, &symbol)) {
+    if (Symstack.get_symbol(symstack, id_name, &symbol, NULL)) {
         // we don't have to control if the symbol is a function,
         // because in the grammar, there's only one options and this option is
         // to be a function.
@@ -778,7 +785,7 @@ static bool function_definition(pfile_t *pfile) {
     // (
     EXPECTED(TOKEN_LPAREN);
     // symtable for a function.
-    SYMSTACK_PUSH(SCOPE_TYPE_function);
+    SYMSTACK_PUSH(SCOPE_TYPE_function, id_name);
 
     // <funparam_def_list>
     if (!funparam_def_list(pfile, symbol->function_semantics->definition)) {
@@ -802,6 +809,7 @@ static bool function_definition(pfile_t *pfile) {
         return false;
     }
     SYMSTACK_POP();
+    Dynstring.dtor(id_name);
     return true;
 }
 
@@ -815,40 +823,40 @@ static bool function_definition(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-    static bool stmt(pfile_t *pfile) {
-        debug_msg("<stmt> ->\n");
-        token_t token = Scanner.get_curr_token();
+static bool stmt(pfile_t *pfile) {
+    debug_msg("<stmt> ->\n");
+    token_t token = Scanner.get_curr_token();
 
-        switch (token.type) {
-            // function declaration: global id : function ( <datatype_list> <funretopt>
-            case KEYWORD_global:
-                return function_declaration(pfile);
+    switch (token.type) {
+        // function declaration: global id : function ( <datatype_list> <funretopt>
+        case KEYWORD_global:
+            return function_declaration(pfile);
 
-                // function definition: function id ( <funparam_def_list> <funretopt> <fun_body>
-            case KEYWORD_function:
-                return function_definition(pfile);
+            // function definition: function id ( <funparam_def_list> <funretopt> <fun_body>
+        case KEYWORD_function:
+            return function_definition(pfile);
 
-                // function calling: id ( <list_expr> )
-            case TOKEN_ID:
-                if (!Expr.parse(pfile, true)) {
-                    return false;
-                }
-                break;
-
-                // FIXME. I dont know how to solve this recursion.
-            case TOKEN_EOFILE:
-                return true;
-
-            case TOKEN_DEAD:
-                Errors.set_error(ERROR_LEXICAL);
+            // function calling: id ( <list_expr> )
+        case TOKEN_ID:
+            if (!Expr.parse(pfile, true)) {
                 return false;
+            }
+            break;
 
-            default:
-                if (!Expr.parse) {
-                    Errors.set_error(ERROR_SYNTAX);
-                    return false;
-                }
-        }
+            // FIXME. I dont know how to solve this recursion.
+        case TOKEN_EOFILE:
+            return true;
+
+        case TOKEN_DEAD:
+            Errors.set_error(ERROR_LEXICAL);
+            return false;
+
+        default:
+            if (!Expr.parse) {
+                Errors.set_error(ERROR_SYNTAX);
+                return false;
+            }
+    }
     return true;
 }
 
@@ -922,7 +930,7 @@ static bool Init_parser() {
     }
 
     // push a global frame
-    Symstack.push(symstack, global_table, SCOPE_TYPE_global);
+    Symstack.push(symstack, global_table, SCOPE_TYPE_global, /*fun_name*/ NULL);
 
 
     // TODO: should we add parameters?
@@ -1029,6 +1037,8 @@ int main() {
             GLOBAL "baz : function(string)"
             GLOBAL "bar : function(string, integer)"
             GLOBAL "arst : function(string, integer, number, number, integer, string)"
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+
             GLOBAL "foo:function()"
             GLOBAL "baz:function(string)"
             GLOBAL "bar:function(string, integer)"
@@ -1040,7 +1050,6 @@ int main() {
             GLOBAL "foo : function() : string\n"
             GLOBAL "baz : function(number) : integer, integer, integer, integer\n"
             GLOBAL "bar : function(string, integer, number) : number\n"
-            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
             GLOBAL "foo : function():string\n"
             GLOBAL "baz : function(number):integer, integer, integer, integer\n"
             GLOBAL "bar : function(string, integer, number):number\n"
@@ -1053,44 +1062,39 @@ int main() {
             GLOBAL "foo : function()\n"
             GLOBAL "foo : function()\n"
     );
+     pfile_t *pf_semantics_good = Pfile.ctor(
+            PROLOG
+            GLOBAL "foo : function()"
+            GLOBAL "baz : function(string)"
+            GLOBAL "bar : function(string, integer)"
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+
+            FUN "foo()"
+            END
+
+            FUN "baz(str : string)"
+            END
+
+            FUN "bar(str : string, int : integer)"
+            END
+
+            GLOBAL "arst : function(string,         integer,             number,       number,     integer, string)"
+            FUN               "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)"
+            END
+
+            FUN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (str : string) : string, string, string\n"
+            END
+    );
     //4
     pfile_t *pf4 = Pfile.ctor(
             PROLOG
             GLOBAL " foo : " FUN "(string) : string\n"
             FUN "bar(param : string) : string\n"
-                RETURN "foo (param)\n"
+                RETURN "foo\n"
             END
             FUN "foo(param:string):string \n"
-                RETURN "bar(param)\n"
+                RETURN "bar\n"
             END
-    );
-
-
-    //5
-    pfile_t *pf5 = Pfile.ctor(
-            "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
-            PROLOG
-            FUN "main()"
-            LOCAL "s1" ": string = " SOME_STRING
-            LOCAL "s2" ": string = s1 .." SOME_STRING
-            "print(s1,"SOME_STRING", s2)"
-            LOCAL "s1len : integer=#s1"
-            "s1len = s1len - 4 "
-            "s1" "=" SUBSTR"(s2, s1len, s1len + 4)"
-            "s1len = s1len + 1 "
-            WRITE "("SOME_STRING")"
-            WRITE "("SOME_STRING")"
-            WRITE "("SOME_STRING")"
-            "s1 = reads()"
-            IF "s1 ~= nil" THEN
-            WHILE "s1" "~=" SOME_STRING DO
-            WRITE "("SOME_STRING")"
-            "s1" "=" READS"()"
-            END
-            ELSE
-            END
-            END
-            "main()"
     );
 
     //5
@@ -1156,20 +1160,21 @@ int main() {
 
     pfile_t *pf10 = Pfile.ctor(
             PROLOG
-            FUN "yours()"
+            FUN "yours() : string "
             REPEAT
             REPEAT
             REPEAT
             REPEAT
             REPEAT
             REPEAT
-            " live_is_beautiful() "
+            " live_is_beautiful "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
             UNTIL " true "
+            RETURN "you"
             END
     );
 
@@ -1211,6 +1216,20 @@ int main() {
             "main()"
             );
 
+
+    //5
+    pfile_t *pf5 = Pfile.ctor(
+            "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
+            PROLOG
+            FUN "main()"
+                LOCAL "s1 : string = " SOME_STRING
+                LOCAL "s2 : string = s1"
+                "print" //(s1,"SOME_STRING", s2)"
+                LOCAL "s1len : integer = 10"
+                //"s1 =" SUBSTR"(s2, s1len, s1len + 4)"
+            "main()"
+    );
+
     // tests.
 
 #if 0
@@ -1221,10 +1240,6 @@ int main() {
     Tests.warning("2: prolog with an error..");
     TEST_EXPECT(Parser.analyse(pf2), false, "Second test. Lixecal error handled.");
     TEST_EXPECT(Errors.get_error() == ERROR_LEXICAL, true, "This error must be a lexical one.");
-
-    Tests.warning("3: function declarations.");
-    TEST_EXPECT(Parser.analyse(pf3), true, "Function declarations OK.");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
     Tests.warning("4: Mutually recursive functions.");
     TEST_EXPECT(Parser.analyse(pf4), true, "Mutually recursive functions. Return statement.");
@@ -1244,10 +1259,6 @@ int main() {
 
    Tests.warning("11: for statements");
     TEST_EXPECT(Parser.analyse(pf11), true, "For statements");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
-
-    Tests.warning("5: Curve's test");
-    TEST_EXPECT(Parser.analyse(pf5), true, "curve's program(bigger).");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
     Tests.warning("6: Curve's test simplified");
@@ -1272,15 +1283,27 @@ int main() {
     Tests.warning("14: Function with a wrong expression as a body.");
     TEST_EXPECT(Parser.analyse(pf14), false, "function which body is only one wrong expression.");
     TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error..");
-#endif
 
     Tests.warning("10: repeat until statements");
     TEST_EXPECT(Parser.analyse(pf10), true, "Repeat until statements");
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
 
+    Tests.warning("5: ERROR");
+    TEST_EXPECT(Parser.analyse(pf5), true, "curve's program(bigger).");
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's an error.");
+
+#endif
+    Tests.warning("42: good function semantics");
+    TEST_EXPECT(Parser.analyse(pf_semantics_good), true, " decl & def semantics good");
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There are no errors.");
+
+    Tests.warning("3: function declarations SEMANTIC ERROR.");
+    TEST_EXPECT(Parser.analyse(pf3), false, "Function declarations SEMANTIC ERROR.");
+    TEST_EXPECT(Errors.get_error() == ERROR_DEFINITION, true, "Definition error must be handled.");
 
     // destructors
     Pfile.dtor(pf1);
+    Pfile.dtor(pf_semantics_good);
     Pfile.dtor(pf2);
     Pfile.dtor(pf3);
     Pfile.dtor(pf4);
