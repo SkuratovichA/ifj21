@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.16)
 project(ifj21 C)
 set(CMAKE_C_STANDARD 11)
 set(PROJECT_NAME ifj21)
