@@ -161,16 +161,15 @@ static void _st_dtor(node_t *node) {
     if (node == NULL) {
         return;
     }
-    _st_dtor(node->left);
-    _st_dtor(node->right);
-
     if (node->symbol.type == ID_TYPE_func_decl ||
         node->symbol.type == ID_TYPE_func_def
             ) {
         Semantics.dtor(node->symbol.function_semantics);
     }
-
     Dynstring.dtor(node->symbol.id);
+
+    _st_dtor(node->left);
+    _st_dtor(node->right);
     free(node);
 }
 
@@ -188,7 +187,6 @@ static void *SS_Init() {
     return calloc(1, sizeof(symstack_t));
 }
 
-
 static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type, char *fun_name) {
     // create a new elment.
     stack_el_t *stack_element = calloc(1, sizeof(stack_el_t));
@@ -204,9 +202,11 @@ static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type
     stack_element->info.unique_id = __unique__id++;
 
     if (scope_type == SCOPE_TYPE_function) {
-        stack_element->fun_name = fun_name ? Dynstring.ctor(fun_name) : Dynstring.ctor("nameless_function");
-        if (fun_name == NULL) {
-            debug_msg("function name is NULL?\n");
+        if (fun_name != NULL) {
+            stack_element->fun_name = Dynstring.ctor(fun_name);
+        } else {
+            debug_msg("[push] Is this function really nameless?\n");
+            stack_element->fun_name = Dynstring.ctor("nameless_function");
         }
     }
 
@@ -214,11 +214,11 @@ static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type
     stack_element->next = self->head;
     self->head = stack_element;
 
-    debug_msg("[push] { .unique_id = '%zu', scope_level = '%zu', scope_type = '%s' }\n",
-              stack_element->info.unique_id,
-              stack_element->info.scope_level,
-              scope_to_str(stack_element->info.scope_type)
-    );
+    //debug_msg("[push] { .unique_id = '%zu', scope_level = '%zu', scope_type = '%s' }\n",
+    //          stack_element->info.unique_id,
+    //          stack_element->info.scope_level,
+    //          scope_to_str(stack_element->info.scope_type)
+    //);
 }
 
 static void SS_Pop(symstack_t *self) {
@@ -238,7 +238,6 @@ static void SS_Pop(symstack_t *self) {
 }
 
 static void SS_Dtor(symstack_t *self) {
-    debug_msg("\n");
     stack_el_t *iter = self->head, *ptr;
 
     // iterate the whole stack and delete each element.
@@ -327,6 +326,7 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
     dynstring_t *dname = Dynstring.ctor(name);
     dynstring_t *paramvec = Dynstring.ctor(params);
     dynstring_t *returnvec = Dynstring.ctor(returns);
+
     ST_Put(self, dname, ID_TYPE_func_decl);
     ST_Put(self, dname, ID_TYPE_func_def);
 
@@ -340,6 +340,9 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
     Semantics.set_params(symbol->function_semantics->declaration, paramvec);
     Semantics.set_returns(symbol->function_semantics->declaration, returnvec);
 
+    Dynstring.dtor(dname);
+    Dynstring.dtor(paramvec);
+    Dynstring.dtor(returnvec);
     debug_msg("\t[BUILTIN]: builtin function is set.\n");
 }
 
@@ -392,40 +395,6 @@ const struct symtable_interface_t Symtable = {
 int main() {
     debug_msg("symtable selfdebug\n");
 
-    symtable_t *t = Symtable.ctor();
-    symstack_t *stack = Symstack.init();
-    symbol_t *symbol;
-    dynstring_t *hello = Dynstring.ctor(HELLO);
-
-    char *strs[6] = {"aaa", "bbb", "ccc", "ddd", "eee", "fff"};
-
-    // put_symbol an item on the "global frame"
-    Symstack.push(stack, t, SCOPE_TYPE_global, NULL);
-    Symstack.put_symbol(stack, hello, ID_TYPE_number);
-
-    // create a new frame.
-    Symstack.push(stack, Symtable.ctor(), SCOPE_TYPE_function, NULL);
-
-    // push on new frame.
-    for (int i = 0; i < 6; i++) {
-        Symstack.put_symbol(stack, Dynstring.ctor(strs[i]), ID_TYPE_string);
-    }
-
-    // find elements.
-    for (int i = 0; i < 6; i++) {
-        if (Symstack.get_symbol(stack, Dynstring.ctor(strs[i]), &symbol, NULL)) {
-            printf("found: %s\n", Dynstring.c_str(symbol->id));
-        } else {
-            printf("not found.\n");
-        }
-    }
-
-    if (Symstack.get_symbol(stack, hello, &symbol, NULL)) {
-        printf("Ready to push :)\n");
-    }
-
-    //Symstack.pop(stack);
-    Symstack.dtor(stack);
     return 0;
 }
 

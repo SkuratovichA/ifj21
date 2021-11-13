@@ -15,10 +15,14 @@ static void print_error_unexpected_token(const char *a, const char *b) {
 }
 
 // push a new symtable on symstack
-#define SYMSTACK_PUSH(_scope_type, _id_name)                \
+#define SYMSTACK_PUSH(_scope_type, _id_fun_name)            \
     do {                                                   \
+        char *_str = NULL;                                 \
         local_table = Symtable.ctor();                     \
-        Symstack.push(symstack, local_table, _scope_type, Dynstring.c_str(_id_name)); \
+        if ((_id_fun_name) != NULL) {                      \
+            _str = Dynstring.c_str(_id_fun_name);          \
+        }                         \
+        Symstack.push(symstack, local_table, _scope_type, _str); \
     } while (0)
 
 #define SYMSTACK_POP()                          \
@@ -786,6 +790,8 @@ static bool function_definition(pfile_t *pfile) {
     EXPECTED(TOKEN_LPAREN);
     // symtable for a function.
     SYMSTACK_PUSH(SCOPE_TYPE_function, id_name);
+    // no more need of id_name
+    Dynstring.dtor(id_name);
 
     // <funparam_def_list>
     if (!funparam_def_list(pfile, symbol->function_semantics->definition)) {
@@ -809,7 +815,6 @@ static bool function_definition(pfile_t *pfile) {
         return false;
     }
     SYMSTACK_POP();
-    Dynstring.dtor(id_name);
     return true;
 }
 
@@ -920,18 +925,17 @@ static bool program(pfile_t *pfile) {
 static bool Init_parser() {
     // create a stack with symtables.
     symstack = Symstack.init();
+    soft_assert(symstack != NULL, ERROR_INTERNAL);
+
     // create a global table.
     global_table = Symtable.ctor();
+    soft_assert(global_table != NULL, ERROR_INTERNAL);
+
     //at the beginning, local and global tables are equal.
     local_table = global_table;
 
-    if (((bool) symstack && (bool) global_table) == 0) {
-        return false;
-    }
-
     // push a global frame
     Symstack.push(symstack, global_table, SCOPE_TYPE_global, /*fun_name*/ NULL);
-
 
     // TODO: should we add parameters?
     // add builtin functions.
@@ -961,7 +965,7 @@ static void Free_parser() {
 }
 
 /**
- * @brief Analyze function initializes the scanner, gets 1st token and starts parsing using top-down
+ * @brief Analyse function initializes the scanner, gets 1st token and starts parsing using top-down
  * recursive descent method for everything except expressions and bottom-up precedence parsing method for expressions.
  * Syntax analysis is based on LL(1) grammar.
  *
@@ -1025,12 +1029,15 @@ const struct parser_interface_t Parser = {
 #define SUBSTR " substr "
 #define GLOBAL " global "
 #define RETURN " return "
+
 int main() {
-    //1
+    char *description1 = "prolog string";
     pfile_t *pf1 = Pfile.ctor(PROLOG);
-    //2
+
+    char *description2 = "lexical error";
     pfile_t *pf2 = Pfile.ctor("1234.er" PROLOG);
-    //3
+
+    char *description3 = "Redefinition error";
     pfile_t *pf3 = Pfile.ctor(
             PROLOG
             GLOBAL "foo : function()"
@@ -1062,7 +1069,9 @@ int main() {
             GLOBAL "foo : function()\n"
             GLOBAL "foo : function()\n"
     );
-     pfile_t *pf_semantics_good = Pfile.ctor(
+
+    char *description4 = "no error, parsing definitions, declarations";
+    pfile_t *pf4 = Pfile.ctor(
             PROLOG
             GLOBAL "foo : function()"
             GLOBAL "baz : function(string)"
@@ -1085,35 +1094,39 @@ int main() {
             FUN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (str : string) : string, string, string\n"
             END
     );
-    //4
-    pfile_t *pf4 = Pfile.ctor(
+
+    char *description5 = "mutual recursion";
+    pfile_t *pf5 = Pfile.ctor(
             PROLOG
             GLOBAL " foo : " FUN "(string) : string\n"
+
             FUN "bar(param : string) : string\n"
-                RETURN "foo\n"
+                RETURN "foo(param)\n"
             END
+
             FUN "foo(param:string):string \n"
-                RETURN "bar\n"
+                RETURN "bar(param)\n"
             END
     );
 
-    //5
+    char *description6 = "strings, builtin functions";
     pfile_t *pf6 = Pfile.ctor(
             "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
             PROLOG
             FUN "main()"
-            LOCAL "s1 : string =" SOME_STRING
-            LOCAL "s2 : string = s1" CONCAT SOME_STRING
-            "print("SOME_STRING")"
-            LOCAL "s1len : integer = #s1"
-            "s1len = s1len - 4"
-            "s1 = "SUBSTR"(s2, s1len, s1len + 4)"
-            WRITE"("SOME_STRING")"
-            WRITE"("SOME_STRING")"
-            "s1 = "READS"()"
+                LOCAL "s1 : string =" SOME_STRING
+                LOCAL "s2 : string = s1" CONCAT SOME_STRING
+                "print("SOME_STRING")"
+                LOCAL "s1len : integer = #s1"
+                "s1len = s1len - 4"
+                "s1 = "SUBSTR"(s2, s1len, s1len + 4)"
+                WRITE"("SOME_STRING")"
+                WRITE"("SOME_STRING")"
+            "   s1 = "READS"()"
             END
     );
 
+    char *description7 = "nested while";
     pfile_t *pf7 = Pfile.ctor(
             PROLOG
             FUN "mein()"
@@ -1130,6 +1143,7 @@ int main() {
             END // fun
     );
 
+    char *description8 = "elsif, if";
     pfile_t *pf8 = Pfile.ctor(
             PROLOG
             FUN "main()"
@@ -1149,15 +1163,17 @@ int main() {
             END // fun
     );
 
+    char *description9 = "repeat_until";
     pfile_t *pf9 = Pfile.ctor(
             PROLOG
             FUN "yours()"
-            REPEAT
-            "to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"
-            UNTIL " true "
+                REPEAT
+                    "to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"
+                UNTIL " true "
             END
     );
 
+    char *description10 = "more repuntil ";
     pfile_t *pf10 = Pfile.ctor(
             PROLOG
             FUN "yours() : string "
@@ -1178,6 +1194,7 @@ int main() {
             END
     );
 
+    char *description11 = "for cycles";
     pfile_t *pf11 = Pfile.ctor(
             PROLOG
             FUN "healthy()"
@@ -1188,24 +1205,33 @@ int main() {
             END
             END
     );
+
+    char *description12 = "empty function";
     pfile_t *pf12 = Pfile.ctor(
             PROLOG
-            FUN "funnnn()"
-            END
+                FUN "funnnn()"
+                END
             );
+
+    char *description13 = "stupid function";
     pfile_t *pf13 = Pfile.ctor(
             PROLOG
             FUN "funnnn()"
                 "AAAAAA()"
             END
             );
+
+    char *description14 = "expression error";
     pfile_t *pf14 = Pfile.ctor(
             PROLOG
             FUN "funnnn()"
                 "AAAAA_ERRORRR() +++ lol"
             END
             );
-    pfile_t *pf_nested_whiles = Pfile.ctor(
+
+
+    char *description15 = "whiles, no error";
+    pfile_t *pf15 = Pfile.ctor(
             PROLOG
             FUN "funnnn()"
                 WHILE "1" DO
@@ -1213,12 +1239,12 @@ int main() {
                     END
                 END
             END
-            "main()"
+                "main"
+            //"main()" uncoment iff expressions are done
             );
 
-
-    //5
-    pfile_t *pf5 = Pfile.ctor(
+    char *description16 = "error";
+    pfile_t *pf16 = Pfile.ctor(
             "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
             PROLOG
             FUN "main()"
@@ -1227,94 +1253,95 @@ int main() {
                 "print" //(s1,"SOME_STRING", s2)"
                 LOCAL "s1len : integer = 10"
                 //"s1 =" SUBSTR"(s2, s1len, s1len + 4)"
-            "main()"
+                "main"
+            //"main()" uncoment iff expressions are done
     );
 
     // tests.
 
 #if 0
-    Tests.warning("1: prolog only.");
-    TEST_EXPECT(Parser.analyse(pf1), true, "First test.");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+    Tests.warning(descriptiond1);
+    TEST_EXPECT(Parser.analyse(pf1), true, descriptiond1);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, descriptiond1);
 
-    Tests.warning("2: prolog with an error..");
-    TEST_EXPECT(Parser.analyse(pf2), false, "Second test. Lixecal error handled.");
-    TEST_EXPECT(Errors.get_error() == ERROR_LEXICAL, true, "This error must be a lexical one.");
+    Tests.warning(descriptiond2);
+    TEST_EXPECT(Parser.analyse(pf2), false, description2);
+    TEST_EXPECT(Errors.get_error() == ERROR_LEXICAL, true, description2);
 
-    Tests.warning("4: Mutually recursive functions.");
-    TEST_EXPECT(Parser.analyse(pf4), true, "Mutually recursive functions. Return statement.");
-    TEST_EXPECT((Errors.get_error() == ERROR_NOERROR), true, "There's no error.");
-    if (Errors.get_error() != ERROR_NOERROR) {
-        Tests.warning("Error(error must not be here) %s\n", Errors.get_errmsg());
-    }
+    Tests.warning(description3);
+    TEST_EXPECT(Parser.analyse(pf3), true, description3);
+    TEST_EXPECT((Errors.get_error() == ERROR_NOERROR), true, description3);
 
-    Tests.warning("7: while statements");
-    TEST_EXPECT(Parser.analyse(pf7), true, "while statements.");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+    Tests.warning(description4);
+    TEST_EXPECT(Parser.analyse(pf4), true, description4);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description4);
 
+    Tests.warning(description5);
+    TEST_EXPECT(Parser.analyse(pf5), true, description5);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description5);
 
-    Tests.warning("9: repeat until statements");
-    TEST_EXPECT(Parser.analyse(pf9), true, "Repeat until statement");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+    Tests.warning(description6);
+    TEST_EXPECT(Parser.analyse(pf6), true, description6);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description6);
 
-   Tests.warning("11: for statements");
-    TEST_EXPECT(Parser.analyse(pf11), true, "For statements");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+    Tests.warning(description7);
+    TEST_EXPECT(Parser.analyse(pf7), true, description7);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description7);
 
-    Tests.warning("6: Curve's test simplified");
-    TEST_EXPECT(Parser.analyse(pf6), true, "curve's program.");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+    Tests.warning(description8);
+    TEST_EXPECT(Parser.analyse(pf8), true, description8);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description9);
 
-    Tests.warning("12: Function with no body");
-    TEST_EXPECT(Parser.analyse(pf12), true, "function with no body");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+    Tests.warning(description9);
+    TEST_EXPECT(Parser.analyse(pf9), true, description9);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description9);
 
-    Tests.warning("13: Function with an expression as a body.");
-    TEST_EXPECT(Parser.analyse(pf13), true, "function which body is only one expression");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+    Tests.warning(description10);
+    TEST_EXPECT(Parser.analyse(pf10), true, description10);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description10);
 
-    Tests.warning("8: if statements");
-    TEST_EXPECT(Parser.analyse(pf8), true, "If statements");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+    Tests.warning(description11);
+    TEST_EXPECT(Parser.analyse(pf11), true, description11);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description11);
 
-    TEST_EXPECT(Parser.analyse(pf_nested_whiles), true, "nested whiles");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+    Tests.warning(description12);
+    TEST_EXPECT(Parser.analyse(pf12), false, description12);
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, description12);
 
-    Tests.warning("14: Function with a wrong expression as a body.");
-    TEST_EXPECT(Parser.analyse(pf14), false, "function which body is only one wrong expression.");
-    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's a syntax error..");
+    Tests.warning(description13);
+    TEST_EXPECT(Parser.analyse(pf13), true, description13);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description13);
 
-    Tests.warning("10: repeat until statements");
-    TEST_EXPECT(Parser.analyse(pf10), true, "Repeat until statements");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There's no error.");
+    Tests.warning(description14);
+    TEST_EXPECT(Parser.analyse(pf14), true, description14);
+    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, description14);
 
-    Tests.warning("5: ERROR");
-    TEST_EXPECT(Parser.analyse(pf5), true, "curve's program(bigger).");
-    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, "There's an error.");
-
+    Tests.warning(description16);
+    TEST_EXPECT(Parser.analyse(pf16), false, description16);
+    TEST_EXPECT(Errors.get_error() == ERROR_DEFINITION, true, description16);
 #endif
-    Tests.warning("42: good function semantics");
-    TEST_EXPECT(Parser.analyse(pf_semantics_good), true, " decl & def semantics good");
-    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, "There are no errors.");
 
-    Tests.warning("3: function declarations SEMANTIC ERROR.");
-    TEST_EXPECT(Parser.analyse(pf3), false, "Function declarations SEMANTIC ERROR.");
-    TEST_EXPECT(Errors.get_error() == ERROR_DEFINITION, true, "Definition error must be handled.");
+    Tests.warning(description15);
+    TEST_EXPECT(Parser.analyse(pf15), true, description15);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description15);
 
     // destructors
     Pfile.dtor(pf1);
-    Pfile.dtor(pf_semantics_good);
     Pfile.dtor(pf2);
     Pfile.dtor(pf3);
     Pfile.dtor(pf4);
     Pfile.dtor(pf5);
     Pfile.dtor(pf6);
-
+    Pfile.dtor(pf7);
+    Pfile.dtor(pf8);
+    Pfile.dtor(pf9);
+    Pfile.dtor(pf10);
+    Pfile.dtor(pf11);
     Pfile.dtor(pf12);
     Pfile.dtor(pf13);
     Pfile.dtor(pf14);
-
-    Pfile.dtor(pf_nested_whiles);
+    Pfile.dtor(pf15);
+    Pfile.dtor(pf16);
 
     return 0;
 }
