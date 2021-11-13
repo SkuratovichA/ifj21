@@ -1266,7 +1266,7 @@ int main() {
             //"main()" uncoment iff expressions are done
             );
 
-    char *description16 = "error";
+    char *description16 = "builtin functions 2";
     pfile_t *pf16 = Pfile.ctor(
             "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
             PROLOG
@@ -1275,9 +1275,9 @@ int main() {
                 LOCAL "s2 : string = s1"
                 "print" //(s1,"SOME_STRING", s2)"
                 LOCAL "s1len : integer = 10"
-                //"s1 =" SUBSTR"(s2, s1len, s1len + 4)"
-                "main"
-            //"main()" uncoment iff expressions are done
+                "s1 =" SUBSTR"(s2, s1len, s1len + 4)"
+            END
+            "main()"
     );
 
     // tests.
@@ -1291,9 +1291,9 @@ int main() {
     TEST_EXPECT(Parser.analyse(pf2), false, description2);
     TEST_EXPECT(Errors.get_error() == ERROR_LEXICAL, true, description2);
 
-    Tests.warning(description3);
-    TEST_EXPECT(Parser.analyse(pf3), false, description3);
-    TEST_EXPECT((Errors.get_error() == ERROR_DEFINITION), true, description3);
+//    Tests.warning(description3);
+//    TEST_EXPECT(Parser.analyse(pf3), false, description3);
+//    TEST_EXPECT((Errors.get_error() == ERROR_DEFINITION), true, description3);
 
     Tests.warning(description4);
     TEST_EXPECT(Parser.analyse(pf4), true, description4);
@@ -1328,8 +1328,8 @@ int main() {
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description11);
 
     Tests.warning(description12);
-    TEST_EXPECT(Parser.analyse(pf12), false, description12);
-    TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, description12);
+    TEST_EXPECT(Parser.analyse(pf12), true, description12);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description12);
 
     Tests.warning(description13);
     TEST_EXPECT(Parser.analyse(pf13), true, description13);
@@ -1340,8 +1340,8 @@ int main() {
     TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, description14);
 
     Tests.warning(description16);
-    TEST_EXPECT(Parser.analyse(pf16), false, description16);
-    TEST_EXPECT(Errors.get_error() == ERROR_DEFINITION, true, description16);
+    TEST_EXPECT(Parser.analyse(pf16), true, description16);
+    TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description16);
 #endif
 
     Tests.warning(description15);
