@@ -15,10 +15,10 @@ static void print_error_unexpected_token(const char *a, const char *b) {
 }
 
 // push a new symtable on symstack
-#define SYMSTACK_PUSH(_scope_type)                          \
+#define SYMSTACK_PUSH(_scope_type, _id_name)                \
     do {                                                   \
         local_table = Symtable.ctor();                     \
-        Symstack.push(symstack, local_table, _scope_type); \
+        Symstack.push(symstack, local_table, _scope_type, Dynstring.c_str(_id_name)); \
     } while (0)
 
 #define SYMSTACK_POP()                          \
@@ -127,7 +127,7 @@ static bool cond_body(pfile_t *pfile) {
             // pop an existent symtable, because we ara in the if statement(scope).
             SYMSTACK_POP();
             // also, we need to create a new symtable for 'else' scope.
-            SYMSTACK_PUSH(SCOPE_TYPE_condition);
+            SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
             if (!fun_body(pfile)) {
                 return false;
             }
@@ -139,7 +139,7 @@ static bool cond_body(pfile_t *pfile) {
             // pop an existent symtable, because we ara in the if statement(scope).
             SYMSTACK_POP();
             // also, we need to create a new symtable for 'elseif' scope.
-            SYMSTACK_PUSH(SCOPE_TYPE_condition);
+            SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
             return cond_stmt(pfile);
 
         case KEYWORD_end:
@@ -295,7 +295,9 @@ static bool return_expr_list(pfile_t *pfile) {
 static bool for_assignment(pfile_t *pfile) {
     debug_msg("<for_assignment> ->\n");
     EXPECTED_OPT(KEYWORD_do);
+
     EXPECTED(TOKEN_COMMA);
+
     if (!Expr.parse(pfile, true)) {
         debug_msg("[error] Expression parsing failed.\n");
         return false;
@@ -312,7 +314,7 @@ static bool for_assignment(pfile_t *pfile) {
  */
 static bool for_cycle(pfile_t *pfile) {
     EXPECTED(KEYWORD_for); // for
-    SYMSTACK_PUSH(SCOPE_TYPE_cycle);
+    SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
 
     dynstring_t *id_name = Scanner.get_curr_token().attribute.id;
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, ID_TYPE_integer);
@@ -355,7 +357,7 @@ static bool for_cycle(pfile_t *pfile) {
  */
 static bool if_statement(pfile_t *pfile) {
     EXPECTED(KEYWORD_if);
-    SYMSTACK_PUSH(SCOPE_TYPE_condition);
+    SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
 
     return cond_stmt(pfile);
 }
@@ -402,7 +404,7 @@ static bool while_cycle(pfile_t *pfile) {
     EXPECTED(KEYWORD_while);
 
     // create a new symtable for while cycle.
-    SYMSTACK_PUSH(SCOPE_TYPE_cycle);
+    SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
 
     // parse expressions
     if (!Expr.parse(pfile, true)) {
@@ -443,7 +445,7 @@ static bool return_stmt(pfile_t *pfile) {
  */
 static bool repeat_until_cycle(pfile_t *pfile) {
     EXPECTED(KEYWORD_repeat);
-    SYMSTACK_PUSH(SCOPE_TYPE_do_cycle);
+    SYMSTACK_PUSH(SCOPE_TYPE_do_cycle, NULL);
 
     if (!repeat_body(pfile)) {
         return false;
@@ -763,7 +765,7 @@ static bool function_definition(pfile_t *pfile) {
     symbol_t *symbol = NULL;
 
     soft_assert((local_table == global_table) && "tables must be equal now", ERROR_SYNTAX);
-    id_name = Scanner.get_curr_token().attribute.id;
+    id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     // Semantic control.
     // if we find a symbol on the stack, check it.
     if (Symstack.get_symbol(symstack, id_name, &symbol, NULL)) {
@@ -783,7 +785,7 @@ static bool function_definition(pfile_t *pfile) {
     // (
     EXPECTED(TOKEN_LPAREN);
     // symtable for a function.
-    SYMSTACK_PUSH(SCOPE_TYPE_function);
+    SYMSTACK_PUSH(SCOPE_TYPE_function, id_name);
 
     // <funparam_def_list>
     if (!funparam_def_list(pfile, symbol->function_semantics->definition)) {
@@ -807,6 +809,7 @@ static bool function_definition(pfile_t *pfile) {
         return false;
     }
     SYMSTACK_POP();
+    Dynstring.dtor(id_name);
     return true;
 }
 
@@ -820,40 +823,40 @@ static bool function_definition(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-    static bool stmt(pfile_t *pfile) {
-        debug_msg("<stmt> ->\n");
-        token_t token = Scanner.get_curr_token();
+static bool stmt(pfile_t *pfile) {
+    debug_msg("<stmt> ->\n");
+    token_t token = Scanner.get_curr_token();
 
-        switch (token.type) {
-            // function declaration: global id : function ( <datatype_list> <funretopt>
-            case KEYWORD_global:
-                return function_declaration(pfile);
+    switch (token.type) {
+        // function declaration: global id : function ( <datatype_list> <funretopt>
+        case KEYWORD_global:
+            return function_declaration(pfile);
 
-                // function definition: function id ( <funparam_def_list> <funretopt> <fun_body>
-            case KEYWORD_function:
-                return function_definition(pfile);
+            // function definition: function id ( <funparam_def_list> <funretopt> <fun_body>
+        case KEYWORD_function:
+            return function_definition(pfile);
 
-                // function calling: id ( <list_expr> )
-            case TOKEN_ID:
-                if (!Expr.parse(pfile, true)) {
-                    return false;
-                }
-                break;
-
-                // FIXME. I dont know how to solve this recursion.
-            case TOKEN_EOFILE:
-                return true;
-
-            case TOKEN_DEAD:
-                Errors.set_error(ERROR_LEXICAL);
+            // function calling: id ( <list_expr> )
+        case TOKEN_ID:
+            if (!Expr.parse(pfile, true)) {
                 return false;
+            }
+            break;
 
-            default:
-                if (!Expr.parse) {
-                    Errors.set_error(ERROR_SYNTAX);
-                    return false;
-                }
-        }
+            // FIXME. I dont know how to solve this recursion.
+        case TOKEN_EOFILE:
+            return true;
+
+        case TOKEN_DEAD:
+            Errors.set_error(ERROR_LEXICAL);
+            return false;
+
+        default:
+            if (!Expr.parse) {
+                Errors.set_error(ERROR_SYNTAX);
+                return false;
+            }
+    }
     return true;
 }
 
@@ -927,7 +930,7 @@ static bool Init_parser() {
     }
 
     // push a global frame
-    Symstack.push(symstack, global_table, SCOPE_TYPE_global);
+    Symstack.push(symstack, global_table, SCOPE_TYPE_global, /*fun_name*/ NULL);
 
 
     // TODO: should we add parameters?

@@ -67,7 +67,7 @@ struct symstack_interface_t {
     // caller pushes.
     // Symstack.push(...)
     // some_body(...)
-    void (*push)(symstack_t *, symtable_t *, scope_type_t);
+    void (*push)(symstack_t *, symtable_t *, scope_type_t, char *fun_name);
 
     // caller pops.
     // some_body(...)
