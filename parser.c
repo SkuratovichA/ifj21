@@ -1336,7 +1336,7 @@ int main() {
     TEST_EXPECT(Errors.get_error() == ERROR_NOERROR, true, description13);
 
     Tests.warning(description14);
-    TEST_EXPECT(Parser.analyse(pf14), true, description14);
+    TEST_EXPECT(Parser.analyse(pf14), false, description14);
     TEST_EXPECT(Errors.get_error() == ERROR_SYNTAX, true, description14);
 
     Tests.warning(description16);
