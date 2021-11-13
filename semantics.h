@@ -101,28 +101,28 @@ struct semantics_interface_t {
      * @param self info to add a param.
      * @param type param to add.
      */
-    void (*add_return)(func_info_t, int);
+    void (*add_return)(func_info_t *, int);
 
     /** Add a function parameter to a function semantics.
      *
      * @param self info to add a param.
      * @param type param to add.
      */
-    void (*add_param)(func_info_t, int);
+    void (*add_param)(func_info_t *, int);
 
     /** Add a function parameter to a function semantics.
      *
      * @param self info to set a vector.
      * @param vec vector to add.
      */
-    void (*set_returns)(func_info_t, dynstring_t *);
+    void (*set_returns)(func_info_t *, dynstring_t *);
 
     /** Directly set a vector with function parameters.
      *
      * @param self info to set a vector.
      * @param vec vector to add.
      */
-    void (*set_params)(func_info_t, dynstring_t *);
+    void (*set_params)(func_info_t *, dynstring_t *);
 
     /** Function semantics destructor.
      *

@@ -603,7 +603,7 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
 
     token_type_t id_type = Scanner.get_curr_token().type;
     // add a parameter to the list.
-    Semantics.add_param(function_def_info, id_type);
+    Semantics.add_param(&function_def_info, id_type);
     // <datatype>
     if (!datatype(pfile)) {
         return false;
@@ -637,7 +637,7 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
 
     token_type_t id_type = Scanner.get_curr_token().type;
     // add a datatype to function parameters
-    Semantics.add_param(function_def_info, id_type);
+    Semantics.add_param(&function_def_info, id_type);
     // <datatype>
     if (!datatype(pfile)) {
         return false;
@@ -665,7 +665,7 @@ static bool other_datatypes(pfile_t *pfile, func_info_t function_decl_info) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    Semantics.add_param(function_decl_info, Scanner.get_curr_token().type);
+    Semantics.add_param(&function_decl_info, Scanner.get_curr_token().type);
     return datatype(pfile) && other_datatypes(pfile, function_decl_info);
 }
 
@@ -681,7 +681,7 @@ static bool datatype_list(pfile_t *pfile, func_info_t function_decl_info) {
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
-    Semantics.add_param(function_decl_info, Scanner.get_curr_token().type);
+    Semantics.add_param(&function_decl_info, Scanner.get_curr_token().type);
     //<datatype> && <other_datatypes>
     return datatype(pfile) && other_datatypes(pfile, function_decl_info);
 }
@@ -702,7 +702,7 @@ static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    Semantics.add_return(function_info, Scanner.get_curr_token().type);
+    Semantics.add_return(&function_info, Scanner.get_curr_token().type);
     // <datatype> <other_funrets>
     return datatype(pfile) && other_funrets(pfile, function_info);
 }
@@ -723,7 +723,7 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
     // :
     EXPECTED(TOKEN_COLON);
 
-    Semantics.add_return(function_info, Scanner.get_curr_token().type);
+    Semantics.add_return(&function_info, Scanner.get_curr_token().type);
     // <datatype> <other_funrets>
     return datatype(pfile) && other_funrets(pfile, function_info);
 }
@@ -995,6 +995,7 @@ static bool Init_parser() {
                                   "s"); // substr(s : string, i : number, j : number) : string
     Symtable.add_builtin_function(global_table, "ord", "si", "i"); // (s : string, i : integer) : integer
     Symtable.add_builtin_function(global_table, "chr", "i", "s"); // (i : integer) : string
+
 
     return true;
 }

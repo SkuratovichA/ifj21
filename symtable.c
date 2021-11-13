@@ -8,8 +8,6 @@
  *
  * TODO: move global_table, local_table here. From parser.c
  */
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "bugprone-reserved-identifier"
 
 #include "symtable.h"
 #include "tests/tests.h"
@@ -241,15 +239,15 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
     Symtable.get_symbol(self, dname, &symbol);
 
     Semantics.builtin(symbol->function_semantics);
-    Semantics.set_params(symbol->function_semantics->definition, paramvec);
-    Semantics.set_returns(symbol->function_semantics->definition, returnvec);
+    Semantics.set_params(&symbol->function_semantics->definition, paramvec);
+    Semantics.set_returns(&symbol->function_semantics->definition, returnvec);
 
-    Semantics.set_params(symbol->function_semantics->declaration, paramvec);
-    Semantics.set_returns(symbol->function_semantics->declaration, returnvec);
+    Semantics.set_params(&symbol->function_semantics->declaration, paramvec);
+    Semantics.set_returns(&symbol->function_semantics->declaration, returnvec);
 
-    Dynstring.dtor(dname);
-    Dynstring.dtor(paramvec);
-    Dynstring.dtor(returnvec);
+    //Dynstring.dtor(dname);
+    //Dynstring.dtor(paramvec);
+    //Dynstring.dtor(returnvec);
     debug_msg("\t[BUILTIN]: builtin function is set.\n");
 }
 
@@ -311,4 +309,3 @@ int main() {
 }
 #endif
 
-#pragma clang diagnostic pop

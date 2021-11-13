@@ -127,17 +127,13 @@ static void SS_Pop(symstack_t *self) {
  * @param self stack to delete.
  */
 static void SS_Dtor(symstack_t *self) {
-    stack_el_t *iter = self->head;
-    stack_el_t *ptr = NULL;
+    if (self == NULL) {
+        return;
+    }
 
     // iterate the whole stack and delete each element.
-    while (iter != NULL) {
-        ptr = iter->next;
-        Dynstring.dtor(iter->fun_name);
-        Symtable.dtor(iter->table);
-
-        free(iter);
-        iter = ptr;
+    while (self->head != NULL) {
+        SS_Pop(self);
     }
 
     free(self);
