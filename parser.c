@@ -1139,13 +1139,13 @@ int main() {
             FUN "main()"
                 LOCAL "s1 : string =" SOME_STRING
                 LOCAL "s2 : string = s1" CONCAT SOME_STRING
-                "print("SOME_STRING")"
-                LOCAL "s1len : integer = #s1"
-                "s1len = s1len - 4"
-                "s1 = "SUBSTR"(s2, s1len, s1len + 4)"
+                " print("SOME_STRING") "
+                LOCAL "s1len : integer = #s1 "
+                " s1len = s1len - 4 "
+                " s1 = "SUBSTR"(s2, s1len, s1len + 4) "
                 WRITE"("SOME_STRING")"
                 WRITE"("SOME_STRING")"
-            "   s1 = "READS"()"
+                " s1 = "READS"() "
             END
     );
 
