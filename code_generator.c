@@ -244,7 +244,7 @@ static void generate_func_end(char *func_name) {
  *      DEFVAR LF@%p0
  *      MOVE LF@%p0 LF@%0
  */
-static void generate_func_start_param(char *param_name, unsigned index) {
+static void generate_func_start_param(char *param_name, size_t index) {
     ADD_INSTR_PART("DEFVAR LF@%");
     ADD_INSTR_PART(param_name);
     ADD_INSTR_TMP;
@@ -261,7 +261,7 @@ static void generate_func_start_param(char *param_name, unsigned index) {
  * generates sth like:
  *      DEFVAR LF@%result0
  */
-static void generate_func_return_value(unsigned index) {
+static void generate_func_return_value(size_t index) {
     ADD_INSTR_PART("DEFVAR LF@%result");
     ADD_INSTR_INT(index);
     ADD_INSTR_TMP;
@@ -318,19 +318,31 @@ static void generate_var_value(token_t token) {
             break;
     }
 }
+
+/*
+ * @brief Generates DEFVAR LF@%var.
+ */
+static void generate_defvar(token_t token_id) {
+    ADD_INSTR_PART("DEFVAR LF@%");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART(Dynstring.get_str(token_id.attribute.id));
+    if (instructions.in_loop) {
+        ADD_INSTR_WHILE;
+    } else {
+        ADD_INSTR_TMP;
+    }
+}
+
 /*
  * @brief Generates variable declaration.
  */
 static void generate_var_definition(token_t token_id, token_t token_value) {
     debug_msg("- generate_var_definition: %s\n", Dynstring.get_str(token_id.attribute.id));
-    ADD_INSTR_PART("DEFVAR LF@%");
-    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);    // FIXME - casting
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART(Dynstring.get_str(token_id.attribute.id));
-    ADD_INSTR_TMP;
+    generate_defvar(token_id);
 
     ADD_INSTR_PART("MOVE LF@%");
-    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);    // FIXME - casting
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART("%");
     ADD_INSTR_PART(Dynstring.get_str(token_id.attribute.id));
     ADD_INSTR_PART(" ");
@@ -343,17 +355,11 @@ static void generate_var_definition(token_t token_id, token_t token_value) {
  */
 static void generate_var_declaration(token_t token_id) {
     debug_msg("- generate_var_declaration: %s\n", Dynstring.get_str(token_id.attribute.id));
-    ADD_INSTR_PART("DEFVAR LF@%");
-    // add scope_id
-    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART(Dynstring.get_str(token_id.attribute.id));
-    ADD_INSTR_TMP;
+    generate_defvar(token_id);
 
     // initialise to nil
     ADD_INSTR_PART("MOVE LF@%");
-    // add scope_id
-    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART("%");
     ADD_INSTR_PART(Dynstring.get_str(token_id.attribute.id));
     ADD_INSTR_PART(" nil@nil");
@@ -366,7 +372,7 @@ static void generate_var_declaration(token_t token_id) {
  *          DEFVAR TF@%0
  *          MOVE TF@%0 int@42
  */
-static void generate_func_pass_param(int param_index) {
+static void generate_func_pass_param(size_t param_index) {
     ADD_INSTR_PART("DEFVAR TF@%");
     ADD_INSTR_INT(param_index);
     ADD_INSTR_TMP;
@@ -390,9 +396,9 @@ static void generate_func_createframe() {
  */
 static void generate_cond_label(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_PART("LABEL $");
-    ADD_INSTR_INT((int) if_scope_id);
+    ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$");
-    ADD_INSTR_INT((int) cond_num);
+    ADD_INSTR_INT(cond_num);
     ADD_INSTR_TMP;
 }
 
@@ -403,9 +409,9 @@ static void generate_cond_label(size_t if_scope_id, size_t cond_num) {
  */
 static void generate_cond_if(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_PART("JUMPIFNEQ $");
-    ADD_INSTR_INT((int)if_scope_id);
+    ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$");
-    ADD_INSTR_INT((int)cond_num);
+    ADD_INSTR_INT(cond_num);
     ADD_INSTR_PART(" LF@%result bool@true");
     ADD_INSTR_TMP;
 }
@@ -418,7 +424,7 @@ static void generate_cond_if(size_t if_scope_id, size_t cond_num) {
  */
 static void generate_cond_elseif(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_PART("JUMP $");
-    ADD_INSTR_INT((int)if_scope_id);
+    ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP;
 
@@ -434,14 +440,14 @@ static void generate_cond_elseif(size_t if_scope_id, size_t cond_num) {
  */
 static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_PART("JUMP $");
-    ADD_INSTR_INT((int)if_scope_id);
+    ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP;
 
     generate_cond_label(if_scope_id, cond_num - 1);
 
     ADD_INSTR_PART("JUMPIFNEQ $");
-    ADD_INSTR_INT((int)if_scope_id);
+    ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end LF@%result bool@true");
     ADD_INSTR_TMP;
 }
@@ -454,7 +460,7 @@ static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
  */
 static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_PART("LABEL $");
-    ADD_INSTR_INT((int)if_scope_id);
+    ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP;
 
@@ -467,7 +473,7 @@ static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
  */
 static void generate_while_header() {
     ADD_INSTR_PART("LABEL $while$");
-    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP;
 }
 
@@ -477,7 +483,7 @@ static void generate_while_header() {
  */
 static void generate_while_cond() {
     ADD_INSTR_PART("JUMPIFEQ $end$");
-    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART(" LF@%result bool@true");
     ADD_INSTR_TMP;
 }
@@ -489,11 +495,11 @@ static void generate_while_cond() {
  */
 static void generate_while_end() {
     ADD_INSTR_PART("JUMP $while$");
-    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP;
 
     ADD_INSTR_PART("LABEL $end$");
-    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP;
 }
 
@@ -504,7 +510,7 @@ static void generate_while_end() {
  */
 static void generate_end() {
     ADD_INSTR_PART("LABEL $end$");
-    ADD_INSTR_INT((int)Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP;
 }
 

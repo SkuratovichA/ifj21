@@ -116,7 +116,6 @@ static bool fun_stmt(pfile_t *);
  */
 static bool cond_body(pfile_t *pfile) {
     debug_msg("<cond_body> -> \n");
-
     switch (Scanner.get_curr_token().type) {
         case KEYWORD_else:
             EXPECTED(KEYWORD_else);
@@ -589,7 +588,7 @@ static bool fun_body(pfile_t *pfile) {
                 }
                 break;
             case SCOPE_TYPE_function:
-                Generator.func_end(Symstack.get_function_name());
+                Generator.func_end(Symstack.get_parent_func_name(symstack));
                 break;
             default:
                 debug_msg("Shouldn't be here.\n");
