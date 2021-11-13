@@ -1045,7 +1045,6 @@ const struct parser_interface_t Parser = {
         .analyse = Analyse,
 };
 
-#define SELFTEST_parser
 #ifdef SELFTEST_parser
 
 #include "tests/tests.h"
