@@ -413,14 +413,14 @@ int main() {
 
     // find elements.
     for (int i = 0; i < 6; i++) {
-        if (Symstack.get_symbol(stack, Dynstring.ctor(strs[i]), &symbol)) {
+        if (Symstack.get_symbol(stack, Dynstring.ctor(strs[i]), &symbol, NULL)) {
             printf("found: %s\n", Dynstring.c_str(symbol->id));
         } else {
             printf("not found.\n");
         }
     }
 
-    if (Symstack.get_symbol(stack, hello, &symbol)) {
+    if (Symstack.get_symbol(stack, hello, &symbol, NULL)) {
         printf("Ready to push :)\n");
     }
 

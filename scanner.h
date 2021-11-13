@@ -30,7 +30,7 @@ typedef struct token {
 
 #define TOKEN(name) TOKEN_##name
 #define STATE(name) STATE_##name
-#define KEYWORD(name) KEYWORD##name
+#define KEYWORD(name) KEYWORD_##name
 
 
 #define STATES(X)              \
@@ -174,11 +174,3 @@ struct scanner_interface {
     size_t (*get_charpos)(void);
 };
 
-
-
-typedef enum keywords {
-    dummy_keyword = 666,
-#define X(n) KEYWORD(n),
-    KEYWORDS(X)
-#undef X
-} keyword_t;
