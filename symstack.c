@@ -257,6 +257,7 @@ static bool Traverse(symstack_t *self, bool (*predicate)(symbol_t *)) {
 
     while (stack_iter != NULL) {
         acc &= Symtable.traverse(stack_iter->table, predicate);
+        stack_iter = stack_iter->next;
     }
 
     return acc;
