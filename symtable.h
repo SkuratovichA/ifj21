@@ -109,4 +109,15 @@ struct symtable_interface_t {
      * @param returns vector with return values of the function.
      */
     void (*add_builtin_function)(symtable_t *, char *, char *, char *);
+
+
+    /** Traverse a symtable and apply a predicate on all the symbols.
+     *
+     * Function store the conjunction of all predicates.
+     *
+     * @param self symtable to traverse.
+     * @param predicate predicate to apply.
+     * @return
+     */
+    bool (*traverse)(symtable_t *, bool (*predicate)(symbol_t *));
 };
