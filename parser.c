@@ -1060,7 +1060,7 @@ int main() {
     char *description2 = "lexical error";
     pfile_t *pf2 = Pfile.ctor("1234.er" PROLOG);
 
-    char *description3 = "Redefinition error";
+    char *description3 = "Redeclaration error";
     pfile_t *pf3 = Pfile.ctor(
             PROLOG
             GLOBAL "foo : function()"
@@ -1292,8 +1292,8 @@ int main() {
     TEST_EXPECT(Errors.get_error() == ERROR_LEXICAL, true, description2);
 
     Tests.warning(description3);
-    TEST_EXPECT(Parser.analyse(pf3), true, description3);
-    TEST_EXPECT((Errors.get_error() == ERROR_NOERROR), true, description3);
+    TEST_EXPECT(Parser.analyse(pf3), false, description3);
+    TEST_EXPECT((Errors.get_error() == ERROR_DEFINITION), true, description3);
 
     Tests.warning(description4);
     TEST_EXPECT(Parser.analyse(pf4), true, description4);
