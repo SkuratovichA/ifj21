@@ -400,11 +400,11 @@ int main() {
     char *strs[6] = {"aaa", "bbb", "ccc", "ddd", "eee", "fff"};
 
     // put_symbol an item on the "global frame"
-    Symstack.push(stack, t, SCOPE_TYPE_global);
+    Symstack.push(stack, t, SCOPE_TYPE_global, NULL);
     Symstack.put_symbol(stack, hello, ID_TYPE_number);
 
     // create a new frame.
-    Symstack.push(stack, Symtable.ctor(), SCOPE_TYPE_function);
+    Symstack.push(stack, Symtable.ctor(), SCOPE_TYPE_function, NULL);
 
     // push on new frame.
     for (int i = 0; i < 6; i++) {
