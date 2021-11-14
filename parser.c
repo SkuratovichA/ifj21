@@ -238,7 +238,7 @@ static bool cond_stmt(pfile_t *pfile) {
 
 /** Datatype.
  *
- * !rule <datatype> -> string | integer | boolean | number
+ * !rule <datatype> -> string | integer | boolean | number | nil
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -258,6 +258,9 @@ static inline bool datatype(pfile_t *pfile) {
             break;
         case KEYWORD_number:
             EXPECTED(KEYWORD_number);
+            break;
+        case KEYWORD_nil:
+            EXPECTED(KEYWORD_nil);
             break;
         default:
             print_error_unexpected_token("datatype", Scanner.to_string(Scanner.get_curr_token().type));
@@ -295,11 +298,12 @@ static bool repeat_body(pfile_t *pfile) {
 static bool assignment(pfile_t *pfile) {
     debug_msg("<assignment> -> \n");
 
-    token_t prev_token_id = Scanner.get_prev_token();
+    //token_t prev_token_id = Scanner.get_prev_token();
     // e |
     if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
         // generate var declaration
-        Generator.var_declaration(prev_token_id);
+        // TODO fix get prev token
+        //Generator.var_declaration(prev_token_id);
         return true;
     }
 
@@ -384,15 +388,16 @@ static bool for_assignment(pfile_t *pfile) {
 static bool for_cycle(pfile_t *pfile) {
     EXPECTED(KEYWORD_for); // for
     SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
+    dynstring_t *id_name;
 
-    dynstring_t *id_name = Scanner.get_curr_token().attribute.id;
-    SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, ID_TYPE_integer);
+    if (Scanner.get_curr_token().type == TOKEN_ID) {
+        id_name = Scanner.get_curr_token().attribute.id;
+    }
 
     // id
     EXPECTED(TOKEN_ID);
 
-    //Generator.for_header(Scanner.get_curr_token(), token);
-
+    SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, ID_TYPE_integer);
 
     // =
     EXPECTED(TOKEN_ASSIGN);
@@ -409,10 +414,6 @@ static bool for_cycle(pfile_t *pfile) {
         debug_msg("Expression function returned false\n");
         return false;
     }
-
-    // expr result in LF@%result
-    //Generator.for_cond();
-
     // do | , `expr` do
     if (!for_assignment(pfile)) {
         return false;
@@ -453,17 +454,21 @@ static bool var_definition(pfile_t *pfile) {
     int id_type;
     EXPECTED(KEYWORD_local);
 
-    id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
+    if (Scanner.get_curr_token().type == TOKEN_ID) {
+        id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
+    }
     EXPECTED(TOKEN_ID); // id
+
     EXPECTED(TOKEN_COLON); // :
 
     id_type = Scanner.get_curr_token().type;
-    SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
     // <datatype>
     if (!datatype(pfile)) {
         return false;
     }
+
+    SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
     // = `expr`
     if (!assignment(pfile)) {
@@ -675,8 +680,10 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
+    if (Scanner.get_curr_token().type == TOKEN_ID) {
+        id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
+    }
     token_t token_func = Scanner.get_curr_token();
-    id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     // id
     EXPECTED(TOKEN_ID);
 
@@ -684,14 +691,17 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
     EXPECTED(TOKEN_COLON);
 
     token_type_t id_type = Scanner.get_curr_token().type;
-    // add a parameter to the list.
-    Semantics.add_param(function_def_info, id_type);
+
     // <datatype>
     if (!datatype(pfile)) {
         return false;
     }
 
+    // for an id in the symtable.
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
+
+    // for function info in the symtable.
+    Semantics.add_param(&function_def_info, id_type);
 
     Generator.func_start_param(Dynstring.get_str(id_name), 1);      // FIXME counter
 
@@ -712,7 +722,9 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
-    id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
+    if (Scanner.get_curr_token().type == TOKEN_ID) {
+        id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
+    }
 
     Generator.func_start_param(Dynstring.get_str(id_name), 0);    // need index of the param to the code generator, not the name
 
@@ -724,7 +736,7 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
 
     token_type_t id_type = Scanner.get_curr_token().type;
     // add a datatype to function parameters
-    Semantics.add_param(function_def_info, id_type);
+    Semantics.add_param(&function_def_info, id_type);
     // <datatype>
     if (!datatype(pfile)) {
         return false;
@@ -752,7 +764,7 @@ static bool other_datatypes(pfile_t *pfile, func_info_t function_decl_info) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    Semantics.add_param(function_decl_info, Scanner.get_curr_token().type);
+    Semantics.add_param(&function_decl_info, Scanner.get_curr_token().type);
     return datatype(pfile) && other_datatypes(pfile, function_decl_info);
 }
 
@@ -768,7 +780,7 @@ static bool datatype_list(pfile_t *pfile, func_info_t function_decl_info) {
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
-    Semantics.add_param(function_decl_info, Scanner.get_curr_token().type);
+    Semantics.add_param(&function_decl_info, Scanner.get_curr_token().type);
     //<datatype> && <other_datatypes>
     return datatype(pfile) && other_datatypes(pfile, function_decl_info);
 }
@@ -789,7 +801,7 @@ static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    Semantics.add_return(function_info, Scanner.get_curr_token().type);
+    Semantics.add_return(&function_info, Scanner.get_curr_token().type);
 
     // generate return var
     Generator.func_return_value(1);         // FIXME counter
@@ -814,7 +826,7 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
     // :
     EXPECTED(TOKEN_COLON);
 
-    Semantics.add_return(function_info, Scanner.get_curr_token().type);
+    Semantics.add_return(&function_info, Scanner.get_curr_token().type);
 
     // generate return var
     Generator.func_return_value(0);
@@ -837,9 +849,12 @@ static bool function_declaration(pfile_t *pfile) {
     // global
     EXPECTED(KEYWORD_global);
 
-    // assertion is only for test.
-    soft_assert(local_table == global_table && "tables must be equal now", ERROR_SYNTAX);
-    id_name = Scanner.get_curr_token().attribute.id;
+    if (Scanner.get_curr_token().type == TOKEN_ID) {
+        id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
+    }
+
+    // function name
+    EXPECTED(TOKEN_ID);
 
     // Semantic control.
     // if we find a symbol on the stack, check it.
@@ -847,14 +862,14 @@ static bool function_declaration(pfile_t *pfile) {
         // If function has been defined or declared.
         if (Semantics.is_defined(symbol->function_semantics) || Semantics.is_declared(symbol->function_semantics)) {
             Errors.set_error(ERROR_DEFINITION);
+            Dynstring.dtor(id_name);
             return false;
         }
     }
     // normally put id on the stack.
     symbol = Symstack.put_symbol(symstack, id_name, ID_TYPE_func_decl);
+    Dynstring.dtor(id_name);
 
-    // function name
-    EXPECTED(TOKEN_ID);
     // :
     EXPECTED(TOKEN_COLON);
     // function
@@ -891,7 +906,14 @@ static bool function_definition(pfile_t *pfile) {
 
     debug_assert((local_table == global_table) && "tables must be equal now");
 
-    id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
+    // it can be another token
+    if (Scanner.get_curr_token().type == TOKEN_ID) {
+        id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
+    }
+
+    // id
+    EXPECTED(TOKEN_ID);
+
     id_name2 = Scanner.get_curr_token().attribute.id;
     debug_msg("[define] function %s\n", Dynstring.get_str(id_name));
     // Semantic control.
@@ -909,10 +931,11 @@ static bool function_definition(pfile_t *pfile) {
     }
     symbol = Symstack.put_symbol(symstack, id_name, ID_TYPE_func_def);
 
+
     // generate code for new function start
     Generator.func_start(Dynstring.get_str(id_name2));
-    // id
-    EXPECTED(TOKEN_ID);
+    // expected token_id was here
+
     // (
     EXPECTED(TOKEN_LPAREN);
 
@@ -936,6 +959,7 @@ static bool function_definition(pfile_t *pfile) {
     if (Semantics.is_declared(symbol->function_semantics)) {
         if (false == Semantics.check_signatures(symbol->function_semantics)) {
             Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+            return false;
         }
     }
 
@@ -1007,7 +1031,6 @@ static bool stmt(pfile_t *pfile) {
  */
 static bool stmt_list(pfile_t *pfile) {
     debug_msg("<stmt_list> ->\n");
-    debug_msg("token in gloobal scope '%s'\n", Scanner.to_string(Scanner.get_curr_token().type));
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
 
@@ -1064,7 +1087,6 @@ static bool program(pfile_t *pfile) {
 
     //TODO: every declared function must be defined also
     if (!Symstack.traverse(symstack, declared_implies_defined)) {
-        assert(ERROR_DEFINITION == 3); // i dont remember :(
         Errors.set_error(ERROR_DEFINITION);
         return false;
     }
@@ -1092,7 +1114,6 @@ static bool Init_parser() {
     // push a global frame
     Symstack.push(symstack, global_table, SCOPE_TYPE_global, /*fun_name*/ NULL);
 
-    // TODO: should we add parameters?
     // add builtin functions.
     Symtable.add_builtin_function(global_table, "write", "", "");
 
@@ -1105,6 +1126,7 @@ static bool Init_parser() {
                                   "s"); // substr(s : string, i : number, j : number) : string
     Symtable.add_builtin_function(global_table, "ord", "si", "i"); // (s : string, i : integer) : integer
     Symtable.add_builtin_function(global_table, "chr", "i", "s"); // (i : integer) : string
+
 
     return true;
 }
@@ -1157,6 +1179,7 @@ const struct parser_interface_t Parser = {
         .analyse = Analyse,
 };
 
+#define SELFTEST_parser
 #ifdef SELFTEST_parser
 
 #include "tests/tests.h"
@@ -1184,6 +1207,33 @@ const struct parser_interface_t Parser = {
 #define SUBSTR " substr "
 #define GLOBAL " global "
 #define RETURN " return "
+#define NL "\n"
+#define TAB "\t"
+
+
+#define TEST_CASE(number) \
+do {                                                                                                \
+    int ret;                                                                                        \
+    fprintf(stdout, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");                                 \
+    Tests.warning(description ## number);                                                           \
+    TEST_EXPECT(Parser.analyse(pf ## number), result ## number, description ## number);             \
+    TEST_EXPECT(((ret = Errors.get_error()) == retcode ## number), true, description ## number);    \
+    if (ret != retcode ## number) {                                                                 \
+        Tests.failed("Expected '%d' code, but got '%d'\n", retcode ## number, ret);                 \
+        FILE *fil = fopen(#number, "w");                                                             \
+        assert(fil);                                                                                 \
+        fprintf(fil, "test case %d.\n"                                                               \
+                    "Description : %s\n\n"                                                          \
+                    "Expected : '%d'\n"                                                             \
+                    "Got : '%d'\n\n",                                                               \
+                    number, description ## number, retcode ## number, ret );                        \
+        fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                                           \
+        fclose(fil);                                                                                 \
+    }                                                                                               \
+    fprintf(stdout, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n");                               \
+    Pfile.dtor(pf ## number);                                                                        \
+} while (0)
+
 
 int main() {
     char *description1 = "prolog string";
@@ -1466,31 +1516,31 @@ int main() {
             END // fun
     );
 
-    char *description18 = "more repuntil. Withou an error";
+    char *description18 = "more repuntil. Without an error";
     bool result18 = true;
-    int retcode18 = ERROR_DEFINITION;
+    int retcode18 = ERROR_NOERROR;
     pfile_t *pf18 = Pfile.ctor(
-            PROLOG
-            FUN "me() :string"
-            END
+            PROLOG NL
+            FUN "me() :string" NL
+            END NL
 
-            FUN "yours() : string "
-            REPEAT
-            REPEAT
-            REPEAT
-            REPEAT
-            REPEAT
-            REPEAT
-            LOCAL "memes : string = \"arst\""
-            UNTIL " true "
-            UNTIL " true "
-            UNTIL " true "
-            UNTIL " true "
-            UNTIL " true "
-            UNTIL " true "
-
-            RETURN "you"
-            END
+            FUN "yours() : string " NL
+            TAB REPEAT NL
+            TAB TAB REPEAT NL
+            TAB TAB TAB REPEAT NL
+            TAB TAB TAB TAB REPEAT NL
+            TAB TAB TAB TAB TAB REPEAT NL
+            TAB TAB TAB TAB TAB TAB REPEAT NL
+            TAB TAB TAB TAB TAB TAB TAB LOCAL "memes : string = \"arst\"" NL
+            TAB TAB TAB TAB TAB TAB UNTIL " true " NL
+            TAB TAB TAB TAB TAB UNTIL " true " NL
+            TAB TAB TAB TAB UNTIL " true " NL
+            TAB TAB TAB UNTIL " true " NL
+            TAB TAB UNTIL " true " NL
+            TAB UNTIL " true " NL
+            TAB NL
+            TAB RETURN "you" NL
+            END NL
     );
 
     char *description19 = "semantic: more than one declaration (error)";
@@ -1536,15 +1586,15 @@ int main() {
             END
     );
 
-    char *description23 = "functino semantic: signature missmatch(error)";
-    bool result23 = false;
-    int retcode23 = ERROR_FUNCTION_SEMANTICS;
+    char *description23 = "functino semantic: no error.";
+    bool result23 = true;
+    int retcode23 = ERROR_NOERROR;
     pfile_t *pf23 = Pfile.ctor(
-            PROLOG
-            GLOBAL "foo : function( string, string ) : string, number"
-
-            FUN "foo(a : string, b : string) : string, number "
-            END
+            PROLOG NL
+            GLOBAL "foo : function(    string,     string ) : string, number" NL
+            NL
+            FUN "   foo           (a : string, b : string) :  string, number " NL
+            END NL
     );
 
     char *description24 = "functino semantic: declaration without definiton (error)";
@@ -1553,155 +1603,133 @@ int main() {
     pfile_t *pf24 = Pfile.ctor(
             PROLOG
             GLOBAL "foo : function( string, string ) : string, number"
+    );
 
+    char *description25 = "function returns nil, no error.";
+    bool result25 = true;
+    int retcode25 = ERROR_NOERROR;
+    pfile_t *pf25 = Pfile.ctor(
+            PROLOG
+            GLOBAL "foo : function( nil, nil ) : nil"
+            FUN "foo(a : nil, b : nil) : nil"
             END
     );
 
-    // tests.
-#if 0
-    Tests.warning(description1);
-    TEST_EXPECT(Parser.analyse(pf1), result1, description1);
-    TEST_EXPECT(Errors.get_error() == retcode1, true, description1);
-    Tests.warning(description1);
+    char *description26 = "nil as a local variable.";
+    bool result26 = true;
+    int retcode26 = ERROR_NOERROR;
+    pfile_t *pf26 = Pfile.ctor(
+            PROLOG
+            FUN "mein()"
+            LOCAL "NULL : " STRING " = nil"
+            END
+    );
 
-    Tests.warning(description2);
-    TEST_EXPECT(Parser.analyse(pf2), result2, description2);
-    TEST_EXPECT(Errors.get_error() == retcode2, true, description2);
-    Tests.warning(description2);
+    char *description27 = "Function semantics: nil in declaration, but not in definition";
+    bool result27 = false;
+    int retcode27 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf27 = Pfile.ctor(
+            PROLOG
+            GLOBAL "foo : function( string, string ) : nil"
+            FUN "foo () : string "
+            END
+    );
 
-    Tests.warning(description5);
-    TEST_EXPECT(Parser.analyse(pf5), result5, description5);
-    TEST_EXPECT(Errors.get_error() == retcode5, true, description5);
-    Tests.warning(description5);
+    char *description28 = "Function semantics definition before declaration";
+    bool result28 = false;
+    int retcode28 = ERROR_DEFINITION;
+    pfile_t *pf28 = Pfile.ctor(
+            PROLOG NL
+            FUN "               foo( a : string, b : string ) : nil" NL
+            END NL
 
-    Tests.warning(description6);
-    TEST_EXPECT(Parser.analyse(pf6), result6, description6);
-    TEST_EXPECT(Errors.get_error() == retcode6, true, description6);
-    Tests.warning(description6);
+            GLOBAL "foo : function(string, string ) : nil " NL
+    );
 
-    Tests.warning(description7);
-    TEST_EXPECT(Parser.analyse(pf7), result7, description7);
-    TEST_EXPECT(Errors.get_error() == retcode7, true, description7);
-    Tests.warning(description7);
+    char *description29 = "syntax error";
+    bool result29 = false;
+    int retcode29 = ERROR_SYNTAX;
+    pfile_t *pf29 = Pfile.ctor(
+            PROLOG
+            FUN "123name ()"
+            END
+    );
 
-    Tests.warning(description8);
-    TEST_EXPECT(Parser.analyse(pf8), result8, description8);
-    TEST_EXPECT(Errors.get_error() == retcode8, true, description9);
-    Tests.warning(description8);
+    char *description30 = "empty file";
+    bool result30 = true;
+    int retcode30 = ERROR_NOERROR;
+    pfile_t *pf30 = Pfile.ctor(
+            PROLOG
+    );
 
-    Tests.warning(description9);
-    TEST_EXPECT(Parser.analyse(pf9), result9, description9);
-    TEST_EXPECT(Errors.get_error() == retcode9, true, description9);
-    Tests.warning(description9);
+    char *description31 = "Function semantics. Parameters have same names.";
+    bool result31 = false;
+    int retcode31 = ERROR_DEFINITION;
+    pfile_t *pf31 = Pfile.ctor(
+            PROLOG
+            FUN "               foo( a : string, a : string ) : nil" NL
+            END NL
+    );
 
-    Tests.warning(description10);
-    TEST_EXPECT(Parser.analyse(pf10), result10, description10);
-    TEST_EXPECT(Errors.get_error() == retcode10, true, description10);
-    Tests.warning(description10);
-
-    Tests.warning(description11);
-    TEST_EXPECT(Parser.analyse(pf11), result11, description11);
-    TEST_EXPECT(Errors.get_error() == retcode11, true, description11);
-    Tests.warning(description11);
-
-    Tests.warning(description12);
-    TEST_EXPECT(Parser.analyse(pf12), result12, description12);
-    TEST_EXPECT(Errors.get_error() == retcode12, true, description12);
-    Tests.warning(description12);
-
-
-    Tests.warning(description13);
-    TEST_EXPECT(Parser.analyse(pf13), result13, description13);
-    TEST_EXPECT(Errors.get_error() == retcode13, true, description13);
-    Tests.warning(description13);
-
-    Tests.warning(description14);
-    TEST_EXPECT(Parser.analyse(pf14), result14, description14);
-    TEST_EXPECT(Errors.get_error() == retcode14, true, description14);
-    Tests.warning(description14);
-
-    Tests.warning(description4);
-    TEST_EXPECT(Parser.analyse(pf4), result4, description4);
-    TEST_EXPECT(Errors.get_error() == retcode4, true, description4);
-    Tests.warning(description4);
-
-    Tests.warning(description16);
-    TEST_EXPECT(Parser.analyse(pf16), result16, description16);
-    TEST_EXPECT(Errors.get_error() == retcode16, true, description16);
-    Tests.warning(description16);
-
-    Tests.warning(description15);
-    TEST_EXPECT(Parser.analyse(pf15), result15, description15);
-    TEST_EXPECT((Errors.get_error() == retcode15), true, description15);
-    Tests.warning(description15);
-
-    Tests.warning(description17);
-    TEST_EXPECT(Parser.analyse(pf17), result17, description17);
-    TEST_EXPECT((Errors.get_error() == retcode17), true, description17);
-    Tests.warning(description17);
-
-    Tests.warning(description3);
-    TEST_EXPECT(Parser.analyse(pf3), result3, description3);
-    TEST_EXPECT((Errors.get_error() == retcode3), true, description3);
-    Tests.warning(description3);
+    char *description32 = "Expression semantics.";
+    bool result32 = false;
+    int retcode32 = ERROR_DEFINITION;
+    pfile_t *pf32 = Pfile.ctor(
+            PROLOG
+            FUN "foo( r : string, a : string ) : nil" NL
+            TAB"func()"NL
+            END NL
+    );
 
 
-    Tests.warning(description22);
-    TEST_EXPECT(Parser.analyse(pf22), result22, description22);
-    TEST_EXPECT((Errors.get_error() == retcode22), true, description22);
-    Tests.warning(description22);
+    char *description33 = "Expression semantics.";
+    bool result33 = true;
+    int retcode33 = ERROR_NOERROR;
+    pfile_t *pf33 = Pfile.ctor(
+            PROLOG
+            FUN "foo( r : string, a : string ) : nil" NL
+            TAB"write(\" \\xff \")"NL
+            END NL
+    );
 
-    Tests.warning(description23);
-    TEST_EXPECT(Parser.analyse(pf23), result23, description23);
-    TEST_EXPECT((Errors.get_error() == retcode23), true, description23);
-    Tests.warning(description23);
+    TEST_CASE(1);
+    TEST_CASE(2);
+    TEST_CASE(3);
+    TEST_CASE(4);
+    TEST_CASE(5);
+    TEST_CASE(6);
+    TEST_CASE(7);
+    TEST_CASE(8);
+    TEST_CASE(9);
 
-    Tests.warning(description24);
-    TEST_EXPECT(Parser.analyse(pf24), result24, description24);
-    TEST_EXPECT((Errors.get_error() == retcode24), true, description24);
-    Tests.warning(description24);
+    TEST_CASE(10);
+    TEST_CASE(11);
+    TEST_CASE(12);
+    TEST_CASE(13);
+    TEST_CASE(14);
+    TEST_CASE(15);
+    TEST_CASE(16);
+    TEST_CASE(17);
+    TEST_CASE(18);
+    TEST_CASE(19);
 
-    Tests.warning(description19);
-    TEST_EXPECT(Parser.analyse(pf19), result19, description19);
-    TEST_EXPECT((Errors.get_error() == retcode19), true, description19);
-    Tests.warning(description19);
-#endif
+    TEST_CASE(20);
+    TEST_CASE(21);
+    TEST_CASE(22);
+    TEST_CASE(23);
+    TEST_CASE(24);
 
-    Tests.warning(description20);
-    TEST_EXPECT(Parser.analyse(pf20), result20, description20);
-    TEST_EXPECT((Errors.get_error() == retcode20), true, description20);
-    Tests.warning(description20);
+    TEST_CASE(25);
+    TEST_CASE(26);
+    TEST_CASE(27);
 
-    Tests.warning(description21);
-    TEST_EXPECT(Parser.analyse(pf21), result21, description21);
-    TEST_EXPECT((Errors.get_error() == retcode21), true, description21);
-    Tests.warning(description21);
+    TEST_CASE(28);
 
-    // destructors
-    Pfile.dtor(pf1);
-    Pfile.dtor(pf2);
-    Pfile.dtor(pf3);
-    Pfile.dtor(pf4);
-    Pfile.dtor(pf5);
-    Pfile.dtor(pf6);
-    Pfile.dtor(pf7);
-    Pfile.dtor(pf8);
-    Pfile.dtor(pf9);
-    Pfile.dtor(pf10);
-    Pfile.dtor(pf11);
-    Pfile.dtor(pf12);
-    Pfile.dtor(pf13);
-    Pfile.dtor(pf14);
-    Pfile.dtor(pf15);
-    Pfile.dtor(pf16);
-    Pfile.dtor(pf17);
-    Pfile.dtor(pf18);
-    Pfile.dtor(pf19);
-    Pfile.dtor(pf20);
-    Pfile.dtor(pf21);
-    Pfile.dtor(pf22);
-    Pfile.dtor(pf23);
-    Pfile.dtor(pf24);
+    TEST_CASE(29);
+    TEST_CASE(30);
+    TEST_CASE(31);
+    TEST_CASE(32);
+    TEST_CASE(33);
 
     return 0;
 }

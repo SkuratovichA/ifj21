@@ -124,8 +124,8 @@ static char of_id_type(id_type_t type) {
  * @param self info to add a param.
  * @param type param to add.
  */
-static void Add_return(func_info_t self, int type) {
-    Dynstring.append(self.returns, of_id_type(type));
+static void Add_return(func_info_t *self, int type) {
+    Dynstring.append(self->returns, of_id_type(type));
     debug_msg("[semantics] add return\n");
 }
 
@@ -134,8 +134,8 @@ static void Add_return(func_info_t self, int type) {
  * @param self info to add a param.
  * @param type param to add.
  */
-static void Add_param(func_info_t self, int type) {
-    Dynstring.append(self.params, of_id_type(type));
+static void Add_param(func_info_t *self, int type) {
+    Dynstring.append(self->params, of_id_type(type));
     debug_msg("[semantics] add return\n");
 }
 
@@ -144,9 +144,9 @@ static void Add_param(func_info_t self, int type) {
  * @param self info to set a vector.
  * @param vec vector to add.
  */
-static void Set_returns(func_info_t self, dynstring_t *vec) {
+static void Set_returns(func_info_t *self, dynstring_t *vec) {
     debug_msg("[semantics] Set params: %s\n", Dynstring.c_str(vec));
-    self.returns = vec;
+    self->returns = vec;
 }
 
 /** Directly set a vector with function parameters.
@@ -154,9 +154,9 @@ static void Set_returns(func_info_t self, dynstring_t *vec) {
  * @param self info to set a vector.
  * @param vec vector to add.
  */
-static void Set_params(func_info_t self, dynstring_t *vec) {
+static void Set_params(func_info_t *self, dynstring_t *vec) {
     debug_msg("[semantics] Set returns: %s\n", Dynstring.c_str(vec));
-    self.params = vec;
+    self->params = vec;
 }
 
 /** Function semantics destructor.
@@ -164,8 +164,12 @@ static void Set_params(func_info_t self, dynstring_t *vec) {
  * @param self a victim.
  */
 static void Dtor(func_semantics_t *self) {
+    if (self == NULL) {
+        return;
+    }
     Dynstring.dtor(self->definition.returns);
     Dynstring.dtor(self->declaration.returns);
+
     Dynstring.dtor(self->definition.params);
     Dynstring.dtor(self->declaration.params);
     free(self);
@@ -185,17 +189,22 @@ static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin
 
     if (is_defined) { Define(newbe); }
     if (is_declared) { Declare(newbe); }
-    if (is_builtin) { Builtin(newbe); }
 
-    newbe->declaration.returns = Dynstring.ctor("");
-    soft_assert(newbe->declaration.returns != NULL, ERROR_INTERNAL);
-    newbe->declaration.params = Dynstring.ctor("");
-    soft_assert(newbe->declaration.params != NULL, ERROR_INTERNAL);
+    // set params and returns manually if there's a builtin function.
+    if (is_builtin) {
+        Builtin(newbe);
+    } else {
+        debug_msg("In case of builtin function, there's need to set parameters manually\n");
+        newbe->declaration.returns = Dynstring.ctor("");
+        soft_assert(newbe->declaration.returns != NULL, ERROR_INTERNAL);
+        newbe->declaration.params = Dynstring.ctor("");
+        soft_assert(newbe->declaration.params != NULL, ERROR_INTERNAL);
 
-    newbe->definition.returns = Dynstring.ctor("");
-    soft_assert(newbe->definition.returns != NULL, ERROR_INTERNAL);
-    newbe->definition.params = Dynstring.ctor("");
-    soft_assert(newbe->definition.params != NULL, ERROR_INTERNAL);
+        newbe->definition.returns = Dynstring.ctor("");
+        soft_assert(newbe->definition.returns != NULL, ERROR_INTERNAL);
+        newbe->definition.params = Dynstring.ctor("");
+        soft_assert(newbe->definition.params != NULL, ERROR_INTERNAL);
+    }
 
     //debug_msg("[ctor] Create a function semantics:\n"
     //          "\t{ "
