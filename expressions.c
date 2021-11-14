@@ -649,6 +649,17 @@ static bool is_function_call(op_list_t first_op, op_list_t second_op) {
 }
 
 /**
+ * @brief Check on function end.
+ *
+ * @param expr_type type of expression.
+ * @param func_cnt count of function entries.
+ * @return
+ */
+static bool is_function_end(expr_type_t expr_type, int func_cnt) {
+    return expr_type == EXPR_FUNC && func_cnt == 0;
+}
+
+/**
  * @brief Check on expression end.
  *
  * @param first_op first operator.
@@ -658,8 +669,8 @@ static bool is_function_call(op_list_t first_op, op_list_t second_op) {
  */
 static bool is_expr_end(op_list_t first_op, op_list_t second_op, int func_cnt) {
     return  (first_op == OP_ID && Scanner.get_curr_token().type == TOKEN_ID) ||
-                                                                             (first_op == OP_RPAREN && Scanner.get_curr_token().type == TOKEN_ID) ||
-                                                                             (second_op == OP_COMMA && func_cnt == 0);
+            (first_op == OP_RPAREN && Scanner.get_curr_token().type == TOKEN_ID) ||
+            (second_op == OP_COMMA && func_cnt == 0);
 }
 
 /**
@@ -672,8 +683,8 @@ static bool is_expr_end(op_list_t first_op, op_list_t second_op, int func_cnt) {
  */
 static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_reduce) {
     return  (first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
-                                                              (first_op == OP_DOLLAR && second_op == OP_ID && hard_reduce) ||
-                                                              (first_op == OP_DOLLAR && second_op == OP_COMMA && hard_reduce);
+            (first_op == OP_DOLLAR && second_op == OP_ID && hard_reduce) ||
+            (first_op == OP_DOLLAR && second_op == OP_COMMA && hard_reduce);
 }
 
 /**
@@ -687,6 +698,7 @@ static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_
 static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
     bool hard_reduce = false;
     int func_entries = (expr_type == EXPR_FUNC) ? 1 : 0;
+//    int func_entries = 0;
     int cmp;
 
     while (Scanner.get_curr_token().type != TOKEN_DEAD) {
@@ -710,7 +722,7 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
         }
 
         // Check if success
-        if (is_parse_success(first_op, second_op, hard_reduce)) {
+        if (is_parse_success(first_op, second_op, hard_reduce) || is_function_end(expr_type, func_entries)) {
             if (expr) {
                 stack_item_dtor(expr);
             }
@@ -895,6 +907,7 @@ static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token) {
     // (
     if (Scanner.get_curr_token().type == TOKEN_LPAREN) {
         Scanner.get_next_token(pfile);
+//        return Expr_list(pfile) && Scanner.get_curr_token().type == TOKEN_RPAREN;
         return parse_init(pfile, EXPR_FUNC, prev_token);
     }
 
