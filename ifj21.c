@@ -17,6 +17,7 @@
 
 
 int main() {
+    return 1;
     pfile_t *pfile;
     int ret = 0;
 
