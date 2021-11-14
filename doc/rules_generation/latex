@@ -1,0 +1,53 @@
+File "rules_generator.ml", line 97, characters 6-15:
+97 |   let normarrow = "->" in
+           ^^^^^^^^^
+Warning 26: unused variable normarrow.
+File "rules_generator.ml", line 98, characters 6-10:
+98 |   let item = "\\item" in (* \\item  *)
+           ^^^^
+Warning 26: unused variable item.
+1: <program> -> require "ifj21" <stmt_list>
+2: <stmt_list> -> <stmt> <stmt_list>
+3: <stmt_list> -> EOF
+4: <stmt> -> `expr`
+5: <stmt> -> function id ( <funparam_def_list> <funretopt> <fun_body>
+6: <stmt> -> global id : function ( <datatype_list> <funretopt>
+7: <funretopt> -> e
+8: <funretopt> -> : <datatype> <other_funrets>
+9: <other_funrets> -> e
+10: <other_funrets> -> , <datatype> <other_funrets>
+11: <dataype_list> -> <datatype> <other_datatypes>
+12: <dataype_list> -> )
+13: <other_datatypes> -> )
+14: <other_datatypes> -> , <datatype> <other_datatypes>
+15: <funparam_def_list> -> )
+16: <funparam_def_list> -> id : <datatype> <other_funparams>
+17: <other_funparams> -> )
+18: <other_funparams> -> , id : <datatype> <other_funparams>
+19: <fun_body> -> <fun_stmt> <fun_body>
+20: <fun_body> -> end
+21: <fun_stmt> -> if <cond_stmt>
+22: <fun_stmt> -> for id = `expr` , `expr` <for_assignment> <fun_body> // todo: Probably we have to change this rule.
+23: <fun_stmt> -> repeat <repeat_body>
+24: <fun_stmt> -> while `expr` do <fun_body>
+25: <fun_stmt> -> local id : <datatype> <assignment>
+26: <fun_stmt> -> return <return_expr_list>
+27: <fun_stmt> -> if <cond_stmt>
+28: <for_assignment> -> do
+29: <for_assignment> -> , `expr` do
+30: <return_expr_list> -> `expr` <other_return_expr>
+31: <other_return_expr> -> , `expr` <other_return_expr>
+32: <other_return_expr> -> e
+33: <assignment> -> e
+34: <assignment> -> = `expr`
+35: <repeat_body> -> until
+36: <repeat_body> -> <fun_stmt> <repeat_body>
+37: <datatype> -> string
+38: <datatype> -> integer
+39: <datatype> -> boolean
+40: <datatype> -> number
+41: <cond_stmt> -> `expr` then <cond_body>
+42: <cond_body> -> <fun_stmt> <cond_body>
+43: <cond_body> -> else <fun_body>
+44: <cond_body> -> elseif <cond_stmt>
+45: <cond_body> -> end
