@@ -43,6 +43,8 @@ static id_type_t id_type_of_token_type(int token_type) {
             return ID_TYPE_number;
         case KEYWORD_integer:
             return ID_TYPE_integer;
+        case KEYWORD_nil:
+            return ID_TYPE_nil;
         default:
             return ID_TYPE_UNDEF;
     }
@@ -129,7 +131,6 @@ static bool builtin_name(dynstring_t *name) {
 
     for (int i = 0; builtins[i] != NULL; i++) {
         if (strcmp(Dynstring.c_str(name), builtins[i]) == 0) {
-            printf("%s is builtin\n ", Dynstring.c_str(name));
             return true;
         }
     }
