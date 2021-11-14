@@ -2,7 +2,6 @@
 # Input files are in /test_input_valid & /test_input_invalid 
 # Kuznik Jakub
 
-# logs_and_input_files/input_files_for_each_server/
 from datetime import date, timedelta
 import time
 import sys
@@ -10,8 +9,6 @@ import os
 sys.path.insert(0, '.')
 
 import glob
-# Global variable that save on which lines are each json ends 
-lines = [] 
 
 import subprocess
 from subprocess import call
