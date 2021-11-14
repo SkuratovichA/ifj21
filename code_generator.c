@@ -206,8 +206,10 @@ static void generate_main_start() {
 static void generate_main_end() {
     // maybe this function is not necessary
     ADD_INSTR("LABEL $$MAIN$end");
-    ADD_INSTR("POPFRAME");
-    ADD_INSTR("RETURN");
+    //ADD_INSTR("POPFRAME");
+    //ADD_INSTR("RETURN");
+    // TODO remove
+    ADD_INSTR("WRITE string@SUCCESSFUL\\010");
 }
 
 /*
@@ -222,6 +224,10 @@ static void generate_func_start(char *func_name) {
     ADD_INSTR_TMP;
 
     ADD_INSTR("PUSHFRAME");
+
+    // TODO remove this and make another function - we need to define LF@%result... after starting function definition
+    ADD_INSTR("DEFVAR LF@%result");
+    ADD_INSTR("MOVE LF@%result nil@nil");
 }
 
 /*

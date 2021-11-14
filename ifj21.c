@@ -44,7 +44,7 @@ int main() {
 
 
     // Print instructions only when everything was ok
-    printf("\n\n <<<<<<<<<< Return code: %d >>>>>>>>>>\n\n\n", ret);
+    printf("\n\n# <<<<<<<<<< Return code: %d >>>>>>>>>>\n\n\n", ret);
     //if (ret == 0) {
         // Prints the list of instructions to stdout
         printf("# ---------- Instructions List ----------\n");

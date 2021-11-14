@@ -19,20 +19,6 @@
 #include "expressions.h"
 #include "code_generator.h"
 
-
-/** A symbol stack with symbol tables for the program.
- */
-symstack_t *symstack;
-
-/** Global scope(the first one) with function declarations and definitions.
- */
-symtable_t *global_table;
-
-/** A current table.
- */
-symtable_t *local_table;
-
-
 /** Print an error ife terminal symbol is unexpected.
  *
  * @param a expected.
@@ -295,15 +281,14 @@ static bool repeat_body(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool assignment(pfile_t *pfile) {
+static bool assignment(pfile_t *pfile, token_t token_id) {
     debug_msg("<assignment> -> \n");
 
-    //token_t prev_token_id = Scanner.get_prev_token();
     // e |
     if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
         // generate var declaration
         // TODO fix get prev token
-        //Generator.var_declaration(prev_token_id);
+        Generator.var_declaration(token_id);
         return true;
     }
 
@@ -313,9 +298,9 @@ static bool assignment(pfile_t *pfile) {
         return false;
     }
     // where is the expression result?
-    // token_t token_value = Scanner.get_curr_token(); // not here - remove
+    token_t token_value = Scanner.get_curr_token(); // not here - remove
     // generate var definition - in expressions I think
-    // Generator.var_definition(prev_token_id, token_value);
+    Generator.var_definition(token_id, token_value);
 
     return true;
 }
@@ -457,6 +442,7 @@ static bool var_definition(pfile_t *pfile) {
     if (Scanner.get_curr_token().type == TOKEN_ID) {
         id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     }
+    token_t token_id = Scanner.get_curr_token();
     EXPECTED(TOKEN_ID); // id
 
     EXPECTED(TOKEN_COLON); // :
@@ -471,7 +457,7 @@ static bool var_definition(pfile_t *pfile) {
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
     // = `expr`
-    if (!assignment(pfile)) {
+    if (!assignment(pfile, token_id)) {
         return false;
     }
     return true;
@@ -914,8 +900,6 @@ static bool function_definition(pfile_t *pfile) {
     // id
     EXPECTED(TOKEN_ID);
 
-    id_name2 = Scanner.get_curr_token().attribute.id;
-    debug_msg("[define] function %s\n", Dynstring.get_str(id_name));
     // Semantic control.
     // if we find a symbol on the stack, check it.
     if (Symstack.get_symbol(symstack, id_name, &symbol, NULL)) {
@@ -931,24 +915,21 @@ static bool function_definition(pfile_t *pfile) {
     }
     symbol = Symstack.put_symbol(symstack, id_name, ID_TYPE_func_def);
 
-
-    // generate code for new function start
-    Generator.func_start(Dynstring.get_str(id_name2));
-    // expected token_id was here
-
     // (
     EXPECTED(TOKEN_LPAREN);
 
     // push a symtable on to the stack.
     SYMSTACK_PUSH(SCOPE_TYPE_function, id_name);
+
+    // generate code for new function start
+    debug_msg("[define] function %s\n", Dynstring.get_str(id_name));
+    Generator.func_start(Dynstring.get_str(id_name));
     Dynstring.dtor(id_name);
 
     // <funparam_def_list>
     if (!funparam_def_list(pfile, symbol->function_semantics->definition)) {
         return false;
     }
-
-    // pass params
 
     // <funretopt>
     if (!funretopt(pfile, symbol->function_semantics->definition)) {
@@ -997,10 +978,14 @@ static bool stmt(pfile_t *pfile) {
             // function calling: id ( <list_expr> )
         case TOKEN_ID:
             id_name = Dynstring.cat(id_name, token.attribute.id);
+
+            // create frame before passing parameters
+            Generator.func_createframe();
+
+            // in expressions we pass the parameters
             if (!Expr.parse(pfile, true)) {
                 return false;
             }
-            // in expressions we pass the parameters
             // function call
             Generator.func_call(Dynstring.get_str(id_name));
             Dynstring.dtor(id_name);
@@ -1179,7 +1164,7 @@ const struct parser_interface_t Parser = {
         .analyse = Analyse,
 };
 
-#define SELFTEST_parser
+// #define SELFTEST_parser
 #ifdef SELFTEST_parser
 
 #include "tests/tests.h"

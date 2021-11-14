@@ -964,7 +964,8 @@ static bool Parse_expression(pfile_t *pfile, bool inside_stmt) {
     token_t tmp_value;
     tmp_value.type = TOKEN_NUM_I;
     tmp_value.attribute.num_i = 42;
-    Generator.var_definition(tmp, tmp_value);
+    //Generator.var_definition(tmp, tmp_value);
+    ADD_INSTR("WRITE string@expr\\010");
 
     if (inside_stmt == true) {
         return parse_init(pfile, EXPR_DEFAULT, NULL);
