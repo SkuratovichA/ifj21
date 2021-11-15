@@ -106,3 +106,86 @@ struct list_interface_t {
  * Functions from list.c will be visible in different files under List name.
  */
 extern const struct list_interface_t List;
+
+
+
+/********************************* DOUBLY LINKED LIST *********************************/
+
+/**
+ * A structure that represents a doubly linked list.
+ */
+typedef struct dll_list_item dll_list_item_t;
+
+/**
+ * A structure that represents doubly linked list.
+ */
+typedef struct dll_list {
+    dll_list_item_t *head;
+    dll_list_item_t *tail;
+} dll_list_t;
+
+/**
+ * A structure that store pointers to functions used when dealing with dll form list.c.
+ * So we can use them in different files as interface.
+ */
+struct dll_list_interface_t {
+
+    /**
+     * @brief Insert first element to a list.
+     *
+     * @param list doubly linked list.
+     * @param data Data to insert.
+     */
+    void (*prepend)(dll_list_t *list, void *data);
+
+    /**
+     * @brief Insert first element to a list.
+     *
+     * @param list doubly linked list.
+     * @param data Data to insert.
+     */
+
+    void (*append)(dll_list_t *list, void *data);
+    /**
+     * @brief Delete the first item in list.
+     *
+     * @param list doubly linked list.
+     * @param clear_fun pointer to a function, which will free the list data.
+     */
+    void (*delete_first)(dll_list_t *list, void (*clear_fun)(void *));
+
+    /**
+     * @brief Delete all items in list.
+     *
+     * @param list doubly linked list
+     * @param clear_fun pointer to a function, which will free the list data.
+     */
+    void (*delete_list)(dll_list_t *list, void (*clear_fun)(void *));
+
+    /**
+     * @brief Returns data in the first item in list.
+     *
+     * @param list doubly linked list
+     */
+    void *(*gethead)(dll_list_t *list);
+
+    /**
+     * @brief List constructor.
+     *
+     * @return Pointer to the allocated memory.
+     */
+    dll_list_t *(*ctor)(void);
+
+    /**
+     * @brief List destructor.
+     *
+     * @param list the list to be destructed.
+     * @param clear_fun pointer to a function, which will free the list data.
+    */
+    void (*dtor)(dll_list_t *list, void (*clear_fun)(void *));
+};
+
+/**
+ * Functions used for dll list from list.c will be visible in different files under DLList name.
+ */
+extern const struct dll_list_interface_t DLList;

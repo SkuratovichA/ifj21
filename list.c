@@ -159,6 +159,144 @@ const struct list_interface_t List = {
         .equal = Equal,
 };
 
+
+/********************************* DOUBLY LINKED LIST *********************************/
+/**
+ * Doubly linked list item struct.
+ */
+struct dll_list_item {
+    void *data;
+    dll_list_item_t *next;
+    dll_list_item_t *prev;
+};
+
+/**
+ * @brief Doubly linked list constructor.
+ *
+ * @return Pointer to the allocated memory.
+ */
+static dll_list_t *DLL_Ctor(void) {
+    return calloc(1, sizeof(dll_list_t));
+}
+
+/**
+ * @brief Insert first element to a list.
+ *
+ * @param list doubly linked list.
+ * @param data data to insert.
+ */
+static void DLL_Prepend(dll_list_t *list, void *data) {
+    dll_list_item_t *new_item = calloc(1, sizeof(dll_list_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    /*if (DLList.copy_data != NULL) {
+        DLList.copy_data(new_item, data);
+    } else {
+        new_item->data = data;
+    }
+     */
+    new_item->data = data;
+    new_item->next = list->head;
+    new_item->prev = NULL;
+    if (list->head != NULL) {
+        list->head->prev = new_item;
+    } else {
+        list->tail = new_item;
+    }
+    list->head = new_item;
+}
+
+/**
+ * @brief Insert new element behind the last element in the list.
+ *
+ * @param list doubly linked list.
+ * @param data data to insert.
+ */
+static void DLL_Append(dll_list_t *list, void *data) {
+    dll_list_item_t *new_item = calloc(1, sizeof(dll_list_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    if (list->head == NULL) {
+        list->head = new_item;
+        list->tail = list->head;
+    } else {
+        list->tail->next = new_item;
+        list->tail = new_item;
+    }
+    new_item->next = NULL;
+}
+
+/**
+ * @brief Delete the first item in list.
+ *
+ * @param list doubly linked list.
+ * @param clear_fun pointer to a function, which will free the list data.
+ */
+static void DLL_Delete_first(dll_list_t *list, void (*clear_fun)(void *)) {
+    soft_assert(list, ERROR_INTERNAL);
+    dll_list_item_t *tmp = list->head;
+    if (list->head == list->tail) {
+        list->head = NULL;
+        list->tail = NULL;
+    } else {
+        list->head = list->head->next;
+        list->head->prev = NULL;
+    }
+    clear_fun(tmp->data);
+    free(tmp);
+}
+
+/**
+ * @brief Delete all items in list.
+ *
+ * @param list doubly linked list
+ * @param clear_fun pointer to a function, which will free the list data.
+ */
+static void DLL_Clear(dll_list_t *list, void (*clear_fun)(void *)) {
+    while (list->head) {
+        DLL_Delete_first(list, clear_fun);
+    }
+}
+
+/**
+ * @brief List destructor.
+ *
+ * @param list List to be destructed.
+ * @param clear_fun pointer to a function, which will free the list data.
+ */
+static void DLL_Dtor(dll_list_t *list, void (*clear_fun)(void *)) {
+    DLL_Clear(list, clear_fun);
+    free(list);
+}
+
+/**
+ * @brief Returns the first item's data via data pointer.
+ *
+ * @param list doubly linked list
+ */
+static void *DLL_Gethead(dll_list_t *list) {
+    if (!list->head) {
+        return NULL;
+    }
+    return list->head->data;
+}
+
+/**
+ * Interface to use when dealing with doubly linked list.
+ * Functions are in struct so we can use them in different files.
+ */
+const struct dll_list_interface_t DLList = {
+        .prepend = DLL_Prepend,
+        .append = DLL_Append,
+        .delete_list = DLL_Clear,
+        .delete_first = DLL_Delete_first,
+        .gethead = DLL_Gethead,
+        .ctor = DLL_Ctor,
+        .dtor = DLL_Dtor,
+};
+
+
+
 #ifdef SELFTEST_list
 
 int main() {
