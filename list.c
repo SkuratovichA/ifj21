@@ -213,12 +213,6 @@ static void DLL_Prepend(dll_list_t *list, void *data) {
     dll_list_item_t *new_item = calloc(1, sizeof(dll_list_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
 
-    /*if (DLList.copy_data != NULL) {
-        DLList.copy_data(new_item, data);
-    } else {
-        new_item->data = data;
-    }
-     */
     new_item->data = data;
     new_item->next = list->head;
     new_item->prev = NULL;
@@ -247,6 +241,7 @@ static void DLL_Append(dll_list_t *list, void *data) {
         list->tail->next = new_item;
         list->tail = new_item;
     }
+    new_item->data = data;
     new_item->next = NULL;
 }
 
@@ -305,6 +300,98 @@ static void *DLL_Gethead(dll_list_t *list) {
     return list->head->data;
 }
 
+/*
+ * @brief Checks if the list is active.
+ *
+ * @param list doubly linked list.
+ */
+static bool DLL_Is_active(dll_list_t *list) {
+    return (list->active != NULL);
+}
+
+/*
+ * @brief First element in the list will be active.
+ *
+ * @param list doubly linked list.
+ */
+static void DLL_First(dll_list_t *list) {
+    soft_assert(list, ERROR_INTERNAL);
+    list->active = list->head;
+}
+
+/*
+ * @brief Last element in the list will be active.
+ *
+ * @param list doubly linked list.
+ */
+static void DLL_Last(dll_list_t *list) {
+    soft_assert(list, ERROR_INTERNAL);
+    list->active = list->head;
+}
+
+/*
+ * @brief The element after active element will be the new active.
+ *
+ * @param list doubly linked list.
+ */
+static void DLL_Next(dll_list_t *list) {
+    soft_assert(list, ERROR_INTERNAL);
+    if (list->active != NULL) {
+        list->active = list->active->next;
+    }
+}
+
+/*
+ * @brief The element before active element will be the new active.
+ *
+ * @param list doubly linked list.
+ */
+static void DLL_Prev(dll_list_t *list) {
+    soft_assert(list, ERROR_INTERNAL);
+    if (list->active != NULL) {
+        list->active = list->active->prev;
+    }
+}
+
+/*
+ * @brief Inserts new element after active element. Doesn't change the active element.
+ *
+ * @param list doubly linked list
+ */
+static void DLL_Insert_after_act(dll_list_t *list, void *data) {
+    soft_assert(list, ERROR_INTERNAL);
+    dll_list_item_t *new_item = calloc(1, sizeof(dll_list_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    if (list->active == NULL) {
+        return;
+    }
+    new_item->data = data;
+    new_item->next = list->active->next;
+    new_item->prev = list->active;
+    list->active->next = new_item;
+}
+
+/*
+ * @brief Inserts new element before active element. Doesn't change the active element.
+ *
+ * @param list doubly linked list
+ */
+static void DLL_Insert_before_act(dll_list_t *list, void *data) {
+    soft_assert(list, ERROR_INTERNAL);
+    dll_list_item_t *new_item = calloc(1, sizeof(dll_list_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    if (list->active == NULL) {
+        return;
+    }
+    new_item->data = data;
+    new_item->next = list->active;
+    new_item->prev = list->active->prev;
+    list->active->prev = new_item;
+
+}
+
 /**
  * Interface to use when dealing with doubly linked list.
  * Functions are in struct so we can use them in different files.
@@ -317,6 +404,13 @@ const struct dll_list_interface_t DLList = {
         .gethead = DLL_Gethead,
         .ctor = DLL_Ctor,
         .dtor = DLL_Dtor,
+        .is_active = DLL_Is_active,
+        .first = DLL_First,
+        .last = DLL_Last,
+        .next = DLL_Next,
+        .prev = DLL_Prev,
+        .insert_after_act = DLL_Insert_after_act,
+        .insert_before_act = DLL_Insert_before_act,
 };
 
 
