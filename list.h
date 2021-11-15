@@ -42,7 +42,7 @@ struct list_interface_t {
      * @param list Singly linked list.
      * @param data Data to insert.
      */
-    void (*prepend)(list_t *list, void *data);
+    void (*prepend)(list_t *, void *);
 
     /**
     * @brief Insert new item behind the last item in the list.
@@ -50,7 +50,7 @@ struct list_interface_t {
     * @param list singly linked list.
     * @param data data to insert.
     */
-    void (*append)(list_t *list, void *data);
+    void (*append)(list_t *, void *);
 
     /**
      * @brief Insert new item behind reference item.
@@ -58,7 +58,7 @@ struct list_interface_t {
      * @param reference_item item, behind that the new item will be inserted.
      * @param data new item's data.
      */
-    void (*insert_after)(list_item_t *item, void *data);
+    void (*insert_after)(list_item_t *, void *);
 
     /**
      * @brief Delete the first item in list.
@@ -66,7 +66,7 @@ struct list_interface_t {
      * @param list singly linked list.
      * @param clear_fun pointer to a function, which will free the list data.
      */
-    void (*delete_first)(list_t *list, void (*clear_fun)(void *));
+    void (*delete_first)(list_t *, void (*clear_fun)(void *));
 
     /**
      * @brief Delete all items in list.
@@ -74,14 +74,14 @@ struct list_interface_t {
      * @param list singly linked list
      * @param clear_fun pointer to a function, which will free the list data.
      */
-    void (*delete_list)(list_t *list, void (*clear_fun)(void *));
+    void (*delete_list)(list_t *, void (*clear_fun)(void *));
 
     /**
      * @brief Returns data in the first item in list.
      *
      * @param list singly linked list
      */
-    void *(*gethead)(list_t *list);
+    void *(*gethead)(list_t *);
 
     /**
      * @brief copy data to the list item element.
@@ -89,7 +89,7 @@ struct list_interface_t {
      * @param dst Destination item to copy the data to.
      * @param src Source to copy the data from.
      */
-    void (*copy_data)(list_item_t *dst, void *src);
+    void (*copy_data)(list_item_t *, void *);
 
     /**
      * @brief List constructor.
@@ -111,7 +111,7 @@ struct list_interface_t {
      * @param list the list to be destructed.
      * @param clear_fun pointer to a function, which will free the list data.
     */
-    void (*dtor)(list_t *list, void (*clear_fun)(void *));
+    void (*dtor)(list_t *, void (*clear_fun)(void *));
 };
 
 /**
@@ -147,7 +147,7 @@ struct dll_list_interface_t {
      * @param list doubly linked list.
      * @param data Data to insert.
      */
-    void (*prepend)(dll_list_t *list, void *data);
+    void (*prepend)(dll_list_t *, void *);
 
     /**
      * @brief Insert first element to a list.
@@ -156,14 +156,14 @@ struct dll_list_interface_t {
      * @param data Data to insert.
      */
 
-    void (*append)(dll_list_t *list, void *data);
+    void (*append)(dll_list_t *, void *);
     /**
      * @brief Delete the first item in list.
      *
      * @param list doubly linked list.
      * @param clear_fun pointer to a function, which will free the list data.
      */
-    void (*delete_first)(dll_list_t *list, void (*clear_fun)(void *));
+    void (*delete_first)(dll_list_t *, void (*clear_fun)(void *));
 
     /**
      * @brief Delete all items in list.
@@ -171,14 +171,14 @@ struct dll_list_interface_t {
      * @param list doubly linked list
      * @param clear_fun pointer to a function, which will free the list data.
      */
-    void (*delete_list)(dll_list_t *list, void (*clear_fun)(void *));
+    void (*delete_list)(dll_list_t *, void (*clear_fun)(void *));
 
     /**
      * @brief Returns data in the first item in list.
      *
      * @param list doubly linked list
      */
-    void *(*gethead)(dll_list_t *list);
+    void *(*gethead)(dll_list_t *);
 
     /**
      * @brief List constructor.
@@ -193,7 +193,7 @@ struct dll_list_interface_t {
      * @param list the list to be destructed.
      * @param clear_fun pointer to a function, which will free the list data.
     */
-    void (*dtor)(dll_list_t *list, void (*clear_fun)(void *));
+    void (*dtor)(dll_list_t *, void (*clear_fun)(void *));
 };
 
 /**
