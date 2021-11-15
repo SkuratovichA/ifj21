@@ -3,7 +3,7 @@
  *
  * @brief
  *
- * @author
+ * @author Evgeny Torbin
  */
 
 #include "expressions.h"
@@ -26,16 +26,6 @@
 //#define debug_msg_s(...)
 //#define DEBUG_SEP
 #pragma GCC diagnostic pop
-
-#define EXPR_ERROR(cond)                    \
-    do {                                    \
-        if ( !(cond) ) {                    \
-            Errors.set_error(ERROR_SYNTAX); \
-            return false;                   \
-        } else {                            \
-            return true;                    \
-        }                                   \
-    } while (0)
 
 /**
  * Precedence function table.
@@ -360,7 +350,6 @@ static bool single_op(sstack_t *r_stack, op_list_t exp_op) {
     stack_item_t *item = Stack.peek(r_stack);
 
     if (!item) {
-        debug_msg("Failed to analyze expression with a token '%s'\n", Scanner.to_string(Scanner.get_curr_token().type));
         return false;
     }
 
@@ -371,11 +360,6 @@ static bool single_op(sstack_t *r_stack, op_list_t exp_op) {
         }
     }
 
-    // here, unrecognized token is on the input, so
-    // it probably can be reduced(or parsed) in parser.
-    // To terminate expression parsing, we return false, but without setting an error code.
-    //debug_msg("Failed to analyze expression with a token '%s'\n", Scanner.to_string(Scanner.get_curr_token().type));
-    //Errors.set_error(ERROR_SYNTAX);
     return false;
 }
 
@@ -491,34 +475,29 @@ static bool check_rule(sstack_t *r_stack, int *func_entries) {
     stack_item_t *item = Stack.peek(r_stack);
 
     if (!item) {
-        // or EXPR_ERROR(true);
-        Errors.set_error(ERROR_SYNTAX);
         return false;
     }
 
     // expr <operator>
     if (item->type == ITEM_TYPE_EXPR) {
         Stack.pop(r_stack, stack_item_dtor);
-        EXPR_ERROR(operator(r_stack));
+        return operator(r_stack);
     }
 
     if (item->type == ITEM_TYPE_TOKEN) {
         switch (get_op(item->token)) {
-            // # expr
+            // # expr | not expr
             case OP_HASH:
-                Stack.pop(r_stack, stack_item_dtor);
-                EXPR_ERROR(expression(r_stack));
-            // not expr
             case OP_NOT:
                 Stack.pop(r_stack, stack_item_dtor);
-                EXPR_ERROR(expression(r_stack));
+                return expression(r_stack);
             // ( expr ) | ( )
             case OP_LPAREN:
                 Stack.pop(r_stack, stack_item_dtor);
                 if (single_op(r_stack, OP_RPAREN)) {
                     return true;
                 }
-                EXPR_ERROR(expression(r_stack) && single_op(r_stack, OP_RPAREN));
+                return expression(r_stack) && single_op(r_stack, OP_RPAREN);
             // id
             case OP_ID:
                 Stack.pop(r_stack, stack_item_dtor);
@@ -526,15 +505,13 @@ static bool check_rule(sstack_t *r_stack, int *func_entries) {
             // id ( <arguments>
             case OP_FUNC:
                 Stack.pop(r_stack, stack_item_dtor);
-                EXPR_ERROR(single_op(r_stack, OP_LPAREN) && arguments(r_stack, func_entries));
+                return single_op(r_stack, OP_LPAREN) && arguments(r_stack, func_entries);
             default:
                 break;
         }
     }
 
     // Otherwise
-    // or EXPR_ERROR(true);
-    Errors.set_error(ERROR_SYNTAX);
     return false;
 }
 
@@ -597,19 +574,19 @@ static void shift(pfile_t *pfile, sstack_t *stack, stack_item_t *expr, int const
  *
  * @param stack stack to compare precedence and analyze an expression.
  * @param expr pointer to expression.
- * @param top item on top of the stack.
  * @param func_entries count of entries to functions.
  * @return bool.
  */
-static bool reduce(sstack_t *stack, stack_item_t *expr, stack_item_t *top, int *func_entries) {
+static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
     debug_msg("REDUCE >\n");
 
     // Push expression if exists
     if (expr) {
         Stack.push(stack, expr);
-        // Update top
-        top = Stack.peek(stack);
     }
+
+    // Peek item from top of the stack
+    stack_item_t *top = Stack.peek(stack);
 
     // Reduce rule
     sstack_t *r_stack = Stack.ctor();
@@ -699,7 +676,6 @@ static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_
 static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
     bool hard_reduce = false;
     int func_entries = (expr_type == EXPR_FUNC) ? 1 : 0;
-//    int func_entries = 0;
     int cmp;
 
     while (Scanner.get_curr_token().type != TOKEN_DEAD) {
@@ -752,7 +728,8 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
         if (!hard_reduce && cmp <= 0) {
             shift(pfile, stack, expr, cmp);
         } else {
-            if (!reduce(stack, expr, top, &func_entries)) {
+            if (!reduce(stack, expr, &func_entries)) {
+                Errors.set_error(ERROR_SYNTAX);
                 return false;
             }
         }
@@ -908,7 +885,6 @@ static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token) {
     // (
     if (Scanner.get_curr_token().type == TOKEN_LPAREN) {
         Scanner.get_next_token(pfile);
-//        return Expr_list(pfile) && Scanner.get_curr_token().type == TOKEN_RPAREN;
         return parse_init(pfile, EXPR_FUNC, prev_token);
     }
 
@@ -974,24 +950,12 @@ static bool Parse_expression(pfile_t *pfile, bool inside_stmt) {
     }
 }
 
-static bool dummy_expr(pfile_t *p, bool dummy_bool) {
-    (void) dummy_bool;
-    Scanner.get_next_token(p);
-    return true;
-}
-
-static bool dummy_expr_list(pfile_t *p) {
-    Scanner.get_next_token(p);
-    return true;
-}
-
 
 /**
  * Functions are in struct so we can use them in different files.
  */
 const struct expr_interface_t Expr = {
         .parse = Parse_expression,
-        //.parse_expr_list = Expr_list,
         .parse_expr_list = Expr_list
 };
 
