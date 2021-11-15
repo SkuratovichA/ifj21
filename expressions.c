@@ -477,8 +477,6 @@ static bool check_rule(sstack_t *r_stack, int *func_entries) {
         return false;
     }
 
-    // TODO do semantics here
-
     // expr <operator>
     if (item->type == ITEM_TYPE_EXPR) {
         Stack.pop(r_stack, stack_item_dtor);
@@ -575,19 +573,19 @@ static void shift(pfile_t *pfile, sstack_t *stack, stack_item_t *expr, int const
  *
  * @param stack stack to compare precedence and analyze an expression.
  * @param expr pointer to expression.
- * @param top item on top of the stack.
  * @param func_entries count of entries to functions.
  * @return bool.
  */
-static bool reduce(sstack_t *stack, stack_item_t *expr, stack_item_t *top, int *func_entries) {
+static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
     debug_msg("REDUCE >\n");
 
     // Push expression if exists
     if (expr) {
         Stack.push(stack, expr);
-        // Update top
-        top = Stack.peek(stack);
     }
+
+    // Peek item from top of the stack
+    stack_item_t *top = Stack.peek(stack);
 
     // Reduce rule
     sstack_t *r_stack = Stack.ctor();
@@ -677,7 +675,6 @@ static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_
 static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
     bool hard_reduce = false;
     int func_entries = (expr_type == EXPR_FUNC) ? 1 : 0;
-//    int func_entries = 0;
     int cmp;
 
     while (Scanner.get_curr_token().type != TOKEN_DEAD) {
@@ -730,7 +727,7 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
         if (!hard_reduce && cmp <= 0) {
             shift(pfile, stack, expr, cmp);
         } else {
-            if (!reduce(stack, expr, top, &func_entries)) {
+            if (!reduce(stack, expr, &func_entries)) {
                 Errors.set_error(ERROR_SYNTAX);
                 return false;
             }
@@ -887,11 +884,8 @@ static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token) {
     // (
     if (Scanner.get_curr_token().type == TOKEN_LPAREN) {
         Scanner.get_next_token(pfile);
-//        return Expr_list(pfile) && Scanner.get_curr_token().type == TOKEN_RPAREN;
         return parse_init(pfile, EXPR_FUNC, prev_token);
     }
-
-    // TODO add function call here
 
     // <id_list>
     return id_list(pfile);
