@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include "debug.h"
 #include "dynstring.h"
+#include "scanner.h"
 
 
 /** Information about a function datatypes.
@@ -29,6 +30,23 @@ typedef struct func_semantics {
     bool is_defined;
     bool is_builtin;
 } func_semantics_t;
+
+/** List of conversion types
+ */
+typedef enum conv_type {
+    NO_CONVERSION,
+    CONVERT_FIRST,
+    CONVERT_SECOND,
+} conv_type_t;
+
+/** Semantic information about an expression.
+ */
+typedef struct expr_semantics {
+    token_t first_operand;
+    token_t second_operand;
+    token_t op;
+    conv_type_t conv_type;
+} expr_semantics_t;
 
 
 //typedef struct func_semantics func_semantics_t;

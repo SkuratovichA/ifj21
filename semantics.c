@@ -225,6 +225,29 @@ static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin
     return newbe;
 }
 
+/** Expression semantics constructor.
+ *
+ * @return new expressions semantics.
+ */
+static expr_semantics_t *Ctor_expr() {
+    expr_semantics_t *expr_sem = calloc(1, sizeof(expr_semantics_t));
+    soft_assert(expr_sem != NULL, ERROR_INTERNAL);
+
+    return expr_sem;
+}
+
+/** Expression semantics destructor.
+ *
+ * @param self expression semantics struct.
+ */
+static void Dtor_expr(expr_semantics_t *self) {
+    if (self == NULL) {
+        return;
+    }
+
+    free(self);
+}
+
 
 const struct semantics_interface_t Semantics = {
         .dtor = Dtor,
