@@ -16,14 +16,18 @@
 /**
  * A structure that represents a list item.
  */
-
 typedef struct list_item list_item_t;
+struct list_item {
+    void *data;
+    list_item_t *next;
+};
 
 /**
  * A structure that represents a singly linked list.
  */
 typedef struct list {
     list_item_t *head;
+    list_item_t *tail;
 } list_t;
 
 /**
@@ -41,6 +45,22 @@ struct list_interface_t {
     void (*prepend)(list_t *list, void *data);
 
     /**
+    * @brief Insert new item behind the last item in the list.
+    *
+    * @param list singly linked list.
+    * @param data data to insert.
+    */
+    void (*append)(list_t *list, void *data);
+
+    /**
+     * @brief Insert new item behind reference item.
+     *
+     * @param reference_item item, behind that the new item will be inserted.
+     * @param data new item's data.
+     */
+    void (*insert_after)(list_item_t *item, void *data);
+
+    /**
      * @brief Delete the first item in list.
      *
      * @param list singly linked list.
@@ -55,14 +75,6 @@ struct list_interface_t {
      * @param clear_fun pointer to a function, which will free the list data.
      */
     void (*delete_list)(list_t *list, void (*clear_fun)(void *));
-
-    /**
-     * @brief Insert new item behind reference_item.
-     *
-     * @param reference_item Item, behind that the new item will be inserted.
-     * @param data New item's data.
-     */
-    void (*insert)(list_item_t *reference_item, void *data);
 
     /**
      * @brief Returns data in the first item in list.
@@ -106,7 +118,6 @@ struct list_interface_t {
  * Functions from list.c will be visible in different files under List name.
  */
 extern const struct list_interface_t List;
-
 
 
 /********************************* DOUBLY LINKED LIST *********************************/

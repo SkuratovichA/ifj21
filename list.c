@@ -8,14 +8,6 @@
 #include "list.h"
 
 /**
- * List item struct.
- */
-struct list_item {
-    void *data;
-    list_item_t *next;
-};
-
-/**
  * @brief List constructor.
  *
  * @return Pointer to the allocated memory.
@@ -27,8 +19,8 @@ static list_t *Ctor(void) {
 /**
  * @brief Insert first element to a list.
  *
- * @param list Singly linked list.
- * @param data Data to insert.
+ * @param list singly linked list.
+ * @param data data to insert.
  */
 static void Prepend(list_t *list, void *data) {
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
@@ -40,7 +32,55 @@ static void Prepend(list_t *list, void *data) {
         new_item->data = data;
     }
     new_item->next = list->head;
+    if (list->head == NULL) {
+        list->tail = new_item;
+    }
     list->head = new_item;
+}
+
+/**
+ * @brief Insert new item behind the last item in the list.
+ *
+ * @param list singly linked list.
+ * @param data data to insert.
+ */
+static void Append(list_t *list, void *data) {
+    list_item_t *new_item = calloc(1, sizeof(list_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    if (List.copy_data != NULL) {
+        List.copy_data(new_item, data);
+    } else {
+        new_item->data = data;
+    }
+    if (list->head == NULL) {
+        list->head = new_item;
+        list->tail = list->head;
+    } else {
+        list->tail->next = new_item;
+        list->tail = new_item;
+    }
+    new_item->next = NULL;
+}
+
+/**
+ * @brief Insert new item behind reference item.
+ *
+ * @param item item, behind that the new item will be inserted.
+ * @param data new item's data.
+ */
+static void Insert_after(list_item_t *item, void *data) {
+    soft_assert(item, ERROR_INTERNAL);
+    list_item_t *new_item = calloc(1, sizeof (list_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    if (List.copy_data != NULL) {
+        List.copy_data(new_item, data);
+    } else {
+        new_item->data = data;
+    }
+    new_item->next = item->next;
+    item->next = new_item;
 }
 
 /**
@@ -78,23 +118,6 @@ static void Clear(list_t *list, void (*clear_fun)(void *)) {
 static void Dtor(list_t *list, void (*clear_fun)(void *)) {
     Clear(list, clear_fun);
     free(list);
-}
-
-/**
- * @brief Insert new item behind reference_item.
- *
- * @param reference_item Item, behind that the new item will be inserted.
- * @param data New item's data.
- */
-static void Insert(list_item_t *reference_item, void *data) {
-    soft_assert(reference_item, ERROR_INTERNAL);
-    list_item_t *new_item = calloc(1, sizeof(list_item_t));
-    soft_assert(new_item, ERROR_INTERNAL);
-
-    new_item->data = data;
-    list_item_t *tmp = reference_item->next;
-    reference_item->next = new_item;
-    new_item->next = tmp;
 }
 
 /**
@@ -149,9 +172,10 @@ static bool Equal(list_t *l1, list_t *l2, int (*cmp)(void *, void *)) {
  */
 const struct list_interface_t List = {
         .prepend = Prepend,
+        .append = Append,
+        .insert_after = Insert_after,
         .delete_list = Clear,
         .delete_first = Delete_first,
-        .insert = Insert,
         .gethead = Gethead,
         .copy_data = NULL,
         .ctor = Ctor,
