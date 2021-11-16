@@ -159,8 +159,8 @@ static bool cond_body(pfile_t *pfile) {
             SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
 
             // generate start of else block
-            instructions.cond_num++;
-            Generator.cond_else(instructions.outer_cond_id, instructions.cond_num);
+            instructions.cond_cnt++;
+            Generator.cond_else(instructions.outer_cond_id, instructions.cond_cnt);
 
             if (!fun_body(pfile)) {
                 return false;
@@ -176,7 +176,7 @@ static bool cond_body(pfile_t *pfile) {
             SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
 
             // generate start of elseif block
-            Generator.cond_elseif(instructions.outer_cond_id, instructions.cond_num);
+            Generator.cond_elseif(instructions.outer_cond_id, instructions.cond_cnt);
 
             return cond_stmt(pfile);
 
@@ -186,8 +186,8 @@ static bool cond_body(pfile_t *pfile) {
             SYMSTACK_POP();
 
             // generate start of end block
-            Generator.cond_end(instructions.outer_cond_id, instructions.cond_num);
-            instructions.cond_num = 0;
+            Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
+            instructions.cond_cnt = 0;
             instructions.outer_cond_id = 0;
 
             return true;
@@ -210,11 +210,11 @@ static bool cond_stmt(pfile_t *pfile) {
     debug_msg("<cond_stmt> -> \n");
 
     // generate condition evaluation (JUMPIFNEQ ...)
-    instructions.cond_num++;
-    Generator.cond_if(instructions.outer_cond_id, instructions.cond_num);
+    instructions.cond_cnt++;
+    Generator.cond_if(instructions.outer_cond_id, instructions.cond_cnt);
 
     if (!Expr.parse(pfile, true)) {
-        instructions.cond_num = 0;
+        instructions.cond_cnt = 0;
         return false;
     }
     EXPECTED(KEYWORD_then);

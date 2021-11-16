@@ -604,6 +604,27 @@ static void generate_prog_start() {
     generate_main_start();
 }
 
+/*
+ * @brief Initialises the code generator.
+ */
+static void initialise_generator() {
+    // initialise tmp?instr to empty dynstring
+    tmp_instr = Dynstring.ctor("");
+
+    // initialise the instructions structure
+    instructions.startList = List.ctor();
+    instructions.instrListFunctions = List.ctor();
+    instructions.mainList = List.ctor();
+    instructions.in_loop = false;
+    instructions.outer_loop_id = 0;
+    instructions.before_loop_start = NULL;
+    instructions.outer_cond_id = 0;
+    instructions.cond_cnt = 0;
+
+    // sets active instructions list
+    instrList = instructions.startList;
+}
+
 /**
  * Interface to use when dealing with code generator.
  * Functions are in struct so we can use them in different files.
@@ -632,4 +653,5 @@ const struct code_generator_interface_t Generator = {
         .repeat_until_cond = generate_repeat_until_cond,
         .for_header = generate_for_header,
         .for_cond = generate_for_cond,
+        .initialise = initialise_generator,
 };
