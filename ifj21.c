@@ -24,24 +24,12 @@ int main() {
         return Errors.get_error();
     }
 
-    // Initialise code generator lists of instructions
-    // variable for currently generated instruction
-    tmp_instr = Dynstring.ctor("");
-    // initialize lists of instructions
-    instructions.startList = List.ctor();
-    instructions.instrListFunctions = List.ctor();
-    instructions.mainList = List.ctor();
-    instructions.in_loop = false;
-    instructions.before_loop_start = NULL;
-    instructions.outer_cond_id = 0;
-    instructions.outer_loop_id = 0;
-
-    instrList = instructions.startList;
+    // Initialise code generator
+    Generator.initialise();
 
     if (Parser.analyse(pfile)) {
         ret = Errors.get_error();
     }
-
 
     // Print instructions only when everything was ok
     printf("\n\n# <<<<<<<<<< Return code: %d >>>>>>>>>>\n\n\n", ret);

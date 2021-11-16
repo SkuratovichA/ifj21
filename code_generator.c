@@ -183,15 +183,14 @@ static void generate_func_substr() {
 /*
  * @brief Generates function call.
  */
-static void generate_func_call(char *func_name) {
+static void generate_func_call(dynstring_t *func_name) {
     ADD_INSTR_PART("CALL $");
-    // add function id
-    ADD_INSTR_PART(func_name);
+    ADD_INSTR_PART_DYN(func_name);
     ADD_INSTR_TMP;
 }
 
 /*
- * @brief Generates function start.
+ * @brief Generates main scope start.
  */
 static void generate_main_start() {
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
@@ -202,12 +201,10 @@ static void generate_main_start() {
 
 /*
  * @brief Generates function end.
+ * FIXME is this function necessary?
  */
 static void generate_main_end() {
-    // maybe this function is not necessary
     ADD_INSTR("LABEL $$MAIN$end");
-    //ADD_INSTR("POPFRAME");
-    //ADD_INSTR("RETURN");
     // TODO remove
     ADD_INSTR("WRITE string@SUCCESSFUL\\010");
 }
@@ -604,6 +601,27 @@ static void generate_prog_start() {
     generate_main_start();
 }
 
+/*
+ * @brief Initialises the code generator.
+ */
+static void initialise_generator() {
+    // initialise tmp?instr to empty dynstring
+    tmp_instr = Dynstring.ctor("");
+
+    // initialise the instructions structure
+    instructions.startList = List.ctor();
+    instructions.instrListFunctions = List.ctor();
+    instructions.mainList = List.ctor();
+    instructions.in_loop = false;
+    instructions.outer_loop_id = 0;
+    instructions.before_loop_start = NULL;
+    instructions.outer_cond_id = 0;
+    instructions.cond_cnt = 0;
+
+    // sets active instructions list
+    instrList = instructions.startList;
+}
+
 /**
  * Interface to use when dealing with code generator.
  * Functions are in struct so we can use them in different files.
@@ -632,4 +650,5 @@ const struct code_generator_interface_t Generator = {
         .repeat_until_cond = generate_repeat_until_cond,
         .for_header = generate_for_header,
         .for_cond = generate_for_cond,
+        .initialise = initialise_generator,
 };

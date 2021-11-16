@@ -159,8 +159,8 @@ static bool cond_body(pfile_t *pfile) {
             SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
 
             // generate start of else block
-            instructions.cond_num++;
-            Generator.cond_else(instructions.outer_cond_id, instructions.cond_num);
+            instructions.cond_cnt++;
+            Generator.cond_else(instructions.outer_cond_id, instructions.cond_cnt);
 
             if (!fun_body(pfile)) {
                 return false;
@@ -176,7 +176,7 @@ static bool cond_body(pfile_t *pfile) {
             SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
 
             // generate start of elseif block
-            Generator.cond_elseif(instructions.outer_cond_id, instructions.cond_num);
+            Generator.cond_elseif(instructions.outer_cond_id, instructions.cond_cnt);
 
             return cond_stmt(pfile);
 
@@ -186,8 +186,8 @@ static bool cond_body(pfile_t *pfile) {
             SYMSTACK_POP();
 
             // generate start of end block
-            Generator.cond_end(instructions.outer_cond_id, instructions.cond_num);
-            instructions.cond_num = 0;
+            Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
+            instructions.cond_cnt = 0;
             instructions.outer_cond_id = 0;
 
             return true;
@@ -210,11 +210,11 @@ static bool cond_stmt(pfile_t *pfile) {
     debug_msg("<cond_stmt> -> \n");
 
     // generate condition evaluation (JUMPIFNEQ ...)
-    instructions.cond_num++;
-    Generator.cond_if(instructions.outer_cond_id, instructions.cond_num);
+    instructions.cond_cnt++;
+    Generator.cond_if(instructions.outer_cond_id, instructions.cond_cnt);
 
     if (!Expr.parse(pfile, true)) {
-        instructions.cond_num = 0;
+        instructions.cond_cnt = 0;
         return false;
     }
     EXPECTED(KEYWORD_then);
@@ -455,7 +455,7 @@ static bool var_definition(pfile_t *pfile) {
     }
 
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
-
+    Dynstring.dtor(id_name);
     // = `expr`
     if (!assignment(pfile, token_id)) {
         return false;
@@ -964,7 +964,6 @@ static bool function_definition(pfile_t *pfile) {
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
     token_t token = Scanner.get_curr_token();
-    dynstring_t *id_name = Dynstring.ctor("");
 
     switch (token.type) {
         // function declaration: global id : function ( <datatype_list> <funretopt>
@@ -977,8 +976,6 @@ static bool stmt(pfile_t *pfile) {
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:
-            id_name = Dynstring.cat(id_name, token.attribute.id);
-
             // create frame before passing parameters
             Generator.func_createframe();
 
@@ -986,9 +983,9 @@ static bool stmt(pfile_t *pfile) {
             if (!Expr.parse(pfile, true)) {
                 return false;
             }
+
             // function call
-            Generator.func_call(Dynstring.get_str(id_name));
-            Dynstring.dtor(id_name);
+            Generator.func_call(token.attribute.id);
             break;
 
             // FIXME. I dont know how to solve this recursion.
@@ -1052,10 +1049,12 @@ static bool program(pfile_t *pfile) {
 
     // "ifj21" which is a prolog string after require keyword
     if (Scanner.get_curr_token().type != TOKEN_STR) {
+        Dynstring.dtor(prolog_str);
         Errors.set_error(ERROR_SYNTAX);
         return false;
     }
     if (Dynstring.cmp(Scanner.get_curr_token().attribute.id, prolog_str) != 0) {
+        Dynstring.dtor(prolog_str);
         Errors.set_error(ERROR_SYNTAX);
         return false;
     }

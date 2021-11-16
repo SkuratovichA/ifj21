@@ -146,28 +146,25 @@ static int Str_cmp(dynstring_t *s1, dynstring_t *s2) {
 }
 
 /**
- * @brief Concatenate two dynstrings in the not very efficient way.
+ * @brief Concatenate two dynstrings, save the result to s1.
  *
  * @param s1 dynstring_t object.
  * @param s2 dynstring_t object.
  * @returns new dynstring, which is product of s1 and s2.
  */
-static dynstring_t *Str_cat(dynstring_t *s1, dynstring_t *s2) {
+static void Str_cat(dynstring_t *s1, dynstring_t *s2) {
     soft_assert(s2, ERROR_INTERNAL);
     soft_assert(s1, ERROR_INTERNAL);
 
-    dynstring_t *new = Str_ctor(s1->str);
-
-    size_t diff = new->size - s2->len;
+    size_t diff = s1->size - s2->len;
     if (diff <= 1) {
-        size_t nsiz = new->size *= 2;
-        char *tmp = realloc(new->str, nsiz + sizeof(dynstring_t));
+        s1->size *= 2;
+        char *tmp = realloc(s1->str, s1->size + sizeof(dynstring_t));
         soft_assert(tmp, ERROR_INTERNAL);
-        new->str = tmp;
+        s1->str = tmp;
     }
-    strcat(new->str, s2->str);
-
-    return new;
+    strcat(s1->str, s2->str);
+    s1->len = strlen(s1->str);
 }
 
 /**
@@ -215,18 +212,17 @@ int main() {
         debug_msg("hello string created with string '%s'\n", Dynstring.c_str(hello));
         dynstring_t *world = Dynstring.ctor("World. Aaaaaaaaaaaaaaaaaaaaaaaaa");
         debug_msg("world string created with string '%s'\n", Dynstring.c_str(world));
-        dynstring_t *hw = Dynstring.cat(hello, world);
-        debug_msg("The 2 strings concatenated into '%s'\nsize: %zu, len: %zu\n", Dynstring.c_str(hw), hw->size, hw->len);
-        TEST_EXPECT(hw->size != 0, true, "Allocated size must not be equal 0");
+        Dynstring.cat(hello, world);
+        debug_msg("The 2 strings concatenated into '%s'\nsize: %zu, len: %zu\n", Dynstring.c_str(hw), hello->size, hello->len);
+        TEST_EXPECT(hello->size != 0, true, "Allocated size must not be equal 0");
 
         for (int i = 0; i < 1000; i++) {
-             Dynstring.append(hw, (char)('A' + (i % 25)));
+             Dynstring.append(hello, (char)('A' + (i % 25)));
         }
-        TEST_EXPECT(hw->size != 0, true, "After appending 1000 characters in hw. MUst not be equal 0");
+        TEST_EXPECT(hello->size != 0, true, "After appending 1000 characters in hw. MUst not be equal 0");
 
         Dynstring.dtor(hello);
         Dynstring.dtor(world);
-        Dynstring.dtor(hw);
     }
     return 0;
 }
