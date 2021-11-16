@@ -164,6 +164,7 @@ static void Str_cat(dynstring_t *s1, dynstring_t *s2) {
         s1->str = tmp;
     }
     strcat(s1->str, s2->str);
+    s1->len = strlen(s1->str);
 }
 
 /**

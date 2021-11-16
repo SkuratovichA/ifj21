@@ -183,15 +183,14 @@ static void generate_func_substr() {
 /*
  * @brief Generates function call.
  */
-static void generate_func_call(char *func_name) {
+static void generate_func_call(dynstring_t *func_name) {
     ADD_INSTR_PART("CALL $");
-    // add function id
-    ADD_INSTR_PART(func_name);
+    ADD_INSTR_PART_DYN(func_name);
     ADD_INSTR_TMP;
 }
 
 /*
- * @brief Generates function start.
+ * @brief Generates main scope start.
  */
 static void generate_main_start() {
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
@@ -202,12 +201,10 @@ static void generate_main_start() {
 
 /*
  * @brief Generates function end.
+ * FIXME is this function necessary?
  */
 static void generate_main_end() {
-    // maybe this function is not necessary
     ADD_INSTR("LABEL $$MAIN$end");
-    //ADD_INSTR("POPFRAME");
-    //ADD_INSTR("RETURN");
     // TODO remove
     ADD_INSTR("WRITE string@SUCCESSFUL\\010");
 }

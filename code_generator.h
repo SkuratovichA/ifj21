@@ -44,7 +44,7 @@ do {                                                \
 #define ADD_INSTR_PART(instrPart)                               \
 do {                                                            \
   dynstring_t * newInstrPart = Dynstring.ctor(instrPart);       \
-  tmp_instr = Dynstring.cat(tmp_instr, newInstrPart);           \
+  Dynstring.cat(tmp_instr, newInstrPart);                       \
   Dynstring.dtor(newInstrPart);                                 \
 } while (0)
 
@@ -52,9 +52,9 @@ do {                                                            \
  * Adds part of an instruction to global tmp_instr.
  * instrPartDynstr already is a dyntring_t*.
  */
-#define ADD_INSTR_PART_DYNSTR(instrPartDynstr)                  \
-do {                                                            \
-    tmp_inst = Dynstring.cat(tmp_instr, instrPartDynstr);       \
+#define ADD_INSTR_PART_DYN(instrPartDyn)               \
+do {                                                   \
+    Dynstring.cat(tmp_instr, instrPartDyn);            \
 } while (0)
 
 /*
@@ -99,15 +99,33 @@ do {                                        \
  * A structure that store pointers to the functions from code_generator.c. So we can use them in different files as interface.
  */
 struct code_generator_interface_t {
+
+    /*
+     * @brief Generates program start (adds header, define built-in functions).
+     */
     void (*prog_start)(void);
+
     void (*func_start)(char *);
     void (*func_end)(char *);
     void (*func_start_param)(char *, size_t);
     void (*func_return_value)(size_t);
     void (*func_pass_param)(size_t);
+
+    /*
+     * @brief Generates createframe instr before passing parameters to a function
+     */
     void (*func_createframe)(void);
+
+    /*
+     * @brief Generates function end.
+     */
     void (*main_end)(void);
-    void (*func_call)(char *);
+
+    /*
+     * @brief Generates function call.
+     */
+    void (*func_call)(dynstring_t *);
+
     void (*var_declaration)(token_t);
     void (*var_definition)(token_t, token_t);
     void (*cond_if)(size_t, size_t);

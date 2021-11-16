@@ -942,6 +942,7 @@ static bool Parse_expression(pfile_t *pfile, bool inside_stmt) {
     tmp_value.attribute.num_i = 42;
     //Generator.var_definition(tmp, tmp_value);
     ADD_INSTR("WRITE string@expr\\010");
+    Dynstring.dtor(tmp.attribute.id);
 
     if (inside_stmt == true) {
         return parse_init(pfile, EXPR_DEFAULT, NULL);
