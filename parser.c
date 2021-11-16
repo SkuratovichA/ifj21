@@ -209,15 +209,15 @@ static bool cond_body(pfile_t *pfile) {
 static bool cond_stmt(pfile_t *pfile) {
     debug_msg("<cond_stmt> -> \n");
 
-    // generate condition evaluation (JUMPIFNEQ ...)
-    instructions.cond_cnt++;
-    Generator.cond_if(instructions.outer_cond_id, instructions.cond_cnt);
-
     if (!Expr.parse(pfile, true)) {
         instructions.cond_cnt = 0;
         return false;
     }
     EXPECTED(KEYWORD_then);
+
+    // generate condition evaluation (JUMPIFNEQ ...)
+    instructions.cond_cnt++;
+    Generator.cond_if(instructions.outer_cond_id, instructions.cond_cnt);
 
     return cond_body(pfile);
 }
@@ -281,14 +281,13 @@ static bool repeat_body(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool assignment(pfile_t *pfile, token_t token_id) {
+static bool assignment(pfile_t *pfile, dynstring_t *var_name) {
     debug_msg("<assignment> -> \n");
 
     // e |
     if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
         // generate var declaration
-        // TODO fix get prev token
-        Generator.var_declaration(token_id);
+        Generator.var_declaration(var_name);
         return true;
     }
 
@@ -297,10 +296,10 @@ static bool assignment(pfile_t *pfile, token_t token_id) {
     if (!Expr.parse(pfile, true)) {
         return false;
     }
-    // where is the expression result?
-    token_t token_value = Scanner.get_curr_token(); // not here - remove
+    // FIXME where is the expression result?
+    token_t token_value = Scanner.get_curr_token();
     // generate var definition - in expressions I think
-    Generator.var_definition(token_id, token_value);
+    Generator.var_definition(var_name, token_value);
 
     return true;
 }
@@ -457,7 +456,7 @@ static bool var_definition(pfile_t *pfile) {
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
     Dynstring.dtor(id_name);
     // = `expr`
-    if (!assignment(pfile, token_id)) {
+    if (!assignment(pfile, token_id.attribute.id)) {
         return false;
     }
     return true;
@@ -669,7 +668,7 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
     if (Scanner.get_curr_token().type == TOKEN_ID) {
         id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     }
-    token_t token_func = Scanner.get_curr_token();
+
     // id
     EXPECTED(TOKEN_ID);
 
@@ -689,7 +688,7 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
     // for function info in the symtable.
     Semantics.add_param(&function_def_info, id_type);
 
-    Generator.func_start_param(Dynstring.get_str(id_name), 1);      // FIXME counter
+    Generator.func_start_param(id_name, 1);      // FIXME counter
 
     Dynstring.dtor(id_name);
     return other_funparams(pfile, function_def_info);
@@ -712,13 +711,12 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
         id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     }
 
-    Generator.func_start_param(Dynstring.get_str(id_name), 0);    // need index of the param to the code generator, not the name
-
     // id
     EXPECTED(TOKEN_ID);
+    Generator.func_start_param(id_name, 0);    // need index of the param to the code generator, not the name
+
     // :
     EXPECTED(TOKEN_COLON);
-
 
     token_type_t id_type = Scanner.get_curr_token().type;
     // add a datatype to function parameters
@@ -886,7 +884,6 @@ static bool function_definition(pfile_t *pfile) {
     EXPECTED(KEYWORD_function);
 
     dynstring_t *id_name;
-    dynstring_t *id_name2;      // FIXME this merge
     // We need to have a pointer to the symbol in the symbol table.
     symbol_t *symbol = NULL;
 
@@ -923,7 +920,7 @@ static bool function_definition(pfile_t *pfile) {
 
     // generate code for new function start
     debug_msg("[define] function %s\n", Dynstring.get_str(id_name));
-    Generator.func_start(Dynstring.get_str(id_name));
+    Generator.func_start(id_name);
     Dynstring.dtor(id_name);
 
     // <funparam_def_list>

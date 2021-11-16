@@ -105,9 +105,9 @@ struct code_generator_interface_t {
      */
     void (*prog_start)(void);
 
-    void (*func_start)(char *);
+    void (*func_start)(dynstring_t *);
     void (*func_end)(char *);
-    void (*func_start_param)(char *, size_t);
+    void (*func_start_param)(dynstring_t*, size_t);
     void (*func_return_value)(size_t);
     void (*func_pass_param)(size_t);
 
@@ -126,8 +126,8 @@ struct code_generator_interface_t {
      */
     void (*func_call)(dynstring_t *);
 
-    void (*var_declaration)(token_t);
-    void (*var_definition)(token_t, token_t);
+    void (*var_declaration)(dynstring_t *);
+    void (*var_definition)(dynstring_t *, token_t);
     void (*cond_if)(size_t, size_t);
     void (*cond_elseif)(size_t, size_t);
     void (*cond_else)(size_t, size_t);
@@ -138,7 +138,7 @@ struct code_generator_interface_t {
     void (*end)(void);
     void (*repeat_until_header)(void);
     void (*repeat_until_cond)(void);
-    void (*for_header)(token_t, token_t);
+    void (*for_header)(dynstring_t *, token_t);
     void (*for_cond)(void);
     void (*initialise)(void);
 };
