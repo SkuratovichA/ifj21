@@ -8,6 +8,7 @@
 #include "semantics.h"
 #include "dynstring.h"
 #include "symtable.h"
+#include "expressions.h"
 
 
 /** Function checks if return values and parameters
@@ -233,6 +234,10 @@ static expr_semantics_t *Ctor_expr() {
     expr_semantics_t *expr_sem = calloc(1, sizeof(expr_semantics_t));
     soft_assert(expr_sem != NULL, ERROR_INTERNAL);
 
+    expr_sem->sem_state = SEMANTIC_IDLE;
+    expr_sem->op = OP_UNDEFINED;
+    expr_sem->conv_type = NO_CONVERSION;
+
     return expr_sem;
 }
 
@@ -248,10 +253,32 @@ static void Dtor_expr(expr_semantics_t *self) {
     free(self);
 }
 
+/** Expression semantics add operand.
+ *
+ * @param self expression semantics struct.
+ * @param tok operand.
+ */
+static void Add_operand(expr_semantics_t *self, token_t tok) {
+    if (self->sem_state == SEMANTIC_DISABLED || self->sem_state == SEMANTIC_BINARY) {
+        return;
+    }
+
+    if (self->sem_state == SEMANTIC_IDLE) {
+        self->first_operand = tok;
+        self->sem_state = SEMANTIC_UNARY;
+    } else {
+        self->second_operand = tok;
+        self->sem_state = SEMANTIC_BINARY;
+    }
+}
+
 
 const struct semantics_interface_t Semantics = {
         .dtor = Dtor,
         .ctor = Ctor,
+        .dtor_expr = Dtor_expr,
+        .ctor_expr = Ctor_expr,
+        .add_operand = Add_operand,
         .is_declared = Is_declared,
         .is_defined = Is_defined,
         .is_builtin = Is_builtin,

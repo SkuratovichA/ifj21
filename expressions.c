@@ -12,6 +12,7 @@
 #include "errors.h"
 #include "stdbool.h"
 #include "code_generator.h"
+#include "semantics.h"
 
 
 #pragma GCC diagnostic push
@@ -227,7 +228,7 @@ static stack_item_t *stack_item_ctor(item_type_t type, token_t *token) {
     soft_assert(new_item, ERROR_INTERNAL);
     new_item->type = type;
 
-    if (type == ITEM_TYPE_TOKEN) {
+    if (type == ITEM_TYPE_TOKEN || type == ITEM_TYPE_EXPR) {
         new_item->token = (token) ? *token : Scanner.get_curr_token();
     }
 
@@ -246,7 +247,7 @@ static stack_item_t *stack_item_copy(stack_item_t *item) {
     soft_assert(new_item, ERROR_INTERNAL);
     new_item->type = item->type;
 
-    if (new_item->type == ITEM_TYPE_TOKEN) {
+    if (new_item->type == ITEM_TYPE_TOKEN || new_item->type == ITEM_TYPE_EXPR) {
         new_item->token = item->token;
     }
 
@@ -318,9 +319,34 @@ static bool precedence_cmp(op_list_t first_op, op_list_t second_op, int *cmp) {
  * @brief Check if top item is an expression.
  *
  * @param r_stack stack with handle (rule).
+ * @param expr_sem expr semantics.
  * @return bool.
  */
-static bool expression(sstack_t *r_stack) {
+static bool expression(sstack_t *r_stack, expr_semantics_t *expr_sem) {
+    debug_msg("EXPECTED: expr\n");
+
+    stack_item_t *item = Stack.peek(r_stack);
+
+    if (!item) {
+        return false;
+    }
+
+    if (item->type == ITEM_TYPE_EXPR) {
+        Semantics.add_operand(expr_sem, item->token);
+        Stack.pop(r_stack, stack_item_dtor);
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * @brief Check if top item is an expression (without semantic).
+ *
+ * @param r_stack stack with handle (rule).
+ * @return bool.
+ */
+static bool expression_f(sstack_t *r_stack) {
     debug_msg("EXPECTED: expr\n");
 
     stack_item_t *item = Stack.peek(r_stack);
@@ -369,9 +395,10 @@ static bool single_op(sstack_t *r_stack, op_list_t exp_op) {
  * !rule <operator> -> + | - | * | / | // | .. | < | <= | > | >= | == | ~=
  *
  * @param r_stack stack with handle (rule).
+ * @param expr_sem expr semantics.
  * @return bool.
  */
-static bool operator(sstack_t *r_stack) {
+static bool operator(sstack_t *r_stack, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: binary operator\n");
 
     stack_item_t *item = Stack.peek(r_stack);
@@ -381,7 +408,8 @@ static bool operator(sstack_t *r_stack) {
     }
 
     if (item->type == ITEM_TYPE_TOKEN) {
-        switch (get_op(item->token)) {
+        op_list_t op = get_op(item->token);
+        switch (op) {
             case OP_ADD:
             case OP_SUB:
             case OP_MUL:
@@ -396,8 +424,9 @@ static bool operator(sstack_t *r_stack) {
             case OP_GE:
             case OP_EQ:
             case OP_NE:
+                expr_sem->op = op;
                 Stack.pop(r_stack, stack_item_dtor);
-                return expression(r_stack);
+                return expression(r_stack, expr_sem);
             default:
                 break;
         }
@@ -421,7 +450,7 @@ static bool other_arguments(sstack_t *r_stack, int *func_entries) {
     // ,
     if (single_op(r_stack, OP_COMMA)) {
         // expr <other_arguments>
-        return expression(r_stack) && other_arguments(r_stack, func_entries);
+        return expression_f(r_stack) && other_arguments(r_stack, func_entries);
     } else {
         // )
         if (single_op(r_stack, OP_RPAREN)) {
@@ -446,7 +475,7 @@ static bool arguments(sstack_t *r_stack, int *func_entries) {
     debug_msg("EXPECTED: expr <other_arguments> | )\n");
 
     // expr
-    if (expression(r_stack)) {
+    if (expression_f(r_stack)) {
         // <other_arguments>
         return other_arguments(r_stack, func_entries);
     } else {
@@ -467,9 +496,10 @@ static bool arguments(sstack_t *r_stack, int *func_entries) {
  *
  * @param r_stack stack with handle (rule).
  * @param func_entries count of entries to functions.
+ * @param expr_sem expr semantics.
  * @return bool.
  */
-static bool check_rule(sstack_t *r_stack, int *func_entries) {
+static bool check_rule(sstack_t *r_stack, int *func_entries, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: expr <operator> | # expr | ( expr ) | ( ) | id | id ( <arguments>\n");
 
     stack_item_t *item = Stack.peek(r_stack);
@@ -480,8 +510,10 @@ static bool check_rule(sstack_t *r_stack, int *func_entries) {
 
     // expr <operator>
     if (item->type == ITEM_TYPE_EXPR) {
+        debug_msg("EXPR_TOKEN = \"%s\"\n", Scanner.to_string(item->token.type));
+        Semantics.add_operand(expr_sem, item->token);
         Stack.pop(r_stack, stack_item_dtor);
-        return operator(r_stack);
+        return operator(r_stack, expr_sem);
     }
 
     if (item->type == ITEM_TYPE_TOKEN) {
@@ -490,20 +522,24 @@ static bool check_rule(sstack_t *r_stack, int *func_entries) {
             case OP_HASH:
             case OP_NOT:
                 Stack.pop(r_stack, stack_item_dtor);
-                return expression(r_stack);
+                return expression(r_stack, expr_sem);
             // ( expr ) | ( )
             case OP_LPAREN:
                 Stack.pop(r_stack, stack_item_dtor);
                 if (single_op(r_stack, OP_RPAREN)) {
+                    expr_sem->sem_state = SEMANTIC_DISABLED;
                     return true;
                 }
-                return expression(r_stack) && single_op(r_stack, OP_RPAREN);
+                return expression(r_stack, expr_sem) && single_op(r_stack, OP_RPAREN);
             // id
             case OP_ID:
+                Semantics.add_operand(expr_sem, item->token);
                 Stack.pop(r_stack, stack_item_dtor);
+
                 return true;
             // id ( <arguments>
             case OP_FUNC:
+                expr_sem->sem_state = SEMANTIC_DISABLED;
                 Stack.pop(r_stack, stack_item_dtor);
                 return single_op(r_stack, OP_LPAREN) && arguments(r_stack, func_entries);
             default:
@@ -565,6 +601,9 @@ static void shift(pfile_t *pfile, sstack_t *stack, stack_item_t *expr, int const
 
     // Push token from the input
     Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_TOKEN, NULL));
+    stack_item_t *test = Stack.peek(stack);
+    debug_msg("EXPR SHIFTED = \"%s\"\n", Scanner.to_string(test->token.type));
+
 
     Scanner.get_next_token(pfile);
 }
@@ -588,17 +627,23 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
     // Peek item from top of the stack
     stack_item_t *top = Stack.peek(stack);
 
+    // Create expressions semantics structure
+    expr_semantics_t *expr_sem = Semantics.ctor_expr();
+
     // Reduce rule
     sstack_t *r_stack = Stack.ctor();
     while (top->type != ITEM_TYPE_LT && top->type != ITEM_TYPE_DOLLAR) {
         Stack.push(r_stack, (stack_item_t *) stack_item_copy(top));
+        stack_item_t *test = Stack.peek(r_stack);
+        debug_msg("EXPR COPIED = \"%s\"\n", Scanner.to_string(test->token.type));
         Stack.pop(stack, stack_item_dtor);
         top = Stack.peek(stack);
     }
 
-    if (!check_rule(r_stack, func_entries) || Stack.peek(r_stack) != NULL) {
+    if (!check_rule(r_stack, func_entries, expr_sem) || Stack.peek(r_stack) != NULL) {
         debug_msg("Reduction error!\n");
         Stack.dtor(r_stack, stack_item_dtor);
+        Semantics.dtor_expr(expr_sem);
         return false;
     }
 
@@ -609,8 +654,48 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
         Stack.pop(stack, stack_item_dtor);
     }
 
+    // sry for this, i want sleep, but i need to test it
+    if (expr_sem->sem_state != SEMANTIC_DISABLED) {
+        debug_msg("-- EXPRESSION SEMANTICS --\n");
+        debug_msg("Operation = \"%s\"\n", op_to_string(expr_sem->op));
+        if (expr_sem->sem_state == SEMANTIC_UNARY) {
+            if (expr_sem->op == OP_UNDEFINED) {
+                debug_msg("First operand = \"%s\"\n", Scanner.to_string(expr_sem->first_operand.type));
+            } else if (expr_sem->op == OP_NOT || expr_sem->op == OP_HASH) {
+                debug_msg("Second operand = \"%s\"\n", Scanner.to_string(expr_sem->second_operand.type));
+            }
+        } else {
+            debug_msg("First operand = \"%s\"\n", Scanner.to_string(expr_sem->first_operand.type));
+            debug_msg("Second operand = \"%s\"\n", Scanner.to_string(expr_sem->second_operand.type));
+        }
+        debug_msg("-- EXPRESSION SEMANTICS --\n");
+    }
+
+    Semantics.dtor_expr(expr_sem);
+
+    // TODO Semantic controls
+//    if (expr_sem != NULL) {
+//        if (expr_sem->op == OP_UNDEFINED) {
+//            if (expr_sem->first_operand.type == TOKEN_ID) {
+//                symbol_t *tmp_symbol;
+//                bool search_result;
+//                search_result = Symtable.get_symbol(local_table, expr_sem->first_operand.attribute.id, &tmp_symbol);
+//                if (!search_result) {
+//                    // chyba
+//                }
+//
+//            }
+//        } else {
+//            // semantic controls
+//        }
+//    }
+
     // Push an expression
-    Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR, NULL));
+    token_t expr_tok = { .type = TOKEN_NUM_I };
+    Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_EXPR, &expr_tok));
+
+    stack_item_t *test = Stack.peek(stack);
+    debug_msg("EXPR CREATED2 = \"%s\"\n", Scanner.to_string(test->token.type));
 
     return true;
 }
