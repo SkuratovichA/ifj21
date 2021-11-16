@@ -214,12 +214,11 @@ static void generate_main_end() {
  * generates sth like: LABEL $foo
  *                     PUSHFRAME
  */
-static void generate_func_start(char *func_name) {
+static void generate_func_start(dynstring_t *func_name) {
     INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
     ADD_INSTR_PART("LABEL $");   // add name of function
-    ADD_INSTR_PART(func_name);
+    ADD_INSTR_PART_DYN(func_name);
     ADD_INSTR_TMP;
-
     ADD_INSTR("PUSHFRAME");
 
     // TODO remove this and make another function - we need to define LF@%result... after starting function definition
@@ -247,13 +246,13 @@ static void generate_func_end(char *func_name) {
  *      DEFVAR LF@%p0
  *      MOVE LF@%p0 LF@%0
  */
-static void generate_func_start_param(char *param_name, size_t index) {
+static void generate_func_start_param(dynstring_t *param_name, size_t index) {
     ADD_INSTR_PART("DEFVAR LF@%");
-    ADD_INSTR_PART(param_name);
+    ADD_INSTR_PART_DYN(param_name);
     ADD_INSTR_TMP;
 
     ADD_INSTR_PART("MOVE LF@%");
-    ADD_INSTR_PART(param_name);
+    ADD_INSTR_PART_DYN(param_name);
     ADD_INSTR_PART(" LF@%");
     ADD_INSTR_INT(index);
     ADD_INSTR_TMP;
@@ -314,7 +313,7 @@ static void generate_var_value(token_t token) {
             break;
         case TOKEN_ID:
             ADD_INSTR_PART("LF@");
-            ADD_INSTR_PART(Dynstring.get_str(token.attribute.id));
+            ADD_INSTR_PART_DYN(token.attribute.id);
             break;
         default:
             ADD_INSTR_PART("Not expected token");
@@ -325,11 +324,11 @@ static void generate_var_value(token_t token) {
 /*
  * @brief Generates DEFVAR LF@%var.
  */
-static void generate_defvar(token_t token_id) {
+static void generate_defvar(dynstring_t *var_name) {
     ADD_INSTR_PART("DEFVAR LF@%");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART("%");
-    ADD_INSTR_PART(Dynstring.get_str(token_id.attribute.id));
+    ADD_INSTR_PART_DYN(var_name);
     if (instructions.in_loop) {
         ADD_INSTR_WHILE;
     } else {
@@ -340,14 +339,14 @@ static void generate_defvar(token_t token_id) {
 /*
  * @brief Generates variable declaration.
  */
-static void generate_var_definition(token_t token_id, token_t token_value) {
-    debug_msg("- generate_var_definition: %s\n", Dynstring.get_str(token_id.attribute.id));
-    generate_defvar(token_id);
+static void generate_var_definition(dynstring_t *var_name, token_t token_value) {
+    debug_msg("- generate_var_definition: %s\n", Dynstring.get_str(var_name));
+    generate_defvar(var_name);
 
     ADD_INSTR_PART("MOVE LF@%");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART("%");
-    ADD_INSTR_PART(Dynstring.get_str(token_id.attribute.id));
+    ADD_INSTR_PART_DYN(var_name);
     ADD_INSTR_PART(" ");
     generate_var_value(token_value);
     ADD_INSTR_TMP;
@@ -356,15 +355,15 @@ static void generate_var_definition(token_t token_id, token_t token_value) {
 /*
  * @brief Generates variable declaration.
  */
-static void generate_var_declaration(token_t token_id) {
-    debug_msg("- generate_var_declaration: %s\n", Dynstring.get_str(token_id.attribute.id));
-    generate_defvar(token_id);
+static void generate_var_declaration(dynstring_t *var_name) {
+    debug_msg("- generate_var_declaration: %s\n", Dynstring.get_str(var_name));
+    generate_defvar(var_name);
 
     // initialise to nil
     ADD_INSTR_PART("MOVE LF@%");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART("%");
-    ADD_INSTR_PART(Dynstring.get_str(token_id.attribute.id));
+    ADD_INSTR_PART_DYN(var_name);
     ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP;
 }
@@ -541,8 +540,8 @@ static void generate_repeat_until_cond() {
  * @brief Generates for loop header.
  * generates sth like: LABEL $for$id
  */
-static void generate_for_header(token_t token_id, token_t token_value/*, token_t cond, token_t incr*/) {
-    generate_var_definition(token_id, token_value);
+static void generate_for_header(dynstring_t *var_name, token_t token_value/*, token_t cond, token_t incr*/) {
+    generate_var_definition(var_name, token_value);
     // generate_var_definition(cond, );
     ADD_INSTR_PART("LABEL $for$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
@@ -567,8 +566,6 @@ static void generate_for_cond() {
  *                     LABEL $end$id
  */
 static void generate_for_end() {
-    //ADD_INSTR_PART("ADD LF");
-
     ADD_INSTR_PART("JUMP $for$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP;
