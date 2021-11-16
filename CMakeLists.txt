@@ -32,7 +32,11 @@ set(PROJ_FILES
         ${DATASTRUCTURES} ${UTILS_SOURCES}
         )
 set(DEVELOP_FLAGS
-        -Wno-unused-parameter -Wno-unused-function
+        #-Wno-unused-parameter
+        -Wno-unused-function
+        -Wall
+        -Wextra
+        -pedantic
         -DDEBUG
         -DDEBUG_DYNSTRING
         )
