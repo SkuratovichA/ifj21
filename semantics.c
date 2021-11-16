@@ -322,6 +322,8 @@ static bool is_var_exists (token_t tok, expr_semantics_t *self) {
 }
 
 static bool type_compatability(expr_semantics_t *self) {
+    debug_msg("INSIDE TYPE COMPATABILITY\n");
+
     if (self->sem_state == SEMANTIC_UNARY) {
         id_type_t f_var_type = token_to_type(self->first_operand);
         self->result_type = self->first_operand.type;
@@ -332,12 +334,15 @@ static bool type_compatability(expr_semantics_t *self) {
             return true;
         }
     } else {
+        debug_msg("BINARY OPERATION\n");
+
         id_type_t f_var_type = token_to_type(self->first_operand);
         id_type_t s_var_type = token_to_type(self->second_operand);
-        self->result_type = TOKEN_NUM_F;
 
         // Addition, subtraction, multiplication, float division
         if (self->op == OP_ADD || self->op == OP_SUB || self->op == OP_MUL || self->op == OP_DIV_F) {
+            self->result_type = TOKEN_NUM_F;
+
             if (f_var_type == ID_TYPE_number && s_var_type == ID_TYPE_number) {
                 return true;
             } else if (f_var_type == ID_TYPE_integer && s_var_type == ID_TYPE_integer) {
@@ -380,6 +385,7 @@ static bool type_compatability(expr_semantics_t *self) {
                  self->op == OP_EQ || self->op == OP_NE) {
             self->result_type = KEYWORD_boolean;
 
+            debug_msg("RELATION OPERATORS\n");
             if ((f_var_type == ID_TYPE_number && s_var_type == ID_TYPE_number) ||
                 (f_var_type == ID_TYPE_string && s_var_type == ID_TYPE_string) ||
                 (f_var_type == ID_TYPE_integer && s_var_type == ID_TYPE_integer)) {
@@ -391,10 +397,18 @@ static bool type_compatability(expr_semantics_t *self) {
                 self->conv_type = CONVERT_SECOND;
                 return true;
             }
+
+            // nil
+            if (self->op == OP_EQ || self->op == OP_NE) {
+                if ((f_var_type == ID_TYPE_boolean && s_var_type == ID_TYPE_boolean) ||
+                    (f_var_type == ID_TYPE_nil && s_var_type == ID_TYPE_nil)) {
+                    return true;
+                }
+            }
         }
 
-        // Equal, not equal, and, or
-        else if (self->op == OP_EQ || self->op == OP_NE || self->op == OP_AND || self->op == OP_OR) {
+        // and, or
+        else if (self->op == OP_AND || self->op == OP_OR) {
             self->result_type = KEYWORD_boolean;
 
             if (f_var_type == ID_TYPE_boolean && s_var_type == ID_TYPE_boolean) {
@@ -412,13 +426,20 @@ static bool Check_expression(expr_semantics_t *self) {
         return true;
     }
 
+    debug_msg("INSIDE SEMANTICS\n");
     // Check if variable is exists in symtable
     if (self->sem_state == SEMANTIC_UNARY && self->op == OP_UNDEFINED) {
         if (self->first_operand.type == TOKEN_ID) {
             return is_var_exists(self->first_operand, self);
         }
 
-        self->result_type = self->first_operand.type;
+        // true, false -> bool
+        int tok_type = self->first_operand.type;
+        if (tok_type == KEYWORD_1 || tok_type == KEYWORD_0) {
+            tok_type = KEYWORD_boolean;
+        }
+
+        self->result_type = tok_type;
         return true;
     }
 

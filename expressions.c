@@ -516,10 +516,12 @@ static bool check_rule(sstack_t *r_stack, int *func_entries, expr_semantics_t *e
     }
 
     if (item->type == ITEM_TYPE_TOKEN) {
+        op_list_t op = get_op(item->token);
         switch (get_op(item->token)) {
             // # expr | not expr
             case OP_HASH:
             case OP_NOT:
+                expr_sem->op = op;
                 Stack.pop(r_stack, stack_item_dtor);
                 return expression(r_stack, expr_sem);
             // ( expr ) | ( )
