@@ -40,10 +40,19 @@ typedef enum conv_type {
     CONVERT_SECOND,
 } conv_type_t;
 
+/** List of semantic states
+ */
+typedef enum semantic_state {
+    SEMANTIC_DISABLED,
+    SEMANTIC_IDLE,
+    SEMANTIC_UNARY,
+    SEMANTIC_BINARY,
+} semantic_type_t;
+
 /** Semantic information about an expression.
  */
 typedef struct expr_semantics {
-    int operand_cnt;
+    semantic_type_t sem_state;
     token_t first_operand;
     token_t second_operand;
     op_list_t op;

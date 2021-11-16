@@ -234,7 +234,7 @@ static expr_semantics_t *Ctor_expr() {
     expr_semantics_t *expr_sem = calloc(1, sizeof(expr_semantics_t));
     soft_assert(expr_sem != NULL, ERROR_INTERNAL);
 
-    expr_sem->operand_cnt = 0;
+    expr_sem->sem_state = SEMANTIC_IDLE;
     expr_sem->op = OP_UNDEFINED;
     expr_sem->conv_type = NO_CONVERSION;
 
@@ -251,7 +251,6 @@ static void Dtor_expr(expr_semantics_t *self) {
     }
 
     free(self);
-    self = NULL;
 }
 
 /** Expression semantics add operand.
@@ -260,15 +259,17 @@ static void Dtor_expr(expr_semantics_t *self) {
  * @param tok operand.
  */
 static void Add_operand(expr_semantics_t *self, token_t tok) {
-    debug_msg("OPERAND_CNT = %d\n", self->operand_cnt);
-    if (self->operand_cnt == 0) {
-        self->first_operand = tok;
-    } else {
-        self->second_operand = tok;
+    if (self->sem_state == SEMANTIC_DISABLED || self->sem_state == SEMANTIC_BINARY) {
+        return;
     }
 
-    (self->operand_cnt)++;
-    debug_msg("OPERAND_CNT = %d\n", self->operand_cnt);
+    if (self->sem_state == SEMANTIC_IDLE) {
+        self->first_operand = tok;
+        self->sem_state = SEMANTIC_UNARY;
+    } else {
+        self->second_operand = tok;
+        self->sem_state = SEMANTIC_BINARY;
+    }
 }
 
 
