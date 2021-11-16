@@ -976,7 +976,6 @@ static bool expr_stmt(pfile_t *pfile) {
 
     // DEAD TOKEN
     if (Scanner.get_curr_token().type == TOKEN_DEAD) {
-        debug_msg("token is dead... And we killed him.\n");
         Errors.set_error(ERROR_LEXICAL);
         return false;
     }

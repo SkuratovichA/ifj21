@@ -741,10 +741,6 @@ static token_t scanner(pfile_t *pfile) {
             break;
     }
 
-    if (token.type == TOKEN_DEAD) {
-        Errors.set_error(ERROR_LEXICAL);
-    }
-
     return token;
 }
 
