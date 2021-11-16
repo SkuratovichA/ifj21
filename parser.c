@@ -455,7 +455,7 @@ static bool var_definition(pfile_t *pfile) {
     }
 
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
-
+    Dynstring.dtor(id_name);
     // = `expr`
     if (!assignment(pfile, token_id)) {
         return false;
@@ -964,7 +964,6 @@ static bool function_definition(pfile_t *pfile) {
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
     token_t token = Scanner.get_curr_token();
-    dynstring_t *id_name = Dynstring.ctor("");
 
     switch (token.type) {
         // function declaration: global id : function ( <datatype_list> <funretopt>
@@ -977,8 +976,6 @@ static bool stmt(pfile_t *pfile) {
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:
-            id_name = Dynstring.cat(id_name, token.attribute.id);
-
             // create frame before passing parameters
             Generator.func_createframe();
 
@@ -986,9 +983,9 @@ static bool stmt(pfile_t *pfile) {
             if (!Expr.parse(pfile, true)) {
                 return false;
             }
+
             // function call
-            Generator.func_call(Dynstring.get_str(id_name));
-            Dynstring.dtor(id_name);
+            Generator.func_call(token.attribute.id);
             break;
 
             // FIXME. I dont know how to solve this recursion.
@@ -1052,10 +1049,12 @@ static bool program(pfile_t *pfile) {
 
     // "ifj21" which is a prolog string after require keyword
     if (Scanner.get_curr_token().type != TOKEN_STR) {
+        Dynstring.dtor(prolog_str);
         Errors.set_error(ERROR_SYNTAX);
         return false;
     }
     if (Dynstring.cmp(Scanner.get_curr_token().attribute.id, prolog_str) != 0) {
+        Dynstring.dtor(prolog_str);
         Errors.set_error(ERROR_SYNTAX);
         return false;
     }
