@@ -9,6 +9,7 @@
 #include "dynstring.h"
 #include "symtable.h"
 #include "expressions.h"
+#include "parser.h"
 
 
 /** Function checks if return values and parameters
@@ -237,6 +238,7 @@ static expr_semantics_t *Ctor_expr() {
     expr_sem->sem_state = SEMANTIC_IDLE;
     expr_sem->op = OP_UNDEFINED;
     expr_sem->conv_type = NO_CONVERSION;
+    expr_sem->result_type = ID_TYPE_UNDEF;
 
     return expr_sem;
 }
@@ -272,12 +274,165 @@ static void Add_operand(expr_semantics_t *self, token_t tok) {
     }
 }
 
+static int type_to_token (id_type_t id_type) {
+    switch (id_type) {
+        case ID_TYPE_string:
+            return TOKEN_STR;
+        case ID_TYPE_integer:
+            return TOKEN_NUM_I;
+        case ID_TYPE_number:
+            return TOKEN_NUM_F;
+        case ID_TYPE_boolean:
+            return KEYWORD_boolean;
+        case ID_TYPE_nil:
+            return KEYWORD_nil;
+        default:
+            return TOKEN_DEAD;
+    }
+}
+
+static id_type_t token_to_type (token_t tok) {
+    switch (tok.type) {
+        case TOKEN_STR:
+            return ID_TYPE_string;
+        case TOKEN_NUM_I:
+            return ID_TYPE_integer;
+        case TOKEN_NUM_F:
+            return ID_TYPE_number;
+        case KEYWORD_boolean:
+            return ID_TYPE_boolean;
+        case KEYWORD_nil:
+            return ID_TYPE_nil;
+        default:
+            return ID_TYPE_UNDEF;
+    }
+}
+
+static bool is_var_exists (token_t tok, expr_semantics_t *self) {
+    symbol_t *symbol;
+    bool res;
+    res = Symtable.get_symbol(local_table, tok.attribute.id, &symbol);
+    if (res) {
+        self->result_type = type_to_token(symbol->type);
+        return true;
+    } else {
+        Errors.set_error(ERROR_DEFINITION);
+        return false;
+    }
+}
+
+static bool type_compatability(expr_semantics_t *self) {
+    if (self->sem_state == SEMANTIC_UNARY) {
+        id_type_t f_var_type = token_to_type(self->first_operand);
+        self->result_type = self->first_operand.type;
+
+        // String length and not
+        if ((self->op == OP_HASH && f_var_type == ID_TYPE_string) ||
+            (self->op == OP_NOT && f_var_type == ID_TYPE_boolean)) {
+            return true;
+        }
+    } else {
+        id_type_t f_var_type = token_to_type(self->first_operand);
+        id_type_t s_var_type = token_to_type(self->second_operand);
+        self->result_type = TOKEN_NUM_F;
+
+        // Addition, subtraction, multiplication, float division
+        if (self->op == OP_ADD || self->op == OP_SUB || self->op == OP_MUL || self->op == OP_DIV_F) {
+            if (f_var_type == ID_TYPE_number && s_var_type == ID_TYPE_number) {
+                return true;
+            } else if (f_var_type == ID_TYPE_integer && s_var_type == ID_TYPE_integer) {
+                self->result_type = TOKEN_NUM_I;
+                if (self->op == OP_DIV_F) {
+                    self->result_type = TOKEN_NUM_F;
+                    self->conv_type = CONVERT_BOTH;
+                }
+                return true;
+            } else if (f_var_type == ID_TYPE_integer && s_var_type == ID_TYPE_number) {
+                self->conv_type = CONVERT_FIRST;
+                return true;
+            } else if (f_var_type == ID_TYPE_number && s_var_type == ID_TYPE_integer) {
+                self->conv_type = CONVERT_SECOND;
+                return true;
+            }
+        }
+
+        // Integer division
+        else if (self->op == OP_DIV_I) {
+            self->result_type = TOKEN_NUM_I;
+
+            if (f_var_type == ID_TYPE_integer && s_var_type == ID_TYPE_integer) {
+                return true;
+            }
+        }
+
+        // String concatenation
+        else if (self->op == OP_STRCAT) {
+            self->result_type = TOKEN_STR;
+
+            if (f_var_type == ID_TYPE_string && s_var_type == ID_TYPE_string) {
+                return true;
+            }
+        }
+
+        // Relation operators
+        else if (self->op == OP_LT || self->op == OP_LE ||
+                 self->op == OP_GT || self->op == OP_GE ||
+                 self->op == OP_EQ || self->op == OP_NE) {
+            self->result_type = KEYWORD_boolean;
+
+            if ((f_var_type == ID_TYPE_number && s_var_type == ID_TYPE_number) ||
+                (f_var_type == ID_TYPE_string && s_var_type == ID_TYPE_string) ||
+                (f_var_type == ID_TYPE_integer && s_var_type == ID_TYPE_integer)) {
+                return true;
+            } else if (f_var_type == ID_TYPE_integer && s_var_type == ID_TYPE_number) {
+                self->conv_type = CONVERT_FIRST;
+                return true;
+            } else if (f_var_type == ID_TYPE_number && s_var_type == ID_TYPE_integer) {
+                self->conv_type = CONVERT_SECOND;
+                return true;
+            }
+        }
+
+        // Equal, not equal, and, or
+        else if (self->op == OP_EQ || self->op == OP_NE || self->op == OP_AND || self->op == OP_OR) {
+            self->result_type = KEYWORD_boolean;
+
+            if (f_var_type == ID_TYPE_boolean && s_var_type == ID_TYPE_boolean) {
+               return true;
+            }
+        }
+    }
+
+    Errors.set_error(ERROR_SEMANTICS_TYPE_INCOMPATABLE);
+    return false;
+}
+
+static bool Check_expression(expr_semantics_t *self) {
+    if (self->sem_state == SEMANTIC_DISABLED) {
+        return true;
+    }
+
+    // Check if variable is exists in symtable
+    if (self->sem_state == SEMANTIC_UNARY && self->op == OP_UNDEFINED) {
+        if (self->first_operand.type == TOKEN_ID) {
+            return is_var_exists(self->first_operand, self);
+        }
+
+        self->result_type = self->first_operand.type;
+        return true;
+    }
+
+    // Check type compatability
+    return type_compatability(self);
+}
+
 
 const struct semantics_interface_t Semantics = {
         .dtor = Dtor,
         .ctor = Ctor,
         .dtor_expr = Dtor_expr,
         .ctor_expr = Ctor_expr,
+        .check_expression = Check_expression,
         .add_operand = Add_operand,
         .is_declared = Is_declared,
         .is_defined = Is_defined,

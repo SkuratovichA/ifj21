@@ -38,6 +38,7 @@ typedef enum conv_type {
     NO_CONVERSION,
     CONVERT_FIRST,
     CONVERT_SECOND,
+    CONVERT_BOTH
 } conv_type_t;
 
 /** List of semantic states
@@ -57,6 +58,7 @@ typedef struct expr_semantics {
     token_t second_operand;
     op_list_t op;
     conv_type_t conv_type;
+    int result_type;
 } expr_semantics_t;
 
 
@@ -186,4 +188,6 @@ struct semantics_interface_t {
      * @param tok operand.
      */
     void (*add_operand)(expr_semantics_t *, token_t);
+
+    bool (*check_expression)(expr_semantics_t *);
 };
