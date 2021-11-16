@@ -77,7 +77,7 @@ struct dynstring_interface_t {
      * @param s2
      * @returns new dysntring, which is product of s1 and s2.
      */
-    dynstring_t *(*cat)(dynstring_t *, dynstring_t *);
+    void (*cat)(dynstring_t *, dynstring_t *);
 
     /**
     * @brief Clears the dynstring. Set everything to 0 except size.
