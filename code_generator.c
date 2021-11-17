@@ -186,7 +186,6 @@ static void generate_func_substr() {
 static void generate_func_call(dynstring_t *func_name) {
     ADD_INSTR_PART("CALL $");
     ADD_INSTR_PART_DYN(func_name);
-    ADD_INSTR_PART_DYN(func_name);
     ADD_INSTR_TMP;
 }
 
@@ -262,14 +261,15 @@ static void generate_func_start_param(dynstring_t *param_name, size_t index) {
 /*
  * @brief Generates return value of return parameter with index.
  * generates sth like:
- *      DEFVAR LF@%result0
+ *      DEFVAR LF@%return0
+ *      MOVE LF@%return0 nil@nil
  */
 static void generate_func_return_value(size_t index) {
-    ADD_INSTR_PART("DEFVAR LF@%result");
+    ADD_INSTR_PART("DEFVAR LF@%return");
     ADD_INSTR_INT(index);
     ADD_INSTR_TMP;
 
-    ADD_INSTR_PART("MOVE LF@%result");
+    ADD_INSTR_PART("MOVE LF@%return");
     ADD_INSTR_INT(index);
     ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP;
@@ -599,6 +599,164 @@ static void generate_prog_start() {
 }
 
 /*
+ * generates value and pushes it on the stack
+ */
+// FIXME DEFVARS
+void generate_int_to_num(token_t token) {
+    if (token.type == TOKEN_NUM_I) {
+        ADD_INSTR_PART("PUSHS ");
+        // i have "2" -> i need float@2.0
+        // FIXME - fix this shit
+        token_t new_float;
+        new_float.type = TOKEN_NUM_F;
+        new_float.attribute.num_f = token.attribute.num_i * 1.0f;
+        generate_var_value(new_float);
+        ADD_INSTR_TMP;
+    }
+    if (token.type == TOKEN_ID) {
+        // retype id to num
+        ADD_INSTR_PART("INT2FLOAT ");
+        generate_var_value(token);
+        ADD_INSTR_PART(" GF@%result");
+        ADD_INSTR_TMP;
+
+        ADD_INSTR("PUSHS GF@%result");
+    }
+}
+
+//FIXME DEFVARS
+void generate_division_check(bool integer) {
+    ADD_INSTR("POPS GF@%tmp");
+    ADD_INSTR_PART("JUMPIFNEQ $$fine GF%tmp ");
+    if (integer) {
+        ADD_INSTR_PART("int@0");
+    } else {
+        ADD_INSTR_PART("float@0x0p+0");
+    }
+    ADD_INSTR_TMP;
+    ADD_INSTR(  "EXIT int@9"
+                "LABEL $$fine");
+}
+
+static void generate_nil_check(token_t token) {
+    ADD_INSTR_PART("JUMPIFNEQ $$fine ");
+    generate_var_value(token);
+    ADD_INSTR_PART(" nil@nil");
+    ADD_INSTR_TMP;
+    ADD_INSTR("EXIT int@9"
+                    "LABEL $$fine");
+}
+
+static void retype_and_push_first(expr_semantics_t *expr) {
+// push first operand (retype before if needed)
+    if (expr->conv_type == CONVERT_FIRST || expr->conv_type == CONVERT_BOTH) {
+        generate_int_to_num(expr->first_operand);
+    } else {
+        ADD_INSTR_PART("PUSHS ");
+        //ADD_INSTR_PART_DYN(generate_var_value(expr->first_operand));
+        ADD_INSTR_TMP;
+    }
+}
+
+static void retype_and_push_second(expr_semantics_t *expr) {
+    // push second operand (retype before if needed)
+    if (expr->conv_type == CONVERT_SECOND || expr->conv_type == CONVERT_BOTH) {
+        generate_int_to_num(expr->second_operand);
+    } else {
+        ADD_INSTR_PART("PUSHS ");
+        generate_var_value(expr->second_operand);
+        ADD_INSTR_TMP;
+    }
+}
+
+static void generate_expression(expr_semantics_t *expr) {
+    soft_assert(expr, ERROR_INTERNAL);
+    // retype if needed and push operands
+    retype_and_push_first(expr);
+    // if the expression has only one operand don't do this conversion
+    if (expr->sem_state != SEMANTIC_UNARY) {
+        retype_and_push_second(expr);
+    }
+
+    // generate operation
+    switch (expr->op) {
+        case OP_ADD:
+            ADD_INSTR("ADDS");
+            break;
+        case OP_SUB:
+            ADD_INSTR("SUBS");
+            break;
+        case OP_MUL:
+            ADD_INSTR("MULS");
+            break;
+        case OP_DIV_I:
+            generate_division_check(true); // true means int division check
+            ADD_INSTR("IDIVS");
+            break;
+        case OP_DIV_F:
+            generate_division_check(false); // false means float division check
+            ADD_INSTR("DIVS");
+            break;
+        case OP_LT:
+            ADD_INSTR("LTS");
+            break;
+        case OP_LE:
+            ADD_INSTR("LTS");
+            retype_and_push_first(expr);
+            retype_and_push_second(expr);
+            ADD_INSTR(  "EQS"
+                        "ORS");
+            break;
+        case OP_GT:
+            ADD_INSTR("GTS");
+            break;
+        case OP_GE:
+            ADD_INSTR("GTS");
+            retype_and_push_first(expr);
+            retype_and_push_second(expr);
+            ADD_INSTR("EQS"
+                        "ORS");
+            break;
+        case OP_EQ:
+            ADD_INSTR("EQS");
+            break;
+        case OP_NE:
+            ADD_INSTR( "EQS"
+                        "NOTS");
+            break;
+        case OP_NOT:
+            ADD_INSTR("NOTS");
+            break;
+        case OP_AND:
+            ADD_INSTR("ANDS");
+            break;
+        case OP_OR:
+            ADD_INSTR("ORS");
+            break;
+        case OP_HASH:
+            // FIXME DEFVARS
+            ADD_INSTR(  "DEFVAR LF@len"
+                        "MOVE LF@len int@0"
+                        "POPS GF@tmp"
+                        "STRLEN LF@len GF@tmp"
+                        "PUSHS LF@len");
+            break;
+        case OP_STRCAT:
+            // FIXME DEFVARS
+            ADD_INSTR(  "POPS GF@tmp2"
+                        "POPS GF@tmp"
+                        "CONCAT GF@res GF@tmp GF@tmp2");
+            break;
+        default:
+            ADD_INSTR("# Another instruction :(");
+    }
+
+    // FIXME - after parsing the entire expression
+    ADD_INSTR("POPS GF@res");
+    ADD_INSTR("CLEARS");        // probably delete this
+}
+
+/*
  * @brief Initialises the code generator.
  */
 static void initialise_generator() {
@@ -665,4 +823,5 @@ const struct code_generator_interface_t Generator = {
         .for_header = generate_for_header,
         .for_cond = generate_for_cond,
         .initialise = initialise_generator,
+        .expression = generate_expression,
 };
