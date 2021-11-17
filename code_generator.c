@@ -236,7 +236,7 @@ static void generate_func_end(char *func_name) {
     ADD_INSTR_TMP;
 
     // FIXME - remove this line
-    ADD_INSTR("WRITE GF@%expr_res");
+    ADD_INSTR("WRITE GF@%expr_result");
 
     ADD_INSTR("POPFRAME");
     ADD_INSTR("RETURN\n");
@@ -351,7 +351,7 @@ static void generate_var_definition(dynstring_t *var_name) {
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
-    ADD_INSTR_PART(" GF@%expr_res");
+    ADD_INSTR_PART(" GF@%expr_result");
     ADD_INSTR_TMP;
 }
 
@@ -394,6 +394,9 @@ static void generate_func_pass_param(size_t param_index) {
  */
 static void generate_func_createframe() {
     ADD_INSTR("CREATEFRAME");
+
+    // TODO remove this instruction when foo() parsing is handled
+    ADD_INSTR("PUSHS int@2");
 }
 
 /*
@@ -540,10 +543,11 @@ static void generate_repeat_until_cond() {
 }
 
 /*
+ * TODO
  * @brief Generates for loop header.
  * generates sth like: LABEL $for$id
  */
-static void generate_for_header(dynstring_t *var_name, token_t token_value/*, token_t cond, token_t incr*/) {
+static void generate_for_header(dynstring_t *var_name) {
     generate_var_definition(var_name);
     ADD_INSTR_PART("LABEL $for$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
@@ -583,9 +587,13 @@ static void generate_for_end() {
 static void generate_prog_start() {
     INSTR_CHANGE_ACTIVE_LIST(instructions.startList);
     ADD_INSTR(".IFJcode21");
-    ADD_INSTR("DEFVAR GF@%expr_res \n"
-              "MOVE GF@%expr_res nil@nil");
+    ADD_INSTR("DEFVAR GF@%expr_result \n"
+              "MOVE GF@%expr_result nil@nil");
     ADD_INSTR("JUMP $$MAIN");
+    ADD_INSTR(  "LABEL $$ERROR_NIL \n"
+                "EXIT int@8 \n"
+                "LABEL $$ERROR_DIV_BY_ZERO \n"
+                "EXIT int@9");
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
     // TODO: add built-in functions every time or when needed?
@@ -621,34 +629,30 @@ void generate_int_to_num(token_t token) {
         // retype id to num
         ADD_INSTR_PART("INT2FLOAT ");
         generate_var_value(token);
-        ADD_INSTR_PART(" GF@%result");
+        ADD_INSTR_PART(" GF@%expr_result");
         ADD_INSTR_TMP;
 
-        ADD_INSTR("PUSHS GF@%result");
+        ADD_INSTR("PUSHS GF@%expr_result");
     }
 }
 
 //FIXME DEFVARS
 void generate_division_check(bool integer) {
-    ADD_INSTR("POPS GF@%tmp");
-    ADD_INSTR_PART("JUMPIFNEQ $$fine GF%tmp ");
+    ADD_INSTR("POPS GF@%expr_result");
+    ADD_INSTR_PART("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF%expr_result ");
     if (integer) {
         ADD_INSTR_PART("int@0");
     } else {
         ADD_INSTR_PART("float@0x0p+0");
     }
     ADD_INSTR_TMP;
-    ADD_INSTR(  "EXIT int@9 \n"
-                "LABEL $$fine");
 }
 
 static void generate_nil_check(token_t token) {
-    ADD_INSTR_PART("JUMPIFNEQ $$fine ");
+    ADD_INSTR_PART("JUMPIFEQ $$ERROR_NIL ");
     generate_var_value(token);
     ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP;
-    ADD_INSTR("EXIT int@9 \n"
-                    "LABEL $$fine");
 }
 
 static void retype_and_push_first(expr_semantics_t *expr) {
@@ -656,9 +660,9 @@ static void retype_and_push_first(expr_semantics_t *expr) {
     if (expr->conv_type == CONVERT_FIRST || expr->conv_type == CONVERT_BOTH) {
         generate_int_to_num(expr->first_operand);
     } else {
-        ADD_INSTR_PART("PUSHS ");
-        generate_var_value(expr->first_operand);
-        ADD_INSTR_TMP;
+        //ADD_INSTR_PART("PUSHS ");
+        //generate_var_value(expr->first_operand);
+        //ADD_INSTR_TMP;
     }
 }
 
@@ -667,14 +671,38 @@ static void retype_and_push_second(expr_semantics_t *expr) {
     if (expr->conv_type == CONVERT_SECOND || expr->conv_type == CONVERT_BOTH) {
         generate_int_to_num(expr->second_operand);
     } else {
-        ADD_INSTR_PART("PUSHS ");
-        generate_var_value(expr->second_operand);
-        ADD_INSTR_TMP;
+        //ADD_INSTR_PART("PUSHS ");
+        //generate_var_value(expr->second_operand);
+        //ADD_INSTR_TMP;
     }
+}
+
+static void generate_expression_pop() {
+    ADD_INSTR("POPS GF@%expr_result");
+    ADD_INSTR("CLEARS");
+}
+
+/*
+ * get id
+ * check nil
+ * push
+ */
+static void generate_expression_operand(expr_semantics_t *expr) {
+    generate_nil_check(expr->first_operand);
+
+    ADD_INSTR_PART("PUSHS ");
+    generate_var_value(expr->first_operand);
+    ADD_INSTR_TMP;
 }
 
 static void generate_expression(expr_semantics_t *expr) {
     soft_assert(expr, ERROR_INTERNAL);
+
+    if (expr->sem_state == SEMANTIC_OPERAND) {
+        generate_expression_operand(expr);
+        return;
+    }
+
     // retype if needed and push operands
     retype_and_push_first(expr);
     // if the expression has only one operand don't do this conversion
@@ -741,22 +769,20 @@ static void generate_expression(expr_semantics_t *expr) {
             // FIXME DEFVARS
             ADD_INSTR(  "DEFVAR LF@len \n"
                         "MOVE LF@len int@0 \n"
-                        "POPS GF@tmp \n"
-                        "STRLEN LF@len GF@tmp \n"
+                        "POPS GF@%expr_result \n"
+                        "STRLEN LF@len GF@%expr_result \n"
                         "PUSHS LF@len");
             break;
         case OP_STRCAT:
             // FIXME DEFVARS
-            ADD_INSTR(  "POPS GF@tmp2 \n"
-                        "POPS GF@tmp \n"
-                        "CONCAT GF@res GF@tmp GF@tmp2");
+            ADD_INSTR("DEFVAR LF@%%tmp"
+                    "POPS LF@%%tmp \n"
+                        "POPS GF@%expr_result \n"
+                        "CONCAT GF@%expr_result GF@%expr_result LF@%%tmp");
             break;
         default:
             ADD_INSTR("# Another instruction :(");
     }
-
-    // FIXME - after parsing the entire expression
-    ADD_INSTR("POPS GF@%expr_res");
 }
 
 /*
@@ -827,4 +853,5 @@ const struct code_generator_interface_t Generator = {
         .for_cond = generate_for_cond,
         .initialise = initialise_generator,
         .expression = generate_expression,
+        .expression_pop = generate_expression_pop,
 };
