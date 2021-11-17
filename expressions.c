@@ -109,8 +109,6 @@ static op_list_t get_op(token_t token) {
             return OP_OR;
         case TOKEN_COMMA:
             return OP_COMMA;
-        case TOKEN_FUNC:
-            return OP_FUNC;
         default:
             return OP_DOLLAR;
     }
@@ -500,7 +498,7 @@ static bool arguments(sstack_t *r_stack, int *func_entries) {
  * @return bool.
  */
 static bool check_rule(sstack_t *r_stack, int *func_entries, expr_semantics_t *expr_sem) {
-    debug_msg("EXPECTED: expr <operator> | # expr | ( expr ) | ( ) | id | id ( <arguments>\n");
+    debug_msg("EXPECTED: expr <operator> | # expr | ( expr ) | id | id ( <arguments>\n");
 
     stack_item_t *item = Stack.peek(r_stack);
 
@@ -524,25 +522,24 @@ static bool check_rule(sstack_t *r_stack, int *func_entries, expr_semantics_t *e
                 Semantics.add_operator(expr_sem, op);
                 Stack.pop(r_stack, stack_item_dtor);
                 return expression(r_stack, expr_sem);
-            // ( expr ) | ( )
+            // ( expr )
             case OP_LPAREN:
                 Stack.pop(r_stack, stack_item_dtor);
-                if (single_op(r_stack, OP_RPAREN)) {
-                    expr_sem->sem_state = SEMANTIC_DISABLED;
-                    return true;
-                }
                 return expression(r_stack, expr_sem) && single_op(r_stack, OP_RPAREN);
-            // id
-            case OP_ID:
-                Semantics.add_operand(expr_sem, item->token);
+            // id | id ( <arguments>
+            // i need to declare a variable in this case, so I wrote this commadot
+            // never ask why it works like that :D
+            case OP_ID:;
+                token_t tmp_token = item->token;
                 Stack.pop(r_stack, stack_item_dtor);
 
+                if (Stack.peek(r_stack) != NULL) {
+                    expr_sem->sem_state = SEMANTIC_DISABLED;
+                    return single_op(r_stack, OP_LPAREN) && arguments(r_stack, func_entries);
+                }
+
+                Semantics.add_operand(expr_sem, tmp_token);
                 return true;
-            // id ( <arguments>
-            case OP_FUNC:
-                expr_sem->sem_state = SEMANTIC_DISABLED;
-                Stack.pop(r_stack, stack_item_dtor);
-                return single_op(r_stack, OP_LPAREN) && arguments(r_stack, func_entries);
             default:
                 break;
         }
@@ -689,17 +686,6 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
 }
 
 /**
- * @brief Check on function call.
- *
- * @param first_op first operator.
- * @param second_op second operator.
- * @return
- */
-static bool is_function_call(op_list_t first_op, op_list_t second_op) {
-    return first_op == OP_ID && second_op == OP_LPAREN;
-}
-
-/**
  * @brief Check on function end.
  *
  * @param expr_type type of expression.
@@ -734,8 +720,7 @@ static bool is_expr_end(op_list_t first_op, op_list_t second_op, int func_cnt) {
  */
 static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_reduce) {
     return  (first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
-            (first_op == OP_DOLLAR && second_op == OP_ID && hard_reduce) ||
-            (first_op == OP_DOLLAR && second_op == OP_COMMA && hard_reduce);
+            (first_op == OP_DOLLAR && hard_reduce);
 }
 
 /**
@@ -748,6 +733,7 @@ static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_
  */
 static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
     bool hard_reduce = false;
+    bool is_func = false;
     int func_entries = (expr_type == EXPR_FUNC) ? 1 : 0;
     int cmp;
 
@@ -763,8 +749,26 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
 
         debug_msg("Top: \"%s\"\n", to_str(top));
 
+        token_t curr_tok = Scanner.get_curr_token();
         op_list_t first_op = (top->type == ITEM_TYPE_DOLLAR) ? OP_DOLLAR : get_op(top->token);
-        op_list_t second_op = get_op(Scanner.get_curr_token());
+        op_list_t second_op = get_op(curr_tok);
+
+        if (is_func) {
+            first_op = OP_FUNC;
+            is_func = false;
+        }
+
+        // Check if identifier is a function
+        if (curr_tok.type == TOKEN_ID) {
+            symbol_t *symbol;
+
+            if (Symtable.get_symbol(global_table, curr_tok.attribute.id, &symbol)) {
+                if (symbol->type == ID_TYPE_func_decl || symbol->type == ID_TYPE_func_def) {
+                    second_op = OP_FUNC;
+                    is_func = true;
+                }
+            }
+        }
 
         // Check on expression end
         if (!hard_reduce && is_expr_end(first_op, second_op, func_entries)) {
@@ -786,19 +790,12 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
 
         // Precedence comparison
         if (!hard_reduce && !precedence_cmp(first_op, second_op, &cmp)) {
-            // Try to parse function call
-            if (is_function_call(first_op, second_op)) {
-                func_entries++;
-                top->token.type = TOKEN_FUNC;
-                cmp = 0;
-            } else {
-                if (expr) {
-                    stack_item_dtor(expr);
-                }
-                Errors.set_error(ERROR_SYNTAX);
-                debug_msg("Precedence error!\n");
-                return false;
+            if (expr) {
+                stack_item_dtor(expr);
             }
+            Errors.set_error(ERROR_SYNTAX);
+            debug_msg("Precedence error!\n");
+            return false;
         }
 
         debug_msg("\n");
@@ -834,7 +831,6 @@ static bool parse_init(pfile_t *pfile, expr_type_t expr_type, token_t *prev_toke
 
     // Push id and ( if expression is a function call
     if (expr_type == EXPR_FUNC) {
-        prev_token->type = TOKEN_FUNC;
         token_t tok_lparen = {.type = TOKEN_LPAREN};
         Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_TOKEN, prev_token));
         Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_TOKEN, &tok_lparen));

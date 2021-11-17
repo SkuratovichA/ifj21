@@ -151,12 +151,6 @@ static char *To_string(const int t) {
             return ":";
         case TOKEN_HASH:
             return "#";
-//        case TOKEN_AND:
-//            return "and";
-//        case TOKEN_OR:
-//            return "or";
-//        case TOKEN_NOT:
-//            return "not";
         case TOKEN_DEAD:
             return "DEAD TOKEN";
 
