@@ -261,17 +261,34 @@ static void Dtor_expr(expr_semantics_t *self) {
  * @param tok operand.
  */
 static void Add_operand(expr_semantics_t *self, token_t tok) {
-    if (self->sem_state == SEMANTIC_DISABLED || self->sem_state == SEMANTIC_BINARY) {
+    if (self->sem_state == SEMANTIC_DISABLED ||
+        self->sem_state == SEMANTIC_UNARY ||
+        self->sem_state == SEMANTIC_BINARY) {
         return;
     }
 
-    if (self->sem_state == SEMANTIC_IDLE) {
+    if (self->op == OP_UNDEFINED) {
         self->first_operand = tok;
-        self->sem_state = SEMANTIC_UNARY;
+        self->sem_state = SEMANTIC_OPERAND;
     } else {
-        self->second_operand = tok;
-        self->sem_state = SEMANTIC_BINARY;
+        if (self->sem_state == SEMANTIC_IDLE) {
+            self->first_operand = tok;
+            self->sem_state = SEMANTIC_UNARY;
+        } else {
+            self->second_operand = tok;
+            self->sem_state = SEMANTIC_BINARY;
+        }
     }
+}
+
+static void Add_operator(expr_semantics_t *self, op_list_t op) {
+    if (self->sem_state == SEMANTIC_DISABLED ||
+        self->sem_state == SEMANTIC_UNARY ||
+        self->sem_state == SEMANTIC_BINARY) {
+        return;
+    }
+
+    self->op = op;
 }
 
 static int type_to_token (id_type_t id_type) {
@@ -417,12 +434,12 @@ static bool type_compatability(expr_semantics_t *self) {
 }
 
 static bool Check_expression(expr_semantics_t *self) {
-    if (self->sem_state == SEMANTIC_DISABLED) {
+    if (self->sem_state == SEMANTIC_DISABLED || self->sem_state == SEMANTIC_IDLE) {
         return true;
     }
 
     // Check if variable is exists in symtable
-    if (self->sem_state == SEMANTIC_UNARY && self->op == OP_UNDEFINED) {
+    if (self->sem_state == SEMANTIC_OPERAND) {
         if (self->first_operand.type == TOKEN_ID) {
             return is_var_exists(self->first_operand, self);
         }
@@ -449,6 +466,7 @@ const struct semantics_interface_t Semantics = {
         .ctor_expr = Ctor_expr,
         .check_expression = Check_expression,
         .add_operand = Add_operand,
+        .add_operator = Add_operator,
         .is_declared = Is_declared,
         .is_defined = Is_defined,
         .is_builtin = Is_builtin,
