@@ -282,8 +282,8 @@ static void generate_func_return_value(size_t index) {
  * @brief Generates code with value of the token.
  */
 static void generate_var_value(token_t token) {
-    char str[MAX_CHAR];
-    memset(str, '\0', MAX_CHAR);
+    char str_tmp[MAX_CHAR];
+    memset(str_tmp, '\0', MAX_CHAR);
     switch (token.type) {
         case TOKEN_STR:
             ADD_INSTR_PART("string@");
@@ -294,33 +294,35 @@ static void generate_var_value(token_t token) {
                 // check format (check what to do with not printable chars?)
                 if (!isprint(str_id[i]) || str_id[i] == '#' || str_id[i] == '\\') {
                     // print as an escape sequence
-                    sprintf(str, "\\%03d", str_id[i]);
+                    sprintf(str_tmp, "\\%03d", str_id[i]);
                 } else {
-                    sprintf(str, "%c", str_id[i]);
+                    sprintf(str_tmp, "%c", str_id[i]);
                 }
-                ADD_INSTR_PART(str);
-                memset(str, '\0', MAX_CHAR);
+                ADD_INSTR_PART(str_tmp);
+                memset(str_tmp, '\0', MAX_CHAR);
             }
             break;
         case TOKEN_NUM_F:
             ADD_INSTR_PART("float@");
-            sprintf(str, "%a", token.attribute.num_f);
-            ADD_INSTR_PART(str);
+            sprintf(str_tmp, "%a", token.attribute.num_f);
+            ADD_INSTR_PART(str_tmp);
             break;
         case TOKEN_NUM_I:
             ADD_INSTR_PART("int@");
-            sprintf(str, "%lu", token.attribute.num_i);
-            ADD_INSTR_PART(str);
+            sprintf(str_tmp, "%lu", token.attribute.num_i);
+            ADD_INSTR_PART(str_tmp);
             break;
         case KEYWORD_nil:
             ADD_INSTR_PART("nil@nil");
             break;
         case TOKEN_ID:
-            ADD_INSTR_PART("LF@");
+            ADD_INSTR_PART("LF@%");
+            ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+            ADD_INSTR_PART("%");
             ADD_INSTR_PART_DYN(token.attribute.id);
             break;
         default:
-            ADD_INSTR_PART("Not expected token");
+            ADD_INSTR_PART("unexpected_token");
             break;
     }
 }
