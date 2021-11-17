@@ -206,7 +206,7 @@ static void generate_main_start() {
 static void generate_main_end() {
     ADD_INSTR("LABEL $$MAIN$end");
     // TODO remove
-    ADD_INSTR("WRITE string@SUCCESSFUL\\010");
+    ADD_INSTR("WRITE string@\\010\\010SUCCESSFUL\\010");
 }
 
 /*
@@ -234,6 +234,9 @@ static void generate_func_end(char *func_name) {
     ADD_INSTR_PART(func_name);
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP;
+
+    // FIXME - remove this line
+    ADD_INSTR("WRITE GF@%expr_res");
 
     ADD_INSTR("POPFRAME");
     ADD_INSTR("RETURN\n");
@@ -340,7 +343,7 @@ static void generate_defvar(dynstring_t *var_name) {
 /*
  * @brief Generates variable declaration.
  */
-static void generate_var_definition(dynstring_t *var_name, token_t token_value) {
+static void generate_var_definition(dynstring_t *var_name) {
     debug_msg("- generate_var_definition: %s\n", Dynstring.c_str(var_name));
     generate_defvar(var_name);
 
@@ -348,8 +351,7 @@ static void generate_var_definition(dynstring_t *var_name, token_t token_value) 
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
-    ADD_INSTR_PART(" ");
-    generate_var_value(token_value);
+    ADD_INSTR_PART(" GF@%expr_res");
     ADD_INSTR_TMP;
 }
 
@@ -542,7 +544,7 @@ static void generate_repeat_until_cond() {
  * generates sth like: LABEL $for$id
  */
 static void generate_for_header(dynstring_t *var_name, token_t token_value/*, token_t cond, token_t incr*/) {
-    generate_var_definition(var_name, token_value);
+    generate_var_definition(var_name);
     ADD_INSTR_PART("LABEL $for$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP;
@@ -581,6 +583,8 @@ static void generate_for_end() {
 static void generate_prog_start() {
     INSTR_CHANGE_ACTIVE_LIST(instructions.startList);
     ADD_INSTR(".IFJcode21");
+    ADD_INSTR("DEFVAR GF@%expr_res \n"
+              "MOVE GF@%expr_res nil@nil");
     ADD_INSTR("JUMP $$MAIN");
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
@@ -634,7 +638,7 @@ void generate_division_check(bool integer) {
         ADD_INSTR_PART("float@0x0p+0");
     }
     ADD_INSTR_TMP;
-    ADD_INSTR(  "EXIT int@9"
+    ADD_INSTR(  "EXIT int@9 \n"
                 "LABEL $$fine");
 }
 
@@ -643,7 +647,7 @@ static void generate_nil_check(token_t token) {
     generate_var_value(token);
     ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP;
-    ADD_INSTR("EXIT int@9"
+    ADD_INSTR("EXIT int@9 \n"
                     "LABEL $$fine");
 }
 
@@ -653,7 +657,7 @@ static void retype_and_push_first(expr_semantics_t *expr) {
         generate_int_to_num(expr->first_operand);
     } else {
         ADD_INSTR_PART("PUSHS ");
-        //ADD_INSTR_PART_DYN(generate_var_value(expr->first_operand));
+        generate_var_value(expr->first_operand);
         ADD_INSTR_TMP;
     }
 }
@@ -714,7 +718,7 @@ static void generate_expression(expr_semantics_t *expr) {
             ADD_INSTR("GTS");
             retype_and_push_first(expr);
             retype_and_push_second(expr);
-            ADD_INSTR("EQS"
+            ADD_INSTR("EQS \n"
                         "ORS");
             break;
         case OP_EQ:
@@ -735,16 +739,16 @@ static void generate_expression(expr_semantics_t *expr) {
             break;
         case OP_HASH:
             // FIXME DEFVARS
-            ADD_INSTR(  "DEFVAR LF@len"
-                        "MOVE LF@len int@0"
-                        "POPS GF@tmp"
-                        "STRLEN LF@len GF@tmp"
+            ADD_INSTR(  "DEFVAR LF@len \n"
+                        "MOVE LF@len int@0 \n"
+                        "POPS GF@tmp \n"
+                        "STRLEN LF@len GF@tmp \n"
                         "PUSHS LF@len");
             break;
         case OP_STRCAT:
             // FIXME DEFVARS
-            ADD_INSTR(  "POPS GF@tmp2"
-                        "POPS GF@tmp"
+            ADD_INSTR(  "POPS GF@tmp2 \n"
+                        "POPS GF@tmp \n"
                         "CONCAT GF@res GF@tmp GF@tmp2");
             break;
         default:
@@ -752,8 +756,7 @@ static void generate_expression(expr_semantics_t *expr) {
     }
 
     // FIXME - after parsing the entire expression
-    ADD_INSTR("POPS GF@res");
-    ADD_INSTR("CLEARS");        // probably delete this
+    ADD_INSTR("POPS GF@%expr_res");
 }
 
 /*

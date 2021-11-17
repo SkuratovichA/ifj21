@@ -1007,17 +1007,6 @@ static bool expr_stmt(pfile_t *pfile) {
  * @return bool.
  */
 static bool Parse_expression(pfile_t *pfile, bool inside_stmt) {
-    // FIXME temporary instruction - remove afterwards
-    token_t tmp;
-    tmp.type = TOKEN_ID;
-    tmp.attribute.id = Dynstring.ctor("result");
-    token_t tmp_value;
-    tmp_value.type = TOKEN_NUM_I;
-    tmp_value.attribute.num_i = 42;
-    //Generator.var_definition(tmp, tmp_value);
-    ADD_INSTR("WRITE string@expr\\010");
-    Dynstring.dtor(tmp.attribute.id);
-
     if (inside_stmt == true) {
         return parse_init(pfile, EXPR_DEFAULT, NULL);
     } else {

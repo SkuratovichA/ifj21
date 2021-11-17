@@ -299,7 +299,8 @@ static bool assignment(pfile_t *pfile, dynstring_t *var_name) {
     // FIXME where is the expression result?
     token_t token_value = Scanner.get_curr_token();
     // generate var definition - in expressions I think
-    Generator.var_definition(var_name, token_value);
+    // result in GF@%expr_res
+    Generator.var_definition(var_name);
 
     return true;
 }
