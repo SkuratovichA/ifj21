@@ -31,6 +31,14 @@ struct dynstring_interface_t {
     dynstring_t *(*ctor)(const char *);
 
     /**
+     * @brief Create an empty dynstring_t of size length.
+     *
+     * @param s Length of the new dynstring.
+     * @return non-null pointer to dynstring_t object.
+     */
+    dynstring_t *(*ctor_empty)(size_t);
+
+    /**
      * @brief Appends a character shrunk.
      *
      * @param str dynstring_t heap structure.

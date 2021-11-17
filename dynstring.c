@@ -64,11 +64,35 @@ static dynstring_t *Str_ctor(const char *s) {
 }
 
 /**
- * @brief Get char * (c dynstring_t ending with '\0') from dynstring_t.
+ * @brief Create an empty dynstring_t of size length.
  *
- * @param str dynstring_t object.
- * @return c dynstring_t representation.
+ * @param s Length of the new dynstring.
+ * @return non-null pointer to dynstring_t object.
  */
+static dynstring_t *Str_ctor_empty(size_t length) {
+    size_t alloc = length + STRSIZE + 1;
+
+    dynstring_t *str = calloc(1, sizeof(dynstring_t));
+    soft_assert(str, ERROR_INTERNAL);
+    str->size = alloc;
+    str->len = length;
+
+    str->str = calloc(1, alloc);
+    soft_assert(str->str, ERROR_INTERNAL);
+
+    // TODO check bounds (length/length+1/length-1)
+    memset(str->str, '\0', length);
+
+    debug_msg("Create empty dynstring: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->size, str->str);
+    return str;
+}
+
+/**
+* @brief Get char * (c dynstring_t ending with '\0') from dynstring_t.
+*
+* @param str dynstring_t object.
+* @return c dynstring_t representation.
+*/
 static char *Str_c_str(dynstring_t *str) {
     if (str == NULL) {
         return NULL;
@@ -187,6 +211,7 @@ static dynstring_t *Str_dup(dynstring_t *s) {
 const struct dynstring_interface_t Dynstring = {
         /*@{*/
         .ctor = Str_ctor,
+        .ctor_empty = Str_ctor_empty,
         .len = Str_length,
         .c_str = Str_c_str,
         .append = Str_append,
