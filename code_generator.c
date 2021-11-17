@@ -286,10 +286,10 @@ static void generate_var_value(token_t token) {
             ADD_INSTR_PART("string@");
             // transform the string format
             unsigned str_len = Dynstring.len(token.attribute.id);
-            char *str_id = Dynstring.get_str(token.attribute.id);
+            char *str_id = Dynstring.c_str(token.attribute.id);
             for (unsigned i = 0; i < str_len; i++) {
                 // check format (check what to do with not printable chars?)
-                if (str_id[i] <= 32 || str_id[i] == 35 || str_id[i] == 92) {
+                if (!isprint(str_id[i]) || str_id[i] == '#' || str_id[i] == '\\') {
                     // print as an escape sequence
                     sprintf(str, "\\%03d", str_id[i]);
                 } else {
@@ -341,7 +341,7 @@ static void generate_defvar(dynstring_t *var_name) {
  * @brief Generates variable declaration.
  */
 static void generate_var_definition(dynstring_t *var_name, token_t token_value) {
-    debug_msg("- generate_var_definition: %s\n", Dynstring.get_str(var_name));
+    debug_msg("- generate_var_definition: %s\n", Dynstring.c_str(var_name));
     generate_defvar(var_name);
 
     ADD_INSTR_PART("MOVE LF@%");
@@ -357,7 +357,7 @@ static void generate_var_definition(dynstring_t *var_name, token_t token_value) 
  * @brief Generates variable declaration.
  */
 static void generate_var_declaration(dynstring_t *var_name) {
-    debug_msg("- generate_var_declaration: %s\n", Dynstring.get_str(var_name));
+    debug_msg("- generate_var_declaration: %s\n", Dynstring.c_str(var_name));
     generate_defvar(var_name);
 
     // initialise to nil
