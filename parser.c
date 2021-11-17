@@ -403,7 +403,6 @@ static bool var_definition(pfile_t *pfile) {
     if (Scanner.get_curr_token().type == TOKEN_ID) {
         id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     }
-    token_t token_id = Scanner.get_curr_token();
     EXPECTED(TOKEN_ID); // id
 
     EXPECTED(TOKEN_COLON); // :
@@ -882,7 +881,7 @@ static bool function_definition(pfile_t *pfile) {
     SYMSTACK_PUSH(SCOPE_TYPE_function, id_name);
 
     // generate code for new function start
-    debug_msg("[define] function %s\n", Dynstring.get_str(id_name));
+    debug_msg("[define] function %s\n", Dynstring.c_str(id_name));
     Generator.func_start(id_name);
     Dynstring.dtor(id_name);
 
