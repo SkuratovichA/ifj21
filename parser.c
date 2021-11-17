@@ -1071,6 +1071,7 @@ static bool Init_parser() {
     Symtable.add_builtin_function(global_table, "ord", "si", "i"); // (s : string, i : integer) : integer
     Symtable.add_builtin_function(global_table, "chr", "i", "s"); // (i : integer) : string
 
+    Generator.initialise();
 
     return true;
 }
