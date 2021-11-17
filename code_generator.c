@@ -604,19 +604,36 @@ static void generate_prog_start() {
 static void initialise_generator() {
     // initialise tmp?instr to empty dynstring
     tmp_instr = Dynstring.ctor("");
+    debug_msg("tmp_instr initialized %p\n", (void *) tmp_instr);
 
     // initialise the instructions structure
     instructions.startList = List.ctor();
+    debug_msg("instructions.startList initialized %p\n", (void *) instructions.startList);
+
     instructions.instrListFunctions = List.ctor();
+    debug_msg("instructions.instrListFunctions initialized %p\n", (void *) instructions.instrListFunctions);
+
     instructions.mainList = List.ctor();
+    debug_msg("instructions.mainList initialized %p\n", (void *) instructions.mainList);
+
     instructions.in_loop = false;
+    debug_msg("instructions.in_loop initialized with false\n");
+
     instructions.outer_loop_id = 0;
+    debug_msg("instructions.outer_loop_id initialized with 0\n");
+
     instructions.before_loop_start = NULL;
+    debug_msg("instructions.before_loop_start initialized with NULL\n");
+
     instructions.outer_cond_id = 0;
+    debug_msg("instructions.outer_cond_id initialized with 0\n");
+
     instructions.cond_cnt = 0;
+    debug_msg("instructions.cond_cnt initialized with 0\n");
 
     // sets active instructions list
     instrList = instructions.startList;
+    debug_msg("instrList initialized with instructions.startList %p\n", (void *) instrList);
 }
 
 /**

@@ -14,7 +14,9 @@
  * @return Pointer to the allocated memory.
  */
 static list_t *Ctor(void) {
-    return calloc(1, sizeof(list_t));
+    list_t *l = calloc(1, sizeof(list_t));
+    soft_assert(l != NULL, ERROR_INTERNAL);
+    return l;
 }
 
 /**
