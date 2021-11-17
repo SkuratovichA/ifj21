@@ -235,8 +235,12 @@ static void generate_func_end(char *func_name) {
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP;
 
-    // FIXME - remove this line
-    ADD_INSTR("WRITE GF@%expr_result");
+    // FIXME - remove these instructions
+    ADD_INSTR("WRITE GF@%expr_result \n"
+              "WRITE string@\\010\n"
+              "DEFVAR LF@type_var \n"
+              "TYPE LF@type_var GF@%expr_result \n"
+              "WRITE LF@type_var");
 
     ADD_INSTR("POPFRAME");
     ADD_INSTR("RETURN\n");
@@ -591,6 +595,10 @@ static void generate_prog_start() {
     ADD_INSTR(".IFJcode21");
     ADD_INSTR("DEFVAR GF@%expr_result \n"
               "MOVE GF@%expr_result nil@nil");
+    ADD_INSTR("DEFVAR GF@%expr_result2 \n"
+              "MOVE GF@%expr_result2 nil@nil");
+    ADD_INSTR("DEFVAR GF@%expr_result3 \n"
+              "MOVE GF@%expr_result3 nil@nil");
     ADD_INSTR("JUMP $$MAIN");
     ADD_INSTR(  "LABEL $$ERROR_NIL \n"
                 "EXIT int@8 \n"
@@ -612,42 +620,14 @@ static void generate_prog_start() {
     generate_main_start();
 }
 
-/*
- * generates value and pushes it on the stack
- */
-// FIXME DEFVARS
-void generate_int_to_num(token_t token) {
-    if (token.type == TOKEN_NUM_I) {
-        ADD_INSTR_PART("PUSHS ");
-        // i have "2" -> i need float@2.0
-        // FIXME - fix this shit
-        token_t new_float;
-        new_float.type = TOKEN_NUM_F;
-        new_float.attribute.num_f = token.attribute.num_i * 1.0f;
-        generate_var_value(new_float);
-        ADD_INSTR_TMP;
-    }
-    if (token.type == TOKEN_ID) {
-        // retype id to num
-        ADD_INSTR_PART("INT2FLOAT ");
-        generate_var_value(token);
-        ADD_INSTR_PART(" GF@%expr_result");
-        ADD_INSTR_TMP;
-
-        ADD_INSTR("PUSHS GF@%expr_result");
-    }
-}
-
-//FIXME DEFVARS
 void generate_division_check(bool integer) {
     ADD_INSTR("POPS GF@%expr_result");
-    ADD_INSTR_PART("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF%expr_result ");
     if (integer) {
-        ADD_INSTR_PART("int@0");
+        ADD_INSTR_PART("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF@%expr_result int@0");
     } else {
-        ADD_INSTR_PART("float@0x0p+0");
+        ADD_INSTR("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF@%expr_result float@0x0p+0");
     }
-    ADD_INSTR_TMP;
+    ADD_INSTR("PUSHS GF@%expr_result");
 }
 
 static void generate_nil_check(token_t token) {
@@ -657,31 +637,36 @@ static void generate_nil_check(token_t token) {
     ADD_INSTR_TMP;
 }
 
-static void retype_and_push_first(expr_semantics_t *expr) {
-// push first operand (retype before if needed)
-    if (expr->conv_type == CONVERT_FIRST || expr->conv_type == CONVERT_BOTH) {
-        generate_int_to_num(expr->first_operand);
-    } else {
-        //ADD_INSTR_PART("PUSHS ");
-        //generate_var_value(expr->first_operand);
-        //ADD_INSTR_TMP;
+static void retype_first_or_both(expr_semantics_t *expr) {
+    ADD_INSTR("POPS GF@%expr_result2 \n"
+              "POPS GF@%expr_result \n"
+              "INT2FLOAT GF@%expr_result GF@%expr_result");
+    if (expr->conv_type == CONVERT_BOTH) {
+        ADD_INSTR("INT2FLOAT GF@%expr_result2 GF@%expr_result2");
     }
+    ADD_INSTR("PUSHS GF@%expr_result \n"
+              "PUSHS GF@%expr_result2");
 }
 
-static void retype_and_push_second(expr_semantics_t *expr) {
-    // push second operand (retype before if needed)
-    if (expr->conv_type == CONVERT_SECOND || expr->conv_type == CONVERT_BOTH) {
-        generate_int_to_num(expr->second_operand);
-    } else {
-        //ADD_INSTR_PART("PUSHS ");
-        //generate_var_value(expr->second_operand);
-        //ADD_INSTR_TMP;
-    }
+static void retype_second() {
+    ADD_INSTR("POPS GF@%expr_result \n"
+              "INT2FLOAT GF@%expr_result GF@%expr_result \n"
+              "PUSHS GF@%expr_result");
 }
 
 static void generate_expression_pop() {
     ADD_INSTR("POPS GF@%expr_result");
     ADD_INSTR("CLEARS");
+}
+
+static void retype_and_push (expr_semantics_t *expr) {
+    // retype if needed and push operands
+    if (expr->conv_type == CONVERT_FIRST || expr->conv_type == CONVERT_BOTH) {
+        retype_first_or_both(expr);
+    }
+    if (expr->conv_type == CONVERT_SECOND) {
+        retype_second();
+    }
 }
 
 /*
@@ -690,7 +675,9 @@ static void generate_expression_pop() {
  * push
  */
 static void generate_expression_operand(expr_semantics_t *expr) {
-    generate_nil_check(expr->first_operand);
+    // is it okay to check only TOKEN_ID?
+    if (expr->first_operand.type == TOKEN_ID)
+        generate_nil_check(expr->first_operand);
 
     ADD_INSTR_PART("PUSHS ");
     generate_var_value(expr->first_operand);
@@ -705,13 +692,7 @@ static void generate_expression(expr_semantics_t *expr) {
         return;
     }
 
-    // retype if needed and push operands
-    retype_and_push_first(expr);
-    // if the expression has only one operand don't do this conversion
-    if (expr->sem_state != SEMANTIC_UNARY) {
-        retype_and_push_second(expr);
-    }
-
+    retype_and_push(expr);
     // generate operation
     switch (expr->op) {
         case OP_ADD:
@@ -735,21 +716,23 @@ static void generate_expression(expr_semantics_t *expr) {
             ADD_INSTR("LTS");
             break;
         case OP_LE:
-            ADD_INSTR("LTS");
-            retype_and_push_first(expr);
-            retype_and_push_second(expr);
-            ADD_INSTR(  "EQS"
-                        "ORS");
+            ADD_INSTR(  "POPS GF@%expr_result2 \n"
+                        "POPS GF@%expr_result \n"
+                        "LT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
+                        "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
+                        "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
+                        "PUSHS GF@%expr_result");
             break;
         case OP_GT:
             ADD_INSTR("GTS");
             break;
         case OP_GE:
-            ADD_INSTR("GTS");
-            retype_and_push_first(expr);
-            retype_and_push_second(expr);
-            ADD_INSTR("EQS \n"
-                        "ORS");
+            ADD_INSTR(  "POPS GF@%expr_result2 \n"
+                        "POPS GF@%expr_result \n"
+                        "GT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
+                        "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
+                        "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
+                        "PUSHS GF@%expr_result");
             break;
         case OP_EQ:
             ADD_INSTR("EQS");
@@ -768,19 +751,15 @@ static void generate_expression(expr_semantics_t *expr) {
             ADD_INSTR("ORS");
             break;
         case OP_HASH:
-            // FIXME DEFVARS
-            ADD_INSTR(  "DEFVAR LF@len \n"
-                        "MOVE LF@len int@0 \n"
-                        "POPS GF@%expr_result \n"
-                        "STRLEN LF@len GF@%expr_result \n"
-                        "PUSHS LF@len");
+            ADD_INSTR("POPS GF@%expr_result2 \n"
+                        "STRLEN GF@%expr_result GF@%expr_result2 \n"
+                        "PUSHS GF@%expr_result");
             break;
         case OP_STRCAT:
-            // FIXME DEFVARS
-            ADD_INSTR("DEFVAR LF@%%tmp"
-                    "POPS LF@%%tmp \n"
+            ADD_INSTR("POPS GF@%expr_result2 \n"
                         "POPS GF@%expr_result \n"
-                        "CONCAT GF@%expr_result GF@%expr_result LF@%%tmp");
+                        "CONCAT GF@%expr_result GF@%expr_result GF@%expr_result2 \n"
+                        "PUSHS GF@%expr_result");
             break;
         default:
             ADD_INSTR("# Another instruction :(");
