@@ -341,11 +341,16 @@ static bool is_var_exists (token_t tok, expr_semantics_t *self) {
 static bool type_compatability(expr_semantics_t *self) {
     if (self->sem_state == SEMANTIC_UNARY) {
         id_type_t f_var_type = token_to_type(self->first_operand);
-        self->result_type = self->first_operand.type;
 
-        // String length and not
-        if ((self->op == OP_HASH && f_var_type == ID_TYPE_string) ||
-            (self->op == OP_NOT && f_var_type == ID_TYPE_boolean)) {
+        // String length
+        if (self->op == OP_HASH && f_var_type == ID_TYPE_string) {
+            self->result_type = TOKEN_NUM_I;
+            return true;
+        }
+
+        // not
+        else if (self->op == OP_NOT && f_var_type == ID_TYPE_boolean) {
+            self->result_type = KEYWORD_boolean;
             return true;
         }
     } else {
