@@ -93,15 +93,6 @@ struct dynstring_interface_t {
     * @returns duplicated dynstring.
     */
     dynstring_t *(*dup)(dynstring_t *);
-
-    /**
-    * @brief Get pointer to the string saved in dynstring.
-    *
-    * @param s
-    * @returns string.
-    */
-
-    char *(*get_str)(dynstring_t *s);
 };
 
 

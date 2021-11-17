@@ -180,12 +180,6 @@ static dynstring_t *Str_dup(dynstring_t *s) {
     return Str_ctor(s->str);
 }
 
-static char *Str_get_str(dynstring_t *s) {
-    soft_assert(s, ERROR_INTERNAL);
-
-    return s->str;
-}
-
 /**
  * Interface to use when dealing with dynstrings.
  * Functions are in struct so we can use them in different files.
@@ -200,7 +194,6 @@ const struct dynstring_interface_t Dynstring = {
         .cmp = Str_cmp,
         .cat = Str_cat,
         .dup = Str_dup,
-        .get_str = Str_get_str,
 };
 
 #ifdef SELFTEST_dynstring
