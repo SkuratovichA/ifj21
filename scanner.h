@@ -139,13 +139,6 @@ typedef enum token_type {
     TOKEN(SUB),     // '-'
     TOKEN(STRCAT),  // ..
 
-    // BOOLTHEN
-//    TOKEN(AND),
-//    TOKEN(OR),
-//    TOKEN(NOT),
-
-    // my sweet fucking token for expression parsing
-    TOKEN(FUNC),
 
     // to make single tokens compatible with their ascii values
     TOKEN(EOFILE) = EOF,
