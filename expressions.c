@@ -424,7 +424,7 @@ static bool operator(sstack_t *r_stack, expr_semantics_t *expr_sem) {
             case OP_GE:
             case OP_EQ:
             case OP_NE:
-                expr_sem->op = op;
+                Semantics.add_operator(expr_sem, op);
                 Stack.pop(r_stack, stack_item_dtor);
                 return expression(r_stack, expr_sem);
             default:
@@ -521,7 +521,7 @@ static bool check_rule(sstack_t *r_stack, int *func_entries, expr_semantics_t *e
             // # expr | not expr
             case OP_HASH:
             case OP_NOT:
-                expr_sem->op = op;
+                Semantics.add_operator(expr_sem, op);
                 Stack.pop(r_stack, stack_item_dtor);
                 return expression(r_stack, expr_sem);
             // ( expr ) | ( )
@@ -651,20 +651,18 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
         Stack.pop(stack, stack_item_dtor);
     }
 
-    // sry for this, i want sleep, but i need to test it
     debug_msg("\n");
-    if (expr_sem->sem_state != SEMANTIC_DISABLED) {
+    if (expr_sem->sem_state != SEMANTIC_DISABLED && expr_sem->sem_state != SEMANTIC_IDLE) {
         debug_msg("-- EXPRESSION SEMANTICS --\n");
-        debug_msg("Operation = \"%s\"\n", op_to_string(expr_sem->op));
-        if (expr_sem->sem_state == SEMANTIC_UNARY) {
-            if (expr_sem->op == OP_UNDEFINED) {
-                debug_msg("First operand = \"%s\"\n", Scanner.to_string(expr_sem->first_operand.type));
-            } else if (expr_sem->op == OP_NOT || expr_sem->op == OP_HASH) {
-                debug_msg("Second operand = \"%s\"\n", Scanner.to_string(expr_sem->second_operand.type));
-            }
-        } else {
-            debug_msg("First operand = \"%s\"\n", Scanner.to_string(expr_sem->first_operand.type));
-            debug_msg("Second operand = \"%s\"\n", Scanner.to_string(expr_sem->second_operand.type));
+        if (expr_sem->sem_state == SEMANTIC_OPERAND) {
+            debug_msg("Operand #1 = \"%s\"\n", Scanner.to_string(expr_sem->first_operand.type));
+        } else if (expr_sem->sem_state == SEMANTIC_UNARY) {
+            debug_msg("Operation = \"%s\"\n", op_to_string(expr_sem->op));
+            debug_msg("Operand #1 = \"%s\"\n", Scanner.to_string(expr_sem->first_operand.type));
+        } else if (expr_sem->sem_state == SEMANTIC_BINARY) {
+            debug_msg("Operation = \"%s\"\n", op_to_string(expr_sem->op));
+            debug_msg("Operand #1 = \"%s\"\n", Scanner.to_string(expr_sem->first_operand.type));
+            debug_msg("Operand #2 = \"%s\"\n", Scanner.to_string(expr_sem->second_operand.type));
         }
         debug_msg("-- EXPRESSION SEMANTICS --\n");
     }
@@ -678,16 +676,20 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
     }
 
     // Generate code here
-    if (expr_sem->op != OP_UNDEFINED) {
+    if (expr_sem->sem_state == SEMANTIC_UNARY || expr_sem->sem_state == SEMANTIC_BINARY) {
         Generator.expression(expr_sem);
     }
 
     // Push an expression
     token_t expr_tok = { .type = expr_sem->result_type };
+
+    // If we have processed a single operand then store info about it
+    if (expr_sem->op == SEMANTIC_OPERAND) {
+        expr_tok = expr_sem->first_operand;
+    }
+
     Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_EXPR, &expr_tok));
-
     Semantics.dtor_expr(expr_sem);
-
     return true;
 }
 

@@ -46,6 +46,7 @@ typedef enum conv_type {
 typedef enum semantic_state {
     SEMANTIC_DISABLED,
     SEMANTIC_IDLE,
+    SEMANTIC_OPERAND,
     SEMANTIC_UNARY,
     SEMANTIC_BINARY,
 } semantic_type_t;
@@ -189,5 +190,6 @@ struct semantics_interface_t {
      */
     void (*add_operand)(expr_semantics_t *, token_t);
 
+    void (*add_operator)(expr_semantics_t *, op_list_t);
     bool (*check_expression)(expr_semantics_t *);
 };
