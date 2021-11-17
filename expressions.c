@@ -678,6 +678,9 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
     }
 
     // Generate code here
+    if (expr_sem->op != OP_UNDEFINED) {
+        Generator.expression(expr_sem);
+    }
 
     // Push an expression
     token_t expr_tok = { .type = expr_sem->result_type };

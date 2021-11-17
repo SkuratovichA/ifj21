@@ -138,6 +138,7 @@ struct code_generator_interface_t {
     void (*for_header)(dynstring_t *, token_t);
     void (*for_cond)(void);
     void (*initialise)(void);
+    void (*expression)(expr_semantics_t *);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.
