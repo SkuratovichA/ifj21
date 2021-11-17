@@ -673,6 +673,7 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
     // Semantic controls
     if (!Semantics.check_expression(expr_sem)) {
         // Return code will be set by semantics
+        Semantics.dtor_expr(expr_sem);
         return false;
     }
 
