@@ -304,44 +304,6 @@ static bool assignment(pfile_t *pfile, dynstring_t *var_name) {
     return true;
 }
 
-/** Optional expressions followed by a comma.
- *
- * !rule <other_return_expr> -> , `expr` <other_return_expr> | e
- *
- * @param pfile pfile
- * @return bool.
- */
-static bool other_return_expr(pfile_t *pfile) {
-    debug_msg("<other_return_expr> -> \n");
-    // , |
-    if (Scanner.get_curr_token().type != TOKEN_COMMA) {
-        return true;
-    }
-
-    EXPECTED(TOKEN_COMMA);
-    if (!Expr.parse(pfile, true)) {
-        return false;
-    }
-    return other_return_expr(pfile);
-}
-
-/** Expression list after return statement in the function.
- *
- * !rule <return_expr_list> -> `expr` <other_return_expr>
- *
- * @param pfile pfile
- * @return bool.
- */
-static bool return_expr_list(pfile_t *pfile) {
-    debug_msg("<return_expr_list> -> \n");
-    if (!Expr.parse(pfile, true)) {
-        debug_msg("Expression analysis failed.\n");
-        return false;
-    }
-
-    return other_return_expr(pfile);
-}
-
 /** For assignment.
  *
  * !rule <for_assignment> -> do | , `expr` do
@@ -977,7 +939,8 @@ static bool stmt(pfile_t *pfile) {
             Generator.func_createframe();
 
             // in expressions we pass the parameters
-            if (!Expr.parse(pfile, true)) {
+            // TODO add enum list with INSIDE_STMT, INSIDE_FUNC, GLOBAL_SCOPE
+            if (!Expr.parse(pfile, false)) {
                 return false;
             }
 
@@ -994,10 +957,8 @@ static bool stmt(pfile_t *pfile) {
             return false;
 
         default:
-            if (!Expr.parse) {
-                Errors.set_error(ERROR_SYNTAX);
-                return false;
-            }
+            Errors.set_error(ERROR_SYNTAX);
+            return false;
     }
     return true;
 }
