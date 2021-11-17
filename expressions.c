@@ -676,17 +676,12 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
     }
 
     // Generate code here
-    if (expr_sem->sem_state == SEMANTIC_UNARY || expr_sem->sem_state == SEMANTIC_BINARY) {
+    if (expr_sem->sem_state != SEMANTIC_DISABLED && expr_sem->sem_state != SEMANTIC_IDLE) {
         Generator.expression(expr_sem);
     }
 
     // Push an expression
     token_t expr_tok = { .type = expr_sem->result_type };
-
-    // If we have processed a single operand then store info about it
-    if (expr_sem->op == SEMANTIC_OPERAND) {
-        expr_tok = expr_sem->first_operand;
-    }
 
     Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_EXPR, &expr_tok));
     Semantics.dtor_expr(expr_sem);
@@ -779,7 +774,11 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
         // Check if success
         if (is_parse_success(first_op, second_op, hard_reduce) || is_function_end(expr_type, func_entries)) {
             if (expr) {
+                // POP EXPRESSION
                 stack_item_dtor(expr);
+            } else {
+                Errors.set_error(ERROR_SYNTAX);
+                return false;
             }
             debug_msg("Successful parsing!\n");
             return true;
