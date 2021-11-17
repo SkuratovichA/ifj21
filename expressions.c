@@ -778,7 +778,7 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
         // Check if success
         if (is_parse_success(first_op, second_op, hard_reduce) || is_function_end(expr_type, func_entries)) {
             if (expr) {
-                // POP EXPRESSION
+                Generator.expression_pop();
                 stack_item_dtor(expr);
             } else {
                 Errors.set_error(ERROR_SYNTAX);
