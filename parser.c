@@ -923,6 +923,7 @@ static bool function_definition(pfile_t *pfile) {
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
     token_t token = Scanner.get_curr_token();
+    dynstring_t *id_name;
 
     switch (token.type) {
         // function declaration: global id : function ( <datatype_list> <funretopt>
@@ -935,6 +936,8 @@ static bool stmt(pfile_t *pfile) {
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:
+            id_name = Dynstring.ctor(Dynstring.c_str(token.attribute.id));
+
             // create frame before passing parameters
             Generator.func_createframe();
 
@@ -945,7 +948,8 @@ static bool stmt(pfile_t *pfile) {
             }
 
             // function call
-            Generator.func_call(token.attribute.id);
+            Generator.func_call(id_name);
+            Dynstring.dtor(id_name);
             break;
 
             // FIXME. I dont know how to solve this recursion.
