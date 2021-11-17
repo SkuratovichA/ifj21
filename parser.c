@@ -416,11 +416,12 @@ static bool var_definition(pfile_t *pfile) {
     }
 
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
-    Dynstring.dtor(id_name);
     // = `expr`
-    if (!assignment(pfile, token_id.attribute.id)) {
+    if (!assignment(pfile, id_name)) {
+        Dynstring.dtor(id_name);
         return false;
     }
+    Dynstring.dtor(id_name);
     return true;
 }
 

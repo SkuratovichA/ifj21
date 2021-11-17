@@ -31,10 +31,9 @@ instructions_t instructions;    // structure that holds info about generated cod
 /*
  * Adds new instruction to the list of instructions.
  */
-#define ADD_INSTR(instr)                            \
-do {                                                \
-    dynstring_t *newInstr = Dynstring.ctor(instr);  \
-    List.append(instrList, newInstr);               \
+#define ADD_INSTR(instr)                                \
+do {                                                    \
+    List.append(instrList, Dynstring.ctor(instr));      \
 } while (0)
 
 /*
@@ -60,11 +59,10 @@ do {                                                   \
 /*
  * Adds tmp_inst to the list of instructions.
  */
-#define ADD_INSTR_TMP                                           \
-do {                                                            \
-    dynstring_t *newInstr = tmp_instr;                          \
-    List.append(instrList, newInstr);                           \
-    tmp_instr = Dynstring.ctor("");  /* Dynstring.clear? */     \
+#define ADD_INSTR_TMP                       \
+do {                                        \
+    List.append(instrList, tmp_instr);      \
+    tmp_instr = Dynstring.ctor("");         \
 } while (0)
 
 /*
@@ -72,9 +70,8 @@ do {                                                            \
  */
 #define ADD_INSTR_WHILE                                             \
 do {                                                                \
-    dynstring_t *newInstr = tmp_instr;                              \
-    List.insert_after(instructions.before_loop_start, newInstr);    \
-    tmp_instr = Dynstring.ctor("");  /* Dynstring.clear? */         \
+    List.insert_after(instructions.before_loop_start, tmp_instr);   \
+    tmp_instr = Dynstring.ctor("");                                 \
 } while (0)
 
 /*
@@ -83,7 +80,7 @@ do {                                                                \
 #define ADD_INSTR_INT(num)                  \
 do {                                        \
     char str[MAX_CHAR] = "\0";              \
-    sprintf(str, "%lu", num);                \
+    sprintf(str, "%lu", num);               \
     ADD_INSTR_PART(str);                    \
 } while (0)                                 \
 

@@ -186,6 +186,7 @@ static void generate_func_substr() {
 static void generate_func_call(dynstring_t *func_name) {
     ADD_INSTR_PART("CALL $");
     ADD_INSTR_PART_DYN(func_name);
+    ADD_INSTR_PART_DYN(func_name);
     ADD_INSTR_TMP;
 }
 
@@ -542,7 +543,6 @@ static void generate_repeat_until_cond() {
  */
 static void generate_for_header(dynstring_t *var_name, token_t token_value/*, token_t cond, token_t incr*/) {
     generate_var_definition(var_name, token_value);
-    // generate_var_definition(cond, );
     ADD_INSTR_PART("LABEL $for$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP;
@@ -602,7 +602,7 @@ static void generate_prog_start() {
  * @brief Initialises the code generator.
  */
 static void initialise_generator() {
-    // initialise tmp?instr to empty dynstring
+    // initialise tmp_instr to empty dynstring
     tmp_instr = Dynstring.ctor("");
     debug_msg("tmp_instr initialized %p\n", (void *) tmp_instr);
 
