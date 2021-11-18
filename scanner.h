@@ -143,6 +143,8 @@ typedef enum token_type {
     // to make single tokens compatible with their ascii values
     TOKEN(EOFILE) = EOF,
     TOKEN(LPAREN) = '(',
+    TOKEN(PERCENT) = '%',
+    TOKEN(CARET) = '^',
     TOKEN(RPAREN) = ')',
     TOKEN(ADD) = '+',
     TOKEN(MUL) = '*',
