@@ -29,6 +29,16 @@ static void print_error_unexpected_token(const char *a, const char *b) {
     fprintf(stderr, "ERROR(syntax): Expected '%s', got '%s' instead\n", a, b);
 }
 
+/** If there's a mismatch in number/type of parameters, then return false.
+ */
+#define SEMANTIC_CHECK_FUNCTION_SIGNATURES(sym)                          \
+    do {                                                                \
+        if (!Semantics.check_signatures(symbol->function_semantics)) {  \
+            Errors.set_error(ERROR_FUNCTION_SEMANTICS);                 \
+            return false;                                               \
+        }                                                               \
+    } while(0)
+
 /** Push a new symtable on the stack,
  *  if _id_fun_name != NULL, put it on the stack.
  *  There is a need to store a function id to perform code generation magic.
@@ -113,12 +123,12 @@ static void print_error_unexpected_token(const char *a, const char *b) {
     do {                                                                \
         dynstring_t *_name = name;                                      \
         symbol_t *_dummy_symbol;                                        \
-        /* if name is already defined in the local scope or there*/      \
-        /* exists a function with the same name                 */      \
+        /* if name is already defined in the local scope */              \
         if (Symtable.get_symbol(local_table, _name, &_dummy_symbol)) {  \
             error_multiple_declaration(_name);                          \
             return false;                                               \
         }                                                               \
+        /* if there exists a function with the same name */             \
         if (Symtable.get_symbol(global_table, _name, &_dummy_symbol)) { \
             error_multiple_declaration(_name);                          \
             return false;                                               \
@@ -686,6 +696,7 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
         return false;
     }
 
+    // parameters in function definition cannot be declared twice, nor be function names.
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
     Dynstring.dtor(id_name);
@@ -803,8 +814,8 @@ static bool function_declaration(pfile_t *pfile) {
     // Semantic control.
     // if we find a symbol on the stack, check it.
     if (Symstack.get_symbol(symstack, id_name, &symbol, NULL)) {
-        // If function has been defined or declared.
-        if (Semantics.is_defined(symbol->function_semantics) || Semantics.is_declared(symbol->function_semantics)) {
+        // If function has been previously declared.
+        if (Semantics.is_declared(symbol->function_semantics)) {
             Errors.set_error(ERROR_DEFINITION);
             Dynstring.dtor(id_name);
             return false;
@@ -828,8 +839,15 @@ static bool function_declaration(pfile_t *pfile) {
     }
 
     // <funretopt> can be empty
-    return funretopt(pfile, symbol->function_semantics->declaration);
+    if (!funretopt(pfile, symbol->function_semantics->declaration)) {
+        return false;
+    }
 
+    // if function has previously been defined, then check function signatures.
+    if (Semantics.is_defined(symbol->function_semantics)) {
+        SEMANTIC_CHECK_FUNCTION_SIGNATURES(symbol);
+    }
+    return true;
 }
 
 /** Function definition.
@@ -895,16 +913,14 @@ static bool function_definition(pfile_t *pfile) {
 
     // check signatures
     if (Semantics.is_declared(symbol->function_semantics)) {
-        if (false == Semantics.check_signatures(symbol->function_semantics)) {
-            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
-            return false;
-        }
+        SEMANTIC_CHECK_FUNCTION_SIGNATURES(symbol);
     }
 
     // <fun_body>
     if (!fun_body(pfile)) {
         return false;
     }
+
     SYMSTACK_POP();
     return true;
 }
