@@ -34,13 +34,13 @@ static void print_error_unexpected_token(const char *a, const char *b) {
  *  There is a need to store a function id to perform code generation magic.
  *  Set a local table to the newly puched table.
  */
-#define SYMSTACK_PUSH(_scope_type, _id_fun_name) \
-    do {                                                   \
-        char *_str = NULL;                                 \
-        local_table = Symtable.ctor();           \
-        if ((_id_fun_name) != NULL) {                      \
-            _str = Dynstring.c_str(_id_fun_name);          \
-        }                         \
+#define SYMSTACK_PUSH(_scope_type, _id_fun_name)                  \
+    do {                                                         \
+        char *_str = NULL;                                       \
+        local_table = Symtable.ctor();                           \
+        if ((_id_fun_name) != NULL) {                            \
+            _str = Dynstring.c_str(_id_fun_name);                \
+        }                                                        \
         Symstack.push(symstack, local_table, _scope_type, _str); \
     } while (0)
 
