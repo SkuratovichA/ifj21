@@ -623,7 +623,7 @@ static void generate_prog_start() {
 void generate_division_check(bool integer) {
     ADD_INSTR("POPS GF@%expr_result");
     if (integer) {
-        ADD_INSTR_PART("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF@%expr_result int@0");
+        ADD_INSTR("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF@%expr_result int@0");
     } else {
         ADD_INSTR("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF@%expr_result float@0x0p+0");
     }
