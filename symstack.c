@@ -169,6 +169,36 @@ static bool SS_Get_symbol(symstack_t *self, dynstring_t *id,
     return false;
 }
 
+/** Traverse a symstack without looking at the global frame.
+ *
+ * @param self symbol stack.
+ * @param id key.
+ * @param sym a pointer to symbol to store a pointer to the object if we find it.
+ * @return true if symbol exists.
+ */
+static bool SS_Get_local_symbol(symstack_t *self, dynstring_t *id,
+                                symbol_t **sym, stack_el_t **def_scope) {
+    debug_msg("\n");
+    if (self == NULL) {
+        debug_msg("[getter] Stack is null. Returning false.\n");
+        return false;
+    }
+
+    stack_el_t *st = self->head;
+    // when st->next == NULL, it means we are at the global frame.
+    while (st != NULL && st->next != NULL) {
+        if (Symtable.get_symbol(st->table, id, sym)) {
+            debug_msg("[getter] symbol found\n");
+            if (def_scope != NULL) {
+                *def_scope = st;
+            }
+            return true;
+        }
+        st = st->next;
+    }
+    return false;
+}
+
 /** Get top table.
  *
  * @param self symbol stack.
@@ -244,7 +274,7 @@ static char *SS_Get_parent_func_name(symstack_t *self) {
  * @param predicate predicate to apply.
  * @return
  */
-static bool Traverse(symstack_t *self, bool (*predicate)(symbol_t *)) {
+static bool SS_Traverse(symstack_t *self, bool (*predicate)(symbol_t *)) {
     if (self && predicate == NULL) {
         return false;
     }
@@ -270,5 +300,6 @@ const struct symstack_interface_t Symstack = {
         .top = SS_Top,
         .get_scope_info = SS_Get_scope_info,
         .get_parent_func_name = SS_Get_parent_func_name,
-        .traverse = Traverse,
+        .traverse = SS_Traverse,
+        .get_local_symbol = SS_Get_local_symbol,
 };
