@@ -14,17 +14,21 @@ err_files=0
 err_memory=0
 all_files=0
 
-# build directory(related to directory with tests)
-BUILD_DIR="../cmake-build-debug"
 
 # name of binary
 BIN_TARGET="ifj21"
 COMPILE_FLAGS="-DDEBUG=on"
 
+# directory with source code
+# in this case, tests is pwd and ../ is src
+SRC_DIR="`pwd`/.."
+
+# build directory(related to directory with tests)
+BUILD_DIR="$SRC_DIR/cmake-build-debug"
 
 code_coverage_scanner()
 {
-    CODE_COVERAGE_DIR="CMakeFiles/scannerTests.dir"
+    CODE_COVERAGE_DIR="$SRC_DIR/CMakeFiles/scannerTests.dir"
 
     cd "$BUILD_DIR" || { echo "ERROR: No directory exists: $BUILD_DIR" ; exit 1; }
 
@@ -36,24 +40,27 @@ code_coverage_scanner()
       echo "Cannot initialize cmake. Exiting..." ; exit 1;
     }
 
-    cd $CODE_COVERAGE_DIR || { echo "ERROR: No such directory $CODE_COVERAGE_DIR" ; exit 1 ; }
-    gcovr -b --filter ../../../../src/ --json > code1.json || { echo "ERROR: cannot initialize gcovr. " ; }
+    cd "$CODE_COVERAGE_DIR" || { echo "ERROR: No such directory $CODE_COVERAGE_DIR" ; exit 1 ; }
+    gcovr -b --filter "$SRC_DIR" --json > code1.json || { echo "ERROR: cannot initialize gcovr. " ; }
 }
 
 code_coverage_other()
 {
     NUM=$1
 
-    cd "$BUILD_DIR"/CMakeFiles/ifj21.dir || {
+    cd "$BUILD_DIR"/CMakeFiles/"$BIN_TARGET".dir || {
       echo "ERROR: cannot cd $BUILD_DIR/CMakeFiles/ifj21.dir" ; exit 1 ;
     }
-    gcovr -b --filter ../../../../src/ --json > code"$NUM".json
+    gcovr -b --filter "$SRC_DIR" --json > code"$NUM".json
 }
 
+
+
+#################################################
 if [[ "$name" == "scanner_tests" ]]; then
     code_coverage_scanner
 
-    gcovr --filter ../../../../src/ --add-tracefile code1.json --html --html-details -o code_coverage.html
+    gcovr --filter "$SRC_DIR" --add-tracefile code1.json --html --html-details -o code_coverage.html
     open code_coverage.html
     exit 0
 fi
@@ -77,7 +84,7 @@ if [[ "$name" == "all" ]]; then
     done
 
     mkdir html
-    gcovr --filter src/ --add-tracefile code0.json --add-tracefile code1.json --add-tracefile code2.json \
+    gcovr --filter "$SRC_DIR" --add-tracefile code0.json --add-tracefile code1.json --add-tracefile code2.json \
                         --add-tracefile code3.json --add-tracefile code4.json --add-tracefile code5.json \
                         --add-tracefile code6.json --add-tracefile code7.json \
                         --html --html-details -o html/code_coverage.html
@@ -130,11 +137,11 @@ do
 
         rm tmp.txt
     else
-        ../cmake-build-debug/ifj21 <$file 2>/dev/null
+        "$BUILD_DIR"/"$BIN_TARGET" < "$file" 2>/dev/null
         ret_val=$?
     fi
 
-    if [ $ret_val -ne $expected_err ]; then
+    if [ $ret_val -ne "$expected_err" ]; then
         err_files=$((err_files+1))
         printf "$file ${RED}FAILED${NC} ret_val = $ret_val, expected $expected_err\n"
         echo ""
