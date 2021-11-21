@@ -205,6 +205,7 @@ static void generate_main_start() {
  */
 static void generate_main_end() {
     ADD_INSTR("LABEL $$MAIN$end");
+    ADD_INSTR("CLEARS");
     // TODO remove
     ADD_INSTR("WRITE string@\\010\\010SUCCESSFUL\\010");
 }
@@ -318,6 +319,12 @@ static void generate_var_value(token_t token) {
             break;
         case KEYWORD_nil:
             ADD_INSTR_PART("nil@nil");
+            break;
+        case KEYWORD_0:
+            ADD_INSTR_PART("bool@false");
+            break;
+        case KEYWORD_1:
+            ADD_INSTR_PART("bool@true");
             break;
         case TOKEN_ID:
             ADD_INSTR_PART("LF@%");
@@ -656,7 +663,6 @@ static void retype_second() {
 
 static void generate_expression_pop() {
     ADD_INSTR("POPS GF@%expr_result");
-    ADD_INSTR("CLEARS");
 }
 
 static void retype_and_push (expr_semantics_t *expr) {
