@@ -1140,7 +1140,7 @@ const struct parser_interface_t Parser = {
         .analyse = Analyse,
 };
 
-// #define SELFTEST_parser
+#define SELFTEST_parser
 #ifdef SELFTEST_parser
 
 #include "tests/tests.h"
@@ -1173,26 +1173,29 @@ const struct parser_interface_t Parser = {
 
 
 #define TEST_CASE(number) \
-do {                                                                                                \
-    int ret;                                                                                        \
-    fprintf(stdout, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");                                 \
-    Tests.warning(description ## number);                                                           \
-    TEST_EXPECT(Parser.analyse(pf ## number), result ## number, description ## number);             \
-    TEST_EXPECT(((ret = Errors.get_error()) == retcode ## number), true, description ## number);    \
-    if (ret != retcode ## number) {                                                                 \
-        Tests.failed("Expected '%d' code, but got '%d'\n", retcode ## number, ret);                 \
-        FILE *fil = fopen(#number, "w");                                                             \
-        assert(fil);                                                                                 \
-        fprintf(fil, "test case %d.\n"                                                               \
-                    "Description : %s\n\n"                                                          \
-                    "Expected : '%d'\n"                                                             \
-                    "Got : '%d'\n\n",                                                               \
-                    number, description ## number, retcode ## number, ret );                        \
-        fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                                           \
-        fclose(fil);                                                                                 \
-    }                                                                                               \
-    fprintf(stdout, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n");                               \
-    Pfile.dtor(pf ## number);                                                                        \
+do {                      \
+    char *_filname                      \
+         = "../tests/semantic_errors/sasha" #number "_";                  \
+    if (retcode ## number == 0) {                                         \
+        _filname = "../tests/without_errors/sasha" #number "_";            \
+    }                                                                     \
+    if (retcode ## number == 2) {                                         \
+        _filname = "../tests/syntax_errors/sasha" #number "_";             \
+    }                                                                     \
+    dynstring_t *filnam = Dynstring.ctor(_filname);                         \
+    Dynstring.append(filnam, retcode ## number + '0');                     \
+    Dynstring.cat(filnam, Dynstring.ctor(".tl"));                          \
+    FILE *fil = fopen(Dynstring.c_str(filnam), "w");                        \
+    assert(fil);                                                           \
+    fprintf(fil, "-- test case %d.\n"                                      \
+                "-- Description : %s\n\n"                                 \
+                "-- Expected : '%d'\n",                                   \
+                    number, description ## number, retcode ## number);    \
+        fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                 \
+        fclose(fil);                                                       \
+    Pfile.dtor(pf ## number);                                              \
+    debug_msg("file created: %s %s%c.tl\n",Dynstring.c_str(filnam), _filname, retcode##number + '0'); \
+    Dynstring.dtor(filnam);             \
 } while (0)
 
 
@@ -1201,6 +1204,7 @@ int main() {
     bool result1 = true;
     int retcode1 = ERROR_NOERROR;
     pfile_t *pf1 = Pfile.ctor(PROLOG);
+
 
     char *description2 = "lexical error";
     bool result2 = false;
