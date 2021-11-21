@@ -1,6 +1,4 @@
-# @file scanner.h
-#
-# @brief Header file for scanner.
+# @file CMakeLists.h
 #
 # @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
 cmake_minimum_required(VERSION 3.16)
@@ -42,8 +40,13 @@ set(DEVELOP_FLAGS
         )
 add_compile_options(
         -Wall -Wextra -pedantic -g
+        -ftest-coverage -fprofile-arcs --coverage
         ${DEVELOP_FLAGS}
 )
+# flag for enabling code coverage on mac
+set(CMAKE_EXE_LINKER_FLAGS
+        --coverage
+        )
 
 #adding targets
 # The project itself.
