@@ -64,11 +64,35 @@ static dynstring_t *Str_ctor(const char *s) {
 }
 
 /**
- * @brief Get char * (c dynstring_t ending with '\0') from dynstring_t.
+ * @brief Create an empty dynstring_t of size length.
  *
- * @param str dynstring_t object.
- * @return c dynstring_t representation.
+ * @param s Length of the new dynstring.
+ * @return non-null pointer to dynstring_t object.
  */
+static dynstring_t *Str_ctor_empty(size_t length) {
+    size_t alloc = length + STRSIZE + 1;
+
+    dynstring_t *str = calloc(1, sizeof(dynstring_t));
+    soft_assert(str, ERROR_INTERNAL);
+    str->size = alloc;
+    str->len = length;
+
+    str->str = calloc(1, alloc);
+    soft_assert(str->str, ERROR_INTERNAL);
+
+    // TODO check bounds (length/length+1/length-1)
+    memset(str->str, '\0', length);
+
+    debug_msg("Create empty dynstring: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->size, str->str);
+    return str;
+}
+
+/**
+* @brief Get char * (c dynstring_t ending with '\0') from dynstring_t.
+*
+* @param str dynstring_t object.
+* @return c dynstring_t representation.
+*/
 static char *Str_c_str(dynstring_t *str) {
     if (str == NULL) {
         return NULL;
@@ -146,28 +170,38 @@ static int Str_cmp(dynstring_t *s1, dynstring_t *s2) {
 }
 
 /**
- * @brief Concatenate two dynstrings in the not very efficient way.
+ * @brief Concatenate two dynstrings, save the result to s1.
  *
  * @param s1 dynstring_t object.
  * @param s2 dynstring_t object.
- * @returns new dysntring, which is product of s1 and s2.
+ * @returns new dynstring, which is product of s1 and s2.
  */
-static dynstring_t *Str_cat(dynstring_t *s1, dynstring_t *s2) {
+static void Str_cat(dynstring_t *s1, dynstring_t *s2) {
     soft_assert(s2, ERROR_INTERNAL);
     soft_assert(s1, ERROR_INTERNAL);
 
-    dynstring_t *new = Str_ctor(s1->str);
-
-    size_t diff = new->size - s1->len;
+    size_t diff = s1->size - s2->len;
     if (diff <= 1) {
-        size_t nsiz = new->size *= 2;
-        char *tmp = realloc(new->str, nsiz + sizeof(dynstring_t));
+        s1->size *= 2;
+        char *tmp = realloc(s1->str, s1->size + sizeof(dynstring_t));
         soft_assert(tmp, ERROR_INTERNAL);
-        new->str = tmp;
+        s1->str = tmp;
     }
-    strcat(new->str, s1->str);
+    strcat(s1->str, s2->str);
+    s1->len = strlen(s1->str);
+}
 
-    return new;
+/**
+ * @brief Duplicates a dynstring.
+ *
+ * @param s dynstring to be duplicated.
+ * @return pointer to the new dynstring_t object.
+ */
+
+static dynstring_t *Str_dup(dynstring_t *s) {
+    soft_assert(s, ERROR_INTERNAL);
+
+    return Str_ctor(s->str);
 }
 
 /**
@@ -177,12 +211,14 @@ static dynstring_t *Str_cat(dynstring_t *s1, dynstring_t *s2) {
 const struct dynstring_interface_t Dynstring = {
         /*@{*/
         .ctor = Str_ctor,
+        .ctor_empty = Str_ctor_empty,
         .len = Str_length,
         .c_str = Str_c_str,
         .append = Str_append,
         .dtor = Str_free,
         .cmp = Str_cmp,
         .cat = Str_cat,
+        .dup = Str_dup,
 };
 
 #ifdef SELFTEST_dynstring
@@ -194,18 +230,17 @@ int main() {
         debug_msg("hello string created with string '%s'\n", Dynstring.c_str(hello));
         dynstring_t *world = Dynstring.ctor("World. Aaaaaaaaaaaaaaaaaaaaaaaaa");
         debug_msg("world string created with string '%s'\n", Dynstring.c_str(world));
-        dynstring_t *hw = Dynstring.cat(hello, world);
-        debug_msg("The 2 strings concatenated into '%s'\nsize: %zu, len: %zu\n", Dynstring.c_str(hw), hw->size, hw->len);
-        TEST_EXPECT(hw->size != 0, true, "Allocated size must not be equal 0");
+        Dynstring.cat(hello, world);
+        debug_msg("The 2 strings concatenated into '%s'\nsize: %zu, len: %zu\n", Dynstring.c_str(hw), hello->size, hello->len);
+        TEST_EXPECT(hello->size != 0, true, "Allocated size must not be equal 0");
 
         for (int i = 0; i < 1000; i++) {
-             Dynstring.append(hw, (char)('A' + (i % 25)));
+             Dynstring.append(hello, (char)('A' + (i % 25)));
         }
-        TEST_EXPECT(hw->size != 0, true, "After appending 1000 characters in hw. MUst not be equal 0");
+        TEST_EXPECT(hello->size != 0, true, "After appending 1000 characters in hw. MUst not be equal 0");
 
         Dynstring.dtor(hello);
         Dynstring.dtor(world);
-        Dynstring.dtor(hw);
     }
     return 0;
 }

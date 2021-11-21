@@ -8,8 +8,6 @@
  *
  * TODO: move global_table, local_table here. From parser.c
  */
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "bugprone-reserved-identifier"
 
 #include "symtable.h"
 #include "tests/tests.h"
@@ -45,6 +43,8 @@ static id_type_t id_type_of_token_type(int token_type) {
             return ID_TYPE_number;
         case KEYWORD_integer:
             return ID_TYPE_integer;
+        case KEYWORD_nil:
+            return ID_TYPE_nil;
         default:
             return ID_TYPE_UNDEF;
     }
@@ -123,9 +123,20 @@ static bool ST_Get(symtable_t *self, dynstring_t *id, symbol_t **storage) {
  * @return bool.
  */
 static bool builtin_name(dynstring_t *name) {
-    //TODO add more builtin names? or suppress the function.
-    return strcmp(Dynstring.c_str(name), "read") == 0 ||
-                                                      strcmp(Dynstring.c_str(name), "write") == 0;
+    #define BUILTINS 10
+    static const char *builtins[BUILTINS] = {
+            "readi", "readn", "reads", "tointeger",
+            "substr", "ord", "chr", "write", NULL
+    };
+
+    for (int i = 0; builtins[i] != NULL; i++) {
+        if (strcmp(Dynstring.c_str(name), builtins[i]) == 0) {
+            return true;
+        }
+    }
+    #undef BUILTINS
+
+    return false;
 }
 
 /** Put a symbol into the symbol table.
@@ -231,25 +242,28 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
         return;
     }
     dynstring_t *dname = Dynstring.ctor(name);
-    dynstring_t *paramvec = Dynstring.ctor(params);
-    dynstring_t *returnvec = Dynstring.ctor(returns);
+    dynstring_t *defparamvec = Dynstring.ctor(params);
+    dynstring_t *defreturnvec = Dynstring.ctor(returns);
+
+    dynstring_t *declparamvec = Dynstring.ctor(params);
+    dynstring_t *declreturnvec = Dynstring.ctor(returns);
+
 
     ST_Put(self, dname, ID_TYPE_func_decl);
     ST_Put(self, dname, ID_TYPE_func_def);
 
     symbol_t *symbol;
-    Symtable.get_symbol(self, dname, &symbol);
+    ST_Get(self, dname, &symbol);
+    soft_assert(symbol != NULL, ERROR_INTERNAL);
 
-    Semantics.builtin(symbol->function_semantics);
-    Semantics.set_params(symbol->function_semantics->definition, paramvec);
-    Semantics.set_returns(symbol->function_semantics->definition, returnvec);
+    Semantics.set_params(&symbol->function_semantics->definition, defparamvec);
+    Semantics.set_returns(&symbol->function_semantics->definition, defreturnvec);
 
-    Semantics.set_params(symbol->function_semantics->declaration, paramvec);
-    Semantics.set_returns(symbol->function_semantics->declaration, returnvec);
+    Semantics.set_params(&symbol->function_semantics->declaration, declparamvec);
+    Semantics.set_returns(&symbol->function_semantics->declaration, declreturnvec);
+
 
     Dynstring.dtor(dname);
-    Dynstring.dtor(paramvec);
-    Dynstring.dtor(returnvec);
     debug_msg("\t[BUILTIN]: builtin function is set.\n");
 }
 
@@ -311,4 +325,3 @@ int main() {
 }
 #endif
 
-#pragma clang diagnostic pop

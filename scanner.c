@@ -151,12 +151,6 @@ static char *To_string(const int t) {
             return ":";
         case TOKEN_HASH:
             return "#";
-//        case TOKEN_AND:
-//            return "and";
-//        case TOKEN_OR:
-//            return "or";
-//        case TOKEN_NOT:
-//            return "not";
         case TOKEN_DEAD:
             return "DEAD TOKEN";
 
@@ -739,10 +733,6 @@ static token_t scanner(pfile_t *pfile) {
         default:
             token.type = TOKEN_DEAD;
             break;
-    }
-
-    if (token.type == TOKEN_DEAD) {
-        Errors.set_error(ERROR_LEXICAL);
     }
 
     return token;

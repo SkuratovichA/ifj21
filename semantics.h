@@ -11,6 +11,8 @@
 #include <stdbool.h>
 #include "debug.h"
 #include "dynstring.h"
+#include "scanner.h"
+#include "expressions.h"
 
 
 /** Information about a function datatypes.
@@ -29,6 +31,36 @@ typedef struct func_semantics {
     bool is_defined;
     bool is_builtin;
 } func_semantics_t;
+
+/** List of conversion types
+ */
+typedef enum conv_type {
+    NO_CONVERSION,
+    CONVERT_FIRST,
+    CONVERT_SECOND,
+    CONVERT_BOTH
+} conv_type_t;
+
+/** List of semantic states
+ */
+typedef enum semantic_state {
+    SEMANTIC_DISABLED,
+    SEMANTIC_IDLE,
+    SEMANTIC_OPERAND,
+    SEMANTIC_UNARY,
+    SEMANTIC_BINARY,
+} semantic_type_t;
+
+/** Semantic information about an expression.
+ */
+typedef struct expr_semantics {
+    semantic_type_t sem_state;
+    token_t first_operand;
+    token_t second_operand;
+    op_list_t op;
+    conv_type_t conv_type;
+    int result_type;
+} expr_semantics_t;
 
 
 //typedef struct func_semantics func_semantics_t;
@@ -101,28 +133,28 @@ struct semantics_interface_t {
      * @param self info to add a param.
      * @param type param to add.
      */
-    void (*add_return)(func_info_t, int);
+    void (*add_return)(func_info_t *, int);
 
     /** Add a function parameter to a function semantics.
      *
      * @param self info to add a param.
      * @param type param to add.
      */
-    void (*add_param)(func_info_t, int);
+    void (*add_param)(func_info_t *, int);
 
     /** Add a function parameter to a function semantics.
      *
      * @param self info to set a vector.
      * @param vec vector to add.
      */
-    void (*set_returns)(func_info_t, dynstring_t *);
+    void (*set_returns)(func_info_t *, dynstring_t *);
 
     /** Directly set a vector with function parameters.
      *
      * @param self info to set a vector.
      * @param vec vector to add.
      */
-    void (*set_params)(func_info_t, dynstring_t *);
+    void (*set_params)(func_info_t *, dynstring_t *);
 
     /** Function semantics destructor.
      *
@@ -138,4 +170,26 @@ struct semantics_interface_t {
      * @return new function semantics.
      */
     func_semantics_t *(*ctor)(bool, bool, bool);
+
+    /** Expression semantics destructor.
+     *
+     * @param self expression semantics struct.
+     */
+    void (*dtor_expr)(expr_semantics_t *);
+
+    /** Expression semantics constructor.
+     *
+     * @return new expressions semantics.
+     */
+    expr_semantics_t *(*ctor_expr)();
+
+    /** Expression semantics add operand.
+     *
+     * @param self expression semantics struct.
+     * @param tok operand.
+     */
+    void (*add_operand)(expr_semantics_t *, token_t);
+
+    void (*add_operator)(expr_semantics_t *, op_list_t);
+    bool (*check_expression)(expr_semantics_t *);
 };

@@ -7,13 +7,6 @@
  */
 #include "list.h"
 
-/**
- * List item struct.
- */
-struct list_item {
-    void *data;
-    list_item_t *next;
-};
 
 /**
  * @brief List constructor.
@@ -21,7 +14,9 @@ struct list_item {
  * @return Pointer to the allocated memory.
  */
 static list_t *Ctor(void) {
-    return calloc(1, sizeof(list_t));
+    list_t *l = calloc(1, sizeof(list_t));
+    soft_assert(l != NULL, ERROR_INTERNAL);
+    return l;
 }
 
 /**
@@ -31,6 +26,11 @@ static list_t *Ctor(void) {
  * @param data Data to insert.
  */
 static void Prepend(list_t *list, void *data) {
+    if (list == NULL) {
+        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
+    }
+    soft_assert(list != NULL, ERROR_INTERNAL);
+
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
 
@@ -39,8 +39,56 @@ static void Prepend(list_t *list, void *data) {
     } else {
         new_item->data = data;
     }
+
     new_item->next = list->head;
+
+    if (list->head == NULL) {
+        list->tail = new_item;
+    }
+
     list->head = new_item;
+}
+
+static void Append(list_t *list, void *data) {
+    if (list == NULL) {
+        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
+    }
+    soft_assert(list != NULL, ERROR_INTERNAL);
+
+    list_item_t *new_item = calloc(1, sizeof(list_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    if (List.copy_data != NULL) {
+        List.copy_data(new_item, data);
+    } else {
+        new_item->data = data;
+    }
+    if (list->head == NULL) {
+        list->head = new_item;
+        list->tail = list->head;
+    } else {
+        list->tail->next = new_item;
+        list->tail = new_item;
+    }
+    new_item->next = NULL;
+}
+
+static void Insert_after(list_item_t *item, void *data) {
+    if (item == NULL) {
+        debug_msg("ha-ha, item is NULL, so you either did not initialize it or something.\nEXITING\n");
+    }
+    soft_assert(item != NULL, ERROR_INTERNAL);
+
+    list_item_t *new_item = calloc(1, sizeof(list_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    if (List.copy_data != NULL) {
+        List.copy_data(new_item, data);
+    } else {
+        new_item->data = data;
+    }
+    new_item->next = item->next;
+    item->next = new_item;
 }
 
 /**
@@ -50,7 +98,11 @@ static void Prepend(list_t *list, void *data) {
  * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
+    if (list == NULL) {
+        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
+    }
     soft_assert(list, ERROR_INTERNAL);
+
     list_item_t *tmp = list->head;
     list->head = list->head->next;
     clear_fun(tmp->data);
@@ -64,6 +116,11 @@ static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
  * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Clear(list_t *list, void (*clear_fun)(void *)) {
+    if (list == NULL) {
+        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
+    }
+    soft_assert(list != NULL, ERROR_INTERNAL);
+
     while (list->head) {
         Delete_first(list, clear_fun);
     }
@@ -87,7 +144,11 @@ static void Dtor(list_t *list, void (*clear_fun)(void *)) {
  * @param data New item's data.
  */
 static void Insert(list_item_t *reference_item, void *data) {
+    if (reference_item == NULL) {
+        debug_msg("ha-ha, reference_item is NULL, so you either did not initialize it or something.\nEXITING\n");
+    }
     soft_assert(reference_item, ERROR_INTERNAL);
+
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
 
@@ -103,6 +164,11 @@ static void Insert(list_item_t *reference_item, void *data) {
  * @param list singly linked list
  */
 static void *Gethead(list_t *list) {
+    if (list == NULL) {
+        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
+    }
+    soft_assert(list != NULL, ERROR_INTERNAL);
+
     if (!list->head) {
         return NULL;
     }
@@ -149,6 +215,7 @@ static bool Equal(list_t *l1, list_t *l2, int (*cmp)(void *, void *)) {
  */
 const struct list_interface_t List = {
         .prepend = Prepend,
+        .append = Append,
         .delete_list = Clear,
         .delete_first = Delete_first,
         .insert = Insert,
@@ -157,6 +224,7 @@ const struct list_interface_t List = {
         .ctor = Ctor,
         .dtor = Dtor,
         .equal = Equal,
+        .insert_after = Insert_after,
 };
 
 #ifdef SELFTEST_list
