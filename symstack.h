@@ -129,4 +129,13 @@ struct symstack_interface_t {
      * @return
      */
     bool (*traverse)(symstack_t *, bool (*predicate)(symbol_t *));
+
+    /** Traverse a symstack without looking at the global frame.
+     *
+     * @param self symbol stack.
+     * @param id key.
+     * @param sym a pointer to symbol to store a pointer to the object if we find it.
+     * @return true if symbol exists.
+     */
+    bool (*get_local_symbol)(symstack_t *, dynstring_t *, symbol_t **, stack_el_t **);
 };
