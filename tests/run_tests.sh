@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# ./run_tests sasha 3 [valgrind | coverage]
+# ./run_tests sasha [err_number] [valgrind | coverage]
+# not it works only fow ./run_tests sasha [err_number] [valgrind | coverage]
+
 
 RED='\033[0;31m'
 NC='\033[0m'
@@ -65,13 +67,18 @@ if [[ "$name" == "all" ]]; then
     for NUM_TEST in 0 2 3 4 5 6 7
     do
         echo "******** RET_VALUE = $NUM_TEST ********"
-        ./run_tests.sh "*" "$NUM_TEST"
+        ./run_tests.sh "*" "$NUM_TEST" 1>/dev/null 2>/dev/null
         echo "*******************************"
         echo ""
 
         coverage_other $NUM_TEST
 
-        cd "$SRC_DIR"/statistics || { echo "ERROR" ; exit 1 ; }
+        cd "$SRC_DIR/statistics" || {
+          echo "No direcotry $SRC_DIR/statistics. Creasing one";
+          rm "$SRC_DIR/statistics" 1> /dev/null 2>/dev/null ;
+          mkdir "$SRC_DIR/statistics" ;
+          cd "$SRC_DIR/statistics" || { echo "ERROR. cannot create $SRC_DIR/statistics. Exiting." ; exit 1 ; }
+        }
     done
 
     mkdir html
