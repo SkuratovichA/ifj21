@@ -14,18 +14,39 @@ err_files=0
 err_memory=0
 all_files=0
 
+# build directory(related to directory with tests)
+BUILD_DIR="../cmake-build-debug"
+
+# name of binary
+BIN_TARGET="ifj21"
+COMPILE_FLAGS="-DDEBUG=on"
+
+
 code_coverage_scanner()
 {
-    #cd build && rm -rf *
-    cmake -DCOMPILE_TESTS=on -DDEBUG_SCANNER=on .. 1>/dev/null 2>/dev/null && make 1>/dev/null 2>/dev/null && ./scannerTests
-    cd CMakeFiles/scannerTests.dir/src
-    gcovr -b --filter ../../../../src/ --json > code1.json
+    CODE_COVERAGE_DIR="CMakeFiles/scannerTests.dir"
+
+    cd "$BUILD_DIR" || { echo "ERROR: No directory exists: $BUILD_DIR" ; exit 1; }
+
+    { cmake $COMPILE_FLAGS .. 1>/dev/null && {
+      { make $BIN_TARGET >/dev/null 2>/dev/null  && ./scannerTests ; } || {
+        echo "ERROR: Cannot compile a target" ; exit 1; }
+      }
+    } || {
+      echo "Cannot initialize cmake. Exiting..." ; exit 1;
+    }
+
+    cd $CODE_COVERAGE_DIR || { echo "ERROR: No such directory $CODE_COVERAGE_DIR" ; exit 1 ; }
+    gcovr -b --filter ../../../../src/ --json > code1.json || { echo "ERROR: cannot initialize gcovr. " ; }
 }
 
 code_coverage_other()
 {
     NUM=$1
-    cd build/CMakeFiles/compiler.dir/src
+
+    cd "$BUILD_DIR"/CMakeFiles/ifj21.dir || {
+      echo "ERROR: cannot cd $BUILD_DIR/CMakeFiles/ifj21.dir" ; exit 1 ;
+    }
     gcovr -b --filter ../../../../src/ --json > code"$NUM".json
 }
 
@@ -76,7 +97,7 @@ elif [[ "$expected_err" -eq "2" ]]; then
 elif [[ "$expected_err" -ge "3" ]] && [[ "$expected_err" -le "7" ]]; then
     folder="semantic_errors"
 else
-    echo "This script doesnt support this type of error $expected_error"
+    echo "This script doesnt support this type of error $expected_err"
     exit 1
 fi
 
@@ -149,5 +170,3 @@ if [[ "$code_coverage" == "code_coverage" ]]; then
     gcovr --filter ../../../../src/ --add-tracefile code0.json --html --html-details -o code_coverage.html
     open code_coverage.html
 fi
-
-exit 0
