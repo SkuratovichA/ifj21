@@ -1,15 +1,17 @@
 #!/bin/bash
 
+# ./run_tests sasha 3 [valgrind | coverage]
+
 RED='\033[0;31m'
 NC='\033[0m'
 GREEN='\033[0;32m'
 
 name=$1
+
 expected_err=$2
 valgrind_en=$3
 folder=""
-code_coverage=$3
-rm_out="1>/dev/null 2>/dev/null"
+coverage=$3
 err_files=0
 err_memory=0
 all_files=0
@@ -21,55 +23,44 @@ COMPILE_FLAGS="-DDEBUG=on"
 
 # directory with source code
 # in this case, tests is pwd and ../ is src
-SRC_DIR="`pwd`/.."
+SRC_DIR="/Users/suka/Desktop/vut/sem3/ifj/proj/ifj21/" #"`pwd`/.."
 
 # build directory(related to directory with tests)
 BUILD_DIR="$SRC_DIR/cmake-build-debug"
 
-code_coverage_scanner()
-{
-    CODE_COVERAGE_DIR="$SRC_DIR/CMakeFiles/scannerTests.dir"
+#coverage_scanner()
+#{
+#    coverage_DIR="$SRC_DIR/CMakeFiles/scannerTests.dir"
+#
+#    cd "$BUILD_DIR" || { echo "ERROR: No directory exists: $BUILD_DIR" ; exit 1; }
+#
+#    { cmake $COMPILE_FLAGS .. 1>/dev/null && {
+#      { make $BIN_TARGET >/dev/null 2>/dev/null  && ./scannerTests ; } || {
+#        echo "ERROR: Cannot compile a target" ; exit 1; }
+#      }
+#    } || {
+#      echo "Cannot initialize cmake. Exiting..." ; exit 1;
+#    }
+#
+#    cd "$coverage_DIR" || { echo "ERROR: No such directory $coverage_DIR" ; exit 1 ; }
+#    gcovr -b --filter "$SRC_DIR" --json > code1.json || { echo "ERROR: cannot initialize gcovr. " ; }
+#}
 
-    cd "$BUILD_DIR" || { echo "ERROR: No directory exists: $BUILD_DIR" ; exit 1; }
-
-    { cmake $COMPILE_FLAGS .. 1>/dev/null && {
-      { make $BIN_TARGET >/dev/null 2>/dev/null  && ./scannerTests ; } || {
-        echo "ERROR: Cannot compile a target" ; exit 1; }
-      }
-    } || {
-      echo "Cannot initialize cmake. Exiting..." ; exit 1;
-    }
-
-    cd "$CODE_COVERAGE_DIR" || { echo "ERROR: No such directory $CODE_COVERAGE_DIR" ; exit 1 ; }
-    gcovr -b --filter "$SRC_DIR" --json > code1.json || { echo "ERROR: cannot initialize gcovr. " ; }
-}
-
-code_coverage_other()
+coverage_other()
 {
     NUM=$1
 
     cd "$BUILD_DIR"/CMakeFiles/"$BIN_TARGET".dir || {
-      echo "ERROR: cannot cd $BUILD_DIR/CMakeFiles/ifj21.dir" ; exit 1 ;
+      echo "ERROR: cannot cd $BUILD_DIR/CMakeFiles/$BIN_TARGET" ; exit 1 ;
     }
-    gcovr -b --filter "$SRC_DIR" --json > code"$NUM".json
+
+    # create .json file
+
+    gcovr -b --filter "$SRC_DIR" --json > "$SRC_DIR"/statistics code"$NUM".json
 }
 
 
-
-#################################################
-if [[ "$name" == "scanner_tests" ]]; then
-    code_coverage_scanner
-
-    gcovr --filter "$SRC_DIR" --add-tracefile code1.json --html --html-details -o code_coverage.html
-    open code_coverage.html
-    exit 0
-fi
-
 if [[ "$name" == "all" ]]; then
-    code_coverage_scanner
-
-    cp code1.json ../../../../ && cd ../../../ && # rm -rf *
-    cmake .. 1>/dev/null 2>/dev/null && make 1>/dev/null 2>/dev/null && cd ..
 
     for NUM_TEST in 0 2 3 4 5 6 7
     do
@@ -78,25 +69,32 @@ if [[ "$name" == "all" ]]; then
         echo "*******************************"
         echo ""
 
-        code_coverage_other $NUM_TEST
+        coverage_other $NUM_TEST
 
-        cp code"$NUM_TEST".json ../../../../ && cd ../../../../
+        cd "$SRC_DIR"/statistics || { echo "ERROR" ; exit 1 ; }
     done
 
     mkdir html
+    echo "source directory $SRC_DIR"
     gcovr --filter "$SRC_DIR" --add-tracefile code0.json --add-tracefile code1.json --add-tracefile code2.json \
                         --add-tracefile code3.json --add-tracefile code4.json --add-tracefile code5.json \
                         --add-tracefile code6.json --add-tracefile code7.json \
-                        --html --html-details -o html/code_coverage.html
+                        --html --html-details -o html/coverage.html
 
-    open html/code_coverage.html
-    #rm *.json && rm -rf html/
+    open html/coverage.html
+    rm *.json && rm -rf html/
     exit 0
 fi
 
-#cd build/ && #rm -rf && cmake .. 1>/dev/null 2>/dev/null && make 1>/dev/null 2>/dev/null && cd ..
+cd "$BUILD_DIR" || { echo "ERROR: no build dir" ; exit 1;  }
+rm -rf *
+cmake ..
+make ifj21 || { echo "ERROR: cannot make" ; exit 1; }
+
+cd "$SRC_DIR"/tests || { echo "ERROR" ; exit 1 ; }
 
 echo ""
+# we need folders with tests (in tests/ directory)
 if [[ "$expected_err" -eq "0" ]]; then
     folder="without_errors"
 elif [[ "$expected_err" -eq "2" ]]; then
@@ -158,7 +156,7 @@ else
     if [ $err_files -ne 0 ]; then
         printf "$err_files/$all_files tests were ${RED}FAILED${NC}\n"
         err_files=$((all_files-err_files))
-        printf "$err_files/$all_files tests were ${GREEN}PASSED${NC}\n"
+        printf "$err_files/$all_files tests were ${GREEN}PASSED${NC}"
     else
         printf "$all_files/$all_files tests were ${GREEN}PASSED${NC}\n"
     fi
@@ -168,12 +166,13 @@ else
     elif [[ "$valgrind_en" == "valgrind" ]] && [ $err_memory -eq 0 ]; then
         printf "No errors with memory\n"
     else
-        printf "Errors with memory were not enabled\n"
+        echo "Errors with memory were not enabled"
     fi
 fi
 
-if [[ "$code_coverage" == "code_coverage" ]]; then
-    code_coverage_other 0
-    gcovr --filter ../../../../src/ --add-tracefile code0.json --html --html-details -o code_coverage.html
-    open code_coverage.html
+if [[ "$coverage" == "coverage" ]]; then
+    coverage_other 0
+    echo "source directory $SRC_DIR"
+    gcovr --filter "$SRC_DIR" --add-tracefile code0.json --html --html-details -o coverage.html
+    open coverage.html
 fi
