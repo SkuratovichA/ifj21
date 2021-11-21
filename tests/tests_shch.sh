@@ -25,7 +25,11 @@ COMPILE_FLAGS="-DDEBUG=on"
 
 # directory with source code
 # in this case, tests is pwd and ../ is src
-SRC_DIR="/Users/suka/Desktop/vut/sem3/ifj/proj/ifj21/" #"`pwd`/.."
+SRC_DIR="/Users/suka/Desktop/vut/sem3/ifj/proj/ifj21" #"`pwd`/.."
+
+# directory with html for statistics and .json files with code coverage
+STAT_DIR="$SRC_DIR/statistics"
+
 
 # build directory(related to directory with tests)
 BUILD_DIR="$SRC_DIR/cmake-build-debug"
@@ -58,11 +62,18 @@ coverage_other()
 
     # create .json file
 
-    gcovr -b --filter "$SRC_DIR" --json > "$SRC_DIR"/statistics code"$NUM".json
+    gcovr -b --filter "$SRC_DIR" --json > "$SRC_DIR"/statistics/code"$NUM".json
 }
 
 
 if [[ "$name" == "all" ]]; then
+
+    cd "$STAT_DIR" || {
+      echo "Cannot enter a directory $STAT_DIR. Creating one";
+      rm -rf "$STAT_DIR" 1> /dev/null 2>/dev/null ;
+      mkdir "$STAT_DIR" ;
+      cd "$STAT_DIR" || { echo "ERROR. cannot create $STAT_DIR. Exiting." ; exit 1 ; }
+    }
 
     for NUM_TEST in 0 2 3 4 5 6 7
     do
@@ -73,24 +84,19 @@ if [[ "$name" == "all" ]]; then
 
         coverage_other $NUM_TEST
 
-        cd "$SRC_DIR/statistics" || {
-          echo "No direcotry $SRC_DIR/statistics. Creasing one";
-          rm "$SRC_DIR/statistics" 1> /dev/null 2>/dev/null ;
-          mkdir "$SRC_DIR/statistics" ;
-          cd "$SRC_DIR/statistics" || { echo "ERROR. cannot create $SRC_DIR/statistics. Exiting." ; exit 1 ; }
-        }
     done
 
-    mkdir html
+    mkdir "$STAT_DIR/html" || { echo "WARNING: cannot create html. Probably exists." ; }
     echo "source directory $SRC_DIR"
-    gcovr --filter "$SRC_DIR" --add-tracefile code0.json --add-tracefile code1.json --add-tracefile code2.json \
-                        --add-tracefile code3.json --add-tracefile code4.json --add-tracefile code5.json \
-                        --add-tracefile code6.json --add-tracefile code7.json \
-                        --html --html-details -o html/coverage.html
-
-    open html/coverage.html
-    rm *.json && rm -rf html/
-    exit 0
+    gcovr --filter "$SRC_DIR" --add-tracefile "$STAT_DIR/code0.json"  \
+                             --add-tracefile "$STAT_DIR/code2.json" \
+                             --add-tracefile "$STAT_DIR/code3.json" \
+                             --add-tracefile "$STAT_DIR/code4.json" \
+                             --add-tracefile "$STAT_DIR/code5.json" \
+                             --add-tracefile "$STAT_DIR/code6.json" \
+                             --add-tracefile "$STAT_DIR/code7.json" \
+                             --html --html-details -o "$STAT_DIR/html/coverage.html" || { echo "ERROR: cannot cover" ; exit 1 ; }
+    open "$STAT_DIR/html/coverage.html"
 fi
 
 cd "$BUILD_DIR" || { echo "ERROR: no build dir" ; exit 1;  }
@@ -116,7 +122,7 @@ fi
 for file in ${folder}/${name}*_${expected_err}.tl;
 do
     if [[ "${folder}/${name}*_${expected_err}.tl" == "$file" ]]; then
-        echo "Files with this arguments were not found"
+        echo "Files with these arguments were not found"
         exit 1
     fi
 
@@ -183,3 +189,7 @@ if [[ "$coverage" == "coverage" ]]; then
     gcovr --filter "$SRC_DIR" --add-tracefile code0.json --html --html-details -o coverage.html
     open coverage.html
 fi
+
+
+# delete directory with statistics
+rm -rf "$STAT_DIR"
