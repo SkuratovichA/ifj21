@@ -921,6 +921,7 @@ static bool function_definition(pfile_t *pfile) {
         return false;
     }
 
+    debug_msg("arst\n");
     SYMSTACK_POP();
     return true;
 }
