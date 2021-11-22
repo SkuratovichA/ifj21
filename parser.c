@@ -1191,7 +1191,7 @@ do {                      \
             _filname = "../tests/syntax_errors/sasha" #number "_";         \
             break;                                                        \
         default:                                                          \
-            _filname = "sasha";                                          \
+            _filname = "sasha";                                            \
     }                                                                     \
     dynstring_t *filnam = Dynstring.ctor(_filname);                         \
     Dynstring.append(filnam, retcode ## number + '0');                     \
@@ -1262,26 +1262,26 @@ int main() {
     int retcode4 = ERROR_NOERROR;
     pfile_t *pf4 = Pfile.ctor(
             PROLOG
-            GLOBAL "foo : function()"
-            GLOBAL "baz : function(string)"
-            GLOBAL "bar : function(string, integer)"
-            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
+            GLOBAL "foo : function()" NL
+            GLOBAL "baz : function(string)" NL
+            GLOBAL "bar : function(string, integer)" NL
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n" NL
+                NL
+            FUN "foo()" NL
+            END NL
 
-            FUN "foo()"
-            END
-
-            FUN "baz(str : string)"
-            END
-
-            FUN "bar(str : string, int : integer)"
-            END
-
-            GLOBAL "arst : function(string,         integer,             number,       number,     integer, string)"
-            FUN               "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)"
-            END
-
-            FUN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (str : string) : string, string, string\n"
-            END
+            FUN "baz(str : string)" NL
+            END NL
+             NL
+            FUN "bar(str : string, int : integer)" NL
+            END NL
+            NL
+            GLOBAL "arst : function(string,         integer,             number,       number,     integer, string)" NL
+            FUN               "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)" NL
+            END NL
+             NL
+            FUN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (str : string) : string, string, string\n" NL
+            END NL
     );
 
     char *description5 = "mutual recursion";
