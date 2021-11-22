@@ -753,25 +753,11 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
         op_list_t first_op = (top->type == ITEM_TYPE_DOLLAR) ? OP_DOLLAR : get_op(top->token);
         op_list_t second_op = get_op(curr_tok);
 
-        if (is_func) {
-            first_op = OP_FUNC;
-            is_func = false;
-        }
-
-        // Check if identifier is a function
-        if (curr_tok.type == TOKEN_ID) {
-            symbol_t *symbol;
-
-            if (Symtable.get_symbol(global_table, curr_tok.attribute.id, &symbol)) {
-                if (symbol->type == ID_TYPE_func_decl || symbol->type == ID_TYPE_func_def) {
-                    second_op = OP_FUNC;
-                    is_func = true;
-                }
-            }
-        }
-
+        debug_msg("First op: \"%s\"\n", op_to_string(first_op));
+        debug_msg("Second op: \"%s\"\n", op_to_string(second_op));
         // Check on expression end
         if (!hard_reduce && is_expr_end(first_op, second_op, func_entries)) {
+            debug_msg("SET HARD REDUCE\n");
             hard_reduce = true;
         }
 
@@ -786,6 +772,29 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
             }
             debug_msg("Successful parsing!\n");
             return true;
+        }
+
+        if (is_func) {
+            debug_msg("UNSET IS FUNC\n");
+            // TODO move this
+            if (second_op == OP_LPAREN) {
+                func_entries++;
+            }
+            first_op = OP_FUNC;
+            is_func = false;
+        }
+
+        // Check if identifier is a function
+        if (curr_tok.type == TOKEN_ID && !hard_reduce) {
+            symbol_t *symbol;
+
+            if (Symtable.get_symbol(global_table, curr_tok.attribute.id, &symbol)) {
+                if (symbol->type == ID_TYPE_func_decl || symbol->type == ID_TYPE_func_def) {
+                    debug_msg("SET IS FUNC\n");
+                    second_op = OP_FUNC;
+                    is_func = true;
+                }
+            }
         }
 
         // Precedence comparison
