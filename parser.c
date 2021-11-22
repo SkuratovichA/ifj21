@@ -1173,13 +1173,25 @@ const struct parser_interface_t Parser = {
 
 #define TEST_CASE(number) \
 do {                      \
-    char *_filname                      \
-         = "../tests/semantic_errors/sasha" #number "_";                  \
-    if (retcode ## number == 0) {                                         \
-        _filname = "../tests/without_errors/sasha" #number "_";            \
-    }                                                                     \
-    if (retcode ## number == 2) {                                         \
-        _filname = "../tests/syntax_errors/sasha" #number "_";             \
+    char *_filname ;                                             \
+    switch (retcode##number) {                                  \
+        case_5 (ERROR_DEFINITION,                               \
+                ERROR_TYPE_MISSMATCH,                           \
+                ERROR_FUNCTION_SEMANTICS,                       \
+                ERROR_SEMANTICS_TYPE_INCOMPATABLE,              \
+                ERROR_SEMANTICS_OTHER                           \
+                ):                                              \
+            _filname = "../tests/semantic_errors/sasha" #number "_";       \
+            break;                                                        \
+        case ERROR_NOERROR:                                               \
+            _filname = "../tests/without_errors/sasha" #number "_";        \
+            break;                                                        \
+                                                                          \
+        case ERROR_SYNTAX:                                                \
+            _filname = "../tests/syntax_errors/sasha" #number "_";         \
+            break;                                                        \
+        default:                                                          \
+            _filname = "sasha";                                          \
     }                                                                     \
     dynstring_t *filnam = Dynstring.ctor(_filname);                         \
     Dynstring.append(filnam, retcode ## number + '0');                     \
@@ -1691,7 +1703,7 @@ int main() {
             TAB "local B : integer = 10"NL
             NL
             TAB IF"A == B" THEN NL
-            TAB "local hello : integer = 10" NL
+            TAB TAB "local hello : integer = 10" NL
             TAB TAB IF "A == B" THEN NL
             TAB TAB TAB "local world: string = \"hello\"" NL
             TAB TAB TAB IF "A == B" THEN NL
@@ -1700,7 +1712,7 @@ int main() {
             TAB TAB TAB END NL
             TAB TAB END NL
             TAB ELSE NL
-            TAB "local arsoui : integer"NL
+            TAB TAB "local arsoui : integer"NL
             TAB END NL
             END NL
     );
