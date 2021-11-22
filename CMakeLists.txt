@@ -32,9 +32,15 @@ set(PROJ_FILES
 
 # AddressSanitize
 set(CMAKE_C_FLAGS_ASAN
-        "-fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g -O1"
+        "-fsanitize=address"
+        "-fsanitize-address-use-after-scope"
+        "-fno-omit-frame-pointer"
+        "-g"
+        "-O1"
         CACHE STRING "Flags used by the C compiler during AddressSanitizer builds."
         FORCE)
+
+set(CMAKE_EXE_LINKER_FLAGS "-fsanitize=address")
 
 set(DEVELOP_FLAGS
         #-Wno-unused-parameter
@@ -45,10 +51,13 @@ set(DEVELOP_FLAGS
         -DDEBUG
         -DDEBUG_DYNSTRING
         )
+set(CODE_COVERAGE_FLAGS
+        -ftest-coverage -fprofile-arcs --coverage
+        )
 add_compile_options(
         -Wall -Wextra -pedantic -g
-        -ftest-coverage -fprofile-arcs --coverage
         ${DEVELOP_FLAGS}
+        ${CODE_COVERAGE_FLAGS}
         #${CMAKE_C_FLAGS_ASAN}
 )
 # flag for enabling code coverage on mac

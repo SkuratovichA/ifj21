@@ -26,13 +26,10 @@ static list_t *Ctor(void) {
  * @param data Data to insert.
  */
 static void Prepend(list_t *list, void *data) {
-    if (list == NULL) {
-        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
     soft_assert(list != NULL, ERROR_INTERNAL);
 
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
-    soft_assert(new_item, ERROR_INTERNAL);
+    soft_assert(new_item != NULL, ERROR_INTERNAL);
 
     if (List.copy_data != NULL) {
         List.copy_data(new_item, data);
@@ -50,9 +47,6 @@ static void Prepend(list_t *list, void *data) {
 }
 
 static void Append(list_t *list, void *data) {
-    if (list == NULL) {
-        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
     soft_assert(list != NULL, ERROR_INTERNAL);
 
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
@@ -74,9 +68,6 @@ static void Append(list_t *list, void *data) {
 }
 
 static void Insert_after(list_item_t *item, void *data) {
-    if (item == NULL) {
-        debug_msg("ha-ha, item is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
     soft_assert(item != NULL, ERROR_INTERNAL);
 
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
@@ -98,14 +89,20 @@ static void Insert_after(list_item_t *item, void *data) {
  * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
-    if (list == NULL) {
-        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
+    debug_msg("\n");
     soft_assert(list, ERROR_INTERNAL);
 
     list_item_t *tmp = list->head;
+    if (tmp == NULL) {
+        return;
+    }
+
+    debug_msg_s("list->head: %p\n", (void *) list->head);
+    debug_msg_s("tmp: %p\n", (void *) tmp);
     list->head = list->head->next;
+    debug_msg_s("head moved forward\n");
     clear_fun(tmp->data);
+    debug_msg_s("data deleted\n");
     free(tmp);
 }
 
@@ -116,10 +113,8 @@ static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
  * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Clear(list_t *list, void (*clear_fun)(void *)) {
-    if (list == NULL) {
-        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
     soft_assert(list != NULL, ERROR_INTERNAL);
+    debug_msg("\n");
 
     while (list->head) {
         Delete_first(list, clear_fun);
@@ -133,8 +128,11 @@ static void Clear(list_t *list, void (*clear_fun)(void *)) {
  * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Dtor(list_t *list, void (*clear_fun)(void *)) {
+    debug_msg("\n");
     Clear(list, clear_fun);
+    debug_msg_s("list cleared\n");
     free(list);
+    debug_msg_s("list deleted\n");
 }
 
 /**
@@ -144,9 +142,6 @@ static void Dtor(list_t *list, void (*clear_fun)(void *)) {
  * @param data New item's data.
  */
 static void Insert(list_item_t *reference_item, void *data) {
-    if (reference_item == NULL) {
-        debug_msg("ha-ha, reference_item is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
     soft_assert(reference_item, ERROR_INTERNAL);
 
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
@@ -164,9 +159,6 @@ static void Insert(list_item_t *reference_item, void *data) {
  * @param list singly linked list
  */
 static void *Gethead(list_t *list) {
-    if (list == NULL) {
-        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
     soft_assert(list != NULL, ERROR_INTERNAL);
 
     if (!list->head) {

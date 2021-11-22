@@ -86,7 +86,7 @@ static void generate_func_tointeger() {
  *          result: %res
  */
 static void generate_func_chr() {
-        ADD_INSTR(  "LABEL $CHR \n"                                     \
+    ADD_INSTR("LABEL $CHR \n"                                         \
                 "PUSHFRAME \n"                                          \
                 "DEFVAR LF@%res \n"                                     \
                 "MOVE LF@%res nil@nil \n"                               \
@@ -139,9 +139,9 @@ static void generate_func_ord() {
  *          result: %res
 */
 static void generate_func_substr() {
-    ADD_INSTR(  "LABEL $SUBSTR \n"                                      \
+    ADD_INSTR("LABEL $SUBSTR \n"                                      \
                 "PUSHFRAME \n"                                          \
-                "# define vars for params and result\n"                 \
+                "# define vars for params and result\n"                  \
                 "DEFVAR LF@%res \n"                                     \
                 "MOVE LF@%res nil@nil \n"                               \
                 "DEFVAR LF@p0 \n"                                       \
@@ -230,21 +230,35 @@ static void generate_func_start(dynstring_t *func_name) {
  * @brief Generates function end.
  */
 static void generate_func_end(char *func_name) {
+    debug_msg("func_name: %s\n", func_name);
+
+    debug_msg_s("add_instr_part: '%s' to tmp instr'%s'\n", func_name, Dynstring.c_str(tmp_instr));
     ADD_INSTR_PART("LABEL $");
+
+    debug_msg_s("add_instr_part, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR_PART(func_name);
+
+    debug_msg_s("add_instr_part, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR_PART("$end");
+
+    debug_msg_s("add_instr_tmp, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR_TMP;
 
     // FIXME - remove these instructions
+    debug_msg_s("add_instr, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR("WRITE GF@%expr_result \n"
               "WRITE string@\\010\n"
               "DEFVAR LF@type_var \n"
               "TYPE LF@type_var GF@%expr_result \n"
               "WRITE LF@type_var");
 
+    debug_msg_s("add_instr, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR("POPFRAME");
+
+    debug_msg_s("instr_change_active_list,\n");
     ADD_INSTR("RETURN\n");
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
+    debug_msg_s("done.\n");
 }
 
 /*
@@ -313,7 +327,7 @@ static void generate_var_value(token_t token) {
             break;
         case TOKEN_NUM_I:
             ADD_INSTR_PART("int@");
-            sprintf(str_tmp, "%lu", token.attribute.num_i);
+            sprintf(str_tmp, "%llu", token.attribute.num_i);
             ADD_INSTR_PART(str_tmp);
             break;
         case KEYWORD_nil:
@@ -770,38 +784,54 @@ static void generate_expression(expr_semantics_t *expr) {
  * @brief Initialises the code generator.
  */
 static void initialise_generator() {
+    debug_msg("");
     // initialise tmp_instr to empty dynstring
     tmp_instr = Dynstring.ctor("");
-    debug_msg("tmp_instr initialized %p\n", (void *) tmp_instr);
+    debug_msg_s("tmp_instr initialized %p\n", (void *) tmp_instr);
 
     // initialise the instructions structure
     instructions.startList = List.ctor();
-    debug_msg("instructions.startList initialized %p\n", (void *) instructions.startList);
+    debug_msg_s("instructions.startList initialized %p\n", (void *) instructions.startList);
 
     instructions.instrListFunctions = List.ctor();
-    debug_msg("instructions.instrListFunctions initialized %p\n", (void *) instructions.instrListFunctions);
+    debug_msg_s("instructions.instrListFunctions initialized %p\n", (void *) instructions.instrListFunctions);
 
     instructions.mainList = List.ctor();
-    debug_msg("instructions.mainList initialized %p\n", (void *) instructions.mainList);
+    debug_msg_s("instructions.mainList initialized %p\n", (void *) instructions.mainList);
 
     instructions.in_loop = false;
-    debug_msg("instructions.in_loop initialized with false\n");
+    debug_msg_s("instructions.in_loop initialized with false\n");
 
     instructions.outer_loop_id = 0;
-    debug_msg("instructions.outer_loop_id initialized with 0\n");
+    debug_msg_s("instructions.outer_loop_id initialized with 0\n");
 
     instructions.before_loop_start = NULL;
-    debug_msg("instructions.before_loop_start initialized with NULL\n");
+    debug_msg_s("instructions.before_loop_start initialized with NULL\n");
 
     instructions.outer_cond_id = 0;
-    debug_msg("instructions.outer_cond_id initialized with 0\n");
+    debug_msg_s("instructions.outer_cond_id initialized with 0\n");
 
     instructions.cond_cnt = 0;
-    debug_msg("instructions.cond_cnt initialized with 0\n");
+    debug_msg_s("instructions.cond_cnt initialized with 0\n");
 
     // sets active instructions list
     instrList = instructions.startList;
-    debug_msg("instrList initialized with instructions.startList %p\n", (void *) instrList);
+    debug_msg_s("instrList initialized with instructions.startList %p\n\n", (void *) instrList);
+}
+
+static void dtor() {
+    debug_msg("\n");
+    List.dtor(instructions.startList, (void (*)(void *)) (Dynstring.dtor)); // use Dynstring.dtor or free?
+    debug_msg("instructions.startList freed.\n");
+
+    List.dtor(instructions.instrListFunctions, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
+    debug_msg("instructions.instrListFunctions freed.\n");
+
+    List.dtor(instructions.mainList, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
+    debug_msg("instructions.mainList freed.\n");
+
+    Dynstring.dtor(tmp_instr);
+    debug_msg("tmp_instr freed\n");
 }
 
 /**
@@ -835,4 +865,5 @@ const struct code_generator_interface_t Generator = {
         .initialise = initialise_generator,
         .expression = generate_expression,
         .expression_pop = generate_expression_pop,
+        .dtor = dtor,
 };

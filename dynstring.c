@@ -117,7 +117,8 @@ static size_t Str_length(dynstring_t *str) {
 * @param str string to clear.
 */
 static void Str_clear(dynstring_t *str) {
-    soft_assert(str, ERROR_INTERNAL);
+    soft_assert(str != NULL, ERROR_INTERNAL);
+    soft_assert(str->str != NULL, ERROR_INTERNAL);
     str->str[0] = '\0';
     str->len = 0;
 }
@@ -128,10 +129,10 @@ static void Str_clear(dynstring_t *str) {
  * @param str dynstring_t to dtor.
  */
 static void Str_free(dynstring_t *str) {
-    if (str == NULL) {
-        return;
+    if (str != NULL) {
+        free(str->str);
     }
-    free(str->str);
+
     free(str);
 }
 
@@ -142,7 +143,9 @@ static void Str_free(dynstring_t *str) {
  * @param ch char to append.
  */
 static void Str_append(dynstring_t *str, char ch) {
-    soft_assert(str, ERROR_INTERNAL);
+    soft_assert(str != NULL, ERROR_INTERNAL);
+    soft_assert(str->str != NULL, ERROR_INTERNAL);
+
     if (str->len + 1 >= str->size) {
         size_t nsiz = str->size *= 2;
         char *tmp = realloc(str->str, nsiz + sizeof(dynstring_t));
@@ -163,8 +166,9 @@ static void Str_append(dynstring_t *str, char ch) {
  */
 static int Str_cmp(dynstring_t *s1, dynstring_t *s2) {
     soft_assert(s2, ERROR_INTERNAL);
+    soft_assert(s2->str != NULL, ERROR_INTERNAL);
     soft_assert(s1, ERROR_INTERNAL);
-    debug_msg("compare %s with %s gives %d\n", s1->str, s2->str, strcmp(s1->str, s2->str));
+    soft_assert(s1->str != NULL, ERROR_INTERNAL);
 
     return strcmp(s1->str, s2->str);
 }
@@ -178,17 +182,22 @@ static int Str_cmp(dynstring_t *s1, dynstring_t *s2) {
  */
 static void Str_cat(dynstring_t *s1, dynstring_t *s2) {
     soft_assert(s2, ERROR_INTERNAL);
+    soft_assert(s2->str != NULL, ERROR_INTERNAL);
     soft_assert(s1, ERROR_INTERNAL);
+    soft_assert(s1->str != NULL, ERROR_INTERNAL);
 
     size_t diff = s1->size - s2->len;
-    if (diff <= 1) {
+    if (diff <= 2) {
         s1->size *= 2;
-        char *tmp = realloc(s1->str, s1->size + sizeof(dynstring_t));
-        soft_assert(tmp, ERROR_INTERNAL);
-        s1->str = tmp;
+        s1->str = realloc(s1->str, s1->size + sizeof(dynstring_t));
+        soft_assert(s1->str, ERROR_INTERNAL);
     }
+    FILE *f = fopen("tmp", "a+");
+    fprintf(f, "before append: string: '%s'\nlen: %zu\nsize: '%zu'\n\n", s1->str, s1->len, s1->size);
     strcat(s1->str, s2->str);
     s1->len = strlen(s1->str);
+    fprintf(f, "after append: string: '%s'\nlen: %zu\nsize: '%zu'\n\n", s1->str, s1->len, s1->size);
+    fclose(f);
 }
 
 /**
@@ -200,6 +209,7 @@ static void Str_cat(dynstring_t *s1, dynstring_t *s2) {
 
 static dynstring_t *Str_dup(dynstring_t *s) {
     soft_assert(s, ERROR_INTERNAL);
+    soft_assert(s->str, ERROR_INTERNAL);
 
     return Str_ctor(s->str);
 }
@@ -219,6 +229,7 @@ const struct dynstring_interface_t Dynstring = {
         .cmp = Str_cmp,
         .cat = Str_cat,
         .dup = Str_dup,
+        .clear = Str_clear,
 };
 
 #ifdef SELFTEST_dynstring

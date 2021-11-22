@@ -24,13 +24,19 @@ int main() {
         return Errors.get_error();
     }
 
-    Parser.analyse(pfile);
+    Generator.initialise();
+
+    if (!Parser.analyse(pfile)) {
+        return Errors.get_error();
+    }
+
 
     // ERROR_NOERROR has value 0
     ret = Errors.get_error();
 
     // Print instructions only when everything was ok
     printf("\n# <<<<<<<<<< Return code: %d >>>>>>>>>>\n\n", ret);
+    #if 0
     if (ret == 0) {
         // Prints the list of instructions to stdout
         printf("# ---------- Instructions List ----------\n");
@@ -50,11 +56,9 @@ int main() {
             printf("%s\n", Dynstring.c_str(tmp->data));
         }
     }
+    #endif
 
-    List.dtor(instructions.startList, (void (*)(void *)) (Dynstring.dtor)); // use Dynstring.dtor or free?
-    List.dtor(instructions.instrListFunctions, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
-    List.dtor(instructions.mainList, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
-    Dynstring.dtor(tmp_instr);
+    Generator.dtor();
 
     Pfile.dtor(pfile);
     return ret;

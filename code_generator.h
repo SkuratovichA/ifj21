@@ -40,47 +40,51 @@ do {                                                    \
  * Adds part of an instruction to global tmp_instr.
  * Converts instrPart to a dynstring_t*.
  */
-#define ADD_INSTR_PART(instrPart)                               \
-do {                                                            \
-  dynstring_t * newInstrPart = Dynstring.ctor(instrPart);       \
-  Dynstring.cat(tmp_instr, newInstrPart);                       \
-  Dynstring.dtor(newInstrPart);                                 \
+#define ADD_INSTR_PART(instrPart)                            \
+do {                                                        \
+    dynstring_t * newInstrPart = Dynstring.ctor(instrPart); \
+    Dynstring.cat(tmp_instr, newInstrPart);                 \
+    Dynstring.dtor(newInstrPart);                           \
 } while (0)
 
 /*
  * Adds part of an instruction to global tmp_instr.
  * instrPartDynstr already is a dyntring_t*.
  */
-#define ADD_INSTR_PART_DYN(instrPartDyn)               \
-do {                                                   \
-    Dynstring.cat(tmp_instr, instrPartDyn);            \
+#define ADD_INSTR_PART_DYN(instrPartDyn)      \
+do {                                         \
+    Dynstring.cat(tmp_instr, instrPartDyn);  \
 } while (0)
 
 /*
  * Adds tmp_inst to the list of instructions.
  */
-#define ADD_INSTR_TMP                       \
+#define ADD_INSTR_TMP                        \
 do {                                        \
-    List.append(instrList, tmp_instr);      \
-    tmp_instr = Dynstring.ctor("");         \
+    List.append(instrList,                  \
+                Dynstring.c_str(tmp_instr)  \
+                );                          \
+    Dynstring.clear(tmp_instr);             \
 } while (0)
 
 /*
  * Inserts tmp_inst before while loop.
  */
-#define ADD_INSTR_WHILE                                             \
-do {                                                                \
-    List.insert_after(instructions.before_loop_start, tmp_instr);   \
-    tmp_instr = Dynstring.ctor("");                                 \
+#define ADD_INSTR_WHILE                                 \
+do {                                                   \
+    List.insert_after(instructions.before_loop_start,  \
+                      Dynstring.c_str(tmp_instr)       \
+                      );                               \
+    Dynstring.clear(tmp_instr);                        \
 } while (0)
 
 /*
  * Converts integer to string and adds it to tmp_instr
  */
-#define ADD_INSTR_INT(num)                  \
+#define ADD_INSTR_INT(num)                   \
 do {                                        \
     char str[MAX_CHAR] = "\0";              \
-    sprintf(str, "%lu", num);               \
+    sprintf(str, "%*lu", MAX_CHAR-1, num);               \
     ADD_INSTR_PART(str);                    \
 } while (0)                                 \
 
@@ -130,16 +134,28 @@ struct code_generator_interface_t {
     void (*cond_else)(size_t, size_t);
     void (*cond_end)(size_t, size_t);
     void (*while_header)(void);
+
     void (*while_cond)(void);
+
     void (*while_end)(void);
+
     void (*end)(void);
+
     void (*repeat_until_header)(void);
+
     void (*repeat_until_cond)(void);
+
     void (*for_header)(dynstring_t *);
+
     void (*for_cond)(void);
+
     void (*initialise)(void);
+
     void (*expression)(expr_semantics_t *);
+
     void (*expression_pop)(void);
+
+    void (*dtor)(void);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.

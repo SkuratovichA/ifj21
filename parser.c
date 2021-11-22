@@ -606,6 +606,12 @@ static bool fun_body(pfile_t *pfile) {
                 }
                 break;
             case SCOPE_TYPE_function:
+                if (NULL != Symstack.get_parent_func_name(symstack)) {
+                    dynstring_t *rr = Dynstring.ctor("hello");
+                    dynstring_t *r = Dynstring.ctor(Symstack.get_parent_func_name(symstack));
+                    Dynstring.cat(r, rr);
+                    Dynstring.dtor(rr);
+                }
                 Generator.func_end(Symstack.get_parent_func_name(symstack));
                 break;
             case SCOPE_TYPE_do_cycle:
@@ -787,7 +793,10 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
     Generator.func_return_value(0);
 
     // <datatype> <other_funrets>
-    return datatype(pfile) && other_funrets(pfile, function_info);
+    if (!(datatype(pfile) && other_funrets(pfile, function_info))) {
+        return false;
+    }
+    return true;
 }
 
 /** Function declaration.
@@ -921,7 +930,6 @@ static bool function_definition(pfile_t *pfile) {
         return false;
     }
 
-    debug_msg("arst\n");
     SYMSTACK_POP();
     return true;
 }
@@ -938,30 +946,30 @@ static bool function_definition(pfile_t *pfile) {
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
     token_t token = Scanner.get_curr_token();
-    dynstring_t *id_name;
+    bool res = true;
 
     switch (token.type) {
         // function declaration: global id : function ( <datatype_list> <funretopt>
         case KEYWORD_global:
-            return function_declaration(pfile);
+            res = function_declaration(pfile);
+            break;
 
             // function definition: function id ( <funparam_def_list> <funretopt> <fun_body>
         case KEYWORD_function:
-            return function_definition(pfile);
+            res = function_definition(pfile);
+            break;
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:;
             dynstring_t *id_name = Dynstring.ctor(Dynstring.c_str(token.attribute.id));
-
             // create frame before passing parameters
             Generator.func_createframe();
-
             // in expressions we pass the parameters
             // TODO add enum list with INSIDE_STMT, INSIDE_FUNC, GLOBAL_SCOPE
             if (!Expr.parse(pfile, false)) {
-                return false;
+                res = false;
+                break;
             }
-
             // function call
             Generator.func_call(id_name);
             Dynstring.dtor(id_name);
@@ -969,17 +977,21 @@ static bool stmt(pfile_t *pfile) {
 
             // FIXME. I dont know how to solve this recursion.
         case TOKEN_EOFILE:
-            return true;
+            res = true;
+            break;
 
         case TOKEN_DEAD:
             Errors.set_error(ERROR_LEXICAL);
-            return false;
+            res = false;
+            break;
 
         default:
             Errors.set_error(ERROR_SYNTAX);
-            return false;
+            res = false;
+            break;
     }
-    return true;
+    debug_msg_s("returning with %s\n", res ? "true" : "false");
+    return res;
 }
 
 /** List of global statements: function calls, function declarations, function definitions.
@@ -990,9 +1002,9 @@ static bool stmt(pfile_t *pfile) {
  */
 static bool stmt_list(pfile_t *pfile) {
     debug_msg("<stmt_list> ->\n");
+
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
-
     // <stmt> <stmt_list>
     return stmt(pfile) && stmt_list(pfile);
 }
@@ -1061,6 +1073,7 @@ static bool program(pfile_t *pfile) {
  */
 static bool Init_parser() {
     Scanner.init();
+
     // create a stack with symtables.
     symstack = Symstack.init();
     soft_assert(symstack != NULL, ERROR_INTERNAL);
@@ -1087,8 +1100,6 @@ static bool Init_parser() {
                                   "s"); // substr(s : string, i : number, j : number) : string
     Symtable.add_builtin_function(global_table, "ord", "si", "i"); // (s : string, i : integer) : integer
     Symtable.add_builtin_function(global_table, "chr", "i", "s"); // (i : integer) : string
-
-    Generator.initialise();
 
     return true;
 }
