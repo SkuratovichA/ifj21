@@ -30,7 +30,6 @@ SRC_DIR="/Users/suka/Desktop/vut/sem3/ifj/proj/ifj21" #"`pwd`/.."
 # directory with html for statistics and .json files with code coverage
 STAT_DIR="$SRC_DIR/statistics"
 
-
 # build directory(related to directory with tests)
 BUILD_DIR="$SRC_DIR/cmake-build-debug"
 
@@ -62,7 +61,7 @@ coverage_other()
 
     # create .json file
 
-    gcovr -b --filter "$SRC_DIR" --json > "$SRC_DIR"/statistics/code"$NUM".json
+    gcovr -b --filter "$SRC_DIR" --json > "$STAT_DIR/code$NUM.json"
 }
 
 
@@ -83,11 +82,13 @@ if [[ "$name" == "all" ]]; then
         echo ""
 
         coverage_other $NUM_TEST
-
     done
 
     mkdir "$STAT_DIR/html" || { echo "WARNING: cannot create html. Probably exists." ; }
-    echo "source directory $SRC_DIR"
+    echo "source directory: $SRC_DIR"
+    echo "statistics directory: $STAT_DIR"
+    ls $STAT_DIR
+    echo -e "------------------\n"
     gcovr --filter "$SRC_DIR" --add-tracefile "$STAT_DIR/code0.json"  \
                              --add-tracefile "$STAT_DIR/code2.json" \
                              --add-tracefile "$STAT_DIR/code3.json" \
