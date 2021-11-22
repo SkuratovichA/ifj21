@@ -84,16 +84,17 @@ do {                                                   \
 #define ADD_INSTR_INT(num)                   \
 do {                                        \
     char str[MAX_CHAR] = "\0";              \
-    sprintf(str, "%*lu", MAX_CHAR-1, num);               \
+    sprintf(str, "%*lu", MAX_CHAR-1, num);  \
     ADD_INSTR_PART(str);                    \
 } while (0)                                 \
 
 /*
  * Change active list of instructions.
  */
-#define INSTR_CHANGE_ACTIVE_LIST(newList)   \
-do {                                        \
-    instrList = (newList);                  \
+#define INSTR_CHANGE_ACTIVE_LIST(newList)    \
+do {                                         \
+    instrList = (newList);                   \
+    debug_msg("Active list changed\n");      \
 } while (0)
 
 /**
