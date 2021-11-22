@@ -175,6 +175,7 @@ static bool cond_body(pfile_t *pfile) {
             if (!fun_body(pfile)) {
                 return false;
             }
+
             SYMSTACK_POP();
             return true;
 
@@ -376,6 +377,7 @@ static bool for_cycle(pfile_t *pfile) {
     if (!fun_body(pfile)) {
         return false;
     }
+
     SYMSTACK_POP();
     return true;
 }
@@ -466,6 +468,7 @@ static bool while_cycle(pfile_t *pfile) {
     if (!fun_body(pfile)) {
         return false;
     }
+
     // parent function pops a table from the stack.
     SYMSTACK_POP();
     return true;
@@ -937,7 +940,6 @@ static bool function_definition(pfile_t *pfile) {
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
     token_t token = Scanner.get_curr_token();
-    dynstring_t *id_name;
 
     switch (token.type) {
         // function declaration: global id : function ( <datatype_list> <funretopt>
@@ -949,8 +951,8 @@ static bool stmt(pfile_t *pfile) {
             return function_definition(pfile);
 
             // function calling: id ( <list_expr> )
-        case TOKEN_ID:
-            id_name = Dynstring.ctor(Dynstring.c_str(token.attribute.id));
+        case TOKEN_ID:;
+            dynstring_t *id_name = Dynstring.ctor(Dynstring.c_str(token.attribute.id));
 
             // create frame before passing parameters
             Generator.func_createframe();
@@ -989,6 +991,7 @@ static bool stmt(pfile_t *pfile) {
  */
 static bool stmt_list(pfile_t *pfile) {
     debug_msg("<stmt_list> ->\n");
+
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
 
@@ -1263,24 +1266,26 @@ int main() {
     pfile_t *pf4 = Pfile.ctor(
             PROLOG
             GLOBAL "foo : function()" NL
-            GLOBAL "baz : function(string)" NL
-            GLOBAL "bar : function(string, integer)" NL
-            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n" NL
-                NL
             FUN "foo()" NL
             END NL
 
+            GLOBAL "baz : function(string)" NL
             FUN "baz(str : string)" NL
             END NL
-             NL
+
+            GLOBAL "bar : function(string, integer)" NL
             FUN "bar(str : string, int : integer)" NL
             END NL
+
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n" NL
+            FUN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (str : string) : string, string, string\n" NL
+            END NL
+
+            NL
+
             NL
             GLOBAL "arst : function(string,         integer,             number,       number,     integer, string)" NL
             FUN               "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)" NL
-            END NL
-             NL
-            FUN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (str : string) : string, string, string\n" NL
             END NL
     );
 
@@ -1764,6 +1769,118 @@ int main() {
             END NL
     );
 
+    char *description38 = "no error, parsing definitions, declarations";
+    bool result38 = true;
+    int retcode38 = ERROR_NOERROR;
+    pfile_t *pf38 = Pfile.ctor(
+            PROLOG
+
+            GLOBAL "baz : function(string)" NL
+            FUN "baz(str : string)" NL
+            END NL
+
+            GLOBAL "bar : function(string, integer)" NL
+            FUN "bar(str : string, int : integer)" NL
+            END NL
+
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n" NL
+            FUN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (str : string) : string, string, string\n" NL
+            END NL
+
+            NL
+
+            NL
+            GLOBAL "arst : function(string,         integer,             number,       number,     integer, string)" NL
+            FUN               "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)" NL
+            END NL
+    );
+
+    char *description39 = "no error, parsing definitions, declarations";
+    bool result39 = true;
+    int retcode39 = ERROR_NOERROR;
+    pfile_t *pf39 = Pfile.ctor(
+            PROLOG
+
+            GLOBAL "bar : function(string, integer)" NL
+            FUN "bar(str : string, int : integer)" NL
+            END NL
+
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n" NL
+            FUN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (str : string) : string, string, string\n" NL
+            END NL
+
+            NL
+            GLOBAL "arst : function(string,         integer,             number,       number,     integer, string)" NL
+            FUN               "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)" NL
+            END NL
+    );
+
+    char *description40 = "no error, parsing definitions, declarations";
+    bool result40 = true;
+    int retcode40 = ERROR_NOERROR;
+    pfile_t *pf40 = Pfile.ctor(
+            PROLOG
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n" NL
+            FUN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (str : string) : string, string, string\n" NL
+            END NL
+
+            NL
+            GLOBAL "arst : function(string,         integer,             number,       number,     integer, string)" NL
+            FUN               "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)" NL
+            END NL
+    );
+
+    char *description41 = "no error, parsing definitions, declarations";
+    bool result41 = true;
+    int retcode41 = ERROR_NOERROR;
+    pfile_t *pf41 = Pfile.ctor(
+            PROLOG
+            NL
+            GLOBAL "arst : function(string,         integer,             number,       number,     integer, string)" NL
+            FUN               "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)" NL
+            END NL
+    );
+
+    char *description42 = "no error, parsing definitions, declarations";
+    bool result42 = true;
+    int retcode42 = ERROR_NOERROR;
+    pfile_t *pf42 = Pfile.ctor(
+            PROLOG
+            FUN "foo()" NL
+            END NL
+
+            FUN "baz(str : string)" NL
+            END NL
+
+            GLOBAL "bar : function(string, integer)" NL
+            FUN "bar(str : string, int : integer)" NL
+            END NL
+
+            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n" NL
+            FUN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (str : string) : string, string, string\n" NL
+            END NL
+
+            NL
+            GLOBAL "arst : function(string,         integer,             number,       number,     integer, string)" NL
+            FUN               "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)" NL
+            END NL
+    );
+
+    char *description43 = "no error, parsing definitions, declarations";
+    bool result43 = true;
+    int retcode43 = ERROR_NOERROR;
+    pfile_t *pf43 = Pfile.ctor(
+            GLOBAL "bar : function(string, integer)" NL
+            FUN "bar(str : string, int : integer)" NL
+            END NL
+
+            NL
+            GLOBAL "arst : function(string,         integer,             number,       number,     integer, string)" NL
+            FUN               "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)" NL
+            END NL
+    );
+
+
     TEST_CASE(1);
     TEST_CASE(2);
     TEST_CASE(3);
@@ -1790,14 +1907,12 @@ int main() {
     TEST_CASE(22);
     TEST_CASE(23);
     TEST_CASE(24);
-
     TEST_CASE(25);
     TEST_CASE(26);
     TEST_CASE(27);
-
     TEST_CASE(28);
-
     TEST_CASE(29);
+
     TEST_CASE(30);
     TEST_CASE(31);
     TEST_CASE(32);
@@ -1806,6 +1921,13 @@ int main() {
     TEST_CASE(35);
     TEST_CASE(36);
     TEST_CASE(37);
+    TEST_CASE(38);
+    TEST_CASE(39);
+
+    TEST_CASE(40);
+    TEST_CASE(41);
+    TEST_CASE(42);
+    TEST_CASE(43);
 
     return 0;
 }
