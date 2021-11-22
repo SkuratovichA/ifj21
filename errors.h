@@ -8,16 +8,20 @@
 #pragma once
 
 // assert a condition and exit with an error code if condition is false
-#define soft_assert(cond, err) \
-do { \
-    if (!(cond)) { \
-        debug_msg_s("\n "); \
-        debug_msg(" "); \
-        fprintf(stderr, __FILE__":%d in %s (soft)assertion failed ", __LINE__, __FUNCTION__); \
-        fprintf(stderr, #cond); \
-        fprintf(stderr, "\n"); \
-        exit((err)); \
-    } \
+#define soft_assert(cond, err)                    \
+do {                                             \
+    if (!(cond)) {                               \
+        debug_msg_s("\n ");                      \
+        debug_msg(" ");                          \
+        fprintf(stderr,                          \
+            __FILE__                             \
+            ":%d in %s (soft)assertion failed ", \
+            __LINE__, __FUNCTION__               \
+        );                                       \
+        fprintf(stderr, #cond);                  \
+        fprintf(stderr, "\n");                   \
+        exit((err));                             \
+    }                                            \
 } while (0)
 
 /** All error_interface codes.
