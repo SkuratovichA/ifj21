@@ -175,7 +175,6 @@ static bool cond_body(pfile_t *pfile) {
             if (!fun_body(pfile)) {
                 return false;
             }
-
             SYMSTACK_POP();
             return true;
 
@@ -377,7 +376,6 @@ static bool for_cycle(pfile_t *pfile) {
     if (!fun_body(pfile)) {
         return false;
     }
-
     SYMSTACK_POP();
     return true;
 }
@@ -468,7 +466,6 @@ static bool while_cycle(pfile_t *pfile) {
     if (!fun_body(pfile)) {
         return false;
     }
-
     // parent function pops a table from the stack.
     SYMSTACK_POP();
     return true;
@@ -940,6 +937,7 @@ static bool function_definition(pfile_t *pfile) {
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
     token_t token = Scanner.get_curr_token();
+    dynstring_t *id_name;
 
     switch (token.type) {
         // function declaration: global id : function ( <datatype_list> <funretopt>
@@ -991,7 +989,6 @@ static bool stmt(pfile_t *pfile) {
  */
 static bool stmt_list(pfile_t *pfile) {
     debug_msg("<stmt_list> ->\n");
-
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
 
@@ -1143,6 +1140,7 @@ const struct parser_interface_t Parser = {
         .analyse = Analyse,
 };
 
+// #define SELFTEST_parser
 #ifdef SELFTEST_parser
 
 #include "tests/tests.h"
