@@ -61,18 +61,28 @@ coverage_other()
 
     # create .json file
 
+
+    # something like if -ne $STAT_DIR
+    if [ ! -d "$STAT_DIR" ] ; then
+        echo "creating $STAT_DIR"
+        mkdir "$STAT_DIR"
+    fi
+
     gcovr -b --filter "$SRC_DIR" --json > "$STAT_DIR/code$NUM.json"
 }
 
 
 if [[ "$name" == "all" ]]; then
+    # create a directory for statistics
+    if [ ! -d $STAT_DIR ]; then
+        echo "Cannot enter a directory $STAT_DIR. Creating one";
+        rm -rf "$STAT_DIR" 1> /dev/null 2>/dev/null ;
+        mkdir "$STAT_DIR" ;
+        cd "$STAT_DIR" || { echo "ERROR. cannot create $STAT_DIR. Exiting." ; exit 1 ; }
+    fi
 
-    cd "$STAT_DIR" || {
-      echo "Cannot enter a directory $STAT_DIR. Creating one";
-      rm -rf "$STAT_DIR" 1> /dev/null 2>/dev/null ;
-      mkdir "$STAT_DIR" ;
-      cd "$STAT_DIR" || { echo "ERROR. cannot create $STAT_DIR. Exiting." ; exit 1 ; }
-    }
+    # create a directory for html pages
+    mkdir "$STAT_DIR/html" || { echo "$STAT_DIR/html already exists " ; }
 
     for NUM_TEST in 0 2 3 4 5 6 7
     do
@@ -84,11 +94,6 @@ if [[ "$name" == "all" ]]; then
         coverage_other $NUM_TEST
     done
 
-    mkdir "$STAT_DIR/html" || { echo "WARNING: cannot create html. Probably exists." ; }
-    echo "source directory: $SRC_DIR"
-    echo "statistics directory: $STAT_DIR"
-    ls $STAT_DIR
-    echo -e "------------------\n"
     gcovr --filter "$SRC_DIR" --add-tracefile "$STAT_DIR/code0.json"  \
                              --add-tracefile "$STAT_DIR/code2.json" \
                              --add-tracefile "$STAT_DIR/code3.json" \
@@ -96,16 +101,17 @@ if [[ "$name" == "all" ]]; then
                              --add-tracefile "$STAT_DIR/code5.json" \
                              --add-tracefile "$STAT_DIR/code6.json" \
                              --add-tracefile "$STAT_DIR/code7.json" \
-                             --html --html-details -o "$STAT_DIR/html/coverage.html" || { echo "ERROR: cannot cover" ; exit 1 ; }
+                             --html --html-details -o "$STAT_DIR/html/coverage.html" || { echo "ERROR: cannot cover" ; }
     open "$STAT_DIR/html/coverage.html"
+    exit 0 ;
 fi
 
 cd "$BUILD_DIR" || { echo "ERROR: no build dir" ; exit 1;  }
 rm -rf *
 cmake ..
-make ifj21 || { echo "ERROR: cannot make" ; exit 1; }
+make "$BIN_TARGET" || { echo "ERROR: cannot make" ; exit 1; }
 
-cd "$SRC_DIR"/tests || { echo "ERROR" ; exit 1 ; }
+cd "$SRC_DIR/tests" || { echo "ERROR. No tests directory" ; exit 1 ; }
 
 echo ""
 # we need folders with tests (in tests/ directory)
@@ -149,7 +155,7 @@ do
 
         rm tmp.txt
     else
-        "$BUILD_DIR"/"$BIN_TARGET" < "$file" 2>/dev/null
+        "$BUILD_DIR"/"$BIN_TARGET" < "$file" 2>/dev/null 1>/dev/null
         ret_val=$?
     fi
 
@@ -185,12 +191,20 @@ else
 fi
 
 if [[ "$coverage" == "coverage" ]]; then
+
+    # something like if -ne $STAT_DIR
+    if [ ! -d "$STAT_DIR" ] ; then
+        echo "creating $STAT_DIR"
+        mkdir "$STAT_DIR"
+    fi
+    mkdir "$STAT_DIR/html" || { echo "$STAT_DIR/html already exists" ; }
+
     coverage_other 0
     echo "source directory $SRC_DIR"
-    gcovr --filter "$SRC_DIR" --add-tracefile code0.json --html --html-details -o coverage.html
-    open coverage.html
+    gcovr --filter "$SRC_DIR" --add-tracefile "$STAT_DIR/code0.json" --html --html-details -o "$STAT_DIR/html/coverage.html"
+    open "$STAT_DIR/html/coverage.html"
 fi
 
 
 # delete directory with statistics
-rm -rf "$STAT_DIR"
+# rm -rf "$STAT_DIR"
