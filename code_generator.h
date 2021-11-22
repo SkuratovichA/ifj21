@@ -24,78 +24,12 @@ typedef struct {
 /*
  * Global variables used for code generator.
  */
-list_t *instrList;              // pointer to the list of instr that is currently used
-dynstring_t *tmp_instr;         // instruction that is currently being generated
-instructions_t instructions;    // structure that holds info about generated code
+extern list_t *instrList;              // pointer to the list of instr that is currently used
+extern dynstring_t *tmp_instr;         // instruction that is currently being generated
+extern instructions_t instructions;    // structure that holds info about generated code
 
-/*
- * Adds new instruction to the list of instructions.
- */
-#define ADD_INSTR(instr)                                \
-do {                                                    \
-    List.append(instrList, Dynstring.ctor(instr));      \
-} while (0)
 
-/*
- * Adds part of an instruction to global tmp_instr.
- * Converts instrPart to a dynstring_t*.
- */
-#define ADD_INSTR_PART(instrPart)                            \
-do {                                                        \
-    dynstring_t * newInstrPart = Dynstring.ctor(instrPart); \
-    Dynstring.cat(tmp_instr, newInstrPart);                 \
-    Dynstring.dtor(newInstrPart);                           \
-} while (0)
-
-/*
- * Adds part of an instruction to global tmp_instr.
- * instrPartDynstr already is a dyntring_t*.
- */
-#define ADD_INSTR_PART_DYN(instrPartDyn)      \
-do {                                         \
-    Dynstring.cat(tmp_instr, instrPartDyn);  \
-} while (0)
-
-/*
- * Adds tmp_inst to the list of instructions.
- */
-#define ADD_INSTR_TMP                        \
-do {                                        \
-    List.append(instrList,                  \
-                Dynstring.c_str(tmp_instr)  \
-                );                          \
-    Dynstring.clear(tmp_instr);             \
-} while (0)
-
-/*
- * Inserts tmp_inst before while loop.
- */
-#define ADD_INSTR_WHILE                                 \
-do {                                                   \
-    List.insert_after(instructions.before_loop_start,  \
-                      Dynstring.c_str(tmp_instr)       \
-                      );                               \
-    Dynstring.clear(tmp_instr);                        \
-} while (0)
-
-/*
- * Converts integer to string and adds it to tmp_instr
- */
-#define ADD_INSTR_INT(num)                   \
-do {                                        \
-    char str[MAX_CHAR] = "\0";              \
-    sprintf(str, "%*lu", MAX_CHAR-1, num);  \
-    ADD_INSTR_PART(str);                    \
-} while (0)                                 \
-
-/*
- * Change active list of instructions.
- */
-#define INSTR_CHANGE_ACTIVE_LIST(newList)    \
-do {                                         \
-    instrList = (newList);                   \
-    debug_msg("Active list changed\n");      \
-} while (0)
+void INSTR_CHANGE_ACTIVE_LIST(list_t *);
 
 /**
  * A structure that store pointers to the functions from code_generator.c. So we can use them in different files as interface.

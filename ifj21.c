@@ -74,12 +74,7 @@ int main() {
         printf("# ---------- startList ----------\n");
         INSTR_CHANGE_ACTIVE_LIST(instructions.startList);
         tmp = instrList ? instrList->head : NULL;
-        size_t x = (size_t) ((void *) tmp->data);
-        if (!x) {
-            return 0;
-        }
         while (tmp != NULL) {
-            printf("[]\n");
             debug_msg_s("%p\n", (void *) tmp->data);
             printf("%s\n", Dynstring.c_str((dynstring_t *) tmp->data));
             tmp = tmp->next;
@@ -88,10 +83,7 @@ int main() {
         printf("# ---------- listFunctions ----------\n");
         INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
         tmp = instrList ? instrList->head : NULL;
-        x = (size_t) ((void *) tmp->data);
-        if (!x) { return 0; }
         while (tmp != NULL) {
-            printf("[]\n");
             printf("%s\n", Dynstring.c_str(tmp->data));
             tmp = tmp->next;
         }

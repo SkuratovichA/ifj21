@@ -1,17 +1,88 @@
 #include "code_generator.h"
 
 /*
+ * Global variables used for code generator.
+ */
+list_t *instrList;              // pointer to the list of instr that is currently used
+dynstring_t *tmp_instr;         // instruction that is currently being generated
+instructions_t instructions;    // structure that holds info about generated code
+
+/*
+ * Adds new instruction to the list of instructions.
+ */
+void ADD_INSTR(char *instr) {
+    List.append(instrList, Dynstring.ctor(instr));
+}
+
+/*
+ * Adds part of an instruction to global tmp_instr.
+ * Converts instrPart to a dynstring_t*.
+ */
+void ADD_INSTR_PART(char *instrPart) {
+    dynstring_t *newInstrPart = Dynstring.ctor(instrPart);
+    Dynstring.cat(tmp_instr, newInstrPart);
+    Dynstring.dtor(newInstrPart);
+}
+
+/*
+ * Adds part of an instruction to global tmp_instr.
+ * instrPartDynstr already is a dyntring_t*.
+ */
+void ADD_INSTR_PART_DYN(dynstring_t *instrPartDyn) {
+    Dynstring.cat(tmp_instr, instrPartDyn);
+}
+
+/*
+ * Adds tmp_inst to the list of instructions.
+ */
+void ADD_INSTR_TMP() {
+    List.append(instrList,
+                Dynstring.c_str(tmp_instr)
+    );
+    Dynstring.clear(tmp_instr);
+}
+
+/*
+ * Inserts tmp_inst before while loop.
+ */
+void ADD_INSTR_WHILE() {
+    List.insert_after(instructions.before_loop_start,
+                      Dynstring.c_str(tmp_instr)
+    );
+    Dynstring.clear(tmp_instr);
+}
+
+/*
+ * Converts integer to string and adds it to tmp_instr
+ */
+void ADD_INSTR_INT(uint64_t num) {
+    char str[MAX_CHAR] = "\0";
+    sprintf(str, "%*lu", MAX_CHAR - 1, num);
+    ADD_INSTR_PART(str);
+}
+
+/*
+ * Change active list of instructions.
+ */
+void INSTR_CHANGE_ACTIVE_LIST(list_t *newList) {
+    debug_msg("\n");
+    debug_msg_s("instrList  ->  newlist\n%p -> ", (void *) instrList);
+    instrList = (newList);
+    debug_msg_s("%p\n", (void *) instrList);
+}
+
+/*
  * @brief   Generates built-in function reads().
  *          function reads() : string
  *          result: %res
  */
 static void generate_func_reads() {
-    ADD_INSTR(  "LABEL $READS \n"                 \
-                "PUSHFRAME \n"                    \
-                "DEFVAR LF@%res \n"               \
-                "READ LF@%res string \n"          \
-                "POPFRAME \n"                     \
-                "RETURN \n");
+    ADD_INSTR("LABEL $READS \n"
+              "PUSHFRAME \n"
+              "DEFVAR LF@%res \n"
+              "READ LF@%res string \n"
+              "POPFRAME \n"
+              "RETURN \n");
 }
 
 /*
@@ -20,12 +91,12 @@ static void generate_func_reads() {
  *          result: %res
  */
 static void generate_func_readi() {
-    ADD_INSTR(  "LABEL $READI \n"                 \
-                "PUSHFRAME \n"                    \
-                "DEFVAR LF@%res \n"               \
-                "READ LF@%res int \n"             \
-                "POPFRAME \n"                     \
-                "RETURN \n");
+    ADD_INSTR("LABEL $READI \n"
+              "PUSHFRAME \n"
+              "DEFVAR LF@%res \n"
+              "READ LF@%res int \n"
+              "POPFRAME \n"
+              "RETURN \n");
 }
 
 /*
@@ -34,12 +105,12 @@ static void generate_func_readi() {
  *          result: %res
  */
 static void generate_func_readn() {
-    ADD_INSTR(  "LABEL $READN \n"                 \
-                "PUSHFRAME \n"                    \
-                "DEFVAR LF@%res \n"               \
-                "READ LF@%res float \n"           \
-                "POPFRAME \n"                     \
-                "RETURN \n");
+    ADD_INSTR("LABEL $READN \n"
+              "PUSHFRAME \n"
+              "DEFVAR LF@%res \n"
+              "READ LF@%res float \n"
+              "POPFRAME \n"
+              "RETURN \n");
 }
 
 /*
@@ -53,13 +124,13 @@ static void generate_func_readn() {
  *          params: FIXME
  */
 static void generate_func_write() {
-    ADD_INSTR(  "LABEL $WRITE \n"                 \
-                "PUSHFRAME \n"                    \
-                "DEFVAR LF@p0 \n"                 \
-                "MOVE LF@p0 LF@%0 \n"             \
-                "WRITE LF@p0 \n"                  \
-                "POPFRAME \n"                     \
-                "RETURN \n");
+    ADD_INSTR("LABEL $WRITE \n"
+              "PUSHFRAME \n"
+              "DEFVAR LF@p0 \n"
+              "MOVE LF@p0 LF@%0 \n"
+              "WRITE LF@p0 \n"
+              "POPFRAME \n"
+              "RETURN \n");
 }
 
 /*
@@ -69,14 +140,14 @@ static void generate_func_write() {
  *          result: %res
  */
 static void generate_func_tointeger() {
-    ADD_INSTR(  "LABEL $TOINTEGER \n"             \
-                "PUSHFRAME \n"                    \
-                "DEFVAR LF@%res \n"               \
-                "DEFVAR LF@p0 \n"                 \
-                "MOVE LF@p0 LF@%0 \n"             \
-                "FLOAT2INT LF@%res LF@p0 \n"      \
-                "POPFRAME \n"                     \
-                "RETURN \n");
+    ADD_INSTR("LABEL $TOINTEGER \n"
+              "PUSHFRAME \n"
+              "DEFVAR LF@%res \n"
+              "DEFVAR LF@p0 \n"
+              "MOVE LF@p0 LF@%0 \n"
+              "FLOAT2INT LF@%res LF@p0 \n"
+              "POPFRAME \n"
+              "RETURN \n");
 }
 
 /*
@@ -86,21 +157,21 @@ static void generate_func_tointeger() {
  *          result: %res
  */
 static void generate_func_chr() {
-    ADD_INSTR("LABEL $CHR \n"                                         \
-                "PUSHFRAME \n"                                          \
-                "DEFVAR LF@%res \n"                                     \
-                "MOVE LF@%res nil@nil \n"                               \
-                "DEFVAR LF@p0 \n"                                       \
-                "MOVE LF@p0 LF@%0 \n"                                   \
-                "DEFVAR LF@check \n"                                    \
-                "LT LF@check LF@p0 int@0 \n"                            \
-                "JUMPIFEQ $CHR$end LF@check bool@true \n"               \
-                "GT LF@check LF@p0 int@255 \n"                          \
-                "JUMPIFEQ $CHR$end LF@check bool@true \n"               \
-                "INT2CHAR LF@%res LF@p0 \n"                             \
-                "LABEL $CHR$end \n"                                     \
-                "POPFRAME \n"                                           \
-                "RETURN \n");
+    ADD_INSTR("LABEL $CHR \n"
+              "PUSHFRAME \n"
+              "DEFVAR LF@%res \n"
+              "MOVE LF@%res nil@nil \n"
+              "DEFVAR LF@p0 \n"
+              "MOVE LF@p0 LF@%0 \n"
+              "DEFVAR LF@check \n"
+              "LT LF@check LF@p0 int@0 \n"
+              "JUMPIFEQ $CHR$end LF@check bool@true \n"
+              "GT LF@check LF@p0 int@255 \n"
+              "JUMPIFEQ $CHR$end LF@check bool@true \n"
+              "INT2CHAR LF@%res LF@p0 \n"
+              "LABEL $CHR$end \n"
+              "POPFRAME \n"
+              "RETURN \n");
 }
 
 /*
@@ -110,26 +181,26 @@ static void generate_func_chr() {
  *          result: %res
  */
 static void generate_func_ord() {
-    ADD_INSTR(  "LABEL $ORD \n"                                         \
-                "PUSHFRAME \n"                                          \
-                "DEFVAR LF@%res \n"                                     \
-                "MOVE LF@%res nil@nil \n"                               \
-                "DEFVAR LF@p0 \n"                                       \
-                "MOVE LF@p0 LF@%0 \n"                                   \
-                "DEFVAR LF@p1 \n"                                       \
-                "MOVE LF@p1 LF@%1 \n"                                   \
-                "DEFVAR LF@str_len \n"                                  \
-                "STRLEN LF@str_len LF@p0 \n"                            \
-                "DEFVAR LF@check \n"                                    \
-                "LT LF@check LF@p1 int@1 \n"                            \
-                "JUMPIFEQ $ORD$end LF@check bool@true \n"               \
-                "GT LF@check LF@p1 LF@str_len \n"                       \
-                "JUMPIFEQ $ORD$end LF@check bool@true \n"               \
-                "SUB LF@p1 LF@p1 int@1 \n"                              \
-                "STRI2INT LF@%res LF@p0 LF@p1 \n"                       \
-                "LABEL $ORD$end \n"                                     \
-                "POPFRAME \n"                                           \
-                "RETURN \n");
+    ADD_INSTR("LABEL $ORD \n"
+              "PUSHFRAME \n"
+              "DEFVAR LF@%res \n"
+              "MOVE LF@%res nil@nil \n"
+              "DEFVAR LF@p0 \n"
+              "MOVE LF@p0 LF@%0 \n"
+              "DEFVAR LF@p1 \n"
+              "MOVE LF@p1 LF@%1 \n"
+              "DEFVAR LF@str_len \n"
+              "STRLEN LF@str_len LF@p0 \n"
+              "DEFVAR LF@check \n"
+              "LT LF@check LF@p1 int@1 \n"
+              "JUMPIFEQ $ORD$end LF@check bool@true \n"
+              "GT LF@check LF@p1 LF@str_len \n"
+              "JUMPIFEQ $ORD$end LF@check bool@true \n"
+              "SUB LF@p1 LF@p1 int@1 \n"
+              "STRI2INT LF@%res LF@p0 LF@p1 \n"
+              "LABEL $ORD$end \n"
+              "POPFRAME \n"
+              "RETURN \n");
 }
 
 /*
@@ -139,45 +210,45 @@ static void generate_func_ord() {
  *          result: %res
 */
 static void generate_func_substr() {
-    ADD_INSTR("LABEL $SUBSTR \n"                                      \
-                "PUSHFRAME \n"                                          \
-                "# define vars for params and result\n"                  \
-                "DEFVAR LF@%res \n"                                     \
-                "MOVE LF@%res nil@nil \n"                               \
-                "DEFVAR LF@p0 \n"                                       \
-                "MOVE LF@p0 LF@%0 \n"                                   \
-                "DEFVAR LF@p1 \n"                                       \
-                "MOVE LF@p1 LF@%1 \n"                                   \
-                "DEFVAR LF@p2 \n"                                       \
-                "MOVE LF@p2 LF@%2 \n"                                   \
-                "# check params \n"                                     \
-                "DEFVAR LF@check \n"                                    \
-                "LT LF@check LF@p1 int@1 \n"                            \
-                "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"            \
-                "LT LF@check LF@p2 int@1 \n"                            \
-                "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"            \
-                "DEFVAR LF@str_len \n"                                  \
-                "STRLEN LF@str_len LF@p0 \n"                            \
-                "GT LF@check LF@p1 LF@str_len \n"                       \
-                "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"            \
-                "GT LF@check LF@p2 LF@str_len \n"                       \
-                "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"            \
-                "LT LF@check LF@p2 LF@p1 \n"                            \
-                "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"            \
-                "# for (i = i; i < j; i++) \n"                          \
-                "SUB LF@p1 LF@p1 int@1 \n"                              \
-                "DEFVAR LF@tmp_char \n"                                 \
-                "MOVE LF@%res string@ \n"                               \
-                "LABEL LOOP \n"                                         \
-                    "GETCHAR LF@tmp_char LF@p0 LF@p1 \n"                \
-                    "CONCAT LF@%res LF@%res LF@tmp_char \n"             \
-                    "ADD LF@p1 LF@p1 int@1 \n"                          \
-                "# if (i < j) goto LOOP \n"                             \
-                "LT LF@check LF@p1 LF@p2 \n"                            \
-                "JUMPIFEQ LOOP LF@check bool@true \n"                   \
-                "LABEL $SUBSTR$end \n"                                  \
-                "POPFRAME \n"                                           \
-                "RETURN \n");
+    ADD_INSTR("LABEL $SUBSTR \n"
+              "PUSHFRAME \n"
+              "# define vars for params and result\n"
+              "DEFVAR LF@%res \n"
+              "MOVE LF@%res nil@nil \n"
+              "DEFVAR LF@p0 \n"
+              "MOVE LF@p0 LF@%0 \n"
+              "DEFVAR LF@p1 \n"
+              "MOVE LF@p1 LF@%1 \n"
+              "DEFVAR LF@p2 \n"
+              "MOVE LF@p2 LF@%2 \n"
+              "# check params \n"
+              "DEFVAR LF@check \n"
+              "LT LF@check LF@p1 int@1 \n"
+              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "LT LF@check LF@p2 int@1 \n"
+              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "DEFVAR LF@str_len \n"
+              "STRLEN LF@str_len LF@p0 \n"
+              "GT LF@check LF@p1 LF@str_len \n"
+              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "GT LF@check LF@p2 LF@str_len \n"
+              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "LT LF@check LF@p2 LF@p1 \n"
+              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "# for (i = i; i < j; i++) \n"
+              "SUB LF@p1 LF@p1 int@1 \n"
+              "DEFVAR LF@tmp_char \n"
+              "MOVE LF@%res string@ \n"
+              "LABEL LOOP \n"
+              "GETCHAR LF@tmp_char LF@p0 LF@p1 \n"
+              "CONCAT LF@%res LF@%res LF@tmp_char \n"
+              "ADD LF@p1 LF@p1 int@1 \n"
+              "# if (i < j) goto LOOP \n"
+              "LT LF@check LF@p1 LF@p2 \n"
+              "JUMPIFEQ LOOP LF@check bool@true \n"
+              "LABEL $SUBSTR$end \n"
+              "POPFRAME \n"
+              "RETURN \n");
 }
 
 /*
@@ -186,7 +257,7 @@ static void generate_func_substr() {
 static void generate_func_call(dynstring_t *func_name) {
     ADD_INSTR_PART("CALL $");
     ADD_INSTR_PART_DYN(func_name);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -218,7 +289,7 @@ static void generate_func_start(dynstring_t *func_name) {
     INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
     ADD_INSTR_PART("LABEL $");   // add name of function
     ADD_INSTR_PART_DYN(func_name);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
     ADD_INSTR("PUSHFRAME");
 
     // TODO remove this and make another function - we need to define LF@%result... after starting function definition
@@ -242,7 +313,7 @@ static void generate_func_end(char *func_name) {
     ADD_INSTR_PART("$end");
 
     debug_msg_s("add_instr_tmp, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 
     // FIXME - remove these instructions
     debug_msg_s("add_instr, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
@@ -270,13 +341,13 @@ static void generate_func_end(char *func_name) {
 static void generate_func_start_param(dynstring_t *param_name, size_t index) {
     ADD_INSTR_PART("DEFVAR LF@%");
     ADD_INSTR_PART_DYN(param_name);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 
     ADD_INSTR_PART("MOVE LF@%");
     ADD_INSTR_PART_DYN(param_name);
     ADD_INSTR_PART(" LF@%");
     ADD_INSTR_INT(index);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -288,12 +359,12 @@ static void generate_func_start_param(dynstring_t *param_name, size_t index) {
 static void generate_func_return_value(size_t index) {
     ADD_INSTR_PART("DEFVAR LF@%return");
     ADD_INSTR_INT(index);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 
     ADD_INSTR_PART("MOVE LF@%return");
     ADD_INSTR_INT(index);
     ADD_INSTR_PART(" nil@nil");
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -354,9 +425,9 @@ static void generate_defvar(dynstring_t *var_name) {
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
     if (instructions.in_loop) {
-        ADD_INSTR_WHILE;
+        ADD_INSTR_WHILE();
     } else {
-        ADD_INSTR_TMP;
+        ADD_INSTR_TMP();
     }
 }
 
@@ -372,7 +443,7 @@ static void generate_var_definition(dynstring_t *var_name) {
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
     ADD_INSTR_PART(" GF@%expr_result");
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -388,7 +459,7 @@ static void generate_var_declaration(dynstring_t *var_name) {
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
     ADD_INSTR_PART(" nil@nil");
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -400,13 +471,13 @@ static void generate_var_declaration(dynstring_t *var_name) {
 static void generate_func_pass_param(size_t param_index) {
     ADD_INSTR_PART("DEFVAR TF@%");
     ADD_INSTR_INT(param_index);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 
     ADD_INSTR_PART("MOVE TF@%");
     ADD_INSTR_INT(param_index);
     ADD_INSTR_PART(" ");
     generate_var_value(Scanner.get_curr_token());
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -427,7 +498,7 @@ static void generate_cond_label(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$");
     ADD_INSTR_INT(cond_num);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -441,7 +512,7 @@ static void generate_cond_if(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_PART("$");
     ADD_INSTR_INT(cond_num);
     ADD_INSTR_PART(" LF@%result bool@true");
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -454,7 +525,7 @@ static void generate_cond_elseif(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_PART("JUMP $");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 
     generate_cond_label(if_scope_id, cond_num);
 }
@@ -470,14 +541,14 @@ static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_PART("JUMP $");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 
     generate_cond_label(if_scope_id, cond_num - 1);
 
     ADD_INSTR_PART("JUMPIFNEQ $");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end LF@%result bool@true");
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -490,7 +561,7 @@ static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_PART("LABEL $");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 
     generate_cond_label(if_scope_id, cond_num);
 }
@@ -502,7 +573,7 @@ static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
 static void generate_while_header() {
     ADD_INSTR_PART("LABEL $while$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -513,7 +584,7 @@ static void generate_while_cond() {
     ADD_INSTR_PART("JUMPIFEQ $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART(" LF@%result bool@true");
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -524,11 +595,11 @@ static void generate_while_cond() {
 static void generate_while_end() {
     ADD_INSTR_PART("JUMP $while$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 
     ADD_INSTR_PART("LABEL $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -538,7 +609,7 @@ static void generate_while_end() {
 static void generate_end() {
     ADD_INSTR_PART("LABEL $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -548,7 +619,7 @@ static void generate_end() {
 static void generate_repeat_until_header() {
     ADD_INSTR_PART("LABEL $repeat$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -559,7 +630,7 @@ static void generate_repeat_until_cond() {
     ADD_INSTR_PART("JUMPIFEQ $repeat$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART(" LF@%result bool@true");
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -571,7 +642,7 @@ static void generate_for_header(dynstring_t *var_name) {
     generate_var_definition(var_name);
     ADD_INSTR_PART("LABEL $for$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -582,7 +653,7 @@ static void generate_for_cond() {
     ADD_INSTR_PART("JUMPIFNEQ $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART(" LF@%result bool@true");
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -594,11 +665,11 @@ static void generate_for_cond() {
 static void generate_for_end() {
     ADD_INSTR_PART("JUMP $for$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 
     ADD_INSTR_PART("LABEL $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -648,7 +719,7 @@ static void generate_nil_check(token_t token) {
     ADD_INSTR_PART("JUMPIFEQ $$ERROR_NIL ");
     generate_var_value(token);
     ADD_INSTR_PART(" nil@nil");
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 static void retype_first_or_both(expr_semantics_t *expr) {
@@ -695,7 +766,7 @@ static void generate_expression_operand(expr_semantics_t *expr) {
 
     ADD_INSTR_PART("PUSHS ");
     generate_var_value(expr->first_operand);
-    ADD_INSTR_TMP;
+    ADD_INSTR_TMP();
 }
 
 static void generate_expression(expr_semantics_t *expr) {
