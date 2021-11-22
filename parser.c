@@ -1331,21 +1331,45 @@ int main() {
     int retcode8 = ERROR_NOERROR;
     pfile_t *pf8 = Pfile.ctor(
             PROLOG
-            FUN "main()"
-            LOCAL "suka" ":" NUMBER
+            FUN "die()" NL
+            END NL NL
+            FUN "main()" NL
+            LOCAL "suka" ":" NUMBER " = 12" NL
+            NL
+            TAB IF "suka > 10" THEN NL
+            TAB TAB WRITE"("SOME_STRING")" NL
+            TAB TAB LOCAL "suka" ":" STRING "=" SOME_STRING NL
+            TAB TAB IF "#suka > 10" THEN NL
+            TAB TAB TAB "fuck()" NL
+            TAB TAB ELSIF "#suka < 10" THEN NL
+            TAB TAB TAB WRITE"("SOME_STRING")" NL
+            TAB TAB ELSE NL
+            TAB TAB TAB "die()" NL
+            TAB TAB END NL
+            TAB END NL
+            NL // fun
+    );
 
-            IF "suka > 10" THEN
-            WRITE"("SOME_STRING")"
-            LOCAL "suka" ":" STRING "=" SOME_STRING
-            IF "suka > 10" THEN
-            "fuck()"
-            ELSIF "suka < 10" THEN
-            WRITE"("SOME_STRING")"
-            ELSE
-            "die()"
-            END
-            END
-            END // fun
+    char *description35 = "function die() has not been declared";
+    bool result35 = true;
+    int retcode35 = ERROR_NOERROR;
+    pfile_t *pf35 = Pfile.ctor(
+            PROLOG
+            FUN "main()" NL
+            LOCAL "suka" ":" NUMBER " = 12" NL
+            NL
+            TAB IF "suka > 10" THEN NL
+            TAB TAB WRITE"("SOME_STRING")" NL
+            TAB TAB LOCAL "suka" ":" STRING "=" SOME_STRING NL
+            TAB TAB IF "#suka > 10" THEN NL
+            TAB TAB TAB "fuck()" NL
+            TAB TAB ELSIF "#suka < 10" THEN NL
+            TAB TAB TAB WRITE"("SOME_STRING")" NL
+            TAB TAB ELSE NL
+            TAB TAB TAB "die()" NL
+            TAB TAB END NL
+            TAB END NL
+            NL // fun
     );
 
     char *description9 = "repeat_until";
@@ -1445,20 +1469,20 @@ int main() {
             "main()"// uncoment iff expressions are done
     );
 
-    char *description16 = "builtin functions 2";
+    char *description16 = "function";
     bool result16 = true;
     int retcode16 = ERROR_NOERROR;
     pfile_t *pf16 = Pfile.ctor(
-            "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
-            PROLOG
-            FUN "main()"
-            LOCAL "s1 : string = "
-            LOCAL "s2 : string = s1"
-            "print (s1,"SOME_STRING", s2)"
-            LOCAL "s1len : integer = 10"
-            "s1 ="SUBSTR"(s2, s1len, s1len + 4)"
-            END
-            "main()"
+            "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n" NL
+            PROLOG NL
+            FUN "main()" NL
+            TAB LOCAL "s1 : string = \"HELLO\"" NL
+            TAB LOCAL "s2 : string = s1" NL
+            TAB LOCAL "I1 : integer = #s1" NL
+            TAB LOCAL "s1len : integer = #s2" NL
+            //TAB "s1 = substr(s2, s1len, s1len + 4)" NL
+            END NL NL
+            "main()" NL
     );
 
     char *description17 = "nested whiles, but with an error";
@@ -1489,6 +1513,7 @@ int main() {
             END NL
 
             FUN "yours() : string " NL
+            LOCAL "you : string = \"atata\""
             TAB REPEAT NL
             TAB TAB REPEAT NL
             TAB TAB TAB REPEAT NL
@@ -1656,6 +1681,77 @@ int main() {
             END NL
     );
 
+    char *description34 = "if else esleif no errors.";
+    bool result34 = true;
+    int retcode34 = ERROR_NOERROR;
+    pfile_t *pf34 = Pfile.ctor(
+            PROLOG
+            FUN "foo( r : string, a : string ) : string\n"
+            TAB "local A : integer = 10"NL
+            TAB "local B : integer = 10"NL
+            NL
+            TAB IF"A == B" THEN NL
+            TAB "local hello : integer = 10" NL
+            TAB TAB IF "A == B" THEN NL
+            TAB TAB TAB "local world: string = \"hello\"" NL
+            TAB TAB TAB IF "A == B" THEN NL
+            TAB TAB TAB TAB "local newl : integer" NL
+            TAB TAB TAB ELSIF "A ~= B" THEN NL
+            TAB TAB TAB END NL
+            TAB TAB END NL
+            TAB ELSE NL
+            TAB "local arsoui : integer"NL
+            TAB END NL
+            END NL
+    );
+
+    char *description36 = "Syntax. No prolog string";
+    bool result36 = false;
+    int retcode36 = ERROR_SYNTAX;
+    pfile_t *pf36 = Pfile.ctor(
+            FUN "foo( r : string, a : string ) : string\n"
+            TAB "local A : integer = 10"NL
+            TAB "local B : integer = 10"NL
+            NL
+            TAB IF"A == B" THEN NL
+            TAB "local hello : integer = 10" NL
+            TAB TAB IF "A == B" THEN NL
+            TAB TAB TAB "local world: string = \"hello\"" NL
+            TAB TAB TAB IF "A == B" THEN NL
+            TAB TAB TAB TAB "local newl : integer" NL
+            TAB TAB TAB ELSIF "A ~= B" THEN NL
+            TAB TAB TAB END NL
+            TAB TAB END NL
+            TAB ELSE NL
+            TAB "local arsoui : integer"NL
+            TAB END NL
+            END NL
+    );
+
+    char *description37 = "Syntax. No prolog string";
+    bool result37 = false;
+    int retcode37 = ERROR_SYNTAX;
+    pfile_t *pf37 = Pfile.ctor(
+            "require \"love\"" NL
+            FUN "foo( r : string, a : string ) : string\n"
+            TAB "local A : integer = 10"NL
+            TAB "local B : integer = 10"NL
+            NL
+            TAB IF"A == B" THEN NL
+            TAB "local hello : integer = 10" NL
+            TAB TAB IF "A == B" THEN NL
+            TAB TAB TAB "local world: string = \"hello\"" NL
+            TAB TAB TAB IF "A == B" THEN NL
+            TAB TAB TAB TAB "local newl : integer" NL
+            TAB TAB TAB ELSIF "A ~= B" THEN NL
+            TAB TAB TAB END NL
+            TAB TAB END NL
+            TAB ELSE NL
+            TAB "local arsoui : integer"NL
+            TAB END NL
+            END NL
+    );
+
     TEST_CASE(1);
     TEST_CASE(2);
     TEST_CASE(3);
@@ -1694,6 +1790,10 @@ int main() {
     TEST_CASE(31);
     TEST_CASE(32);
     TEST_CASE(33);
+    TEST_CASE(34);
+    TEST_CASE(35);
+    TEST_CASE(36);
+    TEST_CASE(37);
 
     return 0;
 }
