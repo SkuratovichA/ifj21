@@ -11,8 +11,8 @@
 #define PROLOG "require \"ifj21\" \n"
 
 #define TEST_CASE(number) \
-do {                      \
-    char *_filname ;                                             \
+do {                                                            \
+    char *_filname;                                              \
     switch (retcode##number) {                                  \
         case_5 (ERROR_DEFINITION,                               \
                 ERROR_TYPE_MISSMATCH,                           \
@@ -25,11 +25,11 @@ do {                      \
         case ERROR_NOERROR:                                               \
             _filname = "../tests/without_errors/sasha" #number "_";        \
             break;                                                        \
-                                                                          \
         case ERROR_SYNTAX:                                                \
             _filname = "../tests/syntax_errors/sasha" #number "_";         \
             break;                                                        \
         default:                                                          \
+            debug_msg_s("Undefined error code: %d\n", retcode##number);    \
             _filname = "sasha";                                            \
     }                                                                     \
     dynstring_t *filnam = Dynstring.ctor(_filname);                         \
@@ -44,7 +44,7 @@ do {                      \
         fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                 \
         fclose(fil);                                                       \
     Pfile.dtor(pf ## number);                                              \
-    debug_msg("file created: %s %s%c.tl\n",Dynstring.c_str(filnam), _filname, retcode##number + '0'); \
+    debug_msg_s("file created: %s %s%c.tl\n",Dynstring.c_str(filnam), _filname, retcode##number + '0'); \
     Dynstring.dtor(filnam);             \
 } while (0)
 
@@ -760,7 +760,6 @@ int main() {
     );
 
     char *description46 = "Syntax. wrong prolog string";
-    bool result46 = false;
     int retcode46 = ERROR_SYNTAX;
     pfile_t *pf46 = Pfile.ctor(
             "require \"love\"" NL
