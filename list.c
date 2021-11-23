@@ -81,7 +81,6 @@ static void Insert_after(list_item_t *item, void *data) {
     new_item->next = item->next;
     item->next = new_item;
 }
-
 /**
  * @brief Delete the first item in list.
  *
@@ -89,7 +88,6 @@ static void Insert_after(list_item_t *item, void *data) {
  * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
-    debug_msg("\n");
     soft_assert(list, ERROR_INTERNAL);
 
     list_item_t *tmp = list->head;
@@ -97,13 +95,20 @@ static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
         return;
     }
 
-    debug_msg_s("list->head: %p\n", (void *) list->head);
-    debug_msg_s("tmp: %p\n", (void *) tmp);
     list->head = list->head->next;
-    debug_msg_s("head moved forward\n");
     clear_fun(tmp->data);
-    debug_msg_s("data deleted\n");
     free(tmp);
+}
+
+static void Print_list(list_t *list, char *(*pp_fun)(void *)) {
+    soft_assert(list != NULL, ERROR_INTERNAL);
+
+    list_item_t *iter = list->head;
+
+    while (iter != NULL) {
+        printf("%s\n", pp_fun(iter->data));
+        iter = iter->next;
+    }
 }
 
 /**
@@ -114,7 +119,6 @@ static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
  */
 static void Clear(list_t *list, void (*clear_fun)(void *)) {
     soft_assert(list != NULL, ERROR_INTERNAL);
-    debug_msg("\n");
 
     while (list->head) {
         Delete_first(list, clear_fun);
@@ -128,11 +132,8 @@ static void Clear(list_t *list, void (*clear_fun)(void *)) {
  * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Dtor(list_t *list, void (*clear_fun)(void *)) {
-    debug_msg("\n");
     Clear(list, clear_fun);
-    debug_msg_s("list cleared\n");
     free(list);
-    debug_msg_s("list deleted\n");
 }
 
 /**
@@ -158,13 +159,27 @@ static void Insert(list_item_t *reference_item, void *data) {
  *
  * @param list singly linked list
  */
-static void *Gethead(list_t *list) {
+static void *Get_head(list_t *list) {
     soft_assert(list != NULL, ERROR_INTERNAL);
 
     if (!list->head) {
         return NULL;
     }
     return list->head->data;
+}
+
+/**
+ * @brief Returns the last item's data via data pointer.
+ *
+ * @param list singly linked list
+ */
+static void *Get_tail(list_t *list) {
+    soft_assert(list != NULL, ERROR_INTERNAL);
+
+    if (!list->tail) {
+        return NULL;
+    }
+    return list->tail->data;
 }
 
 /**
@@ -211,12 +226,14 @@ const struct list_interface_t List = {
         .delete_list = Clear,
         .delete_first = Delete_first,
         .insert = Insert,
-        .gethead = Gethead,
+        .get_head = Get_head,
+        .get_tail = Get_tail,
         .copy_data = NULL,
         .ctor = Ctor,
         .dtor = Dtor,
         .equal = Equal,
         .insert_after = Insert_after,
+        .print_list = Print_list,
 };
 
 #ifdef SELFTEST_list
