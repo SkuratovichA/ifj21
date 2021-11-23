@@ -1,24 +1,40 @@
+/**
+ * @file scanner.c
+ *
+ * @brief Lexical analyser. Implemented as DFA matching regular expressions.
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #include "scanner.h"
 #include "tests/tests.h"
 
 
-#ifndef DEBUG_scanner
-//#pragma GCC diagnostic push
-//#pragma GCC diagnostic ignored "-Wmacro-redefined"
-//// undef debug macros
-//#define debug_err(...)
-//#define debug_msg(...)
-//#define debug_msg_stdout(...)
-//#define debug_msg_stderr(...)
-//#define debug_todo(...)
-//#define debug_assert(cond)
-//#define debug_msg_s(...)
-//#define DEBUG_SEP
-//#pragma GCC diagnostic pop
-#endif
+/** Previous token is used for error handling, if I will not give a d&ck.
+ */
+static token_t prev;
 
-/**
- * @brief Covert state to string.
+/** Current token of the program.
+ */
+static token_t curr;
+
+/** Current line of the program.
+ */
+static size_t lines = 1;
+
+/** Current state of the dfa.
+ */
+static int state = STATE_INIT;
+
+/** Current character position in the line
+ */
+static size_t charpos;
+
+
+#define is_hexnumber(ch) (((ch) >= '0' && (ch) <= '9') || ((ch) >= 'A' && (ch) <= 'F') || ((ch) >= 'a' && (ch) <= 'f'))
+#define hex2dec(ch) ((uint8_t)((ch) -(((ch) > '9') ? (-10 + (((ch) > 'Z' ) ? 'a': 'A')): '0')))
+
+
+/** Covert state to string.
  *
  * @param s state
  * @return String that represent state.
@@ -33,13 +49,19 @@ static char *state_tostring(const int s) {
     }
 }
 
-// keyword pair. name e.g "else" and kwd e.g KEYWORD_else
+/** Structure for converting to keywords.
+ * keyword pair. name e.g "else" and kwd e.g KEYWORD_else
+ */
 typedef struct kypair {
     const char *nam;
     int kwd;
 } kpar_t;
 
-
+/** Convert an identifier to keyword.
+ *
+ * @param identif to be coverted.
+ * @return keyword.
+ */
 static int to_keyword(const char *identif) {
     static const kpar_t kwds[] = {
             #define X(n) { #n , KEYWORD(n) },
@@ -56,8 +78,7 @@ static int to_keyword(const char *identif) {
     return TOKEN_ID;
 }
 
-/**
- * @brief Convert token to string.
+/** Pretty print. Token to string.
  *
  * @param t token
  * @return String that represent token.
@@ -125,11 +146,6 @@ static char *To_string(const int t) {
     }
 }
 
-
-static size_t lines = 1;
-static int state = STATE_INIT;
-static size_t charpos;
-
 /**
  * @brief finite automaton to lex a c string
  *
@@ -167,12 +183,15 @@ static token_t lex_string(pfile_t *pfile) {
                 escaped_char = 0;
                 switch (ch) {
                     case '0':
+                        escaped_char += (ch - '0') * 100;
                         state = STATE_STR_DEC_0_0;
                         break;
                     case '1':
+                        escaped_char += (ch - '0') * 100;
                         state = STATE_STR_DEC_0_1;
                         break;
                     case '2':
+                        escaped_char += (ch - '0') * 100;
                         state = STATE_STR_DEC_0_2;
                         break;
                     case 't':
@@ -183,6 +202,9 @@ static token_t lex_string(pfile_t *pfile) {
                         Dynstring.append(token.attribute.id, '\t');
                         state = STATE_STR_INIT;
                         break;
+                    case 'x':
+                        state = STATE_STR_HEX_1;
+                        break;
                     case_2('\\', '\"'):
                         Dynstring.append(token.attribute.id, (char) ch);
                         state = STATE_STR_INIT;
@@ -191,7 +213,23 @@ static token_t lex_string(pfile_t *pfile) {
                         accepted = true;
                         break;
                 }
-                escaped_char += (ch - '0') * 100;
+                break;
+
+            case STATE_STR_HEX_1:
+                if (!is_hexnumber(ch)) {
+                    accepted = true;
+                }
+                escaped_char = hex2dec(ch) << 4;
+                state = STATE_STR_HEX_2;
+                break;
+
+            case STATE_STR_HEX_2:
+                if (!is_hexnumber(ch)) {
+                    accepted = true;
+                }
+                escaped_char |= hex2dec(ch);
+                Dynstring.append(token.attribute.id, (char) escaped_char);
+                state = STATE_STR_INIT;
                 break;
 
             case STATE_STR_DEC_0_0:
@@ -268,8 +306,8 @@ static token_t lex_string(pfile_t *pfile) {
     return token;
 }
 
-/**
- * @brief Finite automaton to lex an identifier.
+/** Finite automaton to lex an identifier.
+ *
  * @param pfile
  * @return token. If state != STATE_ID_FINAL return TOKEN_DEAD
  */
@@ -320,10 +358,8 @@ static token_t lex_identif(pfile_t *pfile) {
     return token;
 }
 
-/**
- * @brief Process a comment.
- *  [-][-].* for a single line comment.
- *  [-][-]\[\[.*\]\] for a block comment.
+/** Process a comment.
+ *
  * @param pfile
  * @return false if comment is wrong
  */
@@ -389,9 +425,9 @@ static bool process_comment(pfile_t *pfile) {
     return state == STATE_COMMENT_FINAL;
 }
 
-// >= <= == ~= < >
-/**
- * @brief DFA accepted relational operators
+/** DFA accepted relational operators
+ *
+ *  >= <= == ~= < >
  *
  * @param pfile
  * @return (token_t) (.type = actual_state)
@@ -427,10 +463,9 @@ static token_t lex_relate_op(pfile_t *pfile) {
     return (token_t) {.type = TOKEN_DEAD};
 }
 
-/**
- * @brief DFA accepts the number
+/** DFA accepts numbers.
  *
- * @param pfile
+ * @param pfile a program.
  * @return token
  */
 static token_t lex_number(pfile_t *pfile) {
@@ -597,11 +632,10 @@ static token_t lex_number(pfile_t *pfile) {
     return token;
 }
 
-/**
- * @brief returns one token, in case of a lexical error_interface returned token is TOKEN_DEAD
+/** Returns one token, in case of a lexical error_interface returned token is TOKEN_DEAD
  *
- * @param pfile
- * @return token
+ * @param pfile program file.
+ * @return token token of the program.
  */
 static token_t scanner(pfile_t *pfile) {
     int ch;
@@ -617,17 +651,15 @@ static token_t scanner(pfile_t *pfile) {
         SINGLE_CHAR_TOKENS(X)
         #undef X
 
-        case '\n':
+        case_2('\n', 13):
             lines++;
             charpos = 0;
             goto next_lexeme;
-            // token = (token_t) {.type = TOKEN_EOL};
             break;
 
         case_2('\t', ' '):
-            charpos++;
+            charpos += (ch == '\t') ? 4 : 1;
             goto next_lexeme;
-            //    token.type = TOKEN_WS;
             break;
 
         case_alpha:
@@ -673,18 +705,20 @@ static token_t scanner(pfile_t *pfile) {
             break;
 
         case '.':
+            // there's no symbol such as '.' in the language
             token.type = TOKEN_DEAD;
             if (Pfile.pgetc(pfile) == '.') {
                 charpos++;
                 token.type = TOKEN_STRCAT;
+                break;
             }
             break;
 
         default:
             token.type = TOKEN_DEAD;
+            debug_msg("unrecognized ch with ascii '%d'\n", ch);
             break;
     }
-
     if (token.type == TOKEN_DEAD) {
         Errors.set_error(ERROR_LEXICAL);
     }
@@ -692,14 +726,9 @@ static token_t scanner(pfile_t *pfile) {
     return token;
 }
 
-
-// ==============================================
-
-
-/**
- * @brief Free token.
+/** Free token.
  *
- * @param token
+ * @param token token to be freed.
  * @return void
  */
 static void Free_token(token_t *token) {
@@ -708,13 +737,7 @@ static void Free_token(token_t *token) {
     }
 }
 
-
-// ==============================================
-// local prev and curr tokens to return them
-static token_t prev, curr;
-
-/**
- * @brief Gets next token. and move to next one.
+/** Gets next token. and move to next one.
  *
  * @param pfile
  * @return token
@@ -726,8 +749,7 @@ static token_t Get_next_token(pfile_t *pfile) {
     return curr;
 }
 
-/**
- * @brief Get previous token.
+/** Get previous token.
  *
  * @return previous token
  */
@@ -735,8 +757,7 @@ static token_t Get_prev_token() {
     return prev;
 }
 
-/**
- * @brief Get current token.
+/** Get current token.
  *
  * @return current token.
  */
@@ -744,8 +765,7 @@ static token_t Get_curr() {
     return curr;
 }
 
-/**
- * @brief Get current line of the file.
+/** Get current line of the file.
  *
  * @return current line
  */
@@ -753,8 +773,7 @@ static size_t Get_line() {
     return lines;
 }
 
-/**
- * @brief Get current line of the file.
+/** Get current line of the file.
  *
  * @return current line
  */
@@ -762,15 +781,12 @@ static size_t Get_charpos() {
     return charpos;
 }
 
-/**
- * @brief Free heap memory allocated by scanner
+/** Free memory allocated by scanner
  *
- * @param pfile
+ * @param pfile prorgram file.
  * @return void
  */
-// ==============================================
 static void Free_scanner() {
-
     if (prev.type == TOKEN_ID || prev.type == TOKEN_STR) {
         Dynstring.dtor(prev.attribute.id);
     }
@@ -779,19 +795,22 @@ static void Free_scanner() {
     }
 }
 
-/**
- *
- * Scanner interface.
+/** Scanner initialization.
  */
+static void Init_scanner() {
+    memset(&prev, 0x0, sizeof(prev));
+    memset(&curr, 0x0, sizeof(prev));
+}
+
+
 const struct scanner_interface Scanner = {
         .free = Free_scanner,
         .get_next_token = Get_next_token,
-        .get_prev_token = Get_prev_token,
         .get_curr_token = Get_curr,
         .to_string = To_string,
         .get_line = Get_line,
         .get_charpos = Get_charpos,
-
+        .init = Init_scanner,
 };
 
 

@@ -1,3 +1,10 @@
+/**
+ * @file list.h
+ *
+ * @brief
+ *
+ * @author Svobodova Lucie
+ */
 #pragma once
 
 #include <stdlib.h>
@@ -11,12 +18,19 @@
  */
 
 typedef struct list_item list_item_t;
-
+/**
+ * List item struct.
+ */
+struct list_item {
+    void *data;
+    list_item_t *next;
+};
 /**
  * A structure that represents a singly linked list.
  */
  typedef struct list {
      list_item_t *head;
+     list_item_t *tail;
  } list_t;
 
 /**
@@ -32,6 +46,22 @@ struct list_interface_t {
      * @param data Data to insert.
      */
     void (*prepend)(list_t *list, void *data);
+
+    /**
+     * @brief Appends element to a list.
+     *
+     * @param list Singly linked list.
+     * @param data Data to insert.
+     */
+    void (*append)(list_t *list, void *data);
+
+    /**
+     * @brief Inserts new element after "item".
+     *
+     * @param item New element will be inserted after this item.
+     * @param data Data to insert.
+     */
+    void (*insert_after)(list_item_t *item, void *data);
 
     /**
      * @brief Delete the first item in list.
@@ -62,7 +92,9 @@ struct list_interface_t {
      *
      * @param list singly linked list
      */
-    void *(*gethead)(list_t *list);
+    void *(*get_head)(list_t *list);
+
+    void *(*get_tail)(list_t *list);
 
     /**
      * @brief copy data to the list item element.
@@ -73,19 +105,28 @@ struct list_interface_t {
     void (*copy_data)(list_item_t *dst, void *src);
 
     /**
-    * @brief List constructor.
-    *
-    * @return Pointer to the allocated memory.
-    */
+     * @brief List constructor.
+     *
+     * @return Pointer to the allocated memory.
+     */
     list_t *(*ctor)(void);
 
     /**
-    * @brief List destructor.
-    *
-    * @param list the list to be destructed.
+     * @brief Equality of lists
+     *
+     * @return bool
+     */
+    bool (*equal)(list_t *l1, list_t *l2, int (*cmp)(void *, void *));
+
+    /**
+     * @brief List destructor.
+     *
+     * @param list the list to be destructed.
      * @param clear_fun pointer to a function, which will free the list data.
     */
     void (*dtor)(list_t *list, void (*clear_fun)(void *));
+
+    void (*print_list)(list_t *list, char *(*pp_fun)(void *));
 };
 
 /**

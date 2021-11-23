@@ -1,26 +1,37 @@
+/**
+ * @file errors.c
+ *
+ * @brief
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #include "errors.h"
 #include "debug.h"
 
 static int error = 0;
 static char *errmsg = "";
 
-/**
- * @brief Error getter.
-
+/** Error getter.
+ *
  * @return return errorcode defined in error.h, which has been set or 0.
  */
 static int Get_error() {
     return error;
 }
 
-/**
- * @brief Error setter.
+/** Error setter.
  *
  * @param errcode Errors codes are defined in errors.h.
  */
 static void Set_error(int errcode) {
-    if (errcode != ERROR_NOERROR)
-        debug_msg("-------Error is about to be set.\n");;
+    if (errcode != ERROR_NOERROR) {
+        debug_msg("\n#######################################################\n"
+                  "################ Error will be set NOW! ###############\n"
+                  "#######################################################\n");
+    } else {
+        errmsg = "";
+    }
+
     switch (errcode) {
         case ERROR_LEXICAL:
             // 1 - lexical error
@@ -30,7 +41,7 @@ static void Set_error(int errcode) {
             // 2 - syntactic error
             errmsg = "Syntax error";
             break;
-        case ERROR_UNDEF_FUN_OR_VAR:
+        case ERROR_DEFINITION:
             // todo: does it want to add more error messages? i.e undefined function, undefined variable ...
             // case ERROR_UNDEFINED_FUNCTION:
             // 3 - semantic error in the program - undefined function/variable, attempt of redefining the variable,. ..
@@ -40,7 +51,7 @@ static void Set_error(int errcode) {
             // 4 - type missmatch in assignment expression
             errmsg = "Type missmatch!";
             break;
-        case ERROR_SEMANTICS_NUMBER_PARAMETERS:
+        case ERROR_FUNCTION_SEMANTICS:
             // 5 - semantic error - wrong number/type of parameters(function calling/return) or return values
             errmsg = "Wrong number of parameters/return values!";
             break;
@@ -69,6 +80,15 @@ static void Set_error(int errcode) {
     }
     //fprintf(stderr, "ERROR: %s\n", errmsg);
 
+    if (errcode != ERROR_NOERROR) {
+        debug_msg("\n################################################################################\n"
+                  "######## ERROR = '%s' #########\n"
+                  "######## CODE  = '%d' #########\n"
+                  "##################################################################################\n", errmsg,
+                  errcode);
+        (void) (2 + 2 == 5);
+    }
+
     error = errcode;
 }
 
@@ -76,8 +96,7 @@ static char *Get_error_msg() {
     return errmsg;
 }
 
-/**
- * Functions are in struct so we can use them in different files.
+/** Functions are in struct so we can use them in different files.
  */
 const struct error_interface Errors = {
         .get_errmsg = Get_error_msg,

@@ -1,3 +1,10 @@
+/**
+ * @file stack.c
+ *
+ * @brief The file contains ...
+ *
+ * @author Lucie Svobodova <xplagiat01@vutbr.cz
+ */
 #include "stack.h"
 
 
@@ -48,7 +55,7 @@ static void Clear(sstack_t *stack, void (*clear_fun)(void *)) {
  * @param stack
  */
 static void *Peek(sstack_t *stack) {
-    return List.gethead(stack);
+    return List.get_head(stack);
 }
 
 /**

@@ -1,3 +1,10 @@
+/**
+ * @file expressions.h
+ *
+ * @brief
+ *
+ * @author
+ */
 #pragma once
 
 #include "progfile.h"
@@ -45,7 +52,8 @@ typedef enum op_list {
     OP(OR),
     OP(FUNC),
     OP(COMMA),
-    OP(DOLLAR)
+    OP(DOLLAR),
+    OP(UNDEFINED)
 } op_list_t;
 
 /**

@@ -1,3 +1,10 @@
+/**
+ * @file dynstring.h
+ *
+ * @brief header for dynamic string
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #pragma once
 
 #include <stdint.h>
@@ -22,6 +29,14 @@ struct dynstring_interface_t {
      * @return non-null pointer to dynstring_t object.
      */
     dynstring_t *(*ctor)(const char *);
+
+    /**
+     * @brief Create an empty dynstring_t of size length.
+     *
+     * @param s Length of the new dynstring.
+     * @return non-null pointer to dynstring_t object.
+     */
+    dynstring_t *(*ctor_empty)(size_t);
 
     /**
      * @brief Appends a character shrunk.
@@ -70,7 +85,7 @@ struct dynstring_interface_t {
      * @param s2
      * @returns new dysntring, which is product of s1 and s2.
      */
-    dynstring_t *(*cat)(dynstring_t *, dynstring_t *);
+    void (*cat)(dynstring_t *, dynstring_t *);
 
     /**
     * @brief Clears the dynstring. Set everything to 0 except size.
@@ -78,6 +93,14 @@ struct dynstring_interface_t {
     * @param str string to clear.
     */
     void (*clear)(dynstring_t *);
+
+    /**
+    * @brief Duplicates a dynstrings.
+    *
+    * @param s
+    * @returns duplicated dynstring.
+    */
+    dynstring_t *(*dup)(dynstring_t *);
 };
 
 

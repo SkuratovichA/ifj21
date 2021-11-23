@@ -1,28 +1,38 @@
+/**
+ * @file errors.h
+ *
+ * @brief
+ *
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ */
 #pragma once
 
 // assert a condition and exit with an error code if condition is false
-#define soft_assert(cond, err) \
-do { \
-    if (!(cond)) { \
-        debug_msg_s("\n "); \
-        debug_msg(" "); \
-        fprintf(stderr, "(soft)assertion failed: "); \
-        fprintf(stderr, #cond); \
-        fprintf(stderr, "\n"); \
-        exit((err)); \
-    } \
+#define soft_assert(cond, err)                    \
+do {                                             \
+    if (!(cond)) {                               \
+        debug_msg_s("\n ");                      \
+        debug_msg(" ");                          \
+        fprintf(stderr,                          \
+            __FILE__                             \
+            ":%d in %s (soft)assertion failed ", \
+            __LINE__, __FUNCTION__               \
+        );                                       \
+        fprintf(stderr, #cond);                  \
+        fprintf(stderr, "\n");                   \
+        exit((err));                             \
+    }                                            \
 } while (0)
 
-/**
- * All error_interface codes.
+/** All error_interface codes.
  */
 enum errors {
     ERROR_NOERROR,
     ERROR_LEXICAL,
     ERROR_SYNTAX,
-    ERROR_UNDEF_FUN_OR_VAR,
+    ERROR_DEFINITION,
     ERROR_TYPE_MISSMATCH,
-    ERROR_SEMANTICS_NUMBER_PARAMETERS,
+    ERROR_FUNCTION_SEMANTICS,
     ERROR_SEMANTICS_TYPE_INCOMPATABLE,
     ERROR_SEMANTICS_OTHER,
     ERROR_RUNTIME_NIL,
@@ -31,9 +41,6 @@ enum errors {
 };
 
 
-/**
- * A structure that store pointers to all the functions from errors.c. So we can use them in different files.
- */
 struct error_interface {
     void (*set_error)(int);
 
