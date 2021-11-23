@@ -331,7 +331,7 @@ static id_type_t token_to_type (token_t tok) {
 static bool is_var_exists (token_t tok, expr_semantics_t *self) {
     symbol_t *symbol;
     bool res;
-    res = Symtable.get_symbol(local_table, tok.attribute.id, &symbol);
+    res = Symstack.get_symbol(symstack, tok.attribute.id, &symbol, NULL);
     if (res) {
         self->result_type = type_to_token(symbol->type);
         return true;
@@ -421,7 +421,7 @@ static bool type_compatability(expr_semantics_t *self) {
             // nil
             if (self->op == OP_EQ || self->op == OP_NE) {
                 if ((f_var_type == ID_TYPE_boolean && s_var_type == ID_TYPE_boolean) ||
-                    (f_var_type == ID_TYPE_nil && s_var_type == ID_TYPE_nil)) {
+                    (f_var_type == ID_TYPE_nil || s_var_type == ID_TYPE_nil)) {
                     return true;
                 }
             }

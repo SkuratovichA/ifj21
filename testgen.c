@@ -336,7 +336,7 @@ int main() {
     pfile_t *pf14 = Pfile.ctor(
             PROLOG
             "function main(iterations : number )  "NL
-            "    for i=0,i<number do              "NL
+            "    for i=0,i<iterations do          "NL
             "        write(\"hello, 10 times\")   "NL
             "    end                              "NL
             "end                                  "NL
@@ -348,8 +348,8 @@ int main() {
     pfile_t *pf15 = Pfile.ctor(
             PROLOG
             "function main(iterations : number )      "NL
-            "    for i=0,i<number do                  "NL
-            "        for j=0,i<number do              "NL
+            "    for i=0,i<iterations do              "NL
+            "        for j=0,i<iterations do          "NL
             "            write(\"hello, 9 times\")    "NL
             "        end                              "NL
             "    end                                  "NL
@@ -457,7 +457,7 @@ int main() {
             "                              write(not_true)                   "NL
             "                         until false                            "NL
             "                     until 1 < 0                                "NL
-            "                 until 2 + 2 = 5                                "NL
+            "                 until 2 + 2 == 5                                "NL
             "             until false                                        "NL
             "         until true and false                                   "NL
             "     until false or false                                       "NL
@@ -653,7 +653,7 @@ int main() {
     int retcode38 = ERROR_NOERROR;
     pfile_t *pf38 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
+            "function three(): number return 3 end        "NL
             "function foo( a : number, b : number )       "NL
             "    write(a)                                 "NL
             "    write(b)                                 "NL
