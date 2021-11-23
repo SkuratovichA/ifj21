@@ -866,6 +866,7 @@ int main() {
     char *description52 = "no error, parsing definitions, declarations";
     int retcode52 = ERROR_NOERROR;
     pfile_t *pf52 = Pfile.ctor(
+            PROLOG
             " global bar : function(string, integer)" NL
             "function bar(str : string, int : integer)" NL
             "end " NL
