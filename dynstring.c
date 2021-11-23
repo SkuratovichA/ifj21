@@ -14,20 +14,6 @@
 
 #define STRSIZE 42
 
-#ifndef DEBUG_dynstring
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmacro-redefined"
-// undef debug macros
-//#define debug_err(...)
-//#define debug_msg(...)
-//#define debug_msg_stdout(...)
-//#define debug_msg_stderr(...)
-//#define debug_todo(...)
-//#define debug_assert(cond)
-//#define debug_msg_s(...)
-//#define DEBUG_SEP
-#pragma GCC diagnostic pop
-#endif
 
 /**
  * A structure represented dynstring_t
@@ -46,24 +32,20 @@ typedef struct dynstring {
  * @return pointer to the dynstring_t object.
  */
 static dynstring_t *Str_ctor(const char *s) {
-    debug_msg("\n");
     soft_assert(s, ERROR_INTERNAL); // dont deal with NULLptr
 
     size_t length = strlen(s);
     size_t alloc = length + STRSIZE + 1;
 
     dynstring_t *str = calloc(1, sizeof(dynstring_t));
-    debug_msg_s("str: %p\n", (void *) str);
     soft_assert(str, ERROR_INTERNAL);
     str->size = alloc;
     str->len = length;
 
     str->str = calloc(1, alloc);
     soft_assert(str->str, ERROR_INTERNAL);
-    debug_msg_s("str->str %p\n", (void *) str->str);
 
     strcpy(str->str, s);
-    debug_msg("Create dynstring: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->size, str->str);
     return str;
 }
 
@@ -87,7 +69,6 @@ static dynstring_t *Str_ctor_empty(size_t length) {
     // TODO check bounds (length/length+1/length-1)
     memset(str->str, '\0', length);
 
-    debug_msg("Create empty dynstring: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->size, str->str);
     return str;
 }
 
@@ -158,7 +139,6 @@ static void Str_append(dynstring_t *str, char ch) {
     }
     str->str[str->len++] = ch;
     str->str[str->len] = '\0';
-//    debug_msg("Append char: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->size, str->str);
 }
 
 /**
@@ -185,7 +165,6 @@ static int Str_cmp(dynstring_t *s1, dynstring_t *s2) {
  * @returns new dynstring, which is product of s1 and s2.
  */
 static void Str_cat(dynstring_t *s1, dynstring_t *s2) {
-    debug_msg("\n");
     soft_assert(s2 != NULL, ERROR_INTERNAL);
     soft_assert(s2->str != NULL, ERROR_INTERNAL);
     soft_assert(s1 != NULL, ERROR_INTERNAL);
