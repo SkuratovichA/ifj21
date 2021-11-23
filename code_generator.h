@@ -7,22 +7,6 @@
 
 #define MAX_CHAR 23         // maximum characters when converting num to string
 
-#define __START_LIST_ASSERT()                                                                     \
-    do {                                                                                         \
-        if (                                                                                     \
-            __ADDRESS_OF_START_LIST != (size_t)((void*)instructions.startList->head) && __ADDRESS_OF_START_LIST != 0            \
-        )                                                                                         \
-        {                                                                                         \
-            debug_msg("__ADDRESS_OF_START_LIST: %zx\n", __ADDRESS_OF_START_LIST);                    \
-            debug_msg("startList->head: %zx\n", (size_t)((void*)instructions.startList->head));      \
-            debug_assert(__ADDRESS_OF_START_LIST == (size_t)((void*)instructions.startList->head));  \
-        }                                                                                            \
-    } while (0)
-
-#ifndef DEBUG
-#define __START_LIST_ASSERT()
-#endif
-
 /*
  * Structure that holds information needed for the code generator.
  */
@@ -45,8 +29,6 @@ typedef enum instr_list {
 
 extern instructions_t instructions;
 extern list_t *instrList;
-
-extern size_t __ADDRESS_OF_START_LIST;
 
 /**
  * A structure that store pointers to the functions from code_generator.c. So we can use them in different files as interface.

@@ -27,19 +27,17 @@
  */
 static void print_error_unexpected_token(const char *a, const char *b) {
     fprintf(stderr, "line %zu, character %zu\n", Scanner.get_line(), Scanner.get_charpos());
-    fprintf(stderr, "ERROR(syntax): Expected '%s', got '%s' instead\n", a, b);
+    fprintf(stderr, "[error](syntax): Expected '%s', got '%s' instead\n", a, b);
 }
 
 /** If there's a mismatch in number/type of parameters, then return false.
  */
 #define SEMANTIC_CHECK_FUNCTION_SIGNATURES(sym)                          \
     do {                                                                \
-        __START_LIST_ASSERT();                                          \
         if (!Semantics.check_signatures(symbol->function_semantics)) {  \
             Errors.set_error(ERROR_FUNCTION_SEMANTICS);                 \
             return false;                                               \
         }                                                               \
-        __START_LIST_ASSERT();                                   \
     } while(0)
 
 /** Push a new symtable on the stack,
@@ -49,24 +47,20 @@ static void print_error_unexpected_token(const char *a, const char *b) {
  */
 #define SYMSTACK_PUSH(_scope_type, _id_fun_name)                  \
     do {                                                         \
-        __START_LIST_ASSERT();                                   \
         char *_str = NULL;                                       \
         local_table = Symtable.ctor();                           \
         if ((_id_fun_name) != NULL) {                            \
             _str = Dynstring.c_str(_id_fun_name);                \
         }                                                        \
         Symstack.push(symstack, local_table, _scope_type, _str); \
-        __START_LIST_ASSERT();                                   \
     } while (0)
 
 /** Pop an item prom the stack. Change local table, too.
  */
-#define SYMSTACK_POP()                         \
+#define SYMSTACK_POP()                          \
      do {                                      \
-        __START_LIST_ASSERT();                 \
         Symstack.pop(symstack);                \
         local_table = Symstack.top(symstack);  \
-        __START_LIST_ASSERT();                 \
      } while(0)
 
 /** Return an error(syntax)
@@ -75,7 +69,7 @@ static void print_error_unexpected_token(const char *a, const char *b) {
     do {                                                       \
         Errors.set_error(ERROR_SYNTAX);                        \
         print_error_unexpected_token(Scanner.to_string(a),     \
-            Scanner.to_string(Scanner.get_curr_token().type)); \
+        Scanner.to_string(Scanner.get_curr_token().type));     \
         return false;                                          \
     } while (0)
 
@@ -86,7 +80,7 @@ static void print_error_unexpected_token(const char *a, const char *b) {
         Errors.set_error(ERROR_DEFINITION);                        \
         fprintf(stderr, "line %zu, character %zu\n",               \
            Scanner.get_line(), Scanner.get_charpos());             \
-        fprintf(stderr, "ERROR(semantic): variable with name '%s'" \
+        fprintf(stderr, "[error](semantic): variable with name '%s'" \
            " has already been declared!\n", Dynstring.c_str(a));   \
         return false;                                              \
     } while (0)
@@ -95,7 +89,6 @@ static void print_error_unexpected_token(const char *a, const char *b) {
  */
 #define EXPECTED(p)                                                           \
     do {                                                                      \
-         __START_LIST_ASSERT();                                               \
         token_t tok__ = Scanner.get_curr_token();                             \
         if (tok__.type == (p)) {                                              \
             if (tok__.type == TOKEN_ID || tok__.type == TOKEN_STR) {          \
@@ -110,7 +103,6 @@ static void print_error_unexpected_token(const char *a, const char *b) {
         } else {                                                              \
             error_unexpected_token((p));                                      \
         }                                                                     \
-         __START_LIST_ASSERT();                                               \
     } while(0)
 
 /** if there's a condition of type '<a> -> b | c', you have to add
@@ -172,7 +164,6 @@ static bool cond_body(pfile_t *pfile) {
     switch (Scanner.get_curr_token().type) {
         case KEYWORD_else:
             EXPECTED(KEYWORD_else);
-            __START_LIST_ASSERT();
             // pop an existent symtable, because we ara in the if statement(scope).
             SYMSTACK_POP();
             // also, we need to create a new symtable for 'else' scope.
@@ -229,19 +220,16 @@ static bool cond_body(pfile_t *pfile) {
 static bool cond_stmt(pfile_t *pfile) {
     debug_msg("<cond_stmt> -> \n");
 
-    __START_LIST_ASSERT();
     if (!Expr.parse(pfile, true)) {
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         instructions.cond_cnt = 0;
         return false;
     }
-    __START_LIST_ASSERT();
     EXPECTED(KEYWORD_then);
 
     // generate condition evaluation (JUMPIFNEQ ...)
     instructions.cond_cnt++;
-    __START_LIST_ASSERT();
     Generator.cond_if(instructions.outer_cond_id, instructions.cond_cnt);
-    __START_LIST_ASSERT();
 
     return cond_body(pfile);
 }
@@ -258,27 +246,21 @@ static inline bool datatype(pfile_t *pfile) {
 
     switch (Scanner.get_curr_token().type) {
         case KEYWORD_string:
-            __START_LIST_ASSERT();
             EXPECTED(KEYWORD_string);
             break;
         case KEYWORD_boolean:
-            __START_LIST_ASSERT();
             EXPECTED(KEYWORD_boolean);
             break;
         case KEYWORD_integer:
-            __START_LIST_ASSERT();
             EXPECTED(KEYWORD_integer);
             break;
         case KEYWORD_number:
-            __START_LIST_ASSERT();
             EXPECTED(KEYWORD_number);
             break;
         case KEYWORD_nil:
-            __START_LIST_ASSERT();
             EXPECTED(KEYWORD_nil);
             break;
         default:
-            __START_LIST_ASSERT();
             print_error_unexpected_token("datatype", Scanner.to_string(Scanner.get_curr_token().type));
             Errors.set_error(ERROR_SYNTAX);
             return false;
@@ -314,25 +296,22 @@ static bool repeat_body(pfile_t *pfile) {
 static bool assignment(pfile_t *pfile, dynstring_t *var_name) {
     debug_msg("<assignment> -> \n");
 
-    __START_LIST_ASSERT();
     // e |
     if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
         // generate var declaration
         Generator.var_declaration(var_name);
         return true;
     }
-    __START_LIST_ASSERT();
 
     // =
     EXPECTED(TOKEN_ASSIGN);
     if (!Expr.parse(pfile, true)) {
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
-    __START_LIST_ASSERT();
     // expression result is in GF@%expr_result
     Generator.var_definition(var_name);
 
-    __START_LIST_ASSERT();
     return true;
 }
 
@@ -345,18 +324,14 @@ static bool assignment(pfile_t *pfile, dynstring_t *var_name) {
  */
 static bool for_assignment(pfile_t *pfile) {
     debug_msg("<for_assignment> ->\n");
-    __START_LIST_ASSERT();
     EXPECTED_OPT(KEYWORD_do);
 
-    __START_LIST_ASSERT();
     EXPECTED(TOKEN_COMMA);
 
-    __START_LIST_ASSERT();
     if (!Expr.parse(pfile, true)) {
-        debug_msg("[error] Expression parsing failed.\n");
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
-    __START_LIST_ASSERT();
     EXPECTED(KEYWORD_do);
     return true;
 }
@@ -384,32 +359,31 @@ static bool for_cycle(pfile_t *pfile) {
     // =
     EXPECTED(TOKEN_ASSIGN);
     if (!Expr.parse(pfile, true)) {
-        debug_msg("Expression function returned false\n");
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
 
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    __START_LIST_ASSERT();
     // terminating `expr` in for cycle.
     if (!Expr.parse(pfile, true)) {
-        debug_msg("Expression function returned false\n");
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
-    __START_LIST_ASSERT();
+    debug_msg("\n\n\n\n\n\n\n\n\n\nAAAAAAAAa\n\n\n");
+
     // do | , `expr` do
     if (!for_assignment(pfile)) {
         return false;
     }
-    __START_LIST_ASSERT();
+    debug_msg("\n\n\n\n\n\n\n\n\n\nRRRRRRRRR\n\n\n");
     // <fun_body>, which ends with 'end'
     if (!fun_body(pfile)) {
         return false;
     }
-    __START_LIST_ASSERT();
+    debug_msg("\n\n\n\n\n\n\n\n\n\nSSSSSSSSSSS\n\n\n");
     SYMSTACK_POP();
-    __START_LIST_ASSERT();
     return true;
 }
 
@@ -455,17 +429,13 @@ static bool var_definition(pfile_t *pfile) {
         return false;
     }
 
-    __START_LIST_ASSERT();
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
-    __START_LIST_ASSERT();
     // = `expr`
     if (!assignment(pfile, id_name)) {
         Dynstring.dtor(id_name);
         return false;
     }
-    __START_LIST_ASSERT();
     Dynstring.dtor(id_name);
-    __START_LIST_ASSERT();
     return true;
 }
 
@@ -482,38 +452,29 @@ static bool while_cycle(pfile_t *pfile) {
     // create a new symtable for while cycle.
     SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
 
-    __START_LIST_ASSERT();
     // nested while
     if (!instructions.in_loop) {
         instructions.in_loop = true;
         instructions.outer_loop_id = Symstack.get_scope_info(symstack).unique_id;
         instructions.before_loop_start = instrList->tail;   // use when declaring vars in loop
     }
-    __START_LIST_ASSERT();
     Generator.while_header();
-    __START_LIST_ASSERT();
 
-    __START_LIST_ASSERT();
     // parse expressions
     if (!Expr.parse(pfile, true)) {
-        debug_msg("Expression analysis failed.\n");
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
-    __START_LIST_ASSERT();
 
-    __START_LIST_ASSERT();
     // expression result in LF@%result
     Generator.while_cond();
 
-    __START_LIST_ASSERT();
     EXPECTED(KEYWORD_do);
     if (!fun_body(pfile)) {
         return false;
     }
-    __START_LIST_ASSERT();
     // parent function pops a table from the stack.
     SYMSTACK_POP();
-    __START_LIST_ASSERT();
     return true;
 }
 
@@ -525,12 +486,10 @@ static bool while_cycle(pfile_t *pfile) {
  */
 static bool return_stmt(pfile_t *pfile) {
     EXPECTED(KEYWORD_return);
-    __START_LIST_ASSERT();
     // return expr
     if (!Expr.parse_expr_list(pfile)) {
         return false;
     }
-    __START_LIST_ASSERT();
 
     return true;
 }
@@ -546,34 +505,28 @@ static bool repeat_until_cycle(pfile_t *pfile) {
     EXPECTED(KEYWORD_repeat);
     SYMSTACK_PUSH(SCOPE_TYPE_do_cycle, NULL);
 
-    __START_LIST_ASSERT();
     // nested while
     if (!instructions.in_loop) {
         instructions.in_loop = true;
         instructions.outer_loop_id = Symstack.get_scope_info(symstack).unique_id;
         instructions.before_loop_start = instrList->tail;   // use when declaring vars in loop
     }
-    __START_LIST_ASSERT();
     Generator.repeat_until_header();
 
-    __START_LIST_ASSERT();
     if (!repeat_body(pfile)) {
         return false;
     }
-    __START_LIST_ASSERT();
+
     // expression represent a condition after an until keyword.
     if (!Expr.parse(pfile, true)) {
-        debug_msg("Expression function returned false\n");
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
 
-    __START_LIST_ASSERT();
     // expression result in LF@%result
     Generator.repeat_until_cond();
 
-    __START_LIST_ASSERT();
     SYMSTACK_POP();
-    __START_LIST_ASSERT();
     return true;
 }
 
@@ -596,40 +549,36 @@ static bool fun_stmt(pfile_t *pfile) {
     switch (Scanner.get_curr_token().type) {
         // for <for_def>, `expr` <for_assignment> <fun_body>
         case KEYWORD_for:
-            __START_LIST_ASSERT();
             return for_cycle(pfile);
 
             // if <cond_stmt>
         case KEYWORD_if:
-            __START_LIST_ASSERT();
             return if_statement(pfile);
 
             // local id : <datatype> <assignment>
         case KEYWORD_local:
-            __START_LIST_ASSERT();
             return var_definition(pfile);
 
             // return <return_expr_list>
         case KEYWORD_return:
-            __START_LIST_ASSERT();
             return return_stmt(pfile);
 
             // while `expr` do <fun_body> end
         case KEYWORD_while:
-            __START_LIST_ASSERT();
             return while_cycle(pfile);
 
             // repeat <some_body> until `expr`
         case KEYWORD_repeat:
-            __START_LIST_ASSERT();
             return repeat_until_cycle(pfile);
 
         case TOKEN_ID:
-            __START_LIST_ASSERT();
-            return Expr.parse(pfile, false);
+            if (!Expr.parse(pfile, false)) {
+                debug_msg("\n\t\t[error] Expression parsing failed.\n");
+                return false;
+            }
+            break;
 
         case TOKEN_DEAD:
-            __START_LIST_ASSERT();
             Errors.set_error(ERROR_LEXICAL);
             return false;
 
@@ -655,15 +604,12 @@ static bool fun_stmt(pfile_t *pfile) {
  */
 static bool fun_body(pfile_t *pfile) {
     debug_msg("<fun_body> ->\n");
-    __START_LIST_ASSERT();
     // end |
     if (Scanner.get_curr_token().type == KEYWORD_end) {
         EXPECTED(KEYWORD_end);
 
-        __START_LIST_ASSERT();
         switch (Symstack.get_scope_info(symstack).scope_type) {
             case SCOPE_TYPE_cycle:
-                __START_LIST_ASSERT();
                 // FIXME - can be also for loop
                 Generator.while_end();
                 if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
@@ -671,12 +617,9 @@ static bool fun_body(pfile_t *pfile) {
                     instructions.outer_loop_id = 0;
                     instructions.before_loop_start = NULL;
                 }
-                __START_LIST_ASSERT();
                 break;
             case SCOPE_TYPE_function:
-                __START_LIST_ASSERT();
                 Generator.func_end(Symstack.get_parent_func_name(symstack));
-                __START_LIST_ASSERT();
                 break;
             case SCOPE_TYPE_do_cycle:
                 break;
@@ -684,11 +627,9 @@ static bool fun_body(pfile_t *pfile) {
                 debug_msg("Shouldn't be here.\n");
                 break;
         }
-        __START_LIST_ASSERT();
         return true;
     }
 
-    __START_LIST_ASSERT();
     return fun_stmt(pfile) && fun_body(pfile);
 }
 
@@ -713,32 +654,25 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
 
     // id
     EXPECTED(TOKEN_ID);
-
     // :
     EXPECTED(TOKEN_COLON);
 
     token_type_t id_type = Scanner.get_curr_token().type;
 
-    __START_LIST_ASSERT();
     // <datatype>
     if (!datatype(pfile)) {
         return false;
     }
-    __START_LIST_ASSERT();
 
     // for an id in the symtable.
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
-    __START_LIST_ASSERT();
     // for function info in the symtable.
     Semantics.add_param(&function_def_info, id_type);
 
-    __START_LIST_ASSERT();
     Generator.func_start_param(id_name, 1);      // FIXME counter
 
-    __START_LIST_ASSERT();
     Dynstring.dtor(id_name);
-    __START_LIST_ASSERT();
     return other_funparams(pfile, function_def_info);
 }
 
@@ -755,7 +689,6 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
-    __START_LIST_ASSERT();
     if (Scanner.get_curr_token().type == TOKEN_ID) {
         id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
     }
@@ -763,11 +696,9 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
     // id
     EXPECTED(TOKEN_ID);
     Generator.func_start_param(id_name, 0);    // need index of the param to the code generator, not the name
-
     // :
     EXPECTED(TOKEN_COLON);
 
-    __START_LIST_ASSERT();
     token_type_t id_type = Scanner.get_curr_token().type;
     // add a datatype to function parameters
     Semantics.add_param(&function_def_info, id_type);
@@ -775,14 +706,11 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
     if (!datatype(pfile)) {
         return false;
     }
-    __START_LIST_ASSERT();
 
     // parameters in function definition cannot be declared twice, nor be function names.
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
-    __START_LIST_ASSERT();
     Dynstring.dtor(id_name);
-    __START_LIST_ASSERT();
     // <other_funparams>
     return other_funparams(pfile, function_def_info);
 }
@@ -802,9 +730,7 @@ static bool other_datatypes(pfile_t *pfile, func_info_t function_decl_info) {
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    __START_LIST_ASSERT();
     Semantics.add_param(&function_decl_info, Scanner.get_curr_token().type);
-    __START_LIST_ASSERT();
     return datatype(pfile) && other_datatypes(pfile, function_decl_info);
 }
 
@@ -820,9 +746,7 @@ static bool datatype_list(pfile_t *pfile, func_info_t function_decl_info) {
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
 
-    __START_LIST_ASSERT();
     Semantics.add_param(&function_decl_info, Scanner.get_curr_token().type);
-    __START_LIST_ASSERT();
     //<datatype> && <other_datatypes>
     return datatype(pfile) && other_datatypes(pfile, function_decl_info);
 }
@@ -836,7 +760,6 @@ static bool datatype_list(pfile_t *pfile, func_info_t function_decl_info) {
  */
 static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
     debug_msg("<other_funrets> -> \n");
-    __START_LIST_ASSERT();
     // e |
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
         return true;
@@ -845,11 +768,9 @@ static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
     EXPECTED(TOKEN_COMMA);
 
     Semantics.add_return(&function_info, Scanner.get_curr_token().type);
-    __START_LIST_ASSERT();
 
     // generate return var
     Generator.func_return_value(1);         // FIXME counter
-    __START_LIST_ASSERT();
 
     // <datatype> <other_funrets>
     return datatype(pfile) && other_funrets(pfile, function_info);
@@ -864,28 +785,22 @@ static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
  */
 static bool funretopt(pfile_t *pfile, func_info_t function_info) {
     debug_msg("<funretopt> ->\n");
-    __START_LIST_ASSERT();
+
     // e |
     if (Scanner.get_curr_token().type != TOKEN_COLON) {
         return true;
     }
+
     // :
     EXPECTED(TOKEN_COLON);
 
     Semantics.add_return(&function_info, Scanner.get_curr_token().type);
-    __START_LIST_ASSERT();
 
     // generate return var
     Generator.func_return_value(0);
-    __START_LIST_ASSERT();
 
     // <datatype> <other_funrets>
-    __START_LIST_ASSERT();
-    if (!(datatype(pfile) && other_funrets(pfile, function_info))) {
-        return false;
-    }
-    __START_LIST_ASSERT();
-    return true;
+    return (datatype(pfile) && other_funrets(pfile, function_info));
 }
 
 /** Function declaration.
@@ -927,23 +842,19 @@ static bool function_declaration(pfile_t *pfile) {
     EXPECTED(TOKEN_COLON);
     // function
     EXPECTED(KEYWORD_function);
-
     // (
     EXPECTED(TOKEN_LPAREN);
 
-    __START_LIST_ASSERT();
     // <funparam_decl_list>
     if (!datatype_list(pfile, symbol->function_semantics->declaration)) {
         return false;
     }
 
-    __START_LIST_ASSERT();
     // <funretopt> can be empty
     if (!funretopt(pfile, symbol->function_semantics->declaration)) {
         return false;
     }
 
-    __START_LIST_ASSERT();
     // if function has previously been defined, then check function signatures.
     if (Semantics.is_defined(symbol->function_semantics)) {
         SEMANTIC_CHECK_FUNCTION_SIGNATURES(symbol);
@@ -959,7 +870,6 @@ static bool function_declaration(pfile_t *pfile) {
  * @return bool.
  */
 static bool function_definition(pfile_t *pfile) {
-    __START_LIST_ASSERT();
     // function
     EXPECTED(KEYWORD_function);
 
@@ -977,7 +887,6 @@ static bool function_definition(pfile_t *pfile) {
     // id
     EXPECTED(TOKEN_ID);
 
-    __START_LIST_ASSERT();
     // Semantic control.
     // if we find a symbol on the stack, check it.
     if (Symstack.get_symbol(symstack, id_name, &symbol, NULL)) {
@@ -996,43 +905,35 @@ static bool function_definition(pfile_t *pfile) {
     // (
     EXPECTED(TOKEN_LPAREN);
 
-    __START_LIST_ASSERT();
     // push a symtable on to the stack.
     SYMSTACK_PUSH(SCOPE_TYPE_function, id_name);
 
-    __START_LIST_ASSERT();
     // generate code for new function start
     debug_msg("[define] function %s\n", Dynstring.c_str(id_name));
     Generator.func_start(id_name);
     Dynstring.dtor(id_name);
 
-    __START_LIST_ASSERT();
     // <funparam_def_list>
     if (!funparam_def_list(pfile, symbol->function_semantics->definition)) {
         return false;
     }
 
-    __START_LIST_ASSERT();
     // <funretopt>
     if (!funretopt(pfile, symbol->function_semantics->definition)) {
         return false;
     }
 
-    __START_LIST_ASSERT();
     // check signatures
     if (Semantics.is_declared(symbol->function_semantics)) {
         SEMANTIC_CHECK_FUNCTION_SIGNATURES(symbol);
     }
 
-    __START_LIST_ASSERT();
     // <fun_body>
     if (!fun_body(pfile)) {
         return false;
     }
-    __START_LIST_ASSERT();
 
     SYMSTACK_POP();
-    __START_LIST_ASSERT();
     return true;
 }
 
@@ -1048,60 +949,46 @@ static bool function_definition(pfile_t *pfile) {
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
     token_t token = Scanner.get_curr_token();
-    bool res = true;
 
     switch (token.type) {
         // function declaration: global id : function ( <datatype_list> <funretopt>
         case KEYWORD_global:
-            __START_LIST_ASSERT();
-            res = function_declaration(pfile);
-            __START_LIST_ASSERT();
-            break;
+            return function_declaration(pfile);
 
             // function definition: function id ( <funparam_def_list> <funretopt> <fun_body>
         case KEYWORD_function:
-            __START_LIST_ASSERT();
-            res = function_definition(pfile);
-            __START_LIST_ASSERT();
-            break;
+            return function_definition(pfile);
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:;
-            __START_LIST_ASSERT();
             dynstring_t *id_name = Dynstring.ctor(Dynstring.c_str(token.attribute.id));
             // create frame before passing parameters
             Generator.func_createframe();
-            __START_LIST_ASSERT();
 
             // in expressions we pass the parameters
             // TODO add enum list with INSIDE_STMT, INSIDE_FUNC, GLOBAL_SCOPE
             if (!Expr.parse(pfile, false)) {
-                res = false;
-                break;
+                debug_msg("\n\t\t[error] Expression parsing failed.\n");
+                return false;
             }
             // function call
             Generator.func_call(id_name);
             Dynstring.dtor(id_name);
-            __START_LIST_ASSERT();
             break;
 
             // FIXME. I dont know how to solve this recursion.
         case TOKEN_EOFILE:
-            res = true;
-            break;
+            return true;
 
         case TOKEN_DEAD:
             Errors.set_error(ERROR_LEXICAL);
-            res = false;
-            break;
+            return false;
 
         default:
             Errors.set_error(ERROR_SYNTAX);
-            res = false;
-            break;
+            return false;
     }
-    debug_msg_s("returning with %s\n", res ? "true" : "false");
-    return res;
+    return true;
 }
 
 /** List of global statements: function calls, function declarations, function definitions.
@@ -1113,9 +1000,9 @@ static bool stmt(pfile_t *pfile) {
 static bool stmt_list(pfile_t *pfile) {
     debug_msg("<stmt_list> ->\n");
 
-    __START_LIST_ASSERT();
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
+
     // <stmt> <stmt_list>
     return stmt(pfile) && stmt_list(pfile);
 }
@@ -1164,19 +1051,16 @@ static bool program(pfile_t *pfile) {
 
     Generator.prog_start();
 
-    __START_LIST_ASSERT();
     // <stmt_list>
     if (!stmt_list(pfile)) {
         return false;
     }
-    __START_LIST_ASSERT();
 
-    //TODO: every declared function must be defined also
+    //TODO: every declared function must be defined also. -- it is though.
     if (!Symstack.traverse(symstack, declared_implies_defined)) {
         Errors.set_error(ERROR_DEFINITION);
         return false;
     }
-    __START_LIST_ASSERT();
     return true;
 }
 
@@ -1250,15 +1134,6 @@ static bool Analyse(pfile_t *pfile) {
     }
 
     Generator.main_end();
-    __START_LIST_ASSERT();
-    debug_msg_s("start list: %p\n", (void *) instructions.startList);
-    debug_msg_s("(start list)->head %p\n", (void *) instructions.startList->head);
-    debug_msg_s("(start list)->head->next %p\n", (void *) instructions.startList->head->next);
-    List.print_list(instructions.startList, (char *(*)(void *)) Dynstring.c_str);
-
-    List.print_list(instructions.mainList, (char *(*)(void *)) Dynstring.c_str);
-    List.print_list(instructions.instrListFunctions, (char *(*)(void *)) Dynstring.c_str);
-    debug_msg_s("\t3 lists printed\n");
     Free_parser();
     return res;
 }

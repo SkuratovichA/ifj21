@@ -13,13 +13,9 @@ instructions_t instructions;    // structure that holds info about generated cod
  * Adds new instruction to the list of instructions.
  */
 void ADD_INSTR(char *instr) {
-    debug_msg("\n");
-    __START_LIST_ASSERT();
     dynstring_t *instr_ds = Dynstring.ctor(instr);
-    __START_LIST_ASSERT();
 
     List.append(instrList, instr_ds);
-    __START_LIST_ASSERT();
 }
 
 /*
@@ -27,13 +23,9 @@ void ADD_INSTR(char *instr) {
  * Converts instrPart to a dynstring_t*.
  */
 void ADD_INSTR_PART(char *instrPart) {
-    __START_LIST_ASSERT();
     dynstring_t *newInstrPart = Dynstring.ctor(instrPart);
-    __START_LIST_ASSERT();
     Dynstring.cat(tmp_instr, newInstrPart);
-    __START_LIST_ASSERT();
     Dynstring.dtor(newInstrPart);
-    __START_LIST_ASSERT();
 }
 
 /*
@@ -41,56 +33,43 @@ void ADD_INSTR_PART(char *instrPart) {
  * instrPartDynstr already is a dyntring_t*.
  */
 void ADD_INSTR_PART_DYN(dynstring_t *instrPartDyn) {
-    __START_LIST_ASSERT();
     Dynstring.cat(tmp_instr, instrPartDyn);
-    __START_LIST_ASSERT();
 }
 
 /*
  * Adds tmp_inst to the list of instructions.
  */
 void ADD_INSTR_TMP() {
-    __START_LIST_ASSERT();
     List.append(instrList,
                 Dynstring.ctor(Dynstring.c_str(tmp_instr))
     );
     Dynstring.clear(tmp_instr);
-    __START_LIST_ASSERT();
 }
 
 /*
  * Inserts tmp_inst before while loop.
  */
 void ADD_INSTR_WHILE() {
-    __START_LIST_ASSERT();
     List.insert_after(instructions.before_loop_start,
                       Dynstring.ctor(Dynstring.c_str(tmp_instr))
     );
     Dynstring.clear(tmp_instr);
-    __START_LIST_ASSERT();
 }
 
 /*
  * Converts integer to string and adds it to tmp_instr
  */
 void ADD_INSTR_INT(uint64_t num) {
-    __START_LIST_ASSERT();
     char str[MAX_CHAR] = "\0";
     sprintf(str, "%*llu", MAX_CHAR - 1, num);
     ADD_INSTR_PART(str);
-    __START_LIST_ASSERT();
 }
 
 /*
  * Change active list of instructions.
  */
 void INSTR_CHANGE_ACTIVE_LIST(list_t *newList) {
-    __START_LIST_ASSERT();
-    debug_msg("\n");
-    debug_msg_s("\tinstrList  =  newlist\n\t%p(old) -> ", (void *) instrList);
     instrList = (newList);
-    debug_msg_s("%p(new)\n", (void *) instrList);
-    __START_LIST_ASSERT();
 }
 
 /*
@@ -323,35 +302,19 @@ static void generate_func_start(dynstring_t *func_name) {
  * @brief Generates function end.
  */
 static void generate_func_end(char *func_name) {
-    debug_msg("\n");
-
-    debug_msg_s("\tadd_instr_part: '%s' to tmp instr'%s'\n", func_name, Dynstring.c_str(tmp_instr));
     ADD_INSTR_PART("LABEL $");
-
-    debug_msg_s("\tadd_instr_part, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR_PART(func_name);
-
-    debug_msg_s("\tadd_instr_part, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR_PART("$end");
-
-    debug_msg_s("\tadd_instr_tmp, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR_TMP();
-
     // FIXME - remove these instructions
-    debug_msg_s("\tadd_instr, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR("WRITE GF@%expr_result \n"
               "WRITE string@\\010\n"
               "DEFVAR LF@type_var \n"
               "TYPE LF@type_var GF@%expr_result \n"
               "WRITE LF@type_var");
-
-    debug_msg_s("\tadd_instr, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR("POPFRAME");
-
-    debug_msg_s("\tinstr_change_active_list,\n");
     ADD_INSTR("RETURN\n");
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
-    debug_msg_s("\tdone.\n");
 }
 
 /*
@@ -457,23 +420,15 @@ static void generate_defvar(dynstring_t *var_name) {
  * @brief Generates variable declaration.
  */
 static void generate_var_definition(dynstring_t *var_name) {
-    __START_LIST_ASSERT();
     debug_msg("\n\t- generate_var_definition: %s\n", Dynstring.c_str(var_name));
     generate_defvar(var_name);
-    __START_LIST_ASSERT();
 
     ADD_INSTR_PART("MOVE LF@%");
-    __START_LIST_ASSERT();
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    __START_LIST_ASSERT();
     ADD_INSTR_PART("%");
-    __START_LIST_ASSERT();
     ADD_INSTR_PART_DYN(var_name);
-    __START_LIST_ASSERT();
     ADD_INSTR_PART(" GF@%expr_result");
-    __START_LIST_ASSERT();
     ADD_INSTR_TMP();
-    __START_LIST_ASSERT();
 }
 
 /*
@@ -715,10 +670,10 @@ static void generate_prog_start() {
     ADD_INSTR("DEFVAR GF@%expr_result3 \n"
               "MOVE GF@%expr_result3 nil@nil");
     ADD_INSTR("JUMP $$MAIN");
-    ADD_INSTR(  "LABEL $$ERROR_NIL \n"
-                "EXIT int@8 \n"
-                "LABEL $$ERROR_DIV_BY_ZERO \n"
-                "EXIT int@9");
+    ADD_INSTR("LABEL $$ERROR_NIL \n"
+              "EXIT int@8 \n"
+              "LABEL $$ERROR_DIV_BY_ZERO \n"
+              "EXIT int@9");
 
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
@@ -736,11 +691,6 @@ static void generate_prog_start() {
     generate_main_start();
 
 
-    __ADDRESS_OF_START_LIST = (size_t) ((void *) (instructions.startList->head));
-    debug_msg_s("start list: %p\n", (void *) instructions.startList);
-    debug_msg_s("(start list)->head %p\n", (void *) instructions.startList->head);
-    debug_msg_s("(__ADDRESS_OF_START_LIST) %zx\n", __ADDRESS_OF_START_LIST);
-    debug_msg_s("(start list)->head->next %p\n", (void *) instructions.startList->head->next);
 }
 
 void generate_division_check(bool integer) {
@@ -799,8 +749,9 @@ static void retype_and_push(expr_semantics_t *expr) {
  */
 static void generate_expression_operand(expr_semantics_t *expr) {
     // is it okay to check only TOKEN_ID?
-    if (expr->first_operand.type == TOKEN_ID)
+    if (expr->first_operand.type == TOKEN_ID) {
         generate_nil_check(expr->first_operand);
+    }
 
     ADD_INSTR_PART("PUSHS ");
     generate_var_value(expr->first_operand);
@@ -839,30 +790,30 @@ static void generate_expression(expr_semantics_t *expr) {
             ADD_INSTR("LTS");
             break;
         case OP_LE:
-            ADD_INSTR(  "POPS GF@%expr_result2 \n"
-                        "POPS GF@%expr_result \n"
-                        "LT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
-                        "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
-                        "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
-                        "PUSHS GF@%expr_result");
+            ADD_INSTR("POPS GF@%expr_result2 \n"
+                      "POPS GF@%expr_result \n"
+                      "LT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
+                      "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
+                      "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
+                      "PUSHS GF@%expr_result");
             break;
         case OP_GT:
             ADD_INSTR("GTS");
             break;
         case OP_GE:
-            ADD_INSTR(  "POPS GF@%expr_result2 \n"
-                        "POPS GF@%expr_result \n"
-                        "GT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
-                        "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
-                        "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
-                        "PUSHS GF@%expr_result");
+            ADD_INSTR("POPS GF@%expr_result2 \n"
+                      "POPS GF@%expr_result \n"
+                      "GT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
+                      "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
+                      "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
+                      "PUSHS GF@%expr_result");
             break;
         case OP_EQ:
             ADD_INSTR("EQS");
             break;
         case OP_NE:
-            ADD_INSTR( "EQS"
-                        "NOTS");
+            ADD_INSTR("EQS"
+                      "NOTS");
             break;
         case OP_NOT:
             ADD_INSTR("NOTS");
@@ -875,14 +826,14 @@ static void generate_expression(expr_semantics_t *expr) {
             break;
         case OP_HASH:
             ADD_INSTR("POPS GF@%expr_result2 \n"
-                        "STRLEN GF@%expr_result GF@%expr_result2 \n"
-                        "PUSHS GF@%expr_result");
+                      "STRLEN GF@%expr_result GF@%expr_result2 \n"
+                      "PUSHS GF@%expr_result");
             break;
         case OP_STRCAT:
             ADD_INSTR("POPS GF@%expr_result2 \n"
-                        "POPS GF@%expr_result \n"
-                        "CONCAT GF@%expr_result GF@%expr_result GF@%expr_result2 \n"
-                        "PUSHS GF@%expr_result");
+                      "POPS GF@%expr_result \n"
+                      "CONCAT GF@%expr_result GF@%expr_result GF@%expr_result2 \n"
+                      "PUSHS GF@%expr_result");
             break;
         default:
             ADD_INSTR("# Another instruction :(");
@@ -893,54 +844,29 @@ static void generate_expression(expr_semantics_t *expr) {
  * @brief Initialises the code generator.
  */
 static void initialise_generator() {
-    debug_msg("");
+    debug_msg("\n");
     // initialise tmp_instr to empty dynstring
     tmp_instr = Dynstring.ctor("");
-    debug_msg_s("tmp_instr initialized %p\n", (void *) tmp_instr);
 
     // initialise the instructions structure
     instructions.startList = List.ctor();
-    debug_msg_s("instructions.startList initialized %p\n", (void *) instructions.startList);
-
     instructions.instrListFunctions = List.ctor();
-    debug_msg_s("instructions.instrListFunctions initialized %p\n", (void *) instructions.instrListFunctions);
-
     instructions.mainList = List.ctor();
-    debug_msg_s("instructions.mainList initialized %p\n", (void *) instructions.mainList);
-
     instructions.in_loop = false;
-    debug_msg_s("instructions.in_loop initialized with false\n");
-
     instructions.outer_loop_id = 0;
-    debug_msg_s("instructions.outer_loop_id initialized with 0\n");
-
     instructions.before_loop_start = NULL;
-    debug_msg_s("instructions.before_loop_start initialized with NULL\n");
-
     instructions.outer_cond_id = 0;
-    debug_msg_s("instructions.outer_cond_id initialized with 0\n");
-
     instructions.cond_cnt = 0;
-    debug_msg_s("instructions.cond_cnt initialized with 0\n");
-
     // sets active instructions list
     instrList = instructions.startList;
-    debug_msg_s("instrList initialized with instructions.startList %p\n\n", (void *) instrList);
 }
 
 static void dtor() {
     debug_msg("\n");
     List.dtor(instructions.startList, (void (*)(void *)) (Dynstring.dtor)); // use Dynstring.dtor or free?
-    debug_msg("instructions.startList freed.\n");
-
     List.dtor(instructions.instrListFunctions, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
-    debug_msg("instructions.instrListFunctions freed.\n");
-
     List.dtor(instructions.mainList, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
-    debug_msg("instructions.mainList freed.\n");
-
     Dynstring.dtor(tmp_instr);
-    debug_msg("tmp_instr freed\n");
 }
 
 static void Print_instr_list(instr_list_t instr_list_type) {
