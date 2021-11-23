@@ -51,7 +51,7 @@ static char *scope_to_str(scope_type_t scope) {
  * @return Pointer to allocated memory.
  */
 static symstack_t *SS_Init() {
-    debug_msg("\n[ctor] Init a symstack.\n");
+    debug_msg("\n\t[ctor] Init a symstack.\n");
     symstack_t *stack = calloc(1, sizeof(symstack_t));
     soft_assert(stack != NULL, ERROR_INTERNAL);
     return stack;
@@ -65,6 +65,7 @@ static symstack_t *SS_Init() {
  * @param fun_name if scope_type is not function, then NULL.
  */
 static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type, char *fun_name) {
+    debug_msg("\n");
     // create a new elment.
     stack_el_t *stack_element = calloc(1, sizeof(stack_el_t));
     soft_assert(stack_element != NULL, ERROR_INTERNAL);
@@ -82,7 +83,7 @@ static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type
         if (fun_name != NULL) {
             stack_element->fun_name = Dynstring.ctor(fun_name);
         } else {
-            debug_msg("[push] Is this function really nameless?\n");
+            debug_msg_s("\t[push] Is this function really nameless?\n");
             stack_element->fun_name = Dynstring.ctor("nameless_function");
         }
     }
@@ -103,13 +104,14 @@ static void SS_Push(symstack_t *self, symtable_t *table, scope_type_t scope_type
  * @param self symstack.
  */
 static void SS_Pop(symstack_t *self) {
+    debug_msg("\n");
     if (self == NULL) {
-        debug_msg("\tTrying to pop from uninitialized stack. DONT!\n");
+        debug_msg_s("\tTrying to pop from uninitialized stack. DONT!\n");
         return;
     }
 
     if (self->head == NULL) {
-        debug_msg("\tTrying to pop from a headless stack. DONT!\n");
+        debug_msg_s("\tTrying to pop from a headless stack. DONT!\n");
         return;
     }
 
@@ -119,7 +121,7 @@ static void SS_Pop(symstack_t *self) {
     stack_el_t *del = self->head;
     self->head = self->head->next;
     free(del);
-    debug_msg("[pop] popped a symtable\n");
+    debug_msg_s("\t[pop] popped a symtable\n");
 }
 
 /** Delete the whole stack with all symtables on it.
@@ -127,6 +129,7 @@ static void SS_Pop(symstack_t *self) {
  * @param self stack to delete.
  */
 static void SS_Dtor(symstack_t *self) {
+    debug_msg("\n");
     if (self == NULL) {
         return;
     }
@@ -137,7 +140,7 @@ static void SS_Dtor(symstack_t *self) {
     }
 
     free(self);
-    debug_msg("[dtor] deleted symstack.\n");
+    debug_msg_s("\t[dtor] deleted symstack.\n");
 }
 
 /** Get a symbol from the symbol stack.
@@ -151,14 +154,14 @@ static bool SS_Get_symbol(symstack_t *self, dynstring_t *id,
                           symbol_t **sym, stack_el_t **def_scope) {
     debug_msg("\n");
     if (self == NULL) {
-        debug_msg("[getter] Stack is null. Returning false.\n");
+        debug_msg_s("\t[getter] Stack is null. Returning false.\n");
         return false;
     }
 
     stack_el_t *st = self->head;
     while (st != NULL) {
         if (Symtable.get_symbol(st->table, id, sym)) {
-            debug_msg("[getter] symbol found\n");
+            debug_msg_s("\t[getter] symbol found\n");
             if (def_scope != NULL) {
                 *def_scope = st;
             }
@@ -180,7 +183,7 @@ static bool SS_Get_local_symbol(symstack_t *self, dynstring_t *id,
                                 symbol_t **sym, stack_el_t **def_scope) {
     debug_msg("\n");
     if (self == NULL) {
-        debug_msg("[getter] Stack is null. Returning false.\n");
+        debug_msg_s("\t[getter] Stack is null. Returning false.\n");
         return false;
     }
 
@@ -188,7 +191,7 @@ static bool SS_Get_local_symbol(symstack_t *self, dynstring_t *id,
     // when st->next == NULL, it means we are at the global frame.
     while (st != NULL && st->next != NULL) {
         if (Symtable.get_symbol(st->table, id, sym)) {
-            debug_msg("[getter] symbol found\n");
+            debug_msg_s("\t[getter] symbol found\n");
             if (def_scope != NULL) {
                 *def_scope = st;
             }
@@ -206,11 +209,11 @@ static bool SS_Get_local_symbol(symstack_t *self, dynstring_t *id,
  */
 static symtable_t *SS_Top(symstack_t *self) {
     if (self == NULL) {
-        debug_msg("\tStack is null.\n");
+        debug_msg("\n\tStack is null.\n");
         return NULL;
     }
     if (self->head == NULL) {
-        debug_msg("\tHead is null.\n");
+        debug_msg("\n\tHead is null.\n");
         return NULL;
     }
     return self->head->table;
@@ -224,11 +227,12 @@ static symtable_t *SS_Top(symstack_t *self) {
  * @return pointer on symbol puched on the stack.
  */
 static symbol_t *SS_Put_symbol(symstack_t *self, dynstring_t *id, id_type_t type) {
+    debug_msg("\n");
     soft_assert(self != NULL, ERROR_INTERNAL);
 
     // stack did not have a head.
     if (self->head == NULL) {
-        debug_msg("\tStack has been empty. Create a frame(Symstack.push) before putting a symbol.\n");
+        debug_msg_s("\tStack has been empty. Create a frame(Symstack.push) before putting a symbol.\n");
         return NULL;
     }
 

@@ -159,12 +159,12 @@ static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
         if (res == 0) {
             if (type == ID_TYPE_func_decl) {
                 Semantics.declare((*iterator)->symbol.function_semantics);
-                debug_msg("\t[put] function declared '%s'\n", Dynstring.c_str(id));
+                debug_msg("function declared '%s'\n", Dynstring.c_str(id));
             } else if (type == ID_TYPE_func_def) {
                 Semantics.define((*iterator)->symbol.function_semantics);
-                debug_msg("\t[put] function defined '%s'\n", Dynstring.c_str(id));
+                debug_msg("function defined '%s'\n", Dynstring.c_str(id));
             } else {
-                debug_msg("\t[put] {%s, %d} is already in the table\n", Dynstring.c_str(id), type);
+                debug_msg("{%s, %d} is already in the table\n", Dynstring.c_str(id), type);
             }
             return &(*iterator)->symbol;
         }
@@ -183,8 +183,8 @@ static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
                 Semantics.ctor(type == ID_TYPE_func_def, type == ID_TYPE_func_decl, builtin_name(id));
     }
 
-    debug_msg("[put] new on { .id = '%s', .type = '%s' }.\n",
-              Dynstring.c_str((*iterator)->symbol.id), type_to_str((*iterator)->symbol.type)
+    debug_msg_s("\t[put] new { .id = '%s', .type = '%s' }.\n",
+                Dynstring.c_str((*iterator)->symbol.id), type_to_str((*iterator)->symbol.type)
     );
 
     return &(*iterator)->symbol;
@@ -264,7 +264,7 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
 
 
     Dynstring.dtor(dname);
-    debug_msg("\t[BUILTIN]: builtin function is set.\n");
+    //debug_msg("\t[BUILTIN]: builtin function is set.\n");
 }
 
 /** auxilary function to traverse a symtable(BST)
