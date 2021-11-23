@@ -73,14 +73,13 @@ add_executable(${PROJECT_NAME}
         )
 message(STATUS ${PROJECT_NAME} " execucumber compiled.")
 
-# todo somehow make it more general
-#parser tests
-set(ATTRIBUTE parser)
-add_executable(test_${ATTRIBUTE}
+#testgen file
+# program to generate tests inputs.
+add_executable(testgen
+        testgen.c
         ${PROJ_FILES}
         )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
-message(STATUS ${ATTRIBUTE} " execucumber compiled.")
+
 
 #scanner tests
 set(ATTRIBUTE scanner)
