@@ -86,7 +86,7 @@ typedef struct stack_item {
 struct expr_interface_t {
     bool (*parse)(pfile_t *, bool);
 
-    bool (*parse_expr_list)(pfile_t *);
+    bool (*parse_expr_list)(pfile_t *, dynstring_t *);
 };
 
 extern const struct expr_interface_t Expr;

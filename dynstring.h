@@ -101,6 +101,8 @@ struct dynstring_interface_t {
     * @returns duplicated dynstring.
     */
     dynstring_t *(*dup)(dynstring_t *);
+
+    void (*trunc_to_len)(dynstring_t *, size_t);
 };
 
 

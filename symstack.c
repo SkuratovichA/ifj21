@@ -251,25 +251,23 @@ static scope_info_t SS_Get_scope_info(symstack_t *self) {
 }
 
 /** Get a parent function
- *
- * @param self
- * @param self symbol to store the symbol
- * @return void
  */
-static void SS_Get_parent_func(symstack_t *self, symbol_t **sym) {
-    if (self == NULL || sym == NULL) {
-        return;
+static symbol_t *SS_Get_parent_func(symstack_t *self) {
+    if (self == NULL) {
+        return NULL;
     }
     stack_el_t *iter = self->head;
+    symbol_t *sym;
 
     while (iter != NULL) {
         if (iter->info.scope_type == SCOPE_TYPE_function) {
             // set a pointer.
-            Symstack.get_symbol(self, iter->fun_name, sym, NULL);
-            return;
+            Symstack.get_symbol(self, iter->fun_name, &sym, NULL);
+            return sym;
         }
         iter = iter->next;
     }
+    return NULL;
 }
 
 /** Get a parent function name.

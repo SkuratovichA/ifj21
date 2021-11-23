@@ -875,17 +875,16 @@ static bool other_expr(pfile_t *pfile) {
  * @param pfile program file to pass in to scanner.
  * @return bool.
  */
-static bool Expr_list(pfile_t *pfile) {
+static bool Expr_list(pfile_t *pfile, dynstring_t *datatypes) {
     debug_msg("EXPECTED: expr <other_expr>\n");
 
     // expr
-    if (parse_init(pfile, EXPR_DEFAULT, NULL)) {
-        // <other_expr>
-        return other_expr(pfile);
+    if (!parse_init(pfile, EXPR_DEFAULT, NULL)) {
+        return false;
     }
 
-    // Otherwise
-    return false;
+    // <other_expr>
+    return other_expr(pfile);
 }
 
 /**
@@ -918,7 +917,7 @@ static bool id_list(pfile_t *pfile) {
     // =
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
         Scanner.get_next_token(pfile);
-        return Expr_list(pfile);
+        return Expr_list(pfile, NULL);
     }
 
     // Otherwise
