@@ -7,6 +7,22 @@
 
 #define MAX_CHAR 23         // maximum characters when converting num to string
 
+#define __START_LIST_ASSERT()                                                                     \
+    do {                                                                                         \
+        if (                                                                                     \
+            __ADDRESS_OF_START_LIST != (size_t)((void*)instructions.startList->head) && __ADDRESS_OF_START_LIST != 0            \
+        )                                                                                         \
+        {                                                                                         \
+            debug_msg("__ADDRESS_OF_START_LIST: %zx\n", __ADDRESS_OF_START_LIST);                    \
+            debug_msg("startList->head: %zx\n", (size_t)((void*)instructions.startList->head));      \
+            debug_assert(__ADDRESS_OF_START_LIST == (size_t)((void*)instructions.startList->head));  \
+        }                                                                                            \
+    } while (0)
+
+#ifndef DEBUG
+#define __START_LIST_ASSERT()
+#endif
+
 /*
  * Structure that holds information needed for the code generator.
  */
@@ -21,15 +37,16 @@ typedef struct {
     size_t cond_cnt;                    // counter of elseif/else branches after if
 } instructions_t;
 
-/*
- * Global variables used for code generator.
- */
-extern list_t *instrList;              // pointer to the list of instr that is currently used
-extern dynstring_t *tmp_instr;         // instruction that is currently being generated
-extern instructions_t instructions;    // structure that holds info about generated code
+typedef enum instr_list {
+    LIST_INSTR_START,
+    LIST_INSTR_FUNC,
+    LIST_INSTR_MAIN,
+} instr_list_t;
 
+extern instructions_t instructions;
+extern list_t *instrList;
 
-void INSTR_CHANGE_ACTIVE_LIST(list_t *);
+extern size_t __ADDRESS_OF_START_LIST;
 
 /**
  * A structure that store pointers to the functions from code_generator.c. So we can use them in different files as interface.
@@ -91,6 +108,8 @@ struct code_generator_interface_t {
     void (*expression_pop)(void);
 
     void (*dtor)(void);
+
+    void (*print_instr_list)(instr_list_t);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.

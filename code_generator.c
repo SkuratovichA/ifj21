@@ -1,17 +1,25 @@
 #include "code_generator.h"
 
+size_t __ADDRESS_OF_START_LIST;
+
 /*
  * Global variables used for code generator.
  */
 list_t *instrList;              // pointer to the list of instr that is currently used
-dynstring_t *tmp_instr;         // instruction that is currently being generated
+static dynstring_t *tmp_instr;         // instruction that is currently being generated
 instructions_t instructions;    // structure that holds info about generated code
 
 /*
  * Adds new instruction to the list of instructions.
  */
 void ADD_INSTR(char *instr) {
-    List.append(instrList, Dynstring.ctor(instr));
+    debug_msg("\n");
+    __START_LIST_ASSERT();
+    dynstring_t *instr_ds = Dynstring.ctor(instr);
+    __START_LIST_ASSERT();
+
+    List.append(instrList, instr_ds);
+    __START_LIST_ASSERT();
 }
 
 /*
@@ -19,9 +27,13 @@ void ADD_INSTR(char *instr) {
  * Converts instrPart to a dynstring_t*.
  */
 void ADD_INSTR_PART(char *instrPart) {
+    __START_LIST_ASSERT();
     dynstring_t *newInstrPart = Dynstring.ctor(instrPart);
+    __START_LIST_ASSERT();
     Dynstring.cat(tmp_instr, newInstrPart);
+    __START_LIST_ASSERT();
     Dynstring.dtor(newInstrPart);
+    __START_LIST_ASSERT();
 }
 
 /*
@@ -29,46 +41,56 @@ void ADD_INSTR_PART(char *instrPart) {
  * instrPartDynstr already is a dyntring_t*.
  */
 void ADD_INSTR_PART_DYN(dynstring_t *instrPartDyn) {
+    __START_LIST_ASSERT();
     Dynstring.cat(tmp_instr, instrPartDyn);
+    __START_LIST_ASSERT();
 }
 
 /*
  * Adds tmp_inst to the list of instructions.
  */
 void ADD_INSTR_TMP() {
+    __START_LIST_ASSERT();
     List.append(instrList,
-                Dynstring.c_str(tmp_instr)
+                Dynstring.ctor(Dynstring.c_str(tmp_instr))
     );
     Dynstring.clear(tmp_instr);
+    __START_LIST_ASSERT();
 }
 
 /*
  * Inserts tmp_inst before while loop.
  */
 void ADD_INSTR_WHILE() {
+    __START_LIST_ASSERT();
     List.insert_after(instructions.before_loop_start,
-                      Dynstring.c_str(tmp_instr)
+                      Dynstring.ctor(Dynstring.c_str(tmp_instr))
     );
     Dynstring.clear(tmp_instr);
+    __START_LIST_ASSERT();
 }
 
 /*
  * Converts integer to string and adds it to tmp_instr
  */
 void ADD_INSTR_INT(uint64_t num) {
+    __START_LIST_ASSERT();
     char str[MAX_CHAR] = "\0";
-    sprintf(str, "%*lu", MAX_CHAR - 1, num);
+    sprintf(str, "%*llu", MAX_CHAR - 1, num);
     ADD_INSTR_PART(str);
+    __START_LIST_ASSERT();
 }
 
 /*
  * Change active list of instructions.
  */
 void INSTR_CHANGE_ACTIVE_LIST(list_t *newList) {
+    __START_LIST_ASSERT();
     debug_msg("\n");
-    debug_msg_s("instrList  ->  newlist\n%p -> ", (void *) instrList);
+    debug_msg_s("\tinstrList  =  newlist\n\t%p(old) -> ", (void *) instrList);
     instrList = (newList);
-    debug_msg_s("%p\n", (void *) instrList);
+    debug_msg_s("%p(new)\n", (void *) instrList);
+    __START_LIST_ASSERT();
 }
 
 /*
@@ -301,35 +323,35 @@ static void generate_func_start(dynstring_t *func_name) {
  * @brief Generates function end.
  */
 static void generate_func_end(char *func_name) {
-    debug_msg("func_name: %s\n", func_name);
+    debug_msg("\n");
 
-    debug_msg_s("add_instr_part: '%s' to tmp instr'%s'\n", func_name, Dynstring.c_str(tmp_instr));
+    debug_msg_s("\tadd_instr_part: '%s' to tmp instr'%s'\n", func_name, Dynstring.c_str(tmp_instr));
     ADD_INSTR_PART("LABEL $");
 
-    debug_msg_s("add_instr_part, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
+    debug_msg_s("\tadd_instr_part, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR_PART(func_name);
 
-    debug_msg_s("add_instr_part, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
+    debug_msg_s("\tadd_instr_part, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR_PART("$end");
 
-    debug_msg_s("add_instr_tmp, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
+    debug_msg_s("\tadd_instr_tmp, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR_TMP();
 
     // FIXME - remove these instructions
-    debug_msg_s("add_instr, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
+    debug_msg_s("\tadd_instr, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR("WRITE GF@%expr_result \n"
               "WRITE string@\\010\n"
               "DEFVAR LF@type_var \n"
               "TYPE LF@type_var GF@%expr_result \n"
               "WRITE LF@type_var");
 
-    debug_msg_s("add_instr, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
+    debug_msg_s("\tadd_instr, tmp_str is now '%s'\n", Dynstring.c_str(tmp_instr));
     ADD_INSTR("POPFRAME");
 
-    debug_msg_s("instr_change_active_list,\n");
+    debug_msg_s("\tinstr_change_active_list,\n");
     ADD_INSTR("RETURN\n");
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
-    debug_msg_s("done.\n");
+    debug_msg_s("\tdone.\n");
 }
 
 /*
@@ -435,22 +457,30 @@ static void generate_defvar(dynstring_t *var_name) {
  * @brief Generates variable declaration.
  */
 static void generate_var_definition(dynstring_t *var_name) {
-    debug_msg("- generate_var_definition: %s\n", Dynstring.c_str(var_name));
+    __START_LIST_ASSERT();
+    debug_msg("\n\t- generate_var_definition: %s\n", Dynstring.c_str(var_name));
     generate_defvar(var_name);
+    __START_LIST_ASSERT();
 
     ADD_INSTR_PART("MOVE LF@%");
+    __START_LIST_ASSERT();
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    __START_LIST_ASSERT();
     ADD_INSTR_PART("%");
+    __START_LIST_ASSERT();
     ADD_INSTR_PART_DYN(var_name);
+    __START_LIST_ASSERT();
     ADD_INSTR_PART(" GF@%expr_result");
+    __START_LIST_ASSERT();
     ADD_INSTR_TMP();
+    __START_LIST_ASSERT();
 }
 
 /*
  * @brief Generates variable declaration.
  */
 static void generate_var_declaration(dynstring_t *var_name) {
-    debug_msg("- generate_var_declaration: %s\n", Dynstring.c_str(var_name));
+    debug_msg("\n\t- generate_var_declaration: %s\n", Dynstring.c_str(var_name));
     generate_defvar(var_name);
 
     // initialise to nil
@@ -690,6 +720,7 @@ static void generate_prog_start() {
                 "LABEL $$ERROR_DIV_BY_ZERO \n"
                 "EXIT int@9");
 
+
     INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
     // TODO: add built-in functions every time or when needed?
     generate_func_ord();
@@ -703,6 +734,13 @@ static void generate_prog_start() {
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
     generate_main_start();
+
+
+    __ADDRESS_OF_START_LIST = (size_t) ((void *) (instructions.startList->head));
+    debug_msg_s("start list: %p\n", (void *) instructions.startList);
+    debug_msg_s("(start list)->head %p\n", (void *) instructions.startList->head);
+    debug_msg_s("(__ADDRESS_OF_START_LIST) %zx\n", __ADDRESS_OF_START_LIST);
+    debug_msg_s("(start list)->head->next %p\n", (void *) instructions.startList->head->next);
 }
 
 void generate_division_check(bool integer) {
@@ -744,7 +782,7 @@ static void generate_expression_pop() {
     ADD_INSTR("CLEARS");
 }
 
-static void retype_and_push (expr_semantics_t *expr) {
+static void retype_and_push(expr_semantics_t *expr) {
     // retype if needed and push operands
     if (expr->conv_type == CONVERT_FIRST || expr->conv_type == CONVERT_BOTH) {
         retype_first_or_both(expr);
@@ -905,6 +943,24 @@ static void dtor() {
     debug_msg("tmp_instr freed\n");
 }
 
+static void Print_instr_list(instr_list_t instr_list_type) {
+    switch (instr_list_type) {
+        case LIST_INSTR_START:
+            List.print_list(instructions.startList, (char *(*)(void *)) Dynstring.c_str);
+            break;
+        case LIST_INSTR_FUNC:
+            List.print_list(instructions.instrListFunctions, (char *(*)(void *)) Dynstring.c_str);
+            break;
+        case LIST_INSTR_MAIN:
+            List.print_list(instructions.mainList, (char *(*)(void *)) Dynstring.c_str);
+            break;
+        default:
+            printf("Undefined instruction list.\n");
+            break;
+    }
+}
+
+
 /**
  * Interface to use when dealing with code generator.
  * Functions are in struct so we can use them in different files.
@@ -937,4 +993,5 @@ const struct code_generator_interface_t Generator = {
         .expression = generate_expression,
         .expression_pop = generate_expression_pop,
         .dtor = dtor,
+        .print_instr_list = Print_instr_list,
 };
