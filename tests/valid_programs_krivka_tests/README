@@ -1,0 +1,2 @@
+Tento adresář obsahuje několik příkladů programů napsaných v IFJ21 pro dokreslení zadání a upozornění na některé hůře pochopitelné aspekty IFJ21.
+Pro spuštění všech testů můžete využít dávku ./examples.sh (bash script) a případně si jej upravit/rozšířit pro své potřeby.

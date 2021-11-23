@@ -55,7 +55,7 @@ static void Clear(sstack_t *stack, void (*clear_fun)(void *)) {
  * @param stack
  */
 static void *Peek(sstack_t *stack) {
-    return List.gethead(stack);
+    return List.get_head(stack);
 }
 
 /**

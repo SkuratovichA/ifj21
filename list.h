@@ -92,7 +92,9 @@ struct list_interface_t {
      *
      * @param list singly linked list
      */
-    void *(*gethead)(list_t *list);
+    void *(*get_head)(list_t *list);
+
+    void *(*get_tail)(list_t *list);
 
     /**
      * @brief copy data to the list item element.
@@ -123,6 +125,8 @@ struct list_interface_t {
      * @param clear_fun pointer to a function, which will free the list data.
     */
     void (*dtor)(list_t *list, void (*clear_fun)(void *));
+
+    void (*print_list)(list_t *list, char *(*pp_fun)(void *));
 };
 
 /**

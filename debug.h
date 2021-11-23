@@ -24,22 +24,32 @@
 
 #define DEBUG_SEP "\033[0;36m<><><><><><><><>\033[0m\n"
 
-#define debug_todo(...) do{            \
+#define debug_todo(...)                \
+    do {                               \
         fprintf(stderr, "TODO: ");     \
         debug_msg(__VA_ARGS__);        \
     } while(0)
 
-#define debug_print(_dst, ...) do {                     \
-        fprintf((_dst), __FILE__ ":%.4d in %s %*s%s: ",  \
+#define debug_print(_dst, ...)                           \
+    do {                                                \
+        fprintf((_dst), __FILE__ ":%.4d in %s %*s%s: ", \
             __LINE__,                                   \
             __FUNCTION__,                               \
-            (int)(25 - strlen(__FUNCTION__))/*an indentation number*/, \
+             /*an indentation number*/                  \
+            (int)(30 - strlen(__FUNCTION__)),           \
             "", " "                                     \
             );                                          \
         fprintf((_dst), __VA_ARGS__);                   \
     } while(0)
 
-#define debug_assert(cond) assert((cond))
+#define debug_assert(cond)                     \
+    do {                                      \
+        if (!(cond)) {                        \
+            debug_msg("ASSERTION FAILED\n");  \
+        }                                     \
+       soft_assert((cond), ERROR_INTERNAL);   \
+    } while(0)
+
 #else
 // undef debug macros
 #define debug_err(...)

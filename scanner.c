@@ -9,22 +9,6 @@
 #include "tests/tests.h"
 
 
-#ifndef DEBUG_scanner
-//#pragma GCC diagnostic push
-//#pragma GCC diagnostic ignored "-Wmacro-redefined"
-//// undef debug macros
-//#define debug_err(...)
-//#define debug_msg(...)
-//#define debug_msg_stdout(...)
-//#define debug_msg_stderr(...)
-//#define debug_todo(...)
-//#define debug_assert(cond)
-//#define debug_msg_s(...)
-//#define DEBUG_SEP
-//#pragma GCC diagnostic pop
-#endif
-
-
 /** Previous token is used for error handling, if I will not give a d&ck.
  */
 static token_t prev;
@@ -667,17 +651,15 @@ static token_t scanner(pfile_t *pfile) {
         SINGLE_CHAR_TOKENS(X)
         #undef X
 
-        case '\n':
+        case_2('\n', 13):
             lines++;
             charpos = 0;
             goto next_lexeme;
-            // token = (token_t) {.type = TOKEN_EOL};
             break;
 
         case_2('\t', ' '):
-            charpos++;
+            charpos += (ch == '\t') ? 4 : 1;
             goto next_lexeme;
-            //    token.type = TOKEN_WS;
             break;
 
         case_alpha:
@@ -723,16 +705,22 @@ static token_t scanner(pfile_t *pfile) {
             break;
 
         case '.':
+            // there's no symbol such as '.' in the language
             token.type = TOKEN_DEAD;
             if (Pfile.pgetc(pfile) == '.') {
                 charpos++;
                 token.type = TOKEN_STRCAT;
+                break;
             }
             break;
 
         default:
             token.type = TOKEN_DEAD;
+            debug_msg("unrecognized ch with ascii '%d'\n", ch);
             break;
+    }
+    if (token.type == TOKEN_DEAD) {
+        Errors.set_error(ERROR_LEXICAL);
     }
 
     return token;

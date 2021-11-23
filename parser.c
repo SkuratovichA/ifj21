@@ -19,6 +19,7 @@
 #include "expressions.h"
 #include "code_generator.h"
 
+
 /** Print an error ife terminal symbol is unexpected.
  *
  * @param a expected.
@@ -26,7 +27,7 @@
  */
 static void print_error_unexpected_token(const char *a, const char *b) {
     fprintf(stderr, "line %zu, character %zu\n", Scanner.get_line(), Scanner.get_charpos());
-    fprintf(stderr, "ERROR(syntax): Expected '%s', got '%s' instead\n", a, b);
+    fprintf(stderr, "[error](syntax): Expected '%s', got '%s' instead\n", a, b);
 }
 
 /** If there's a mismatch in number/type of parameters, then return false.
@@ -68,7 +69,7 @@ static void print_error_unexpected_token(const char *a, const char *b) {
     do {                                                       \
         Errors.set_error(ERROR_SYNTAX);                        \
         print_error_unexpected_token(Scanner.to_string(a),     \
-            Scanner.to_string(Scanner.get_curr_token().type)); \
+        Scanner.to_string(Scanner.get_curr_token().type));     \
         return false;                                          \
     } while (0)
 
@@ -79,14 +80,14 @@ static void print_error_unexpected_token(const char *a, const char *b) {
         Errors.set_error(ERROR_DEFINITION);                        \
         fprintf(stderr, "line %zu, character %zu\n",               \
            Scanner.get_line(), Scanner.get_charpos());             \
-        fprintf(stderr, "ERROR(semantic): variable with name '%s'" \
+        fprintf(stderr, "[error](semantic): variable with name '%s'" \
            " has already been declared!\n", Dynstring.c_str(a));   \
         return false;                                              \
     } while (0)
 
 /** Macro expecting a non terminal from the scanner.
  */
-#define EXPECTED(p)                                                            \
+#define EXPECTED(p)                                                           \
     do {                                                                      \
         token_t tok__ = Scanner.get_curr_token();                             \
         if (tok__.type == (p)) {                                              \
@@ -220,6 +221,7 @@ static bool cond_stmt(pfile_t *pfile) {
     debug_msg("<cond_stmt> -> \n");
 
     if (!Expr.parse(pfile, true)) {
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         instructions.cond_cnt = 0;
         return false;
     }
@@ -304,6 +306,7 @@ static bool assignment(pfile_t *pfile, dynstring_t *var_name) {
     // =
     EXPECTED(TOKEN_ASSIGN);
     if (!Expr.parse(pfile, true)) {
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
     // expression result is in GF@%expr_result
@@ -326,7 +329,7 @@ static bool for_assignment(pfile_t *pfile) {
     EXPECTED(TOKEN_COMMA);
 
     if (!Expr.parse(pfile, true)) {
-        debug_msg("[error] Expression parsing failed.\n");
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
     EXPECTED(KEYWORD_do);
@@ -356,7 +359,7 @@ static bool for_cycle(pfile_t *pfile) {
     // =
     EXPECTED(TOKEN_ASSIGN);
     if (!Expr.parse(pfile, true)) {
-        debug_msg("Expression function returned false\n");
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
 
@@ -365,17 +368,21 @@ static bool for_cycle(pfile_t *pfile) {
 
     // terminating `expr` in for cycle.
     if (!Expr.parse(pfile, true)) {
-        debug_msg("Expression function returned false\n");
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
+    debug_msg("\n\n\n\n\n\n\n\n\n\nAAAAAAAAa\n\n\n");
+
     // do | , `expr` do
     if (!for_assignment(pfile)) {
         return false;
     }
+    debug_msg("\n\n\n\n\n\n\n\n\n\nRRRRRRRRR\n\n\n");
     // <fun_body>, which ends with 'end'
     if (!fun_body(pfile)) {
         return false;
     }
+    debug_msg("\n\n\n\n\n\n\n\n\n\nSSSSSSSSSSS\n\n\n");
     SYMSTACK_POP();
     return true;
 }
@@ -455,7 +462,7 @@ static bool while_cycle(pfile_t *pfile) {
 
     // parse expressions
     if (!Expr.parse(pfile, true)) {
-        debug_msg("Expression analysis failed.\n");
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
 
@@ -509,9 +516,10 @@ static bool repeat_until_cycle(pfile_t *pfile) {
     if (!repeat_body(pfile)) {
         return false;
     }
+
     // expression represent a condition after an until keyword.
     if (!Expr.parse(pfile, true)) {
-        debug_msg("Expression function returned false\n");
+        debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
 
@@ -564,7 +572,11 @@ static bool fun_stmt(pfile_t *pfile) {
             return repeat_until_cycle(pfile);
 
         case TOKEN_ID:
-            return Expr.parse(pfile, false);
+            if (!Expr.parse(pfile, false)) {
+                debug_msg("\n\t\t[error] Expression parsing failed.\n");
+                return false;
+            }
+            break;
 
         case TOKEN_DEAD:
             Errors.set_error(ERROR_LEXICAL);
@@ -595,6 +607,7 @@ static bool fun_body(pfile_t *pfile) {
     // end |
     if (Scanner.get_curr_token().type == KEYWORD_end) {
         EXPECTED(KEYWORD_end);
+
         switch (Symstack.get_scope_info(symstack).scope_type) {
             case SCOPE_TYPE_cycle:
                 // FIXME - can be also for loop
@@ -641,7 +654,6 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
 
     // id
     EXPECTED(TOKEN_ID);
-
     // :
     EXPECTED(TOKEN_COLON);
 
@@ -684,7 +696,6 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
     // id
     EXPECTED(TOKEN_ID);
     Generator.func_start_param(id_name, 0);    // need index of the param to the code generator, not the name
-
     // :
     EXPECTED(TOKEN_COLON);
 
@@ -774,10 +785,12 @@ static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
  */
 static bool funretopt(pfile_t *pfile, func_info_t function_info) {
     debug_msg("<funretopt> ->\n");
+
     // e |
     if (Scanner.get_curr_token().type != TOKEN_COLON) {
         return true;
     }
+
     // :
     EXPECTED(TOKEN_COLON);
 
@@ -787,7 +800,7 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
     Generator.func_return_value(0);
 
     // <datatype> <other_funrets>
-    return datatype(pfile) && other_funrets(pfile, function_info);
+    return (datatype(pfile) && other_funrets(pfile, function_info));
 }
 
 /** Function declaration.
@@ -829,7 +842,6 @@ static bool function_declaration(pfile_t *pfile) {
     EXPECTED(TOKEN_COLON);
     // function
     EXPECTED(KEYWORD_function);
-
     // (
     EXPECTED(TOKEN_LPAREN);
 
@@ -937,7 +949,6 @@ static bool function_definition(pfile_t *pfile) {
 static bool stmt(pfile_t *pfile) {
     debug_msg("<stmt> ->\n");
     token_t token = Scanner.get_curr_token();
-    dynstring_t *id_name;
 
     switch (token.type) {
         // function declaration: global id : function ( <datatype_list> <funretopt>
@@ -949,18 +960,17 @@ static bool stmt(pfile_t *pfile) {
             return function_definition(pfile);
 
             // function calling: id ( <list_expr> )
-        case TOKEN_ID:
-            id_name = Dynstring.ctor(Dynstring.c_str(token.attribute.id));
-
+        case TOKEN_ID:;
+            dynstring_t *id_name = Dynstring.ctor(Dynstring.c_str(token.attribute.id));
             // create frame before passing parameters
             Generator.func_createframe();
 
             // in expressions we pass the parameters
             // TODO add enum list with INSIDE_STMT, INSIDE_FUNC, GLOBAL_SCOPE
             if (!Expr.parse(pfile, false)) {
+                debug_msg("\n\t\t[error] Expression parsing failed.\n");
                 return false;
             }
-
             // function call
             Generator.func_call(id_name);
             Dynstring.dtor(id_name);
@@ -989,6 +999,7 @@ static bool stmt(pfile_t *pfile) {
  */
 static bool stmt_list(pfile_t *pfile) {
     debug_msg("<stmt_list> ->\n");
+
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
 
@@ -1045,7 +1056,7 @@ static bool program(pfile_t *pfile) {
         return false;
     }
 
-    //TODO: every declared function must be defined also
+    //TODO: every declared function must be defined also. -- it is though.
     if (!Symstack.traverse(symstack, declared_implies_defined)) {
         Errors.set_error(ERROR_DEFINITION);
         return false;
@@ -1058,8 +1069,9 @@ static bool program(pfile_t *pfile) {
  *
  * @return true/false.
  */
-static bool Init_parser() {
+static void Init_parser() {
     Scanner.init();
+
     // create a stack with symtables.
     symstack = Symstack.init();
     soft_assert(symstack != NULL, ERROR_INTERNAL);
@@ -1087,9 +1099,6 @@ static bool Init_parser() {
     Symtable.add_builtin_function(global_table, "ord", "si", "i"); // (s : string, i : integer) : integer
     Symtable.add_builtin_function(global_table, "chr", "i", "s"); // (i : integer) : string
 
-    Generator.initialise();
-
-    return true;
 }
 
 /** Cleanup functions.
@@ -1115,10 +1124,7 @@ static bool Analyse(pfile_t *pfile) {
 
     // initialize structures(symstack, symtable)
     // add builtin functions.
-    if (Init_parser() == false) {
-        Errors.set_error(ERROR_INTERNAL);
-        return res;
-    }
+    Init_parser();
 
     // get_symbol first token to get_symbol start
     if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) {
@@ -1128,7 +1134,6 @@ static bool Analyse(pfile_t *pfile) {
     }
 
     Generator.main_end();
-
     Free_parser();
     return res;
 }
@@ -1139,559 +1144,3 @@ static bool Analyse(pfile_t *pfile) {
 const struct parser_interface_t Parser = {
         .analyse = Analyse,
 };
-
-// #define SELFTEST_parser
-#ifdef SELFTEST_parser
-
-#include "tests/tests.h"
-#define PROLOG "require \"ifj21\" \n"
-#define END " end "
-#define FUN " function "
-#define LOCAL " local "
-#define STRING " string "
-#define IF " if "
-#define ELSIF " elseif "
-#define ELSE " else "
-#define THEN " then "
-#define NUMBER " number "
-#define WHILE " while "
-#define DO " do "
-#define REPEAT " repeat "
-#define UNTIL " until "
-#define FOR " for "
-#define CONCAT " .. "
-//#define SOME_STRING " \"arst \\\\ \\n 123 \\192 string \" "
-#define SOME_STRING "\"test_string\""
-#define WRITE " write "
-#define READ " read "
-#define READS " reads "
-#define SUBSTR " substr "
-#define GLOBAL " global "
-#define RETURN " return "
-#define NL "\n"
-#define TAB "\t"
-
-
-#define TEST_CASE(number) \
-do {                                                                                                \
-    int ret;                                                                                        \
-    fprintf(stdout, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");                                 \
-    Tests.warning(description ## number);                                                           \
-    TEST_EXPECT(Parser.analyse(pf ## number), result ## number, description ## number);             \
-    TEST_EXPECT(((ret = Errors.get_error()) == retcode ## number), true, description ## number);    \
-    if (ret != retcode ## number) {                                                                 \
-        Tests.failed("Expected '%d' code, but got '%d'\n", retcode ## number, ret);                 \
-        FILE *fil = fopen(#number, "w");                                                             \
-        assert(fil);                                                                                 \
-        fprintf(fil, "test case %d.\n"                                                               \
-                    "Description : %s\n\n"                                                          \
-                    "Expected : '%d'\n"                                                             \
-                    "Got : '%d'\n\n",                                                               \
-                    number, description ## number, retcode ## number, ret );                        \
-        fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                                           \
-        fclose(fil);                                                                                 \
-    }                                                                                               \
-    fprintf(stdout, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n");                               \
-    Pfile.dtor(pf ## number);                                                                        \
-} while (0)
-
-
-int main() {
-    char *description1 = "prolog string";
-    bool result1 = true;
-    int retcode1 = ERROR_NOERROR;
-    pfile_t *pf1 = Pfile.ctor(PROLOG);
-
-    char *description2 = "lexical error";
-    bool result2 = false;
-    int retcode2 = ERROR_LEXICAL;
-    pfile_t *pf2 = Pfile.ctor("1234.er" PROLOG);
-
-    char *description3 = "Redeclaration error";
-    bool result3 = false;
-    int retcode3 = ERROR_DEFINITION;
-    pfile_t *pf3 = Pfile.ctor(
-            PROLOG
-            GLOBAL "foo : function()"
-            GLOBAL "baz : function(string)"
-            GLOBAL "bar : function(string, integer)"
-            GLOBAL "arst : function(string, integer, number, number, integer, string)"
-            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-
-            GLOBAL "foo:function()"
-            GLOBAL "baz:function(string)"
-            GLOBAL "bar:function(string, integer)"
-            GLOBAL "arst:function(string, integer, number, number, integer, string)"
-            GLOBAL "foo : function() : string\n"
-            GLOBAL "baz : function(string) : integer\n"
-            GLOBAL "bar : function(string, integer) : number\n"
-            GLOBAL "arst : function(string, integer, number) : number\n"
-            GLOBAL "foo : function() : string\n"
-            GLOBAL "baz : function(number) : integer, integer, integer, integer\n"
-            GLOBAL "bar : function(string, integer, number) : number\n"
-            GLOBAL "foo : function():string\n"
-            GLOBAL "baz : function(number):integer, integer, integer, integer\n"
-            GLOBAL "bar : function(string, integer, number):number\n"
-            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-            GLOBAL "bar : function(string,integer,number):number, integer\n"
-            GLOBAL "bar : function(string,integer,number):number, number\n"
-            GLOBAL "bar : function(string,integer,number):number, string\n"
-            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-            GLOBAL "foo : function()\n"
-            GLOBAL "foo : function()\n"
-            GLOBAL "foo : function()\n"
-    );
-
-    char *description4 = "no error, parsing definitions, declarations";
-    bool result4 = true;
-    int retcode4 = ERROR_NOERROR;
-    pfile_t *pf4 = Pfile.ctor(
-            PROLOG
-            GLOBAL "foo : function()"
-            GLOBAL "baz : function(string)"
-            GLOBAL "bar : function(string, integer)"
-            GLOBAL "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : function(string) : string, string, string\n"
-
-            FUN "foo()"
-            END
-
-            FUN "baz(str : string)"
-            END
-
-            FUN "bar(str : string, int : integer)"
-            END
-
-            GLOBAL "arst : function(string,         integer,             number,       number,     integer, string)"
-            FUN               "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)"
-            END
-
-            FUN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (str : string) : string, string, string\n"
-            END
-    );
-
-    char *description5 = "mutual recursion";
-    bool result5 = true;
-    int retcode5 = ERROR_NOERROR;
-    pfile_t *pf5 = Pfile.ctor(
-            PROLOG
-            GLOBAL " foo : " FUN "(string) : string\n"
-
-            FUN "bar(param : string) : string\n"
-            RETURN "foo(param)\n"
-            END
-
-            FUN "foo(param:string):string \n"
-            RETURN "bar(param)\n"
-            END
-    );
-
-    char *description6 = "strings, builtin functions";
-    bool result6 = true;
-    int retcode6 = ERROR_NOERROR;
-    pfile_t *pf6 = Pfile.ctor(
-            "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
-            PROLOG
-            FUN "main()"
-            LOCAL "s1 : string =" SOME_STRING
-            LOCAL "s2 : string = s1" CONCAT SOME_STRING
-            " print("SOME_STRING") "
-            LOCAL "s1len : integer = #s1 "
-            " s1len = s1len - 4 "
-            " s1 = "SUBSTR"(s2, s1len, s1len + 4) "
-            WRITE"("SOME_STRING")"
-            WRITE"("SOME_STRING")"
-            " s1 = "READS"() "
-            END
-    );
-
-    char *description7 = "nested while";
-    bool result7 = true;
-    int retcode7 = ERROR_NOERROR;
-    pfile_t *pf7 = Pfile.ctor(
-            PROLOG
-            FUN "mein()"
-            LOCAL "myself" " : " STRING " = " "\"me\""
-            WHILE "opposite(love, hate) == false and opposite(love, indifference)" DO
-            WHILE "opposite(art, ugliness) == false and opposite(art, indifference)" DO
-            WHILE "opposite(faith, heresy) == false and opposite(faith, indifference)" DO
-            WHILE "opposite(life, death) == false and opposite(life, indifference)" DO
-            "is_beautiful(life)"
-            END
-            END
-            END
-            END
-            END // fun
-    );
-
-    char *description8 = "elsif, if, NO ERRROR";
-    bool result8 = true;
-    int retcode8 = ERROR_NOERROR;
-    pfile_t *pf8 = Pfile.ctor(
-            PROLOG
-            FUN "main()"
-            LOCAL "suka" ":" NUMBER
-
-            IF "suka > 10" THEN
-            WRITE"("SOME_STRING")"
-            LOCAL "suka" ":" STRING "=" SOME_STRING
-            IF "suka > 10" THEN
-            "fuck()"
-            ELSIF "suka < 10" THEN
-            WRITE"("SOME_STRING")"
-            ELSE
-            "die()"
-            END
-            END
-            END // fun
-    );
-
-    char *description9 = "repeat_until";
-    bool result9 = true;
-    int retcode9 = ERROR_NOERROR;
-    pfile_t *pf9 = Pfile.ctor(
-            PROLOG
-            FUN "yours()"
-            REPEAT
-            "to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"
-            UNTIL " true "
-            END
-    );
-
-    char *description10 = "more repuntil, but with an error";
-    bool result10 = false;
-    int retcode10 = ERROR_DEFINITION;
-    pfile_t *pf10 = Pfile.ctor(
-            PROLOG
-            FUN "me() :string"
-            END
-
-            FUN "yours() : string "
-            REPEAT
-            REPEAT
-            REPEAT
-            REPEAT
-            REPEAT
-            REPEAT
-            LOCAL "me : string = \"arst\""
-            UNTIL " true "
-            UNTIL " true "
-            UNTIL " true "
-            UNTIL " true "
-            UNTIL " true "
-            UNTIL " true "
-
-            RETURN "you"
-            END
-    );
-
-    char *description11 = "for cycles";
-    bool result11 = true;
-    int retcode11 = ERROR_NOERROR;
-    pfile_t *pf11 = Pfile.ctor(
-            PROLOG
-            FUN "healthy()"
-            FOR "i=0" "," "i<3" DO
-            FOR "j=0" "," "j<12" DO
-            "smoke()"
-            END
-            END
-            END
-    );
-
-    char *description12 = "empty function";
-    bool result12 = true;
-    int retcode12 = ERROR_NOERROR;
-    pfile_t *pf12 = Pfile.ctor(
-            PROLOG
-            FUN "funnnn()"
-            END
-    );
-
-    char *description13 = "stupid function";
-    bool result13 = true;
-    int retcode13 = ERROR_NOERROR;
-    pfile_t *pf13 = Pfile.ctor(
-            PROLOG
-            FUN "funnnn()"
-            "AAAAAA()"
-            END
-    );
-
-    char *description14 = "expression error";
-    bool result14 = false;
-    int retcode14 = ERROR_SYNTAX;
-    pfile_t *pf14 = Pfile.ctor(
-            PROLOG
-            FUN "funnnn()"
-            "AAAAA_ERRORRR() +++ lol"
-            END
-    );
-
-
-    char *description15 = "whiles, no error";
-    bool result15 = true;
-    int retcode15 = ERROR_NOERROR;
-    pfile_t *pf15 = Pfile.ctor(
-            PROLOG
-            FUN "funnnn()"
-            WHILE "1" DO
-            WHILE "1" DO
-            END
-            END
-            END
-            "main()"// uncoment iff expressions are done
-    );
-
-    char *description16 = "builtin functions 2";
-    bool result16 = true;
-    int retcode16 = ERROR_NOERROR;
-    pfile_t *pf16 = Pfile.ctor(
-            "-- Program 3: Prace s ěretzci a vestavenymi funkcemi \n"
-            PROLOG
-            FUN "main()"
-            LOCAL "s1 : string = "
-            LOCAL "s2 : string = s1"
-            "print (s1,"SOME_STRING", s2)"
-            LOCAL "s1len : integer = 10"
-            "s1 ="SUBSTR"(s2, s1len, s1len + 4)"
-            END
-            "main()"
-    );
-
-    char *description17 = "nested whiles, but with an error";
-    bool result17 = false;
-    int retcode17 = ERROR_SYNTAX;
-    pfile_t *pf17 = Pfile.ctor(
-            PROLOG
-            FUN "mein()"
-            LOCAL "myself" " : " STRING " = " "\"me\""
-            WHILE "opposite(love, hate) == false and opposite(love, indifference)" DO
-            WHILE "opposite(art, ugliness) == false and opposite(art, indifference)" DO
-            WHILE "opposite(faith, heresy) == false and opposite(faith, indifference)" DO
-            WHILE "opposite(life, death) == false and opposite(life, indifference)" DO
-            "is_beautiful(life)"
-            END
-            END
-            END
-            //END
-            END // fun
-    );
-
-    char *description18 = "more repuntil. Without an error";
-    bool result18 = true;
-    int retcode18 = ERROR_NOERROR;
-    pfile_t *pf18 = Pfile.ctor(
-            PROLOG NL
-            FUN "me() :string" NL
-            END NL
-
-            FUN "yours() : string " NL
-            TAB REPEAT NL
-            TAB TAB REPEAT NL
-            TAB TAB TAB REPEAT NL
-            TAB TAB TAB TAB REPEAT NL
-            TAB TAB TAB TAB TAB REPEAT NL
-            TAB TAB TAB TAB TAB TAB REPEAT NL
-            TAB TAB TAB TAB TAB TAB TAB LOCAL "memes : string = \"arst\"" NL
-            TAB TAB TAB TAB TAB TAB UNTIL " true " NL
-            TAB TAB TAB TAB TAB UNTIL " true " NL
-            TAB TAB TAB TAB UNTIL " true " NL
-            TAB TAB TAB UNTIL " true " NL
-            TAB TAB UNTIL " true " NL
-            TAB UNTIL " true " NL
-            TAB NL
-            TAB RETURN "you" NL
-            END NL
-    );
-
-    char *description19 = "semantic: more than one declaration (error)";
-    bool result19 = false;
-    int retcode19 = ERROR_DEFINITION;
-    pfile_t *pf19 = Pfile.ctor(
-            PROLOG
-            FUN "me() : string"
-            END
-
-            FUN "me() : integer"
-            END
-
-            FUN "me() : boolean"
-            END
-    );
-
-    char *description20 = "Syntax: id after as a function return";
-    bool result20 = false;
-    int retcode20 = ERROR_SYNTAX;
-    pfile_t *pf20 = Pfile.ctor(
-            PROLOG
-            FUN "me() : write"
-            END
-    );
-
-    char *description21 = "function semantic: define builtin function(error)";
-    bool result21 = false;
-    int retcode21 = ERROR_DEFINITION;
-    pfile_t *pf21 = Pfile.ctor(
-            PROLOG
-            FUN "write() : string"
-            END
-    );
-
-    char *description22 = "function semantic: declare builtin function(error)";
-    bool result22 = false;
-    int retcode22 = ERROR_DEFINITION;
-    pfile_t *pf22 = Pfile.ctor(
-            PROLOG
-            GLOBAL "readi : function()"
-            FUN "me() : string "
-            END
-    );
-
-    char *description23 = "functino semantic: no error.";
-    bool result23 = true;
-    int retcode23 = ERROR_NOERROR;
-    pfile_t *pf23 = Pfile.ctor(
-            PROLOG NL
-            GLOBAL "foo : function(    string,     string ) : string, number" NL
-            NL
-            FUN "   foo           (a : string, b : string) :  string, number " NL
-            END NL
-    );
-
-    char *description24 = "functino semantic: declaration without definiton (error)";
-    bool result24 = false;
-    int retcode24 = ERROR_DEFINITION;
-    pfile_t *pf24 = Pfile.ctor(
-            PROLOG
-            GLOBAL "foo : function( string, string ) : string, number"
-    );
-
-    char *description25 = "function returns nil, no error.";
-    bool result25 = true;
-    int retcode25 = ERROR_NOERROR;
-    pfile_t *pf25 = Pfile.ctor(
-            PROLOG
-            GLOBAL "foo : function( nil, nil ) : nil"
-            FUN "foo(a : nil, b : nil) : nil"
-            END
-    );
-
-    char *description26 = "nil as a local variable.";
-    bool result26 = true;
-    int retcode26 = ERROR_NOERROR;
-    pfile_t *pf26 = Pfile.ctor(
-            PROLOG
-            FUN "mein()"
-            LOCAL "NULL : " STRING " = nil"
-            END
-    );
-
-    char *description27 = "Function semantics: nil in declaration, but not in definition";
-    bool result27 = false;
-    int retcode27 = ERROR_FUNCTION_SEMANTICS;
-    pfile_t *pf27 = Pfile.ctor(
-            PROLOG
-            GLOBAL "foo : function( string, string ) : nil"
-            FUN "foo () : string "
-            END
-    );
-
-    char *description28 = "Function semantics definition before declaration";
-    bool result28 = false;
-    int retcode28 = ERROR_DEFINITION;
-    pfile_t *pf28 = Pfile.ctor(
-            PROLOG NL
-            FUN "               foo( a : string, b : string ) : nil" NL
-            END NL
-
-            GLOBAL "foo : function(string, string ) : nil " NL
-    );
-
-    char *description29 = "syntax error";
-    bool result29 = false;
-    int retcode29 = ERROR_SYNTAX;
-    pfile_t *pf29 = Pfile.ctor(
-            PROLOG
-            FUN "123name ()"
-            END
-    );
-
-    char *description30 = "empty file";
-    bool result30 = true;
-    int retcode30 = ERROR_NOERROR;
-    pfile_t *pf30 = Pfile.ctor(
-            PROLOG
-    );
-
-    char *description31 = "Function semantics. Parameters have same names.";
-    bool result31 = false;
-    int retcode31 = ERROR_DEFINITION;
-    pfile_t *pf31 = Pfile.ctor(
-            PROLOG
-            FUN "               foo( a : string, a : string ) : nil" NL
-            END NL
-    );
-
-    char *description32 = "Expression semantics.";
-    bool result32 = false;
-    int retcode32 = ERROR_DEFINITION;
-    pfile_t *pf32 = Pfile.ctor(
-            PROLOG
-            FUN "foo( r : string, a : string ) : nil" NL
-            TAB"func()"NL
-            END NL
-    );
-
-
-    char *description33 = "Expression semantics.";
-    bool result33 = true;
-    int retcode33 = ERROR_NOERROR;
-    pfile_t *pf33 = Pfile.ctor(
-            PROLOG
-            FUN "foo( r : string, a : string ) : nil" NL
-            TAB"write(\" \\xff \")"NL
-            END NL
-    );
-
-    TEST_CASE(1);
-    TEST_CASE(2);
-    TEST_CASE(3);
-    TEST_CASE(4);
-    TEST_CASE(5);
-    TEST_CASE(6);
-    TEST_CASE(7);
-    TEST_CASE(8);
-    TEST_CASE(9);
-
-    TEST_CASE(10);
-    TEST_CASE(11);
-    TEST_CASE(12);
-    TEST_CASE(13);
-    TEST_CASE(14);
-    TEST_CASE(15);
-    TEST_CASE(16);
-    TEST_CASE(17);
-    TEST_CASE(18);
-    TEST_CASE(19);
-
-    TEST_CASE(20);
-    TEST_CASE(21);
-    TEST_CASE(22);
-    TEST_CASE(23);
-    TEST_CASE(24);
-
-    TEST_CASE(25);
-    TEST_CASE(26);
-    TEST_CASE(27);
-
-    TEST_CASE(28);
-
-    TEST_CASE(29);
-    TEST_CASE(30);
-    TEST_CASE(31);
-    TEST_CASE(32);
-    TEST_CASE(33);
-
-    return 0;
-}
-#endif

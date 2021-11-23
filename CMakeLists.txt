@@ -1,6 +1,4 @@
-# @file scanner.h
-#
-# @brief Header file for scanner.
+# @file CMakeLists.h
 #
 # @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
 cmake_minimum_required(VERSION 3.16)
@@ -31,6 +29,19 @@ set(DATASTRUCTURES
 set(PROJ_FILES
         ${DATASTRUCTURES} ${UTILS_SOURCES}
         )
+
+# AddressSanitize
+set(CMAKE_C_FLAGS_ASAN
+        "-fsanitize=address"
+        "-fsanitize-address-use-after-scope"
+        "-fno-omit-frame-pointer"
+        "-g"
+        "-O1"
+        CACHE STRING "Flags used by the C compiler during AddressSanitizer builds."
+        FORCE)
+
+set(CMAKE_EXE_LINKER_FLAGS "-fsanitize=address")
+
 set(DEVELOP_FLAGS
         #-Wno-unused-parameter
         -Wno-unused-function
@@ -40,10 +51,19 @@ set(DEVELOP_FLAGS
         -DDEBUG
         -DDEBUG_DYNSTRING
         )
+set(CODE_COVERAGE_FLAGS
+        -ftest-coverage -fprofile-arcs --coverage
+        )
 add_compile_options(
         -Wall -Wextra -pedantic -g
         ${DEVELOP_FLAGS}
+        ${CODE_COVERAGE_FLAGS}
+        #${CMAKE_C_FLAGS_ASAN}
 )
+# flag for enabling code coverage on mac
+set(CMAKE_EXE_LINKER_FLAGS
+        --coverage
+        )
 
 #adding targets
 # The project itself.
@@ -53,14 +73,13 @@ add_executable(${PROJECT_NAME}
         )
 message(STATUS ${PROJECT_NAME} " execucumber compiled.")
 
-# todo somehow make it more general
-#parser tests
-set(ATTRIBUTE parser)
-add_executable(test_${ATTRIBUTE}
+#testgen file
+# program to generate tests inputs.
+add_executable(testgen
+        testgen.c
         ${PROJ_FILES}
         )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
-message(STATUS ${ATTRIBUTE} " execucumber compiled.")
+
 
 #scanner tests
 set(ATTRIBUTE scanner)

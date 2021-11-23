@@ -26,13 +26,10 @@ static list_t *Ctor(void) {
  * @param data Data to insert.
  */
 static void Prepend(list_t *list, void *data) {
-    if (list == NULL) {
-        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
     soft_assert(list != NULL, ERROR_INTERNAL);
 
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
-    soft_assert(new_item, ERROR_INTERNAL);
+    soft_assert(new_item != NULL, ERROR_INTERNAL);
 
     if (List.copy_data != NULL) {
         List.copy_data(new_item, data);
@@ -50,9 +47,6 @@ static void Prepend(list_t *list, void *data) {
 }
 
 static void Append(list_t *list, void *data) {
-    if (list == NULL) {
-        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
     soft_assert(list != NULL, ERROR_INTERNAL);
 
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
@@ -74,9 +68,6 @@ static void Append(list_t *list, void *data) {
 }
 
 static void Insert_after(list_item_t *item, void *data) {
-    if (item == NULL) {
-        debug_msg("ha-ha, item is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
     soft_assert(item != NULL, ERROR_INTERNAL);
 
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
@@ -90,7 +81,6 @@ static void Insert_after(list_item_t *item, void *data) {
     new_item->next = item->next;
     item->next = new_item;
 }
-
 /**
  * @brief Delete the first item in list.
  *
@@ -98,15 +88,27 @@ static void Insert_after(list_item_t *item, void *data) {
  * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
-    if (list == NULL) {
-        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
     soft_assert(list, ERROR_INTERNAL);
 
     list_item_t *tmp = list->head;
+    if (tmp == NULL) {
+        return;
+    }
+
     list->head = list->head->next;
     clear_fun(tmp->data);
     free(tmp);
+}
+
+static void Print_list(list_t *list, char *(*pp_fun)(void *)) {
+    soft_assert(list != NULL, ERROR_INTERNAL);
+
+    list_item_t *iter = list->head;
+
+    while (iter != NULL) {
+        printf("%s\n", pp_fun(iter->data));
+        iter = iter->next;
+    }
 }
 
 /**
@@ -116,9 +118,6 @@ static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
  * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Clear(list_t *list, void (*clear_fun)(void *)) {
-    if (list == NULL) {
-        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
     soft_assert(list != NULL, ERROR_INTERNAL);
 
     while (list->head) {
@@ -144,9 +143,6 @@ static void Dtor(list_t *list, void (*clear_fun)(void *)) {
  * @param data New item's data.
  */
 static void Insert(list_item_t *reference_item, void *data) {
-    if (reference_item == NULL) {
-        debug_msg("ha-ha, reference_item is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
     soft_assert(reference_item, ERROR_INTERNAL);
 
     list_item_t *new_item = calloc(1, sizeof(list_item_t));
@@ -163,16 +159,27 @@ static void Insert(list_item_t *reference_item, void *data) {
  *
  * @param list singly linked list
  */
-static void *Gethead(list_t *list) {
-    if (list == NULL) {
-        debug_msg("ha-ha, list is NULL, so you either did not initialize it or something.\nEXITING\n");
-    }
+static void *Get_head(list_t *list) {
     soft_assert(list != NULL, ERROR_INTERNAL);
 
     if (!list->head) {
         return NULL;
     }
     return list->head->data;
+}
+
+/**
+ * @brief Returns the last item's data via data pointer.
+ *
+ * @param list singly linked list
+ */
+static void *Get_tail(list_t *list) {
+    soft_assert(list != NULL, ERROR_INTERNAL);
+
+    if (!list->tail) {
+        return NULL;
+    }
+    return list->tail->data;
 }
 
 /**
@@ -219,12 +226,14 @@ const struct list_interface_t List = {
         .delete_list = Clear,
         .delete_first = Delete_first,
         .insert = Insert,
-        .gethead = Gethead,
+        .get_head = Get_head,
+        .get_tail = Get_tail,
         .copy_data = NULL,
         .ctor = Ctor,
         .dtor = Dtor,
         .equal = Equal,
         .insert_after = Insert_after,
+        .print_list = Print_list,
 };
 
 #ifdef SELFTEST_list

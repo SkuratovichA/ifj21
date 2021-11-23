@@ -11,6 +11,8 @@
 #include "expressions.h"
 #include "parser.h"
 
+#define debug_msg_s(...)
+#define debug_msg(...)
 
 /** Function checks if return values and parameters
  *  of the function are equal.
@@ -23,7 +25,7 @@ static bool Check_signatures(func_semantics_t *func) {
     res = Dynstring.cmp(func->declaration.params, func->definition.params) == 0;
     res &= (Dynstring.cmp(func->declaration.returns, func->definition.returns) == 0);
 
-    debug_msg("[semantics] function signatures are %s\n", res ? "same" : "different");
+    debug_msg("\n\t[semantics] function signatures are %s\n", res ? "same" : "different");
     return res;
 }
 
@@ -128,7 +130,7 @@ static char of_id_type(id_type_t type) {
  */
 static void Add_return(func_info_t *self, int type) {
     Dynstring.append(self->returns, of_id_type(type));
-    debug_msg("[semantics] add return\n");
+    debug_msg("\n\t[semantics] add return\n");
 }
 
 /** Add a function parameter to a function semantics.
@@ -138,7 +140,7 @@ static void Add_return(func_info_t *self, int type) {
  */
 static void Add_param(func_info_t *self, int type) {
     Dynstring.append(self->params, of_id_type(type));
-    debug_msg("[semantics] add return\n");
+    debug_msg("\n\t[semantics] add return\n");
 }
 
 /** Add a function parameter to a function semantics.
@@ -147,7 +149,7 @@ static void Add_param(func_info_t *self, int type) {
  * @param vec vector to add.
  */
 static void Set_returns(func_info_t *self, dynstring_t *vec) {
-    debug_msg("[semantics] Set params: %s\n", Dynstring.c_str(vec));
+    debug_msg("\n\t[semantics] Set params: %s\n", Dynstring.c_str(vec));
     self->returns = vec;
 }
 
@@ -157,7 +159,7 @@ static void Set_returns(func_info_t *self, dynstring_t *vec) {
  * @param vec vector to add.
  */
 static void Set_params(func_info_t *self, dynstring_t *vec) {
-    debug_msg("[semantics] Set returns: %s\n", Dynstring.c_str(vec));
+    debug_msg("\n\t[semantics] Set returns: %s\n", Dynstring.c_str(vec));
     self->params = vec;
 }
 
@@ -175,7 +177,7 @@ static void Dtor(func_semantics_t *self) {
     Dynstring.dtor(self->definition.params);
     Dynstring.dtor(self->declaration.params);
     free(self);
-    debug_msg("[dtor] delete function semantic\n");
+    debug_msg("\n\t[dtor] delete function semantic\n");
 }
 
 /** Function semantics constructor.
@@ -186,6 +188,7 @@ static void Dtor(func_semantics_t *self) {
  * @return new function semantics.
  */
 static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin) {
+    debug_msg_s("\n");
     func_semantics_t *newbe = calloc(1, sizeof(func_semantics_t));
     soft_assert(newbe != NULL, ERROR_INTERNAL);
 
@@ -196,7 +199,7 @@ static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin
     if (is_builtin) {
         Builtin(newbe);
     } else {
-        debug_msg("In case of builtin function, there's need to set parameters manually\n");
+        debug_msg_s("\tIn case of builtin function, there's need to set parameters manually\n");
         newbe->declaration.returns = Dynstring.ctor("");
         soft_assert(newbe->declaration.returns != NULL, ERROR_INTERNAL);
         newbe->declaration.params = Dynstring.ctor("");
