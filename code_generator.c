@@ -5,9 +5,9 @@ size_t __ADDRESS_OF_START_LIST;
 /*
  * Global variables used for code generator.
  */
-list_t *instrList;              // pointer to the list of instr that is currently used
-static dynstring_t *tmp_instr;         // instruction that is currently being generated
-instructions_t instructions;    // structure that holds info about generated code
+list_t *instrList;                      // pointer to the list of instr that is currently used
+static dynstring_t *tmp_instr;          // instruction that is currently being generated
+instructions_t instructions;            // structure that holds info about generated code
 
 /*
  * Adds new instruction to the list of instructions.
@@ -61,7 +61,7 @@ void ADD_INSTR_WHILE() {
  */
 void ADD_INSTR_INT(uint64_t num) {
     char str[MAX_CHAR] = "\0";
-    sprintf(str, "%*llu", MAX_CHAR - 1, num);
+    sprintf(str, "%lu", num);
     ADD_INSTR_PART(str);
 }
 
@@ -289,7 +289,7 @@ static void generate_main_end() {
  */
 static void generate_func_start(dynstring_t *func_name) {
     INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
-    ADD_INSTR_PART("LABEL $");   // add name of function
+    ADD_INSTR_PART("\nLABEL $");   // add name of function
     ADD_INSTR_PART_DYN(func_name);
     ADD_INSTR_TMP();
     ADD_INSTR("PUSHFRAME");
@@ -303,6 +303,7 @@ static void generate_func_start(dynstring_t *func_name) {
  * @brief Generates function end.
  */
 static void generate_func_end(char *func_name) {
+    ADD_INSTR("# generate_function_end");
     ADD_INSTR_PART("LABEL $");
     ADD_INSTR_PART(func_name);
     ADD_INSTR_PART("$end");
@@ -325,6 +326,7 @@ static void generate_func_end(char *func_name) {
  *      MOVE LF@%p0 LF@%0
  */
 static void generate_func_start_param(dynstring_t *param_name, size_t index) {
+    ADD_INSTR("# generate_function_start_param");
     ADD_INSTR_PART("DEFVAR LF@%");
     ADD_INSTR_PART_DYN(param_name);
     ADD_INSTR_TMP();
@@ -343,6 +345,7 @@ static void generate_func_start_param(dynstring_t *param_name, size_t index) {
  *      MOVE LF@%return0 nil@nil
  */
 static void generate_func_return_value(size_t index) {
+    ADD_INSTR("# generate_function_return_value");
     ADD_INSTR_PART("DEFVAR LF@%return");
     ADD_INSTR_INT(index);
     ADD_INSTR_TMP();
@@ -367,7 +370,7 @@ static void generate_var_value(token_t token) {
             char *str_id = Dynstring.c_str(token.attribute.id);
             for (unsigned i = 0; i < str_len; i++) {
                 // check format (check what to do with not printable chars?)
-                if (!isprint(str_id[i]) || str_id[i] == '#' || str_id[i] == '\\') {
+                if (str_id[i] == ' ' || !isprint(str_id[i]) || str_id[i] == '#' || str_id[i] == '\\') {
                     // print as an escape sequence
                     sprintf(str_tmp, "\\%03d", str_id[i]);
                 } else {
@@ -384,7 +387,7 @@ static void generate_var_value(token_t token) {
             break;
         case TOKEN_NUM_I:
             ADD_INSTR_PART("int@");
-            sprintf(str_tmp, "%llu", token.attribute.num_i);
+            sprintf(str_tmp, "%lu", token.attribute.num_i);
             ADD_INSTR_PART(str_tmp);
             break;
         case KEYWORD_nil:
@@ -486,7 +489,7 @@ static void generate_func_createframe() {
  * @brief Generates condition label.
  */
 static void generate_cond_label(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR_PART("LABEL $");
+    ADD_INSTR_PART("LABEL $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$");
     ADD_INSTR_INT(cond_num);
@@ -499,11 +502,12 @@ static void generate_cond_label(size_t if_scope_id, size_t cond_num) {
  * generates sth like: JUMPIFNEQ $23$next_cond LF@%result bool@true
  */
 static void generate_cond_if(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR_PART("JUMPIFNEQ $");
+    ADD_INSTR("\n# condition - if check");
+    ADD_INSTR_PART("JUMPIFNEQ $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$");
     ADD_INSTR_INT(cond_num);
-    ADD_INSTR_PART(" LF@%result bool@true");
+    ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
 }
 
@@ -514,11 +518,12 @@ static void generate_cond_if(size_t if_scope_id, size_t cond_num) {
  *                     LABEL $scope$new_scope_num
  */
 static void generate_cond_elseif(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR_PART("JUMP $");
+    ADD_INSTR_PART("JUMP $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP();
 
+    ADD_INSTR("\n# condition - elseif part");
     generate_cond_label(if_scope_id, cond_num);
 }
 
@@ -530,11 +535,12 @@ static void generate_cond_elseif(size_t if_scope_id, size_t cond_num) {
  *          --- else body ---
  */
 static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR_PART("JUMP $");
+    ADD_INSTR_PART("JUMP $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP();
 
+    ADD_INSTR("\n# condition - else part");
     generate_cond_label(if_scope_id, cond_num - 1);
 
     ADD_INSTR_PART("JUMPIFNEQ $");
@@ -550,12 +556,14 @@ static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
  * Yes, I need two labels rn.
  */
 static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR_PART("LABEL $");
+    ADD_INSTR("\n# condition end");
+    ADD_INSTR_PART("LABEL $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP();
 
     generate_cond_label(if_scope_id, cond_num);
+    ADD_INSTR("");
 }
 
 /*
@@ -599,6 +607,7 @@ static void generate_while_end() {
  *        LABEL $end$id
  */
 static void generate_end() {
+    ADD_INSTR("#generate_end");
     ADD_INSTR_PART("LABEL $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
@@ -701,6 +710,7 @@ static void generate_prog_start() {
 }
 
 void generate_division_check(bool integer) {
+    ADD_INSTR("# zero division check");
     ADD_INSTR("POPS GF@%expr_result");
     if (integer) {
         ADD_INSTR("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF@%expr_result int@0");
@@ -711,6 +721,7 @@ void generate_division_check(bool integer) {
 }
 
 static void generate_nil_check(token_t token) {
+    ADD_INSTR("# nil check");
     ADD_INSTR_PART("JUMPIFEQ $$ERROR_NIL ");
     generate_var_value(token);
     ADD_INSTR_PART(" nil@nil");
@@ -718,6 +729,7 @@ static void generate_nil_check(token_t token) {
 }
 
 static void retype_first_or_both(expr_semantics_t *expr) {
+    ADD_INSTR("# retype_first_or_both");
     ADD_INSTR("POPS GF@%expr_result2 \n"
               "POPS GF@%expr_result \n"
               "INT2FLOAT GF@%expr_result GF@%expr_result");
@@ -729,6 +741,7 @@ static void retype_first_or_both(expr_semantics_t *expr) {
 }
 
 static void retype_second() {
+    ADD_INSTR("# retype_second");
     ADD_INSTR("POPS GF@%expr_result \n"
               "INT2FLOAT GF@%expr_result GF@%expr_result \n"
               "PUSHS GF@%expr_result");
@@ -863,6 +876,7 @@ static void initialise_generator() {
     instructions.before_loop_start = NULL;
     instructions.outer_cond_id = 0;
     instructions.cond_cnt = 0;
+    instructions.label_cnt = 0;
     // sets active instructions list
     instrList = instructions.startList;
 }

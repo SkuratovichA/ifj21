@@ -19,6 +19,7 @@ typedef struct {
     list_item_t *before_loop_start;     // pointer to the most outer loop (if !in_loop -> NULL)
     size_t outer_cond_id;               // id of scope of the most inner if
     size_t cond_cnt;                    // counter of elseif/else branches after if
+    size_t label_cnt;                   // labels counter
 } instructions_t;
 
 typedef enum instr_list {
