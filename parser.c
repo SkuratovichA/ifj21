@@ -177,6 +177,12 @@ static bool cond_body(pfile_t *pfile) {
                 return false;
             }
             SYMSTACK_POP();
+
+            // generate start of end block
+            Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
+            instructions.cond_cnt = 0;
+            instructions.outer_cond_id = 0;
+
             return true;
 
         case KEYWORD_elseif:
