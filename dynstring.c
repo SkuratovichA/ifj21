@@ -18,14 +18,14 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmacro-redefined"
 // undef debug macros
-#define debug_err(...)
-#define debug_msg(...)
-#define debug_msg_stdout(...)
-#define debug_msg_stderr(...)
-#define debug_todo(...)
-#define debug_assert(cond)
-#define debug_msg_s(...)
-#define DEBUG_SEP
+//#define debug_err(...)
+//#define debug_msg(...)
+//#define debug_msg_stdout(...)
+//#define debug_msg_stderr(...)
+//#define debug_todo(...)
+//#define debug_assert(cond)
+//#define debug_msg_s(...)
+//#define DEBUG_SEP
 #pragma GCC diagnostic pop
 #endif
 
@@ -46,18 +46,22 @@ typedef struct dynstring {
  * @return pointer to the dynstring_t object.
  */
 static dynstring_t *Str_ctor(const char *s) {
+    debug_msg("\n");
     soft_assert(s, ERROR_INTERNAL); // dont deal with NULLptr
 
     size_t length = strlen(s);
     size_t alloc = length + STRSIZE + 1;
 
     dynstring_t *str = calloc(1, sizeof(dynstring_t));
+    debug_msg_s("str: %p\n", (void *) str);
     soft_assert(str, ERROR_INTERNAL);
     str->size = alloc;
     str->len = length;
 
     str->str = calloc(1, alloc);
     soft_assert(str->str, ERROR_INTERNAL);
+    debug_msg_s("str->str %p\n", (void *) str->str);
+
     strcpy(str->str, s);
     debug_msg("Create dynstring: { .len = %zu .size = %zu .str = '%s'\n", str->len, str->size, str->str);
     return str;
@@ -181,23 +185,27 @@ static int Str_cmp(dynstring_t *s1, dynstring_t *s2) {
  * @returns new dynstring, which is product of s1 and s2.
  */
 static void Str_cat(dynstring_t *s1, dynstring_t *s2) {
-    soft_assert(s2, ERROR_INTERNAL);
+    debug_msg("\n");
+    soft_assert(s2 != NULL, ERROR_INTERNAL);
     soft_assert(s2->str != NULL, ERROR_INTERNAL);
-    soft_assert(s1, ERROR_INTERNAL);
+    soft_assert(s1 != NULL, ERROR_INTERNAL);
     soft_assert(s1->str != NULL, ERROR_INTERNAL);
 
-    size_t diff = s1->size - s2->len;
+    // in case of aliasing strings.
+    dynstring_t *tmp = Dynstring.ctor(Dynstring.c_str(s2));
+    int64_t diff = (int64_t) s1->size - (int64_t) tmp->len - (int64_t) s1->len;
+    soft_assert(diff < (int64_t) s1->size, ERROR_INTERNAL);
+
     if (diff <= 2) {
         s1->size *= 2;
         s1->str = realloc(s1->str, s1->size + sizeof(dynstring_t));
         soft_assert(s1->str, ERROR_INTERNAL);
     }
-    FILE *f = fopen("tmp", "a+");
-    fprintf(f, "before append: string: '%s'\nlen: %zu\nsize: '%zu'\n\n", s1->str, s1->len, s1->size);
-    strcat(s1->str, s2->str);
+
+    strcat(s1->str, tmp->str);
     s1->len = strlen(s1->str);
-    fprintf(f, "after append: string: '%s'\nlen: %zu\nsize: '%zu'\n\n", s1->str, s1->len, s1->size);
-    fclose(f);
+
+    Dynstring.dtor(tmp);
 }
 
 /**
@@ -206,7 +214,6 @@ static void Str_cat(dynstring_t *s1, dynstring_t *s2) {
  * @param s dynstring to be duplicated.
  * @return pointer to the new dynstring_t object.
  */
-
 static dynstring_t *Str_dup(dynstring_t *s) {
     soft_assert(s, ERROR_INTERNAL);
     soft_assert(s->str, ERROR_INTERNAL);
@@ -236,23 +243,34 @@ const struct dynstring_interface_t Dynstring = {
 #include "tests/tests.h"
 int main() {
     fprintf(stderr, "Selftests: %s\n", __FILE__);
-    if (SELFTEST_dynstring) {
-        dynstring_t *hello = Dynstring.ctor("hello, ");
-        debug_msg("hello string created with string '%s'\n", Dynstring.c_str(hello));
-        dynstring_t *world = Dynstring.ctor("World. Aaaaaaaaaaaaaaaaaaaaaaaaa");
-        debug_msg("world string created with string '%s'\n", Dynstring.c_str(world));
-        Dynstring.cat(hello, world);
-        debug_msg("The 2 strings concatenated into '%s'\nsize: %zu, len: %zu\n", Dynstring.c_str(hw), hello->size, hello->len);
-        TEST_EXPECT(hello->size != 0, true, "Allocated size must not be equal 0");
+    dynstring_t *string1 = Dynstring.ctor("");
+    dynstring_t *string2 = Dynstring.ctor("hello");
+    dynstring_t *string3 = Dynstring.ctor("cat");
 
-        for (int i = 0; i < 1000; i++) {
-             Dynstring.append(hello, (char)('A' + (i % 25)));
-        }
-        TEST_EXPECT(hello->size != 0, true, "After appending 1000 characters in hw. MUst not be equal 0");
+    Dynstring.cat(string1, string2);
+    Dynstring.clear(string1);
 
-        Dynstring.dtor(hello);
-        Dynstring.dtor(world);
-    }
+    printf("string1 = '%s'. Must be empty\n", Dynstring.c_str(string1));
+    Dynstring.clear(string1);
+    Dynstring.clear(string2);
+
+
+    Dynstring.cat(string2, string3);
+    Dynstring.cat(string1, string2);
+
+    printf("string1 = '%s'. Must be cat\n", Dynstring.c_str(string1));
+    Dynstring.clear(string1);
+    Dynstring.clear(string2);
+
+
+    Dynstring.cat(string1, string3);
+    Dynstring.cat(string1, string1);
+
+    printf("string1 = '%s'. Must be catcat\n", Dynstring.c_str(string1));
+    Dynstring.dtor(string1);
+    Dynstring.dtor(string2);
+    Dynstring.dtor(string3);
+
     return 0;
 }
 #endif
