@@ -266,6 +266,7 @@ static void generate_func_call(dynstring_t *func_name) {
  */
 static void generate_main_start() {
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
+    ADD_INSTR("\n# main scope");
     ADD_INSTR("LABEL $$MAIN");
     ADD_INSTR("CREATEFRAME");
     ADD_INSTR("PUSHFRAME");
@@ -545,7 +546,7 @@ static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
 
     ADD_INSTR_PART("JUMPIFNEQ $");
     ADD_INSTR_INT(if_scope_id);
-    ADD_INSTR_PART("$end LF@%result bool@true");
+    ADD_INSTR_PART("$end GF@%expr_result bool@true");
     ADD_INSTR_TMP();
 }
 
@@ -571,6 +572,7 @@ static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
  * generates sth like: LABEL $while$id
  */
 static void generate_while_header() {
+    ADD_INSTR("\n# while");
     ADD_INSTR_PART("LABEL $while$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
@@ -581,9 +583,9 @@ static void generate_while_header() {
  * generates sth like: JUMPIFEQ $end$id LF@%result bool@true
  */
 static void generate_while_cond() {
-    ADD_INSTR_PART("JUMPIFEQ $end$");
+    ADD_INSTR_PART("JUMPIFNEQ $while$end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART(" LF@%result bool@true");
+    ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
 }
 
@@ -597,9 +599,10 @@ static void generate_while_end() {
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
 
-    ADD_INSTR_PART("LABEL $end$");
+    ADD_INSTR_PART("LABEL $while$end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
+    ADD_INSTR("");
 }
 
 /*
@@ -630,7 +633,7 @@ static void generate_repeat_until_header() {
 static void generate_repeat_until_cond() {
     ADD_INSTR_PART("JUMPIFEQ $repeat$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART(" LF@%result bool@true");
+    ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
 }
 
@@ -653,7 +656,7 @@ static void generate_for_header(dynstring_t *var_name) {
 static void generate_for_cond() {
     ADD_INSTR_PART("JUMPIFNEQ $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART(" LF@%result bool@true");
+    ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
 }
 
