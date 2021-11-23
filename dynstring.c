@@ -187,6 +187,13 @@ static void Str_cat(dynstring_t *s1, dynstring_t *s2) {
     Dynstring.dtor(tmp);
 }
 
+static void Trunc_to_len(dynstring_t *self, size_t new_len) {
+    soft_assert(self != NULL, ERROR_INTERNAL);
+    soft_assert(new_len <= self->len, ERROR_INTERNAL);
+    self->len = new_len;
+    self->str[self->len < self->size - 1 ? self->len : self->size - 1] = '\0';
+}
+
 /**
  * @brief Duplicates a dynstring.
  *
@@ -216,6 +223,7 @@ const struct dynstring_interface_t Dynstring = {
         .cat = Str_cat,
         .dup = Str_dup,
         .clear = Str_clear,
+        .trunc_to_len = Trunc_to_len,
 };
 
 #ifdef SELFTEST_dynstring
@@ -246,6 +254,11 @@ int main() {
     Dynstring.cat(string1, string1);
 
     printf("string1 = '%s'. Must be catcat\n", Dynstring.c_str(string1));
+
+
+    Dynstring.trunc_to_len(string1, 0);
+    printf("string1 = '%s'. Must be catcat\n", Dynstring.c_str(string1));
+
     Dynstring.dtor(string1);
     Dynstring.dtor(string2);
     Dynstring.dtor(string3);

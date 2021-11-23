@@ -250,6 +250,26 @@ static scope_info_t SS_Get_scope_info(symstack_t *self) {
            : (scope_info_t) {.scope_type = SCOPE_TYPE_UNDEF, .scope_level = 0};
 }
 
+/** Get a parent function
+ */
+static symbol_t *SS_Get_parent_func(symstack_t *self) {
+    if (self == NULL) {
+        return NULL;
+    }
+    stack_el_t *iter = self->head;
+    symbol_t *sym;
+
+    while (iter != NULL) {
+        if (iter->info.scope_type == SCOPE_TYPE_function) {
+            // set a pointer.
+            Symstack.get_symbol(self, iter->fun_name, &sym, NULL);
+            return sym;
+        }
+        iter = iter->next;
+    }
+    return NULL;
+}
+
 /** Get a parent function name.
  *
  * @param self
@@ -279,7 +299,7 @@ static char *SS_Get_parent_func_name(symstack_t *self) {
  * @return
  */
 static bool SS_Traverse(symstack_t *self, bool (*predicate)(symbol_t *)) {
-    if (self && predicate == NULL) {
+    if (self == NULL || predicate == NULL) {
         return false;
     }
     stack_el_t *stack_iter = self->head;
@@ -306,4 +326,5 @@ const struct symstack_interface_t Symstack = {
         .get_parent_func_name = SS_Get_parent_func_name,
         .traverse = SS_Traverse,
         .get_local_symbol = SS_Get_local_symbol,
+        .get_parent_func = SS_Get_parent_func,
 };

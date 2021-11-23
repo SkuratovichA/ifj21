@@ -191,5 +191,8 @@ struct semantics_interface_t {
     void (*add_operand)(expr_semantics_t *, token_t);
 
     void (*add_operator)(expr_semantics_t *, op_list_t);
+
     bool (*check_expression)(expr_semantics_t *);
+
+    bool (*check_return_semantics)(dynstring_t *, dynstring_t *, size_t *);
 };

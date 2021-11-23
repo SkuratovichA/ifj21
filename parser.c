@@ -492,11 +492,28 @@ static bool while_cycle(pfile_t *pfile) {
  */
 static bool return_stmt(pfile_t *pfile) {
     EXPECTED(KEYWORD_return);
+    dynstring_t *sign_returns;
+    dynstring_t *return_types = Dynstring.ctor("");
+    size_t nil_pushes = 0;
+
+    // pointer is not NULL, because we are inside a function.
+    sign_returns = Symstack.get_parent_func(symstack)->function_semantics->definition.returns;
+
     // return expr
-    if (!Expr.parse_expr_list(pfile)) {
+    if (!Expr.parse_expr_list(pfile, return_types)) {
         return false;
     }
 
+    if (!Semantics.check_return_semantics(sign_returns, return_types, &nil_pushes)) {
+        Dynstring.dtor(return_types);
+        return false;
+    }
+
+    while (nil_pushes--) {
+        debug_msg_s("\t\t\t\tPUSH NILL\n"); // TODO code generation
+        //Generator.return_nil();
+    }
+    Dynstring.dtor(return_types);
     return true;
 }
 

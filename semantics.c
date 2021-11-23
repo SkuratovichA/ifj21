@@ -11,9 +11,6 @@
 #include "expressions.h"
 #include "parser.h"
 
-#define debug_msg_s(...)
-#define debug_msg(...)
-
 /** Function checks if return values and parameters
  *  of the function are equal.
  *
@@ -211,22 +208,6 @@ static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin
         soft_assert(newbe->definition.params != NULL, ERROR_INTERNAL);
     }
 
-    //debug_msg("[ctor] Create a function semantics:\n"
-    //          "\t{ "
-    //          "\t\t\t.is_defined = '%s', .is_declared = '%s', is_builtin = '%s'\n"
-    //          "\t\t\tdefinition{ .params ='%s', returns ='%s'}\n"
-    //          "\t\t\tdeclaration{ .params ='%s', returns ='%s'}\n"
-    //          "\t}\n",
-    //          newbe->is_defined ? "true" : "false",
-    //          newbe->is_declared ? "true" : "false",
-    //          newbe->is_builtin ? "true" : "false",
-
-    //          Dynstring.c_str(newbe->definition.params),
-    //          Dynstring.c_str(newbe->definition.returns),
-
-    //          Dynstring.c_str(newbe->declaration.params),
-    //          Dynstring.c_str(newbe->declaration.returns)
-    //          );
     return newbe;
 }
 
@@ -466,13 +447,52 @@ static bool Check_expression(expr_semantics_t *self) {
     return type_compatability(self);
 }
 
+static bool Check_return_semantics(
+        dynstring_t *signature_returns,
+        dynstring_t *return_types,
+        size_t *nil_to_add) {
+    if (signature_returns == NULL || return_types == NULL) {
+        Errors.set_error(ERROR_INTERNAL);
+        return false;
+    }
+    // return more than we can.
+    if (Dynstring.len(return_types) > Dynstring.len(signature_returns)) {
+        Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+        return false;
+    }
+    // set number of nils to add.
+    *nil_to_add = Dynstring.len(signature_returns) - Dynstring.len(return_types);
+
+    // truncate to the length of the shortest string.
+    if (Dynstring.len(return_types) < Dynstring.len(signature_returns)) {
+        Dynstring.trunc_to_len(signature_returns, Dynstring.len(return_types));
+    }
+
+    // check datatypes.
+    // take in mind:
+    //               1. number is a superset of integer.
+    //               2. nil in signature_returns -> nil in return_types.
+    //               3. everything in signature_returns -> nil in return_types. returns[i] = 'n'
+    char *signature = Dynstring.c_str(signature_returns);
+    char *returns = Dynstring.c_str(return_types);
+    for (size_t i = 0; i < Dynstring.len(signature_returns); i++) {
+        if (signature[i] != returns[i]) {
+            bool err = !((signature[i] == 'f' && returns[i] == 'i') || returns[i] == 'n');
+            if (err) {
+                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
 
 const struct semantics_interface_t Semantics = {
-        .dtor = Dtor,
+        .ctor_expr = Ctor_expr,
         .ctor = Ctor,
         .dtor_expr = Dtor_expr,
-        .ctor_expr = Ctor_expr,
-        .check_expression = Check_expression,
+        .dtor = Dtor,
         .add_operand = Add_operand,
         .add_operator = Add_operator,
         .is_declared = Is_declared,
@@ -480,10 +500,13 @@ const struct semantics_interface_t Semantics = {
         .is_builtin = Is_builtin,
         .add_return = Add_return,
         .add_param = Add_param,
-        .check_signatures = Check_signatures,
         .declare = Declare,
         .define = Define,
         .builtin = Builtin,
         .set_returns = Set_returns,
         .set_params = Set_params,
+
+        .check_signatures = Check_signatures,
+        .check_expression = Check_expression,
+        .check_return_semantics = Check_return_semantics,
 };
