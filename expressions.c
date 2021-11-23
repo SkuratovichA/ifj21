@@ -28,6 +28,14 @@
 #define DEBUG_SEP
 #pragma GCC diagnostic pop
 
+
+#define IF_STACK_HEAD_IS(_item, _stack, _type)  \
+    (_item) = Stack.peek(_stack);               \
+    if (!(_item)) {                             \
+        return false;                           \
+    }                                           \
+    if ((_item)->type == (_type)) {
+
 /**
  * Precedence function table.
  * f, g - precedence functions.
@@ -182,19 +190,14 @@ static char *item_to_string(item_type_t type) {
     switch (type) {
         case ITEM_TYPE_EXPR:
             return "expr";
-            break;
         case ITEM_TYPE_LT:
             return "<";
-            break;
         case ITEM_TYPE_GT:
             return ">";
-            break;
         case ITEM_TYPE_EQ:
             return "=";
-            break;
         case ITEM_TYPE_DOLLAR:
             return "$";
-            break;
         default:
             return "unrecognized type";
     }
@@ -323,13 +326,9 @@ static bool precedence_cmp(op_list_t first_op, op_list_t second_op, int *cmp) {
 static bool expression(sstack_t *r_stack, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: expr\n");
 
-    stack_item_t *item = Stack.peek(r_stack);
+    stack_item_t *item;
 
-    if (!item) {
-        return false;
-    }
-
-    if (item->type == ITEM_TYPE_EXPR) {
+    IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_EXPR)
         Semantics.add_operand(expr_sem, item->token);
         Stack.pop(r_stack, stack_item_dtor);
         return true;
@@ -347,13 +346,9 @@ static bool expression(sstack_t *r_stack, expr_semantics_t *expr_sem) {
 static bool expression_f(sstack_t *r_stack) {
     debug_msg("EXPECTED: expr\n");
 
-    stack_item_t *item = Stack.peek(r_stack);
+    stack_item_t *item;
 
-    if (!item) {
-        return false;
-    }
-
-    if (item->type == ITEM_TYPE_EXPR) {
+    IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_EXPR)
         Stack.pop(r_stack, stack_item_dtor);
         return true;
     }
@@ -371,13 +366,9 @@ static bool expression_f(sstack_t *r_stack) {
 static bool single_op(sstack_t *r_stack, op_list_t exp_op) {
     debug_msg("EXPECTED: %s\n", op_to_string(exp_op));
 
-    stack_item_t *item = Stack.peek(r_stack);
+    stack_item_t *item;
 
-    if (!item) {
-        return false;
-    }
-
-    if (item->type == ITEM_TYPE_TOKEN) {
+    IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_TOKEN)
         if (get_op(item->token) == exp_op) {
             Stack.pop(r_stack, stack_item_dtor);
             return true;
@@ -399,13 +390,9 @@ static bool single_op(sstack_t *r_stack, op_list_t exp_op) {
 static bool operator(sstack_t *r_stack, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: binary operator\n");
 
-    stack_item_t *item = Stack.peek(r_stack);
+    stack_item_t *item;
 
-    if (!item) {
-        return false;
-    }
-
-    if (item->type == ITEM_TYPE_TOKEN) {
+    IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_TOKEN)
         op_list_t op = get_op(item->token);
         switch (op) {
             case OP_ADD:
