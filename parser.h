@@ -37,6 +37,8 @@ symtable_t *global_table;
  */
 symtable_t *local_table;
 
+int nested_cycle_level;
+
 extern const struct parser_interface_t Parser;
 
 struct parser_interface_t {
