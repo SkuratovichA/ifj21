@@ -78,7 +78,7 @@ void INSTR_CHANGE_ACTIVE_LIST(list_t *newList) {
  *          result: %res
  */
 static void generate_func_reads() {
-    ADD_INSTR("LABEL $READS \n"
+    ADD_INSTR("LABEL $reads \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%res \n"
               "READ LF@%res string \n"
@@ -92,7 +92,7 @@ static void generate_func_reads() {
  *          result: %res
  */
 static void generate_func_readi() {
-    ADD_INSTR("LABEL $READI \n"
+    ADD_INSTR("LABEL $readi \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%res \n"
               "READ LF@%res int \n"
@@ -106,7 +106,7 @@ static void generate_func_readi() {
  *          result: %res
  */
 static void generate_func_readn() {
-    ADD_INSTR("LABEL $READN \n"
+    ADD_INSTR("LABEL $readn \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%res \n"
               "READ LF@%res float \n"
@@ -125,7 +125,7 @@ static void generate_func_readn() {
  *          params: FIXME
  */
 static void generate_func_write() {
-    ADD_INSTR("LABEL $WRITE \n"
+    ADD_INSTR("LABEL $write \n"
               "PUSHFRAME \n"
               "DEFVAR LF@p0 \n"
               "MOVE LF@p0 LF@%0 \n"
@@ -141,7 +141,7 @@ static void generate_func_write() {
  *          result: %res
  */
 static void generate_func_tointeger() {
-    ADD_INSTR("LABEL $TOINTEGER \n"
+    ADD_INSTR("LABEL $tointeger \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%res \n"
               "DEFVAR LF@p0 \n"
@@ -158,7 +158,7 @@ static void generate_func_tointeger() {
  *          result: %res
  */
 static void generate_func_chr() {
-    ADD_INSTR("LABEL $CHR \n"
+    ADD_INSTR("LABEL $chr \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%res \n"
               "MOVE LF@%res nil@nil \n"
@@ -182,7 +182,7 @@ static void generate_func_chr() {
  *          result: %res
  */
 static void generate_func_ord() {
-    ADD_INSTR("LABEL $ORD \n"
+    ADD_INSTR("LABEL $ord \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%res \n"
               "MOVE LF@%res nil@nil \n"
@@ -211,7 +211,7 @@ static void generate_func_ord() {
  *          result: %res
 */
 static void generate_func_substr() {
-    ADD_INSTR("LABEL $SUBSTR \n"
+    ADD_INSTR("LABEL $substr \n"
               "PUSHFRAME \n"
               "# define vars for params and result\n"
               "DEFVAR LF@%res \n"
@@ -548,7 +548,6 @@ static void generate_cond_elseif(size_t if_scope_id, size_t cond_num) {
  * @brief Generates start of else statement.
  *          JUMP $id_scope$end
  *          LABEL $id_scope$else
- *          JUMPIFNEQ $id_scope$end
  *          --- else body ---
  */
 static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
@@ -559,11 +558,6 @@ static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
 
     ADD_INSTR("\n# condition - else part");
     generate_cond_label(if_scope_id, cond_num - 1);
-
-    ADD_INSTR_PART("JUMPIFNEQ $if$");
-    ADD_INSTR_INT(if_scope_id);
-    ADD_INSTR_PART("$end GF@%expr_result bool@true");
-    ADD_INSTR_TMP();
 }
 
 /*
@@ -894,7 +888,7 @@ static void initialise_generator() {
     instructions.outer_loop_id = 0;
     instructions.before_loop_start = NULL;
     instructions.outer_cond_id = 0;
-    instructions.cond_cnt = 0;
+    instructions.cond_cnt = 1;
     instructions.label_cnt = 0;
     instructions.cond_info = Dynstring.ctor("");
     // sets active instructions list
@@ -927,15 +921,25 @@ static void Print_instr_list(instr_list_t instr_list_type) {
     }
 }
 
+/*
+ * @brief Saves info about current cond scope into dynstring instructions.cond_info
+ */
 static void push_cond_info() {
-    Dynstring.append(instructions.cond_info, instructions.outer_cond_id);
     Dynstring.append(instructions.cond_info, instructions.cond_cnt);
+    char cond_id_str[6] = "\0";
+    sprintf(cond_id_str, "%.5lu", instructions.outer_cond_id);
+    Dynstring.cat(instructions.cond_info, Dynstring.ctor(cond_id_str));
 }
 
+/*
+ * @brief Gets info about current cond scope from dynstring instructions.cond_info
+ *        - saves it to outer_cond_id and cond_cnt
+ */
 static void pop_cond_info() {
-    instructions.outer_cond_id = Dynstring.c_str(instructions.cond_info)[Dynstring.len(instructions.cond_info) - 2];
-    instructions.cond_cnt = Dynstring.c_str(instructions.cond_info)[Dynstring.len(instructions.cond_info) - 1];
-    Dynstring.trunc_to_len(instructions.cond_info, Dynstring.len(instructions.cond_info) - 2);
+    long unsigned num = strtoul(&Dynstring.c_str(instructions.cond_info)[Dynstring.len(instructions.cond_info) - 5], NULL, 10);
+    instructions.outer_cond_id = num;
+    instructions.cond_cnt = Dynstring.c_str(instructions.cond_info)[Dynstring.len(instructions.cond_info) - 6];
+    Dynstring.trunc_to_len(instructions.cond_info, Dynstring.len(instructions.cond_info) - 6);
 }
 
 /**

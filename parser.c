@@ -396,8 +396,8 @@ static bool if_statement(pfile_t *pfile) {
 
     Generator.push_cond_info();
 
-    instructions.outer_cond_id = (char)Symstack.get_scope_info(symstack).unique_id;
-    instructions.cond_cnt = 0;
+    instructions.outer_cond_id = Symstack.get_scope_info(symstack).unique_id;
+    instructions.cond_cnt = 1;
 
     return cond_stmt(pfile);
 }
