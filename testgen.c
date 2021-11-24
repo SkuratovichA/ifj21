@@ -337,7 +337,7 @@ int main() {
 
 
     char *description14 = "for cycles. Single for cycles with an error.";
-    int retcode14 = ERROR_SYNTAX;
+    int retcode14 = ERROR_TYPE_MISSMATCH;
     pfile_t *pf14 = Pfile.ctor(
             PROLOG
             "function main(iterations : number )  "NL
@@ -980,7 +980,7 @@ int main() {
     );
 
     char *description61 = "undef function";
-    int retcode61 = ERROR_NOERROR;
+    int retcode61 = ERROR_DEFINITION;
     pfile_t *pf61 = Pfile.ctor(
             PROLOG
             "function main(life : boolean) : boolean                  "NL
@@ -989,8 +989,8 @@ int main() {
 
     );
 
-    char *description62 = "for cycles";
-    int retcode62 = ERROR_NOERROR;
+    char *description62 = "for cycles, type mismatched";
+    int retcode62 = ERROR_TYPE_MISSMATCH;
     pfile_t *pf62 = Pfile.ctor(
             PROLOG
             "function main(iterations : number )      "NL
@@ -1009,7 +1009,7 @@ int main() {
             PROLOG
             "function main(iterations : number )      "NL
             "    for i=0,iterations,2 do              "NL
-            "        for j=0,i<iterations,2 do        "NL
+            "        for j=0,iterations,2 do        "NL
             "            write(\"hello, many times\") "NL
             "        end                              "NL
             "    end                                  "NL
@@ -1023,7 +1023,7 @@ int main() {
             PROLOG
             "function main(iterations : number )      "NL
             "    for i=0,iterations do                "NL
-            "        for j=0,i<iterations do          "NL
+            "        for j=0,iterations do            "NL
             "            write(\"hello, 9 times\")    "NL
             "        end                              "NL
             "    end                                  "NL
@@ -1058,7 +1058,7 @@ int main() {
             "function main(iterations : number )      "NL
             "    for i=0,iterations do                "NL
             "       write(\"I'm gonna be printed\\n\")"NL
-            "        for j=0,i<iterations do          "NL
+            "        for j=0, iterations do          "NL
             "            break                        "NL
             "            write(\"hello, 9 times\")    "NL
             "        end                              "NL
@@ -1341,7 +1341,7 @@ int main() {
             "function main(iterations : number )      "NL
             "    for i=0, -iterations, -1 do          "NL
             "       write(\"I'm gonna be printed\\n\")"NL
-            "        for j=0, i<-iterations do        "NL
+            "        for j=0, i-iterations do        "NL
             "            write(\"hello, n times\")    "NL
             "        end                              "NL
             "    end                                  "NL
@@ -1365,6 +1365,7 @@ int main() {
     pfile_t *pf82 = Pfile.ctor(
             PROLOG
             "function main(iterations : number )      "NL
+            "    local b : number                     "NL
             "    for i=0, b = 10, -1 do               "NL
             "    end                                  "NL
             "end                                      "NL
@@ -1428,7 +1429,7 @@ int main() {
             "    return \"the whole project was written by a cat\"            "NL
             "end                                                              "NL
 
-            "function main()                                                  "NL
+            "function main()                                                 "NL
             " local you : string = \"atata\"                                 "NL
             "     repeat                                                     "NL
             "         repeat                                                 "NL
@@ -1438,7 +1439,7 @@ int main() {
             "                         repeat                                 "NL
             "                             local not_true : string = me()     "NL
             "                             break                              "NL
-            "                              write(not_true)                   "NL
+            "                             write(not_true)                    "NL
             "                         until false                            "NL
             "                     until 1 < 0                                "NL
             "                 until 2 + 2 == 5                               "NL
