@@ -1418,6 +1418,74 @@ int main() {
             "main(\"helloo\")                         "NL
     );
 
+    char *description87 = "break inside repuntil";
+    int retcode87 = ERROR_NOERROR;
+    pfile_t *pf87 = Pfile.ctor(
+            PROLOG NL
+            "function me() :string                                            "NL
+            "    return \"the whole project was written by a cat\"            "NL
+            "end                                                              "NL
+
+            "function main()                                                  "NL
+            " local you : string = \"atata\"                                 "NL
+            "     repeat                                                     "NL
+            "         repeat                                                 "NL
+            "             repeat                                             "NL
+            "                 repeat                                         "NL
+            "                     repeat                                     "NL
+            "                         repeat                                 "NL
+            "                             local not_true : string = me()     "NL
+            "                             break                              "NL
+            "                              write(not_true)                   "NL
+            "                         until false                            "NL
+            "                     until 1 < 0                                "NL
+            "                 until 2 + 2 == 5                               "NL
+            "             until false                                        "NL
+            "         until true and false                                   "NL
+            "     until false or false                                       "NL
+            "                                                                "NL
+            "    return                                                      "NL
+            "end                                                             "NL
+            "main()                                                          "NL
+    );
+
+    char *description88 = "break inside repuntil";
+    int retcode88 = ERROR_NOERROR;
+    pfile_t *pf88 = Pfile.ctor(
+            PROLOG NL
+            "function me() :string                                            "NL
+            "    return \"the whole project was written by a cat\"            "NL
+            "end                                                              "NL
+
+            "function main()                                               "NL
+            "   local you : string = \"atata\"                             "NL
+            "   local truth : boolean  = true                              "NL
+            "   repeat                                                     "NL
+            "       repeat                                                 "NL
+            "           repeat                                             "NL
+            "               repeat                                         "NL
+            "                   repeat                                     "NL
+            "                       repeat                                 "NL
+            "                           local not_true : string = me()     "NL
+            "                           break                              "NL
+            "                           write(not_true)                    "NL
+            "                       until truth                            "NL
+            "                       break                                  "NL
+            "                   until truth                                "NL
+            "                   break                                      "NL
+            "               until truth                                    "NL
+            "               break                                          "NL
+            "           until truth                                        "NL
+            "           break                                              "NL
+            "       until truth                                            "NL
+            "       break                                                  "NL
+            "   until truth                                                "NL
+            "                                                              "NL
+            "   return                                                     "NL
+            "end                                                           "NL
+            "main()                                                        "NL
+    );
+
 
     TEST_CASE(1);
     TEST_CASE(2);
@@ -1513,5 +1581,7 @@ int main() {
     TEST_CASE(84);
     TEST_CASE(85);
     TEST_CASE(86);
+    TEST_CASE(87);
+    TEST_CASE(88);
     return 0;
 }
