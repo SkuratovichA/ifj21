@@ -45,6 +45,7 @@ typedef struct symbol {
     id_type_t type;
     dynstring_t *id;
     func_semantics_t *function_semantics;
+    size_t id_of_parent_scope; // unique_id of scope where the variable was declared.
 } symbol_t;
 
 
@@ -85,9 +86,10 @@ struct symtable_interface_t {
      * @param self BST.
      * @param id symbol name.
      * @param type symbol type.
+     * @param unique_id unique_id of the scope where the variable was declared.
      * @return pointer on the symbol in the binary tree. Newly created or already existed.
      */
-    symbol_t *(*put)(symtable_t *, dynstring_t *, id_type_t);
+    symbol_t *(*put)(symtable_t *, dynstring_t *, id_type_t, size_t);
 
     /** Symbol table destructor.
      *
