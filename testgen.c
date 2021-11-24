@@ -20,17 +20,17 @@
                   ERROR_SEMANTICS_TYPE_INCOMPATABLE,                         \
                   ERROR_SEMANTICS_OTHER                                      \
                   ):                                                         \
-              _filname = "../tests/semantic_errors/sasha" #number "_";       \
+              _filname = "../tests/semantic_errors/test" #number "_";       \
               break;                                                         \
           case ERROR_NOERROR:                                                \
-              _filname = "../tests/without_errors/sasha" #number "_";        \
+              _filname = "../tests/without_errors/test" #number "_";        \
               break;                                                         \
           case ERROR_SYNTAX:                                                 \
-              _filname = "../tests/syntax_errors/sasha" #number "_";         \
+              _filname = "../tests/syntax_errors/test" #number "_";         \
               break;                                                         \
           default:                                                           \
               debug_msg_s("Undefined error code: %d\n", retcode##number);    \
-              _filname = "sasha";                                            \
+              _filname = "test";                                            \
       }                                                                      \
       dynstring_t *filnam = Dynstring.ctor(_filname);                        \
       Dynstring.append(filnam, retcode ## number + '0');                     \
