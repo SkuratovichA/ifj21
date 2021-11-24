@@ -511,7 +511,7 @@ static bool check_rule(sstack_t *r_stack, int *func_entries, expr_semantics_t *e
                 return expression(r_stack, expr_sem);
             // ( expr )
             case OP_LPAREN:
-                expr_sem->sem_state = SEMANTIC_DISABLED;
+                expr_sem->sem_state = SEMANTIC_PARENTS;
                 Stack.pop(r_stack, stack_item_dtor);
                 return expression(r_stack, expr_sem) && single_op(r_stack, OP_RPAREN);
             // id | id ( <arguments>
@@ -661,7 +661,9 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
     }
 
     // Generate code here
-    if (expr_sem->sem_state != SEMANTIC_DISABLED && expr_sem->sem_state != SEMANTIC_IDLE) {
+    if (expr_sem->sem_state != SEMANTIC_DISABLED &&
+        expr_sem->sem_state != SEMANTIC_IDLE &&
+        expr_sem->sem_state != SEMANTIC_PARENTS) {
         Generator.expression(expr_sem);
     }
 
@@ -1013,7 +1015,7 @@ static bool expr_stmt(pfile_t *pfile, expr_type_t expr_type, dynstring_t *vector
 
     // Assignment in global scope is not valid
     if (expr_type == EXPR_GLOBAL) {
-        Errors.set_error(ERROR_SYNTAX);
+        Errors.set_error(ERROR_DEFINITION);
         return false;
     }
 
