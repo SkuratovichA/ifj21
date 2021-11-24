@@ -718,7 +718,7 @@ static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_
  * @param expr_type type of expression to parse.
  * @return bool.
  */
-static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
+static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_expr_types) {
     bool hard_reduce = false;
     bool is_func = false;
     int func_entries = (expr_type == EXPR_FUNC) ? 1 : 0;
@@ -756,6 +756,10 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
             } else {
                 Errors.set_error(ERROR_SYNTAX);
                 return false;
+            }
+            // expr_type = {integer, number, nil, boolean, string}
+            if (vector_expr_types != NULL) {
+                Dynstring.append(vector_expr_types, Semantics.of_id_type(Semantics.token_to_id_type(expr->token.type)));
             }
             debug_msg("Successful parsing!\n");
             return true;
@@ -818,7 +822,7 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
  * @param prev_token previous token.
  * @return bool.
  */
-static bool parse_init(pfile_t *pfile, expr_type_t expr_type, token_t *prev_token) {
+static bool parse_init(pfile_t *pfile, expr_type_t expr_type, token_t *prev_token, dynstring_t *vector_expr_type) {
     sstack_t *stack = Stack.ctor();
 
     // Push $ on stack
@@ -833,7 +837,7 @@ static bool parse_init(pfile_t *pfile, expr_type_t expr_type, token_t *prev_toke
     }
 
     // Parsing process
-    bool parse_result = parse(pfile, stack, expr_type);
+    bool parse_result = parse(pfile, stack, expr_type, vector_expr_type);
 
     // Delete $ from stack
     Stack.dtor(stack, stack_item_dtor);
@@ -848,16 +852,16 @@ static bool parse_init(pfile_t *pfile, expr_type_t expr_type, token_t *prev_toke
  * @param pfile program file to pass in to scanner.
  * @return bool.
  */
-static bool other_expr(pfile_t *pfile) {
+static bool other_expr(pfile_t *pfile, dynstring_t *vector_expr_types) {
     debug_msg("EXPECTED: , expr <other_expr>\n");
 
     // ,
     if (Scanner.get_curr_token().type == TOKEN_COMMA) {
         Scanner.get_next_token(pfile);
         // expr
-        if (parse_init(pfile, EXPR_DEFAULT, NULL)) {
+        if (parse_init(pfile, EXPR_DEFAULT, NULL, vector_expr_types)) {
             // <other_expr>
-            return other_expr(pfile);
+            return other_expr(pfile, vector_expr_types);
         } else {
             return false;
         }
@@ -875,16 +879,16 @@ static bool other_expr(pfile_t *pfile) {
  * @param pfile program file to pass in to scanner.
  * @return bool.
  */
-static bool Expr_list(pfile_t *pfile, dynstring_t *datatypes) {
+static bool Expr_list(pfile_t *pfile, dynstring_t *vector_expr_types) {
     debug_msg("EXPECTED: expr <other_expr>\n");
 
     // expr
-    if (!parse_init(pfile, EXPR_DEFAULT, NULL)) {
+    if (!parse_init(pfile, EXPR_DEFAULT, NULL, vector_expr_types)) {
         return false;
     }
 
     // <other_expr>
-    return other_expr(pfile);
+    return other_expr(pfile, vector_expr_types);
 }
 
 /**
@@ -934,7 +938,7 @@ static bool id_list(pfile_t *pfile) {
  * @param prev_token previous token.
  * @return bool.
  */
-static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token) {
+static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token, dynstring_t *vector_expr_types) {
     debug_msg("EXPECTED: = expr | ( expr | <id_list>\n");
 
     // DEAD TOKEN
@@ -946,13 +950,13 @@ static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token) {
     // =
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
         Scanner.get_next_token(pfile);
-        return parse_init(pfile, EXPR_ASSIGN, NULL);
+        return parse_init(pfile, EXPR_ASSIGN, NULL, vector_expr_types);
     }
 
     // (
     if (Scanner.get_curr_token().type == TOKEN_LPAREN) {
         Scanner.get_next_token(pfile);
-        return parse_init(pfile, EXPR_FUNC, prev_token);
+        return parse_init(pfile, EXPR_FUNC, prev_token, vector_expr_types);
     }
 
     // <id_list>
@@ -967,7 +971,7 @@ static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token) {
  * @param pfile program file to pass in to scanner.
  * @return bool.
  */
-static bool expr_stmt(pfile_t *pfile) {
+static bool expr_stmt(pfile_t *pfile, dynstring_t *vector_expr_types) {
     debug_msg("rule: id <expr_stmt_next>\n");
 
     // DEAD TOKEN
@@ -987,7 +991,7 @@ static bool expr_stmt(pfile_t *pfile) {
     // <expr_stmt_next>
     token_t tok_id = Scanner.get_curr_token();
     Scanner.get_next_token(pfile);
-    return expr_stmt_next(pfile, &tok_id);
+    return expr_stmt_next(pfile, &tok_id, vector_expr_types);
 }
 
 /**
@@ -998,11 +1002,11 @@ static bool expr_stmt(pfile_t *pfile) {
  * @param inside_stmt true when the function is called from parser.
  * @return bool.
  */
-static bool Parse_expression(pfile_t *pfile, bool inside_stmt) {
+static bool Parse_expression(pfile_t *pfile, bool inside_stmt, dynstring_t *vector_expr_types) {
     if (inside_stmt == true) {
-        return parse_init(pfile, EXPR_DEFAULT, NULL);
+        return parse_init(pfile, EXPR_DEFAULT, NULL, vector_expr_types);
     } else {
-        return expr_stmt(pfile);
+        return expr_stmt(pfile, vector_expr_types);
     }
 }
 

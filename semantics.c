@@ -7,7 +7,6 @@
  */
 #include "semantics.h"
 #include "dynstring.h"
-#include "symtable.h"
 #include "expressions.h"
 #include "parser.h"
 
@@ -100,7 +99,7 @@ static void Builtin(func_semantics_t *self) {
  * @param type id_type to convert.
  * @return a converted char.
  */
-static char of_id_type(id_type_t type) {
+static char of_id_type(int type) {
     switch (type) {
         case ID_TYPE_string:
             return 's';
@@ -292,8 +291,8 @@ static int type_to_token (id_type_t id_type) {
     }
 }
 
-static id_type_t token_to_type (token_t tok) {
-    switch (tok.type) {
+static int token_to_type(int typ) {
+    switch (typ) {
         case TOKEN_STR:
             return ID_TYPE_string;
         case TOKEN_NUM_I:
@@ -324,7 +323,7 @@ static bool is_var_exists (token_t tok, expr_semantics_t *self) {
 
 static bool type_compatability(expr_semantics_t *self) {
     if (self->sem_state == SEMANTIC_UNARY) {
-        id_type_t f_var_type = token_to_type(self->first_operand);
+        id_type_t f_var_type = token_to_type(self->first_operand.type);
 
         // String length
         if (self->op == OP_HASH && f_var_type == ID_TYPE_string) {
@@ -338,8 +337,8 @@ static bool type_compatability(expr_semantics_t *self) {
             return true;
         }
     } else {
-        id_type_t f_var_type = token_to_type(self->first_operand);
-        id_type_t s_var_type = token_to_type(self->second_operand);
+        id_type_t f_var_type = token_to_type(self->first_operand.type);
+        id_type_t s_var_type = token_to_type(self->second_operand.type);
 
         // Addition, subtraction, multiplication, float division
         if (self->op == OP_ADD || self->op == OP_SUB || self->op == OP_MUL || self->op == OP_DIV_F) {
@@ -449,8 +448,8 @@ static bool Check_expression(expr_semantics_t *self) {
 
 static bool Check_return_semantics(
         dynstring_t *signature_returns,
-        dynstring_t *return_types,
-        size_t *nil_to_add) {
+        dynstring_t *return_types
+) {
     if (signature_returns == NULL || return_types == NULL) {
         Errors.set_error(ERROR_INTERNAL);
         return false;
@@ -460,8 +459,6 @@ static bool Check_return_semantics(
         Errors.set_error(ERROR_FUNCTION_SEMANTICS);
         return false;
     }
-    // set number of nils to add.
-    *nil_to_add = Dynstring.len(signature_returns) - Dynstring.len(return_types);
 
     // truncate to the length of the shortest string.
     if (Dynstring.len(return_types) < Dynstring.len(signature_returns)) {
@@ -509,4 +506,6 @@ const struct semantics_interface_t Semantics = {
         .check_signatures = Check_signatures,
         .check_expression = Check_expression,
         .check_return_semantics = Check_return_semantics,
+        .of_id_type = of_id_type,
+        .token_to_id_type = token_to_type,
 };

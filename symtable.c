@@ -251,8 +251,9 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
     dynstring_t *declreturnvec = Dynstring.ctor(returns);
 
 
-    ST_Put(self, dname, ID_TYPE_func_decl);
-    ST_Put(self, dname, ID_TYPE_func_def);
+    // self, dname, ID_TYPE_func_decl, 0=(global frame unique_id)
+    ST_Put(self, dname, ID_TYPE_func_decl, 0);
+    ST_Put(self, dname, ID_TYPE_func_def, 0);
 
     symbol_t *symbol;
     ST_Get(self, dname, &symbol);
