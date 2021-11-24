@@ -140,6 +140,26 @@ static void print_error_unexpected_token(const char *a, const char *b) {
     } while (0)
 
 
+static void increase_nesting() {
+    FILE *fp = fopen("nesting.out", "a+");
+    for (int i = 0; i < (int) nested_cycle_level; i++) {
+        fprintf(fp, "\t");
+    }
+    fprintf(fp, "cycle\n");
+    fclose(fp);
+    nested_cycle_level++;
+}
+
+static void decrease_nesting() {
+    nested_cycle_level--;
+    FILE *fp = fopen("nesting.out", "a+");
+    for (int i = 0; i < nested_cycle_level; i++) {
+        fprintf(fp, "\t");
+    }
+    fprintf(fp, "end\n");
+    fclose(fp);
+}
+
 static bool cond_stmt();
 
 static bool fun_body();
@@ -147,8 +167,13 @@ static bool fun_body();
 static bool fun_stmt();
 
 static bool break_() {
-    assert(!"BREAK NOT IMPLEMENTED YET");
-    return false;
+    EXPECTED(KEYWORD_break);
+    if (nested_cycle_level == 0) {
+        Errors.set_error(ERROR_SYNTAX);
+        return false;
+    }
+
+    return true;
 }
 
 /** Conditional expression body implemented with an extension. Contains statements.
@@ -300,7 +325,7 @@ static bool repeat_body() {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool assignment(pfile_t *pfile, dynstring_t *var_name) {
+static bool assignment(dynstring_t *var_name) {
     debug_msg("<assignment> -> \n");
 
     // e |
@@ -350,6 +375,7 @@ static bool for_assignment() {
  * @return bool.
  */
 static bool for_cycle() {
+    increase_nesting();
     EXPECTED(KEYWORD_for); // for
     SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
     dynstring_t *id_name;
@@ -388,6 +414,7 @@ static bool for_cycle() {
         return false;
     }
     SYMSTACK_POP();
+    decrease_nesting();
     return true;
 }
 
@@ -438,7 +465,7 @@ static bool var_definition() {
 
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
     // = `expr`
-    if (!assignment(pfile, id_name)) {
+    if (!assignment(id_name)) {
         Dynstring.dtor(id_name);
         return false;
     }
@@ -455,7 +482,7 @@ static bool var_definition() {
  */
 static bool while_cycle() {
     EXPECTED(KEYWORD_while);
-
+    increase_nesting();
     // create a new symtable for while cycle.
     SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
 
@@ -482,6 +509,7 @@ static bool while_cycle() {
     }
     // parent function pops a table from the stack.
     SYMSTACK_POP();
+    decrease_nesting();
     return true;
 }
 
@@ -521,6 +549,7 @@ static bool return_stmt() {
  * @return
  */
 static bool repeat_until_cycle() {
+    increase_nesting();
     EXPECTED(KEYWORD_repeat);
     SYMSTACK_PUSH(SCOPE_TYPE_do_cycle, NULL);
 
@@ -546,6 +575,7 @@ static bool repeat_until_cycle() {
     Generator.repeat_until_cond();
 
     SYMSTACK_POP();
+    decrease_nesting();
     return true;
 }
 
