@@ -20,6 +20,8 @@
 #include "code_generator.h"
 
 
+static pfile_t *pfile;
+
 /** Print an error ife terminal symbol is unexpected.
  *
  * @param a expected.
@@ -138,12 +140,16 @@ static void print_error_unexpected_token(const char *a, const char *b) {
     } while (0)
 
 
-static bool cond_stmt(pfile_t *);
+static bool cond_stmt();
 
-static bool fun_body(pfile_t *);
+static bool fun_body();
 
-static bool fun_stmt(pfile_t *);
+static bool fun_stmt();
 
+static bool break_() {
+    assert(!"BREAK NOT IMPLEMENTED YET");
+    return false;
+}
 
 /** Conditional expression body implemented with an extension. Contains statements.
  *
@@ -159,7 +165,7 @@ static bool fun_stmt(pfile_t *);
  * @param pfile pfile.
  * @return bool.
  */
-static bool cond_body(pfile_t *pfile) {
+static bool cond_body() {
     debug_msg("<cond_body> -> \n");
     switch (Scanner.get_curr_token().type) {
         case KEYWORD_else:
@@ -173,7 +179,7 @@ static bool cond_body(pfile_t *pfile) {
             instructions.cond_cnt++;
             Generator.cond_else(instructions.outer_cond_id, instructions.cond_cnt);
 
-            if (!fun_body(pfile)) {
+            if (!fun_body()) {
                 return false;
             }
             SYMSTACK_POP();
@@ -190,7 +196,7 @@ static bool cond_body(pfile_t *pfile) {
             // generate start of elseif block
             Generator.cond_elseif(instructions.outer_cond_id, instructions.cond_cnt);
 
-            return cond_stmt(pfile);
+            return cond_stmt();
 
         case KEYWORD_end:
             EXPECTED(KEYWORD_end);
@@ -206,7 +212,7 @@ static bool cond_body(pfile_t *pfile) {
             break;
     }
 
-    return fun_stmt(pfile) && cond_body(pfile);
+    return fun_stmt() && cond_body();
 }
 
 /** Conditional(if or elseif statement). Contains an expression and body.
@@ -217,7 +223,7 @@ static bool cond_body(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool cond_stmt(pfile_t *pfile) {
+static bool cond_stmt() {
     debug_msg("<cond_stmt> -> \n");
 
     if (!Expr.parse(pfile, EXPR_DEFAULT, NULL)) {
@@ -230,7 +236,7 @@ static bool cond_stmt(pfile_t *pfile) {
     instructions.cond_cnt++;
     Generator.cond_if(instructions.outer_cond_id, instructions.cond_cnt);
 
-    return cond_body(pfile);
+    return cond_body();
 }
 
 /** Datatype.
@@ -240,7 +246,7 @@ static bool cond_stmt(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static inline bool datatype(pfile_t *pfile) {
+static inline bool datatype() {
     debug_msg("<datatype> ->\n");
 
     switch (Scanner.get_curr_token().type) {
@@ -275,14 +281,14 @@ static inline bool datatype(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool repeat_body(pfile_t *pfile) {
+static bool repeat_body() {
     debug_msg("<repeat_body> -> \n");
 
     // until |
     EXPECTED_OPT(KEYWORD_until);
 
     // a new solution which doesnt have to cause problems. But not tested yet, so i dont know.
-    return fun_stmt(pfile) && repeat_body(pfile);
+    return fun_stmt() && repeat_body();
 }
 
 /** Optional assignment after a local variable declaration.
@@ -323,7 +329,7 @@ static bool assignment(pfile_t *pfile, dynstring_t *var_name) {
  * @param pfile pfile
  * @return bool.
  */
-static bool for_assignment(pfile_t *pfile) {
+static bool for_assignment() {
     debug_msg("<for_assignment> ->\n");
     EXPECTED_OPT(KEYWORD_do);
 
@@ -343,7 +349,7 @@ static bool for_assignment(pfile_t *pfile) {
  * @param pfile a program.
  * @return bool.
  */
-static bool for_cycle(pfile_t *pfile) {
+static bool for_cycle() {
     EXPECTED(KEYWORD_for); // for
     SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
     dynstring_t *id_name;
@@ -374,11 +380,11 @@ static bool for_cycle(pfile_t *pfile) {
     }
 
     // do | , `expr` do
-    if (!for_assignment(pfile)) {
+    if (!for_assignment()) {
         return false;
     }
     // <fun_body>, which ends with 'end'
-    if (!fun_body(pfile)) {
+    if (!fun_body()) {
         return false;
     }
     SYMSTACK_POP();
@@ -392,7 +398,7 @@ static bool for_cycle(pfile_t *pfile) {
  * @param pfile
  * @return
  */
-static bool if_statement(pfile_t *pfile) {
+static bool if_statement() {
     EXPECTED(KEYWORD_if);
     SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
 
@@ -401,7 +407,7 @@ static bool if_statement(pfile_t *pfile) {
     instructions.outer_cond_id = Symstack.get_scope_info(symstack).unique_id;
     instructions.cond_cnt = 1;
 
-    return cond_stmt(pfile);
+    return cond_stmt();
 }
 
 /** Local variable definition.
@@ -411,7 +417,7 @@ static bool if_statement(pfile_t *pfile) {
  * @param pfile
  * @return
  */
-static bool var_definition(pfile_t *pfile) {
+static bool var_definition() {
     dynstring_t *id_name;
     int id_type;
     EXPECTED(KEYWORD_local);
@@ -426,7 +432,7 @@ static bool var_definition(pfile_t *pfile) {
     id_type = Scanner.get_curr_token().type;
 
     // <datatype>
-    if (!datatype(pfile)) {
+    if (!datatype()) {
         return false;
     }
 
@@ -447,7 +453,7 @@ static bool var_definition(pfile_t *pfile) {
  * @param pflile
  * @return
  */
-static bool while_cycle(pfile_t *pfile) {
+static bool while_cycle() {
     EXPECTED(KEYWORD_while);
 
     // create a new symtable for while cycle.
@@ -471,7 +477,7 @@ static bool while_cycle(pfile_t *pfile) {
     Generator.while_cond();
 
     EXPECTED(KEYWORD_do);
-    if (!fun_body(pfile)) {
+    if (!fun_body()) {
         return false;
     }
     // parent function pops a table from the stack.
@@ -485,7 +491,7 @@ static bool while_cycle(pfile_t *pfile) {
  * @param pfile
  * @return
  */
-static bool return_stmt(pfile_t *pfile) {
+static bool return_stmt() {
     EXPECTED(KEYWORD_return);
     dynstring_t *sign_returns;
     dynstring_t *return_types = Dynstring.ctor("");
@@ -514,7 +520,7 @@ static bool return_stmt(pfile_t *pfile) {
  * @param pfile
  * @return
  */
-static bool repeat_until_cycle(pfile_t *pfile) {
+static bool repeat_until_cycle() {
     EXPECTED(KEYWORD_repeat);
     SYMSTACK_PUSH(SCOPE_TYPE_do_cycle, NULL);
 
@@ -526,7 +532,7 @@ static bool repeat_until_cycle(pfile_t *pfile) {
     }
     Generator.repeat_until_header();
 
-    if (!repeat_body(pfile)) {
+    if (!repeat_body()) {
         return false;
     }
 
@@ -551,38 +557,42 @@ static bool repeat_until_cycle(pfile_t *pfile) {
  * !rule <fun_stmt> -> <var_definition>
  * !rule <fun_stmt> -> <for_cycle>
  * !rule <fun_stmt> -> `expr`
+ * !rule <fun_stmt> -> <break>
  *
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool fun_stmt(pfile_t *pfile) {
+static bool fun_stmt() {
     debug_msg("<fun_stmt> ->\n");
 
     switch (Scanner.get_curr_token().type) {
         // for <for_def>, `expr` <for_assignment> <fun_body>
         case KEYWORD_for:
-            return for_cycle(pfile);
+            return for_cycle();
 
             // if <cond_stmt>
         case KEYWORD_if:
-            return if_statement(pfile);
+            return if_statement();
 
             // local id : <datatype> <assignment>
         case KEYWORD_local:
-            return var_definition(pfile);
+            return var_definition();
 
             // return <return_expr_list>
         case KEYWORD_return:
-            return return_stmt(pfile);
+            return return_stmt();
 
             // while `expr` do <fun_body> end
         case KEYWORD_while:
-            return while_cycle(pfile);
+            return while_cycle();
 
             // repeat <some_body> until `expr`
         case KEYWORD_repeat:
-            return repeat_until_cycle(pfile);
+            return repeat_until_cycle();
+
+        case KEYWORD_break:
+            return break_();
 
         case TOKEN_ID:
             if (!Expr.parse(pfile, EXPR_FUNC, NULL)) {
@@ -610,7 +620,7 @@ static bool fun_stmt(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool fun_body(pfile_t *pfile) {
+static bool fun_body() {
     debug_msg("<fun_body> ->\n");
     // end |
     if (Scanner.get_curr_token().type == KEYWORD_end) {
@@ -643,7 +653,7 @@ static bool fun_body(pfile_t *pfile) {
         return true;
     }
 
-    return fun_stmt(pfile) && fun_body(pfile);
+    return fun_stmt() && fun_body();
 }
 
 /** List of parameter in function definition.
@@ -673,7 +683,7 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
     token_type_t id_type = Scanner.get_curr_token().type;
 
     // <datatype>
-    if (!datatype(pfile)) {
+    if (!datatype()) {
         return false;
     }
 
@@ -716,7 +726,7 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
     // add a datatype to function parameters
     Semantics.add_param(&function_def_info, id_type);
     // <datatype>
-    if (!datatype(pfile)) {
+    if (!datatype()) {
         return false;
     }
 
@@ -744,7 +754,7 @@ static bool other_datatypes(pfile_t *pfile, func_info_t function_decl_info) {
     EXPECTED(TOKEN_COMMA);
 
     Semantics.add_param(&function_decl_info, Scanner.get_curr_token().type);
-    return datatype(pfile) && other_datatypes(pfile, function_decl_info);
+    return datatype() && other_datatypes(pfile, function_decl_info);
 }
 
 /** List of datatypes separated by a comma.
@@ -761,7 +771,7 @@ static bool datatype_list(pfile_t *pfile, func_info_t function_decl_info) {
 
     Semantics.add_param(&function_decl_info, Scanner.get_curr_token().type);
     //<datatype> && <other_datatypes>
-    return datatype(pfile) && other_datatypes(pfile, function_decl_info);
+    return datatype() && other_datatypes(pfile, function_decl_info);
 }
 
 /** list of return types of the function.
@@ -786,7 +796,7 @@ static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
     Generator.func_return_value(1);         // FIXME counter
 
     // <datatype> <other_funrets>
-    return datatype(pfile) && other_funrets(pfile, function_info);
+    return datatype() && other_funrets(pfile, function_info);
 }
 
 /** Optional returns of the function.
@@ -813,7 +823,7 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
     Generator.func_return_value(0);
 
     // <datatype> <other_funrets>
-    return (datatype(pfile) && other_funrets(pfile, function_info));
+    return (datatype() && other_funrets(pfile, function_info));
 }
 
 /** Function declaration.
@@ -823,7 +833,7 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
  * @param pfile input file.
  * @return bool
  */
-static bool function_declaration(pfile_t *pfile) {
+static bool function_declaration() {
     dynstring_t *id_name;
     symbol_t *symbol;
 
@@ -882,7 +892,7 @@ static bool function_declaration(pfile_t *pfile) {
  * @param pfile input file.
  * @return bool.
  */
-static bool function_definition(pfile_t *pfile) {
+static bool function_definition() {
     // function
     EXPECTED(KEYWORD_function);
 
@@ -942,7 +952,7 @@ static bool function_definition(pfile_t *pfile) {
     }
 
     // <fun_body>
-    if (!fun_body(pfile)) {
+    if (!fun_body()) {
         return false;
     }
 
@@ -959,18 +969,18 @@ static bool function_definition(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool stmt(pfile_t *pfile) {
+static bool stmt() {
     debug_msg("<stmt> ->\n");
     token_t token = Scanner.get_curr_token();
 
     switch (token.type) {
         // function declaration: global id : function ( <datatype_list> <funretopt>
         case KEYWORD_global:
-            return function_declaration(pfile);
+            return function_declaration();
 
             // function definition: function id ( <funparam_def_list> <funretopt> <fun_body>
         case KEYWORD_function:
-            return function_definition(pfile);
+            return function_definition();
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:;
@@ -1009,14 +1019,14 @@ static bool stmt(pfile_t *pfile) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool stmt_list(pfile_t *pfile) {
+static bool stmt_list() {
     debug_msg("<stmt_list> ->\n");
 
     // EOF |
     EXPECTED_OPT(TOKEN_EOFILE);
 
     // <stmt> <stmt_list>
-    return stmt(pfile) && stmt_list(pfile);
+    return stmt() && stmt_list();
 }
 
 /** Predicate to check if every declared function is also defined.
@@ -1037,7 +1047,7 @@ static bool declared_implies_defined(symbol_t *symbol) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool program(pfile_t *pfile) {
+static bool program() {
     dynstring_t *prolog_str = Dynstring.ctor("ifj21");
     debug_msg("=====================================\n\n\n");
     debug_msg("PARISNG STARTED\n");
@@ -1064,7 +1074,7 @@ static bool program(pfile_t *pfile) {
     Generator.prog_start();
 
     // <stmt_list>
-    if (!stmt_list(pfile)) {
+    if (!stmt_list()) {
         return false;
     }
 
@@ -1122,6 +1132,7 @@ static void Free_parser() {
     Scanner.free();
 }
 
+
 /** Analyse function initializes the scanner, and parsing a token sequence
  *  recursive descent method for everything except expressions and bottom-up
  *  precedence parsing method for expressions.
@@ -1129,10 +1140,11 @@ static void Free_parser() {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool Analyse(pfile_t *pfile) {
-    soft_assert(pfile != NULL, ERROR_INTERNAL);
+static bool Analyse(pfile_t *pfile_) {
+    soft_assert(pfile_ != NULL, ERROR_INTERNAL);
     Errors.set_error(ERROR_NOERROR);
     bool res = false;
+    pfile = pfile_;
 
     // initialize structures(symstack, symtable)
     // add builtin functions.
@@ -1142,7 +1154,7 @@ static bool Analyse(pfile_t *pfile) {
     if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) {
         Errors.set_error(ERROR_LEXICAL);
     } else {
-        res = program(pfile);
+        res = program();
     }
 
     Generator.main_end();
