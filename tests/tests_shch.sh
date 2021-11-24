@@ -71,7 +71,7 @@ if [[ "$name" == "all" ]]; then
     # create a directory for html pages
     mkdir "$STAT_DIR/html" || { echo "$STAT_DIR/html already exists " ; }
 
-    for NUM_TEST in 0 2 3 4 5 6 7
+    for NUM_TEST in 0 1 2 3 4 5 6 7
     do
         echo "******** RET_VALUE = $NUM_TEST ********"
         cd "$TEST_DIR"
@@ -85,14 +85,21 @@ if [[ "$name" == "all" ]]; then
     done
 
     gcovr --filter "$SRC_DIR" --add-tracefile "$STAT_DIR/code0.json"  \
-                             --add-tracefile "$STAT_DIR/code2.json" \
+			     --add-tracefile "$STAT_DIR/code1.json" \
+			     --add-tracefile "$STAT_DIR/code2.json" \
                              --add-tracefile "$STAT_DIR/code3.json" \
                              --add-tracefile "$STAT_DIR/code4.json" \
                              --add-tracefile "$STAT_DIR/code5.json" \
                              --add-tracefile "$STAT_DIR/code6.json" \
                              --add-tracefile "$STAT_DIR/code7.json" \
                              --html --html-details -o "$STAT_DIR/html/coverage.html" || { echo "ERROR: cannot cover" ; }
-    open "$STAT_DIR/html/coverage.html"
+    
+   if [[ $OSTYPE == 'darwin'* ]]; then #if MACOS
+       open "$STAT_DIR/html/coverage.html"
+    else
+       xdg-open "$STAT_DIR/html/coverage.html"
+    fi
+    
     exit 0 ;
 fi
 
@@ -195,7 +202,12 @@ if [[ "$coverage" == "coverage" ]]; then
     coverage_other 0
     echo "source directory $SRC_DIR"
     gcovr --filter "$SRC_DIR" --add-tracefile "$STAT_DIR/code0.json" --html --html-details -o "$STAT_DIR/html/coverage.html"
-    open "$STAT_DIR/html/coverage.html"
+
+   if [[ $OSTYPE == 'darwin'* ]]; then #if MACOS
+       open "$STAT_DIR/html/coverage.html"
+    else
+       xdg-open "$STAT_DIR/html/coverage.html"
+    fi
 fi
 
 

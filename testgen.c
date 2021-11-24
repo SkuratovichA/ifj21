@@ -334,8 +334,8 @@ int main() {
     );
 
 
-    char *description14 = "for cycles. Single for cycle.";
-    int retcode14 = ERROR_NOERROR;
+    char *description14 = "for cycles. Single for cycles with an error.";
+    int retcode14 = ERROR_SYNTAX;
     pfile_t *pf14 = Pfile.ctor(
             PROLOG
             "function main(iterations : number )  "NL
@@ -350,14 +350,12 @@ int main() {
     int retcode15 = ERROR_NOERROR;
     pfile_t *pf15 = Pfile.ctor(
             PROLOG
-            "function main(iterations : number )      "NL
-            "    for i=0,i<iterations do              "NL
-            "        for j=0,i<iterations do          "NL
-            "            write(\"hello, 9 times\")    "NL
-            "        end                              "NL
-            "    end                                  "NL
-            "end                                      "NL
-            "main(3)                                  "NL
+            "function main(iterations : number )  "NL
+            "    for i=0,iterations do            "NL
+            "        write(\"hello, 10 times\")   "NL
+            "    end                              "NL
+            "end                                  "NL
+            "main(10)                             "NL
     );
 
     char *description16 = "empty function";
@@ -989,6 +987,437 @@ int main() {
 
     );
 
+    char *description62 = "for cycles";
+    int retcode62 = ERROR_NOERROR;
+    pfile_t *pf62 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    for i=0,iterations,1 do              "NL
+            "        for j=0,i<iterations,1 do        "NL
+            "            write(\"hello, 9 times\")    "NL
+            "        end                              "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(3)                                  "NL
+    );
+
+    char *description63 = "for cycles";
+    int retcode63 = ERROR_NOERROR;
+    pfile_t *pf63 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    for i=0,iterations,2 do              "NL
+            "        for j=0,i<iterations,2 do        "NL
+            "            write(\"hello, many times\") "NL
+            "        end                              "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(4)                                  "NL
+    );
+
+    char *description64 = "for cycles";
+    int retcode64 = ERROR_NOERROR;
+    pfile_t *pf64 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    for i=0,iterations do                "NL
+            "        for j=0,i<iterations do          "NL
+            "            write(\"hello, 9 times\")    "NL
+            "        end                              "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(3)                                  "NL
+    );
+
+    char *description65 = "break keyword in repeat-until";
+    int retcode65 = ERROR_NOERROR;
+    pfile_t *pf65 = Pfile.ctor(
+            PROLOG
+            "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"NL
+            "    write(\"I'm about 2bee printed only once!\")    "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function yours()                                    "NL
+            "   local a : boolean = true                         "NL
+            "   repeat                                           "NL
+            "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()  "NL
+            "                                                    "NL
+            "       a = false                                    "NL
+            "       break                                        "NL
+            "   until a == true                                  "NL
+            "end                                                 "NL
+            "yours()                                             "NL
+    );
+
+    char *description66 = "for cycles, break keyword";
+    int retcode66 = ERROR_NOERROR;
+    pfile_t *pf66 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    for i=0,iterations do                "NL
+            "       write(\"I'm gonna be printed\\n\")"NL
+            "        for j=0,i<iterations do          "NL
+            "            break                        "NL
+            "            write(\"hello, 9 times\")    "NL
+            "        end                              "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(3)                                  "NL
+    );
+
+    char *description67 = "while cycle.";
+    int retcode67 = ERROR_NOERROR;
+    pfile_t *pf67 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )              "NL
+            "    local i : integer = 10                       "NL
+            "    while i ~= 0 do                              "NL
+            "       write(\"I'm gonna be printed 5 times\\n\")"NL
+            "       i = i - 2                                 "NL
+            "    end                                          "NL
+            "end                                              "NL
+            "main(3)                                          "NL
+    );
+
+    char *description68 = "while cycle.";
+    int retcode68 = ERROR_NOERROR;
+    pfile_t *pf68 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )                    "NL
+            "    local i : integer = 3                              "NL
+            "    while i ~= 0 do                                    "NL
+            "       local j : integer = 3                           "NL
+            "       while j ~= 0 do                                 "NL
+            "          local k : integer = 3                        "NL
+            "          while k ~= 0 do                              "NL
+            "              write(\"hello\")                         "NL
+            "              k = k - 1                                "NL
+            "          end                                          "NL
+            "          j = j - 1                                    "NL
+            "       end                                             "NL
+            "       i = i - 2                                       "NL
+            "    end                                                "NL
+            "end                                                    "NL
+            "main(3)                                                "NL
+    );
+
+    char *description69 = "while cycle. Break inside while";
+    int retcode69 = ERROR_NOERROR;
+    pfile_t *pf69 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )                    "NL
+            "    local i : integer = 3                              "NL
+            "    while i ~= 0 do                                    "NL
+            "        local j : integer = 3                          "NL
+            "        while j ~= 0 do                                "NL
+            "           local k : integer = 3                       "NL
+            "           while k ~= 0 do                             "NL
+            "               break                                   "NL
+            "               write(\"hello\")                        "NL
+            "               k = k - 1                               "NL
+            "           end                                         "NL
+            "           j = j - 1                                   "NL
+            "        end                                            "NL
+            "        i = i - 2                                      "NL
+            "    end                                                "NL
+            "end                                                    "NL
+            "main(3)                                                "NL
+    );
+
+    char *description70 = "while cycle. Break inside while, break after a break";
+    int retcode70 = ERROR_NOERROR;
+    pfile_t *pf70 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )                    "NL
+            "    local i : integer = 3                              "NL
+            "    while i ~= 0 do                                    "NL
+            "        local j : integer = 3                          "NL
+            "        while j ~= 0 do                                "NL
+            "           local k : integer = 3                       "NL
+            "           while k ~= 0 do                             "NL
+            "               break                                   "NL
+            "               write(\"hello\")                        "NL
+            "               k = k - 1                               "NL
+            "           end                                         "NL
+            "           break                                       "NL
+            "           j = j - 1                                   "NL
+            "        end                                            "NL
+            "        i = i - 2                                      "NL
+            "    end                                                "NL
+            "end                                                    "NL
+            "main(3)                                                "NL
+    );
+
+    char *description71 = "while cycle. Break inside if statement";
+    int retcode71 = ERROR_NOERROR;
+    pfile_t *pf71 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )                    "NL
+            "    local i : integer = 3                              "NL
+            "    while i ~= 0 do                                    "NL
+            "        local j : integer = 3                          "NL
+            "        while j ~= 0 do                                "NL
+            "           local k : integer = 3                       "NL
+            "           while k ~= 0 do                             "NL
+            "               if k > 0 then break end                 "NL
+            "               write(\"hello\")                        "NL
+            "               k = k - 1                               "NL
+            "           end                                         "NL
+            "           break                                       "NL
+            "           j = j - 1                                   "NL
+            "        end                                            "NL
+            "        i = i - 2                                      "NL
+            "    end                                                "NL
+            "end                                                    "NL
+            "main(3)                                                "NL
+    );
+
+    char *description72 = "while cycle. Break inside elseif statement";
+    int retcode72 = ERROR_NOERROR;
+    pfile_t *pf72 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )                    "NL
+            "    local i : integer = 3                              "NL
+            "    while i ~= 0 do                                    "NL
+            "        local j : integer = 3                          "NL
+            "        while j ~= 0 do                                "NL
+            "           local k : integer = 3                       "NL
+            "           while k ~= 0 do                             "NL
+            "               if k > 0 then                           "NL
+            "               elseif k > 2 then                       "NL
+            "                   break                               "NL
+            "               end                                     "NL
+            "               write(\"hello\")                        "NL
+            "               k = k - 1                               "NL
+            "           end                                         "NL
+            "           break                                       "NL
+            "           j = j - 1                                   "NL
+            "        end                                            "NL
+            "        i = i - 2                                      "NL
+            "    end                                                "NL
+            "end                                                    "NL
+            "main(3)                                                "NL
+    );
+
+    char *description73 = "while cycle. Break inside elseif statement #2";
+    int retcode73 = ERROR_NOERROR;
+    pfile_t *pf73 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )                    "NL
+            "    local i : integer = 3                              "NL
+            "    while i ~= 0 do                                    "NL
+            "        local j : integer = 3                          "NL
+            "        while j ~= 0 do                                "NL
+            "           local k : integer = 3                       "NL
+            "           while k ~= 0 do                             "NL
+            "               if k > 0 then                           "NL
+            "               elseif k > 2 then                       "NL
+            "                   break                               "NL
+            "                   write (\"Something after break\")   "NL
+            "               end                                     "NL
+            "               write(\"hello\")                        "NL
+            "               k = k - 1                               "NL
+            "           end                                         "NL
+            "           break                                       "NL
+            "           j = j - 1                                   "NL
+            "        end                                            "NL
+            "        i = i - 2                                      "NL
+            "    end                                                "NL
+            "end                                                    "NL
+            "main(3)                                                "NL
+    );
+
+    char *description74 = "while cycle. Break inside elseif statement #2";
+    int retcode74 = ERROR_NOERROR;
+    pfile_t *pf74 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )                    "NL
+            "    local i : integer = 3                              "NL
+            "    while i ~= 0 do                                    "NL
+            "        local j : integer = 3                          "NL
+            "        while j ~= 0 do                                "NL
+            "           local k : integer = 3                       "NL
+            "           while k ~= 0 do                             "NL
+            "               if k > 0 then                           "NL
+            "               elseif k > 2 then                       "NL
+            "               else                                    "NL
+            "                   break                               "NL
+            "               end                                     "NL
+            "               write(\"hello\")                        "NL
+            "               k = k - 1                               "NL
+            "           end                                         "NL
+            "           break                                       "NL
+            "           j = j - 1                                   "NL
+            "        end                                            "NL
+            "        i = i - 2                                      "NL
+            "    end                                                "NL
+            "end                                                    "NL
+            "main(3)                                                "NL
+    );
+
+    char *description75 = "while cycle. Break inside elseif statement #2";
+    int retcode75 = ERROR_NOERROR;
+    pfile_t *pf75 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )                    "NL
+            "    local i : integer = 3                              "NL
+            "    while i ~= 0 do                                    "NL
+            "        local j : integer = 3                          "NL
+            "        while j ~= 0 do                                "NL
+            "           local k : integer = 3                       "NL
+            "           while k ~= 0 do                             "NL
+            "               if k > 0 then                           "NL
+            "               elseif k > 2 then                       "NL
+            "               else                                    "NL
+            "                   break                               "NL
+            "                   write(\"Smth after break in else\") "NL
+            "               end                                     "NL
+            "               write(\"hello\")                        "NL
+            "               k = k - 1                               "NL
+            "           end                                         "NL
+            "           break                                       "NL
+            "           j = j - 1                                   "NL
+            "        end                                            "NL
+            "        i = i - 2                                      "NL
+            "    end                                                "NL
+            "end                                                    "NL
+            "main(3)                                                "NL
+    );
+
+    char *description76 = "while cycle. Break cannot be without a cycle";
+    int retcode76 = ERROR_SEMANTICS_OTHER;
+    pfile_t *pf76 = Pfile.ctor(
+            PROLOG
+            "function main() "NL
+            "   break        "NL
+            "end             "NL
+    );
+
+    char *description77 = "while cycle. Break cannot be without a cycle #1";
+    int retcode77 = ERROR_SEMANTICS_OTHER;
+    pfile_t *pf77 = Pfile.ctor(
+            PROLOG
+            "function main()            "NL
+            "   local a : integer = 10  "NL
+            "   if a == 10 then         "NL
+            "       break               "NL
+            "   end                     "NL
+            "end                        "NL
+    );
+
+    char *description78 = "while cycle. Break cannot be without a cycle #2";
+    int retcode78 = ERROR_SEMANTICS_OTHER;
+    pfile_t *pf78 = Pfile.ctor(
+            PROLOG
+            "function main()            "NL
+            "   local a : integer = 10  "NL
+            "   if a ~= 10 then         "NL
+            "   elseif a == 10 then     "NL
+            "       break               "NL
+            "   end                     "NL
+            "end                        "NL
+    );
+
+    char *description79 = "while cycle. Break cannot be without a cycle #3";
+    int retcode79 = ERROR_SEMANTICS_OTHER;
+    pfile_t *pf79 = Pfile.ctor(
+            PROLOG
+            "function main()            "NL
+            "   local a : integer = 10  "NL
+            "   if a ~= 10 then         "NL
+            "   elseif a == 10 then     "NL
+            "   else                    "NL
+            "       break               "NL
+            "   end                     "NL
+            "end                        "NL
+    );
+
+    char *description80 = "for cycles, minus in the assignment";
+    int retcode80 = ERROR_NOERROR;
+    pfile_t *pf80 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    for i=0, -iterations, -1 do          "NL
+            "       write(\"I'm gonna be printed\\n\")"NL
+            "        for j=0, i<-iterations do        "NL
+            "            write(\"hello, n times\")    "NL
+            "        end                              "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(3)                                  "NL
+    );
+
+    char *description81 = "for cycles, minus in the assignment";
+    int retcode81 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf81 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : string )      "NL
+            "    for i=0, -iterations, -1 do          "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(\"helloo\")                         "NL
+    );
+
+    char *description82 = "for cycles, assignment in the condition.";
+    int retcode82 = ERROR_SYNTAX;
+    pfile_t *pf82 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    for i=0, b = 10, -1 do               "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(\"helloo\")                         "NL
+    );
+
+    char *description83 = "for cycles, assignment in the assignment part.";
+    int retcode83 = ERROR_SYNTAX;
+    pfile_t *pf83 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    local a : integer = 10               "NL
+            "    for i=0, 10, a = 20 do               "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(\"helloo\")                         "NL
+    );
+
+    char *description84 = "for cycles, type mismatch in the condition.";
+    int retcode84 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf84 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    local a : integer = 10               "NL
+            "    for i=0, true, 20 do                 "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(\"helloo\")                         "NL
+    );
+
+    char *description85 = "for cycles, type mismatch in the assignment.";
+    int retcode85 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf85 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    local a : integer = 10               "NL
+            "    for i=0, 20, true do                 "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(\"helloo\")                         "NL
+    );
+
+    char *description86 = "for cycles, no error.";
+    int retcode86 = ERROR_NOERROR;
+    pfile_t *pf86 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    local a : integer = 10               "NL
+            "    for a=0, 20, 2 do                    "NL
+            "       break                             "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(\"helloo\")                         "NL
+    );
+
 
     TEST_CASE(1);
     TEST_CASE(2);
@@ -1056,6 +1485,33 @@ int main() {
     TEST_CASE(59);
 
     TEST_CASE(60);
+    TEST_CASE(61);
+    TEST_CASE(62);
+    TEST_CASE(63);
+    TEST_CASE(64);
+    TEST_CASE(65);
+    TEST_CASE(66);
+    TEST_CASE(67);
+    TEST_CASE(68);
+    TEST_CASE(69);
 
+    TEST_CASE(70);
+    TEST_CASE(71);
+    TEST_CASE(72);
+    TEST_CASE(73);
+    TEST_CASE(74);
+    TEST_CASE(75);
+    TEST_CASE(76);
+    TEST_CASE(77);
+    TEST_CASE(78);
+    TEST_CASE(79);
+
+    TEST_CASE(80);
+    TEST_CASE(81);
+    TEST_CASE(82);
+    TEST_CASE(83);
+    TEST_CASE(84);
+    TEST_CASE(85);
+    TEST_CASE(86);
     return 0;
 }
