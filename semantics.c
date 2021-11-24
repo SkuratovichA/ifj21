@@ -193,9 +193,9 @@ static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin
 
     // set params and returns manually if there's a builtin function.
     if (is_builtin) {
+        debug_msg_s("\tIn case of builtin function, there's need to set parameters manually\n");
         Builtin(newbe);
     } else {
-        debug_msg_s("\tIn case of builtin function, there's need to set parameters manually\n");
         newbe->declaration.returns = Dynstring.ctor("");
         soft_assert(newbe->declaration.returns != NULL, ERROR_INTERNAL);
         newbe->declaration.params = Dynstring.ctor("");
