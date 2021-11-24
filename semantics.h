@@ -46,6 +46,7 @@ typedef enum conv_type {
 typedef enum semantic_state {
     SEMANTIC_DISABLED,
     SEMANTIC_IDLE,
+    SEMANTIC_PARENTS,
     SEMANTIC_OPERAND,
     SEMANTIC_UNARY,
     SEMANTIC_BINARY,

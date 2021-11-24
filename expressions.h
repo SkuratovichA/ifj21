@@ -72,11 +72,10 @@ typedef enum item_type {
  * List of expression types.
  */
 typedef enum expr_type {
-    EXPR(DEFAULT),
-    EXPR(RETURN),
-    EXPR(LIST),
-    EXPR(GLOBAL),
-    EXPR(FUNC),
+    EXPR(DEFAULT), // while, for, until, if, assignment (local)
+    EXPR(RETURN), // return
+    EXPR(GLOBAL), // function call
+    EXPR(FUNC), // assignment, function call
     EXPR(INVALID)
 } expr_type_t;
 

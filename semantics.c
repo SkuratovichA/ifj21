@@ -427,7 +427,7 @@ static bool Check_expression(expr_semantics_t *self) {
     }
 
     // Check if variable is exists in symtable
-    if (self->sem_state == SEMANTIC_OPERAND) {
+    if (self->sem_state == SEMANTIC_OPERAND || self->sem_state == SEMANTIC_PARENTS) {
         if (self->first_operand.type == TOKEN_ID) {
             return is_var_exists(self->first_operand, self);
         }
