@@ -17,7 +17,7 @@
           case    ERROR_DEFINITION:                                          \
           case    ERROR_TYPE_MISSMATCH:                                      \
           case    ERROR_FUNCTION_SEMANTICS:                                  \
-          case    ERROR_SEMANTICS_TYPE_INCOMPATABLE:                         \
+          case    ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY:                         \
           case    ERROR_SEMANTICS_OTHER:                                     \
               _filname = "../tests/semantic_errors/sasha" #number "_";        \
               break;                                                         \
@@ -1493,8 +1493,88 @@ int main() {
     pfile_t *pf89 = Pfile.ctor(
             PROLOG
             "function main()"NL
-            "   12;13       "NL
+            "   ;13         "NL
             "end            "NL
+    );
+
+    char *description90 = "no errors";
+    int retcode90 = ERROR_NOERROR;
+    pfile_t *pf90 = Pfile.ctor(
+            PROLOG
+            "function main()             "NL
+            "   local a : number = 90a=2 "NL
+            "end                         "NL
+    );
+
+
+    char *description91 = "no errors, braced expressions";
+    int retcode91 = ERROR_NOERROR;
+    pfile_t *pf91 = Pfile.ctor(
+            PROLOG
+            "function write_numbers(counter : integer)"NL
+            "   while (counter) > 0 do                "NL
+            "        write(counter, \"\n\")           "NL
+            "    counter = counter - 1                "NL
+            "    end                                  "NL
+            "end                                      "NL
+    );
+
+    char *description92 = "LISP HAHA";
+    int retcode92 = ERROR_NOERROR;
+    pfile_t *pf92 = Pfile.ctor(
+            PROLOG
+            "function write_numbers(counter : integer)   "NL
+            "   while (((((counter)))) > 0) do           "NL
+            "        write(((((counter)))), \"\n\")      "NL
+            "    counter = (((((counter) - 1) + 2)) - 1) "NL
+            "    end                                     "NL
+            "end                                         "NL
+    );
+
+    char *description93 = "no errors, comments";
+    int retcode93 = ERROR_NOERROR;
+    pfile_t *pf93 = Pfile.ctor(
+
+            "require \"ifj21\"                                                                            "NL
+            "                                                                                             "NL
+            "function write_numbers(counter : integer)                                                    "NL
+            "    while (counter) > 0 do                                                                   "NL
+            "        write(counter, \"\n\")                                                               "NL
+            "        counter = counter - 1                                                                "NL
+            "    end                                                                                      "NL
+            "end                                                                                          "NL
+            "function main()                                                                              "NL
+            "    local counter : integer = readi()                                                        "NL
+            "                                                                                             "NL
+            "    if counter == 0 then                                                                     "NL
+            "        write(\"Error\", \" enter\",                                                         "NL
+            "              \" another\", \" number\",                                                     "NL
+            "              \", because \", 0, \" is wrong\",\"\n\")                                       "NL
+            "        return                                                                               "NL
+            "    else                                                                                     "NL
+            "        write_numbers(counter)                                                               "NL
+            "    end                                                                                      "NL
+            "                                                                                             "NL
+            "end                                                                                          "NL
+            "                                                                                             "NL
+            "--[[                                                                                         "NL
+            "function main()                                                                              "NL
+            "    local counter : integer = readi()                                                        "NL
+            "                                                                                             "NL
+            "    if counter == 0 then                                                                     "NL
+            "        write(\"Error\", \" enter\",                                                         "NL
+            "              \" another\", \" number\",                                                     "NL
+            "              \", because \", 0, \" is wrong\",\"\n\")                                       "NL
+            "        return                                                                               "NL
+            "    else                                                                                     "NL
+            "        write_numbers(counter)                                                               "NL
+            "    end                                                                                      "NL
+            "                                                                                             "NL
+            "end                                                                                          "NL
+            "]]                                                                                           "NL
+            "                                                                                             "NL
+            "-- main()                                                                                    "NL
+            "                                                                                             "NL
     );
 
     TEST_CASE(1);
@@ -1594,6 +1674,11 @@ int main() {
     TEST_CASE(87);
     TEST_CASE(88);
     TEST_CASE(89);
+
+    TEST_CASE(90);
+    TEST_CASE(91);
+    TEST_CASE(92);
+    TEST_CASE(93);
 
     return 0;
 }
