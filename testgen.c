@@ -11,44 +11,43 @@
 #define PROLOG "require \"ifj21\" \n"
 
 #define TEST_CASE(number)                                                    \
-  do {                                                                       \
+  do {                                                                      \
       char *_filname;                                                        \
       switch (retcode##number) {                                             \
-          case_5 (ERROR_DEFINITION,                                          \
-                  ERROR_TYPE_MISSMATCH,                                      \
-                  ERROR_FUNCTION_SEMANTICS,                                  \
-                  ERROR_SEMANTICS_TYPE_INCOMPATABLE,                         \
-                  ERROR_SEMANTICS_OTHER                                      \
-                  ):                                                         \
-              _filname = "../tests/semantic_errors/sasha" #number "_";       \
+          case    ERROR_DEFINITION:                                          \
+          case    ERROR_TYPE_MISSMATCH:                                      \
+          case    ERROR_FUNCTION_SEMANTICS:                                  \
+          case    ERROR_SEMANTICS_TYPE_INCOMPATABLE:                         \
+          case    ERROR_SEMANTICS_OTHER:                                     \
+              _filname = "../tests/semantic_errors/sasha" #number "_";        \
               break;                                                         \
           case ERROR_NOERROR:                                                \
-              _filname = "../tests/without_errors/sasha" #number "_";        \
+              _filname = "../tests/without_errors/sasha" #number "_";         \
               break;                                                         \
           case ERROR_SYNTAX:                                                 \
-              _filname = "../tests/syntax_errors/sasha" #number "_";         \
+              _filname = "../tests/syntax_errors/sasha" #number "_";          \
               break;                                                         \
           default:                                                           \
-              debug_msg_s("Undefined error code: %d\n", retcode##number);    \
-              _filname = "sasha";                                            \
+              debug_msg_s("Undefined error code: %d\n", retcode##number);     \
+              _filname = "sasha";                                             \
       }                                                                      \
-      dynstring_t *filnam = Dynstring.ctor(_filname);                        \
-      Dynstring.append(filnam, retcode ## number + '0');                     \
-      Dynstring.cat(filnam, Dynstring.ctor(".tl"));                          \
-      FILE *fil = fopen(Dynstring.c_str(filnam), "w");                       \
-      assert(fil);                                                           \
-      fprintf(fil, "-- test case %d.\n"                                      \
+      dynstring_t *filnam = Dynstring.ctor(_filname);                          \
+      Dynstring.append(filnam, retcode ## number + '0');                      \
+      Dynstring.cat(filnam, Dynstring.ctor(".tl"));                           \
+      FILE *fil = fopen(Dynstring.c_str(filnam), "w");                         \
+      assert(fil);                                                            \
+      fprintf(fil, "-- test case %d.\n"                                       \
                   "-- Description : %s\n\n"                                  \
                   "-- Expected : '%d'\n",                                    \
                       number, description ## number, retcode ## number);     \
-          fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                \
-          fclose(fil);                                                       \
-      Pfile.dtor(pf ## number);                                              \
-      debug_msg_s("file created: "                                           \
+          fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                  \
+          fclose(fil);                                                        \
+      Pfile.dtor(pf ## number);                                               \
+      debug_msg_s("file created: "                                            \
           "%s %s%c.tl\n",                                                    \
-          Dynstring.c_str(filnam),                                           \
-          _filname, retcode##number + '0');                                  \
-      Dynstring.dtor(filnam);                                                \
+          Dynstring.c_str(filnam),                                            \
+          _filname, retcode##number + '0');                                   \
+      Dynstring.dtor(filnam);                                                 \
   } while (0)
 
 
@@ -519,20 +518,20 @@ int main() {
             "    return \"the whole project was written by a cat \"          "NL
             "end                                                             "NL
 
-            "function main()                                                  "NL
-            " local you : string = \"atata\"                                 "NL
-            "     repeat                                                     "NL
-            "         repeat                                                 "NL
-            "             repeat                                             "NL
-            "                 repeat                                         "NL
-            "                     repeat                                     "NL
-            "                         repeat                                 "NL
-            "                             local not_true : string = me()     "NL
-            "                              write(not_true)                   "NL
-            "                         until false                            "NL
-            "    return                                                      "NL
-            "end                                                             "NL
-            "main()                                                          "NL
+            "function main()                                               "NL
+            "   local you : string = \"atata\"                             "NL
+            "   repeat                                                     "NL
+            "       repeat                                                 "NL
+            "           repeat                                             "NL
+            "               repeat                                         "NL
+            "                   repeat                                     "NL
+            "                       repeat                                 "NL
+            "                           local not_true : string = me()     "NL
+            "                            write(not_true)                   "NL
+            "                       until false                            "NL
+            "                       return                                 "NL
+            "end                                                           "NL
+            "main()                                                        "NL
     );
 
     char *description26 = "bad returns";
@@ -1285,7 +1284,7 @@ int main() {
     );
 
     char *description76 = "while cycle. Break cannot be without a cycle";
-    int retcode76 = ERROR_SEMANTICS_OTHER;
+    int retcode76 = ERROR_SYNTAX;
     pfile_t *pf76 = Pfile.ctor(
             PROLOG
             "function main() "NL
@@ -1294,7 +1293,7 @@ int main() {
     );
 
     char *description77 = "while cycle. Break cannot be without a cycle #1";
-    int retcode77 = ERROR_SEMANTICS_OTHER;
+    int retcode77 = ERROR_SYNTAX;
     pfile_t *pf77 = Pfile.ctor(
             PROLOG
             "function main()            "NL
@@ -1306,7 +1305,7 @@ int main() {
     );
 
     char *description78 = "while cycle. Break cannot be without a cycle #2";
-    int retcode78 = ERROR_SEMANTICS_OTHER;
+    int retcode78 = ERROR_SYNTAX;
     pfile_t *pf78 = Pfile.ctor(
             PROLOG
             "function main()            "NL
@@ -1319,7 +1318,7 @@ int main() {
     );
 
     char *description79 = "while cycle. Break cannot be without a cycle #3";
-    int retcode79 = ERROR_SEMANTICS_OTHER;
+    int retcode79 = ERROR_SYNTAX;
     pfile_t *pf79 = Pfile.ctor(
             PROLOG
             "function main()            "NL
