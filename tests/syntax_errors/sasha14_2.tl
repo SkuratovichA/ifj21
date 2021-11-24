@@ -1,6 +1,12 @@
 -- test case 14.
--- Description : expression error
+-- Description : for cycles. Single for cycles with an error.
 
 -- Expected : '2'
 require "ifj21" 
- function funnnn()AAAAA_ERRORRR() +++ lol end 
+function main(iterations : number )  
+    for i=0,i<iterations do          
+        write("hello, 10 times")   
+    end                              
+end                                  
+main(10)                             
+
