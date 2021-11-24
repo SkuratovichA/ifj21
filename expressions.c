@@ -18,14 +18,14 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmacro-redefined"
 //undef debug macros
-#define debug_err(...)
-#define debug_msg(...)
-#define debug_msg_stdout(...)
-#define debug_msg_stderr(...)
-#define debug_todo(...)
-#define debug_assert(cond)
-#define debug_msg_s(...)
-#define DEBUG_SEP
+//#define debug_err(...)
+//#define debug_msg(...)
+//#define debug_msg_stdout(...)
+//#define debug_msg_stderr(...)
+//#define debug_todo(...)
+//#define debug_assert(cond)
+//#define debug_msg_s(...)
+//#define DEBUG_SEP
 #pragma GCC diagnostic pop
 
 
@@ -189,6 +189,8 @@ static char *op_to_string(op_list_t op) {
  */
 static char *item_to_string(item_type_t type) {
     switch (type) {
+        case ITEM_TYPE_TOKEN:
+            return "token";
         case ITEM_TYPE_EXPR:
             return "expr";
         case ITEM_TYPE_LT:
@@ -232,6 +234,9 @@ static stack_item_t *stack_item_ctor(item_type_t type, token_t *token) {
 
     if (type == ITEM_TYPE_TOKEN || type == ITEM_TYPE_EXPR) {
         new_item->token = (token) ? *token : Scanner.get_curr_token();
+        if (new_item->token.type == TOKEN_ID) {
+            new_item->token.attribute.id = Dynstring.ctor(Dynstring.c_str(new_item->token.attribute.id));
+        }
     }
 
     debug_msg("Created: \"%s\"\n", to_str(new_item));
@@ -264,6 +269,7 @@ static stack_item_t *stack_item_copy(stack_item_t *item) {
  */
 static void stack_item_dtor(void *item) {
     debug_msg("Deleted: \"%s\"\n", to_str(item));
+
     free(item);
 }
 
@@ -344,12 +350,13 @@ static bool expression(sstack_t *r_stack, expr_semantics_t *expr_sem) {
  * @param r_stack stack with handle (rule).
  * @return bool.
  */
-static bool expression_f(sstack_t *r_stack) {
+static bool expression_f(sstack_t *r_stack, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: expr\n");
 
     stack_item_t *item;
 
     IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_EXPR)
+        Semantics.add_operand(expr_sem, item->token);
         Stack.pop(r_stack, stack_item_dtor);
         return true;
     }
@@ -430,13 +437,13 @@ static bool operator(sstack_t *r_stack, expr_semantics_t *expr_sem) {
  * @param func_entries count of entries to functions.
  * @return bool.
  */
-static bool other_arguments(sstack_t *r_stack, int *func_entries) {
+static bool other_arguments(sstack_t *r_stack, expr_semantics_t *expr_sem, int *func_entries) {
     debug_msg("rule: , expr <other_arguments> | )\n");
 
     // ,
     if (single_op(r_stack, OP_COMMA)) {
         // expr <other_arguments>
-        return expression_f(r_stack) && other_arguments(r_stack, func_entries);
+        return expression_f(r_stack, expr_sem) && other_arguments(r_stack, expr_sem, func_entries);
     } else {
         // )
         if (single_op(r_stack, OP_RPAREN)) {
@@ -457,13 +464,13 @@ static bool other_arguments(sstack_t *r_stack, int *func_entries) {
  * @param func_entries count of entries to functions.
  * @return bool.
  */
-static bool arguments(sstack_t *r_stack, int *func_entries) {
+static bool arguments(sstack_t *r_stack, expr_semantics_t *expr_sem, int *func_entries) {
     debug_msg("EXPECTED: expr <other_arguments> | )\n");
 
     // expr
-    if (expression_f(r_stack)) {
+    if (expression_f(r_stack, expr_sem)) {
         // <other_arguments>
-        return other_arguments(r_stack, func_entries);
+        return other_arguments(r_stack, expr_sem, func_entries);
     } else {
         // )
         if (single_op(r_stack, OP_RPAREN)) {
@@ -516,18 +523,15 @@ static bool check_rule(sstack_t *r_stack, int *func_entries, expr_semantics_t *e
                 Stack.pop(r_stack, stack_item_dtor);
                 return expression(r_stack, expr_sem) && single_op(r_stack, OP_RPAREN);
             // id | id ( <arguments>
-            // i need to declare a variable in this case, so I wrote this commadot
-            // never ask why it works like that :D
-            case OP_ID:;
-                token_t tmp_token = item->token;
+            case OP_ID:
+                Semantics.add_operand(expr_sem, item->token);
                 Stack.pop(r_stack, stack_item_dtor);
 
                 if (Stack.peek(r_stack) != NULL) {
-                    expr_sem->sem_state = SEMANTIC_DISABLED;
-                    return single_op(r_stack, OP_LPAREN) && arguments(r_stack, func_entries);
+                    expr_sem->sem_state = SEMANTIC_FUNCTION;
+                    return single_op(r_stack, OP_LPAREN) && arguments(r_stack, expr_sem, func_entries);
                 }
 
-                Semantics.add_operand(expr_sem, tmp_token);
                 return true;
             default:
                 break;
@@ -638,8 +642,12 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
     }
 
     debug_msg("\n");
-    if (expr_sem->sem_state != SEMANTIC_DISABLED && expr_sem->sem_state != SEMANTIC_IDLE) {
+    if (expr_sem->sem_state != SEMANTIC_IDLE) {
         debug_msg("-- EXPRESSION SEMANTICS --\n");
+        if (expr_sem->sem_state == SEMANTIC_FUNCTION) {
+            debug_msg("Operand #1 = \"%s\"\n", Scanner.to_string(expr_sem->first_operand.type));
+            debug_msg("Types = \"%s\"\n", Dynstring.c_str(expr_sem->func_types));
+        }
         if (expr_sem->sem_state == SEMANTIC_OPERAND) {
             debug_msg("Operand #1 = \"%s\"\n", Scanner.to_string(expr_sem->first_operand.type));
         } else if (expr_sem->sem_state == SEMANTIC_UNARY) {
@@ -662,9 +670,9 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
     }
 
     // Generate code here
-    if (expr_sem->sem_state != SEMANTIC_DISABLED &&
-        expr_sem->sem_state != SEMANTIC_IDLE &&
-        expr_sem->sem_state != SEMANTIC_PARENTS) {
+    if (expr_sem->sem_state != SEMANTIC_IDLE &&
+        expr_sem->sem_state != SEMANTIC_PARENTS &&
+        expr_sem->sem_state != SEMANTIC_FUNCTION) {
         Generator.expression(expr_sem);
     }
 
