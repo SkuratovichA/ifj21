@@ -429,7 +429,7 @@ static bool type_compatability(expr_semantics_t *self) {
         }
     }
 
-    Errors.set_error(ERROR_SEMANTICS_TYPE_INCOMPATABLE);
+    Errors.set_error(ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
     return false;
 }
 

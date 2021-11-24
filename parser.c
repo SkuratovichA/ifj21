@@ -172,7 +172,6 @@ static bool break_() {
         Errors.set_error(ERROR_SYNTAX);
         return false;
     }
-    Generator.instr_break();
 
     return true;
 }
