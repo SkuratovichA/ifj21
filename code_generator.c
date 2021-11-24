@@ -560,7 +560,7 @@ static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR("\n# condition - else part");
     generate_cond_label(if_scope_id, cond_num - 1);
 
-    ADD_INSTR_PART("JUMPIFNEQ $");
+    ADD_INSTR_PART("JUMPIFNEQ $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end GF@%expr_result bool@true");
     ADD_INSTR_TMP();
@@ -850,7 +850,7 @@ static void generate_expression(expr_semantics_t *expr) {
             ADD_INSTR("EQS");
             break;
         case OP_NE:
-            ADD_INSTR("EQS"
+            ADD_INSTR("EQS \n"
                       "NOTS");
             break;
         case OP_NOT:
@@ -896,6 +896,7 @@ static void initialise_generator() {
     instructions.outer_cond_id = 0;
     instructions.cond_cnt = 0;
     instructions.label_cnt = 0;
+    instructions.cond_info = Dynstring.ctor("");
     // sets active instructions list
     instrList = instructions.startList;
 }
@@ -905,6 +906,7 @@ static void dtor() {
     List.dtor(instructions.startList, (void (*)(void *)) (Dynstring.dtor)); // use Dynstring.dtor or free?
     List.dtor(instructions.instrListFunctions, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
     List.dtor(instructions.mainList, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
+    Dynstring.dtor(instructions.cond_info);
     Dynstring.dtor(tmp_instr);
 }
 
@@ -925,6 +927,16 @@ static void Print_instr_list(instr_list_t instr_list_type) {
     }
 }
 
+static void push_cond_info() {
+    Dynstring.append(instructions.cond_info, instructions.outer_cond_id);
+    Dynstring.append(instructions.cond_info, instructions.cond_cnt);
+}
+
+static void pop_cond_info() {
+    instructions.outer_cond_id = Dynstring.c_str(instructions.cond_info)[Dynstring.len(instructions.cond_info) - 2];
+    instructions.cond_cnt = Dynstring.c_str(instructions.cond_info)[Dynstring.len(instructions.cond_info) - 1];
+    Dynstring.trunc_to_len(instructions.cond_info, Dynstring.len(instructions.cond_info) - 2);
+}
 
 /**
  * Interface to use when dealing with code generator.
@@ -960,4 +972,6 @@ const struct code_generator_interface_t Generator = {
         .dtor = dtor,
         .print_instr_list = Print_instr_list,
         .var_assignment = generate_var_assignment,
+        .pop_cond_info = pop_cond_info,
+        .push_cond_info = push_cond_info,
 };

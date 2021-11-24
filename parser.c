@@ -178,11 +178,6 @@ static bool cond_body(pfile_t *pfile) {
             }
             SYMSTACK_POP();
 
-            // generate start of end block
-            Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
-            instructions.cond_cnt = 0;
-            instructions.outer_cond_id = 0;
-
             return true;
 
         case KEYWORD_elseif:
@@ -204,8 +199,7 @@ static bool cond_body(pfile_t *pfile) {
 
             // generate start of end block
             Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
-            instructions.cond_cnt = 0;
-            instructions.outer_cond_id = 0;
+            Generator.pop_cond_info();
 
             return true;
         default:
@@ -228,7 +222,6 @@ static bool cond_stmt(pfile_t *pfile) {
 
     if (!Expr.parse(pfile, true, NULL)) {
         debug_msg("\n\t\t[error] Expression parsing failed.\n");
-        instructions.cond_cnt = 0;
         return false;
     }
     EXPECTED(KEYWORD_then);
@@ -401,7 +394,10 @@ static bool if_statement(pfile_t *pfile) {
     EXPECTED(KEYWORD_if);
     SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
 
-    instructions.outer_cond_id = Symstack.get_scope_info(symstack).unique_id;
+    Generator.push_cond_info();
+
+    instructions.outer_cond_id = (char)Symstack.get_scope_info(symstack).unique_id;
+    instructions.cond_cnt = 0;
 
     return cond_stmt(pfile);
 }
@@ -638,9 +634,9 @@ static bool fun_body(pfile_t *pfile) {
                 break;
             case SCOPE_TYPE_do_cycle:
                 break;
-
-                // else <....> end
             case SCOPE_TYPE_condition:
+                Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
+                Generator.pop_cond_info();
                 break;
             default:
                 debug_msg("Shouldn't be here.\n");

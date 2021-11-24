@@ -17,8 +17,9 @@ typedef struct {
     bool in_loop;                       // var that indicates whether we are in loop
     size_t outer_loop_id;               // id of scope of the most outer loop
     list_item_t *before_loop_start;     // pointer to the most outer loop (if !in_loop -> NULL)
-    size_t outer_cond_id;               // id of scope of the most inner if
-    size_t cond_cnt;                    // counter of elseif/else branches after if
+    char outer_cond_id;                 // id of scope of the most outer if
+    char cond_cnt;                      // counter of elseif/else branches after if
+    dynstring_t *cond_info;             // info about nested if
     size_t label_cnt;                   // labels counter
 } instructions_t;
 
@@ -94,6 +95,9 @@ struct code_generator_interface_t {
     void (*dtor)(void);
 
     void (*print_instr_list)(instr_list_t);
+
+    void (*pop_cond_info)(void);
+    void (*push_cond_info)(void);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.
