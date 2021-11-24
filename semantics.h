@@ -194,7 +194,7 @@ struct semantics_interface_t {
 
     bool (*check_expression)(expr_semantics_t *);
 
-    bool (*check_return_semantics)(dynstring_t *, dynstring_t *);
+    bool (*check_signatures_compatibility)(dynstring_t *, dynstring_t *, int);
 
     char (*of_id_type)(int);
 

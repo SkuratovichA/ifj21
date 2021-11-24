@@ -114,11 +114,13 @@ static void Str_clear(dynstring_t *str) {
  * @param str dynstring_t to dtor.
  */
 static void Str_free(dynstring_t *str) {
-    if (str != NULL) {
-        free(str->str);
-    }
 
-    free(str);
+    if (str != NULL) {
+        if (str->str != NULL) {
+            free(str->str);
+        }
+        free(str);
+    }
 }
 
 /**
@@ -201,8 +203,8 @@ static void Trunc_to_len(dynstring_t *self, size_t new_len) {
  * @return pointer to the new dynstring_t object.
  */
 static dynstring_t *Str_dup(dynstring_t *s) {
-    soft_assert(s, ERROR_INTERNAL);
-    soft_assert(s->str, ERROR_INTERNAL);
+    soft_assert(s != NULL, ERROR_INTERNAL);
+    soft_assert(s->str != NULL, ERROR_INTERNAL);
 
     return Str_ctor(s->str);
 }

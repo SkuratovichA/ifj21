@@ -32,6 +32,20 @@ static void print_error_unexpected_token(const char *a, const char *b) {
     fprintf(stderr, "[error](syntax): Expected '%s', got '%s' instead\n", a, b);
 }
 
+#define GET_ID_SAFE(_idname)                                                                    \
+    do {                                                                                       \
+        if (Scanner.get_curr_token().type == TOKEN_ID) {                                       \
+            _idname = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));  \
+        }                                                                                      \
+    } while (0)
+
+#define CHECK_EXPR_SIGNATURES(accepted, received, errtype)                     \
+    do {                                                                      \
+        if (!Semantics.check_signatures_compatibility(accepted, received, errtype)) { \
+            goto err;                                                         \
+        }                                                                     \
+    } while(0)
+
 /** If there's a mismatch in number/type of parameters, then return false.
  */
 #define SEMANTIC_CHECK_FUNCTION_SIGNATURES(sym)                          \
@@ -72,7 +86,7 @@ static void print_error_unexpected_token(const char *a, const char *b) {
         Errors.set_error(ERROR_SYNTAX);                        \
         print_error_unexpected_token(Scanner.to_string(a),     \
         Scanner.to_string(Scanner.get_curr_token().type));     \
-        return false;                                          \
+        goto err;                                              \
     } while (0)
 
 /** Set an error code and return an error if there's a declaration error.
@@ -101,6 +115,7 @@ static void print_error_unexpected_token(const char *a, const char *b) {
             }                                                                 \
             if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) {            \
                 Errors.set_error(ERROR_LEXICAL);                              \
+                goto err;                                                     \
             }                                                                 \
         } else {                                                              \
             error_unexpected_token((p));                                      \
@@ -125,39 +140,59 @@ static void print_error_unexpected_token(const char *a, const char *b) {
 #define SEMANTICS_SYMTABLE_CHECK_AND_PUT(name, type)                     \
     do {                                                                \
         dynstring_t *_name = name;                                      \
-        symbol_t *_dummy_symbol;                                        \
+        symbol_t *_dummy_symbol = NULL;                                 \
         /* if name is already defined in the local scope */              \
         if (Symtable.get_symbol(local_table, _name, &_dummy_symbol)) {  \
             error_multiple_declaration(_name);                          \
-            return false;                                               \
+            goto err;                                                   \
         }                                                               \
         /* if there exists a function with the same name */             \
         if (Symtable.get_symbol(global_table, _name, &_dummy_symbol)) { \
             error_multiple_declaration(_name);                          \
-            return false;                                               \
+            goto err;                                                   \
         }                                                               \
         Symstack.put_symbol(symstack, _name, type);                     \
     } while (0)
 
+#define PARSE_EXPR(expr_type, received_signature)                      \
+    do {                                                              \
+        if (!Expr.parse(pfile, expr_type, received_signature)) {       \
+            debug_msg("\n\t\t[error] Expression parsing failed.\n");  \
+            goto err;                                                 \
+        }                                                             \
+    } while(0)
+
+#define PARSE_EXPR_LIST(expr_type, received_signature)                      \
+    do {                                                                   \
+        if (!Expr.parse_expr_list(pfile, expr_type, received_signature)) {  \
+            debug_msg("\n\t\t[error] Expression parsing failed.\n");       \
+            goto err;                                                      \
+        }                                                                  \
+    } while(0)
+
 
 static void increase_nesting() {
+#ifdef DEBUG
     FILE *fp = fopen("nesting.out", "a+");
     for (int i = 0; i < (int) nested_cycle_level; i++) {
         fprintf(fp, "\t");
     }
     fprintf(fp, "cycle\n");
     fclose(fp);
+#endif
     nested_cycle_level++;
 }
 
 static void decrease_nesting() {
     nested_cycle_level--;
+#ifdef DEBUG
     FILE *fp = fopen("nesting.out", "a+");
     for (int i = 0; i < nested_cycle_level; i++) {
         fprintf(fp, "\t");
     }
     fprintf(fp, "end\n");
     fclose(fp);
+#endif
 }
 
 static bool cond_stmt();
@@ -170,17 +205,64 @@ static bool break_() {
     EXPECTED(KEYWORD_break);
     if (nested_cycle_level == 0) {
         Errors.set_error(ERROR_SYNTAX);
-        return false;
+        goto err;
     }
 
     return true;
+    err:
+    return false;
+}
+
+/** Else statement.
+ *
+ * !rule <else_stmt> -> else <fun_body>
+ * @return
+ */
+static bool else_stmt() {
+    EXPECTED(KEYWORD_else);
+
+    // pop an existent symtable, because we ara in the if statement(scope).
+    SYMSTACK_POP();
+    // also, we need to create a new symtable for 'else' scope.
+    SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
+    // generate start of else block
+    instructions.cond_cnt++;
+    Generator.cond_else(instructions.outer_cond_id, instructions.cond_cnt);
+    // <fun_body>
+    if (!fun_body()) {
+        goto err;
+    }
+    SYMSTACK_POP();
+
+    return true;
+    err:
+    return false;
+}
+
+/** Elseif statement.
+ * !rule <elseif_stmt> -> elseif <cond_body>
+ */
+static bool elseif_stmt() {
+    EXPECTED(KEYWORD_elseif);
+    // pop an existent symtable, because we ara in the if statement(scope).
+    SYMSTACK_POP();
+    // also, we need to create a new symtable for 'elseif' scope.
+    SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
+
+    // generate start of elseif block
+    Generator.cond_elseif(instructions.outer_cond_id, instructions.cond_cnt);
+
+    return cond_stmt();
+    err:
+    return false;
 }
 
 /** Conditional expression body implemented with an extension. Contains statements.
  *
  * !rule <cond_body> -> end
- * !rule <cond_body> -> elseif <cond_stmt>
- * !rule <cond_body> -> else <fun_body>
+ * !rule <cond_body> -> <else_stmt>
+ * !rule <cond_body> -> <elseif_stmt>
+ *
  *
  * here, we are free to take every statement from fun_stmt,
  * however, the next statement must be from <cond_body>,
@@ -192,36 +274,13 @@ static bool break_() {
  */
 static bool cond_body() {
     debug_msg("<cond_body> -> \n");
+
     switch (Scanner.get_curr_token().type) {
         case KEYWORD_else:
-            EXPECTED(KEYWORD_else);
-            // pop an existent symtable, because we ara in the if statement(scope).
-            SYMSTACK_POP();
-            // also, we need to create a new symtable for 'else' scope.
-            SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
-
-            // generate start of else block
-            instructions.cond_cnt++;
-            Generator.cond_else(instructions.outer_cond_id, instructions.cond_cnt);
-
-            if (!fun_body()) {
-                return false;
-            }
-            SYMSTACK_POP();
-
-            return true;
+            return else_stmt();
 
         case KEYWORD_elseif:
-            EXPECTED(KEYWORD_elseif);
-            // pop an existent symtable, because we ara in the if statement(scope).
-            SYMSTACK_POP();
-            // also, we need to create a new symtable for 'elseif' scope.
-            SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
-
-            // generate start of elseif block
-            Generator.cond_elseif(instructions.outer_cond_id, instructions.cond_cnt);
-
-            return cond_stmt();
+            return elseif_stmt();
 
         case KEYWORD_end:
             EXPECTED(KEYWORD_end);
@@ -231,13 +290,15 @@ static bool cond_body() {
             // generate start of end block
             Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
             Generator.pop_cond_info();
-
             return true;
+
         default:
             break;
     }
 
     return fun_stmt() && cond_body();
+    err:
+    return false;
 }
 
 /** Conditional(if or elseif statement). Contains an expression and body.
@@ -251,17 +312,17 @@ static bool cond_body() {
 static bool cond_stmt() {
     debug_msg("<cond_stmt> -> \n");
 
-    if (!Expr.parse(pfile, EXPR_DEFAULT, NULL)) {
-        debug_msg("\n\t\t[error] Expression parsing failed.\n");
-        return false;
-    }
+    // expr
+    PARSE_EXPR(EXPR_DEFAULT, NULL);
+    // then
     EXPECTED(KEYWORD_then);
-
     // generate condition evaluation (JUMPIFNEQ ...)
     instructions.cond_cnt++;
     Generator.cond_if(instructions.outer_cond_id, instructions.cond_cnt);
 
     return cond_body();
+    err:
+    return false;
 }
 
 /** Datatype.
@@ -293,9 +354,12 @@ static inline bool datatype() {
         default:
             print_error_unexpected_token("datatype", Scanner.to_string(Scanner.get_curr_token().type));
             Errors.set_error(ERROR_SYNTAX);
-            return false;
+            goto err;
     }
+
     return true;
+    err:
+    return false;
 }
 
 /** Repeat body - function represent body of a repeat-until cycle.
@@ -314,6 +378,8 @@ static bool repeat_body() {
 
     // a new solution which doesnt have to cause problems. But not tested yet, so i dont know.
     return fun_stmt() && repeat_body();
+    err:
+    return false;
 }
 
 /** Optional assignment after a local variable declaration.
@@ -334,17 +400,15 @@ static bool assignment(dynstring_t *var_name) {
         Generator.var_declaration(var_name);
         return true;
     }
-
     // =
     EXPECTED(TOKEN_ASSIGN);
-    if (!Expr.parse(pfile, EXPR_DEFAULT, NULL)) {
-        debug_msg("\n\t\t[error] Expression parsing failed.\n");
-        return false;
-    }
+    PARSE_EXPR(EXPR_DEFAULT, NULL);
     // expression result is in GF@%expr_result
     Generator.var_definition(var_name);
 
     return true;
+    err:
+    return false;
 }
 
 /** For assignment.
@@ -356,16 +420,28 @@ static bool assignment(dynstring_t *var_name) {
  */
 static bool for_assignment() {
     debug_msg("<for_assignment> ->\n");
+    dynstring_t *expected_sgntr = NULL;
+    dynstring_t *received_sgntr = NULL;
+
+    // do |
     EXPECTED_OPT(KEYWORD_do);
-
+    // ,
     EXPECTED(TOKEN_COMMA);
-
-    if (!Expr.parse(pfile, EXPR_DEFAULT, NULL)) {
-        debug_msg("\n\t\t[error] Expression parsing failed.\n");
-        return false;
-    }
+    expected_sgntr = Dynstring.ctor("f");
+    received_sgntr = Dynstring.ctor("");
+    // expr
+    PARSE_EXPR(EXPR_DEFAULT, received_sgntr);
+    CHECK_EXPR_SIGNATURES(expected_sgntr, received_sgntr, ERROR_TYPE_MISSMATCH);
+    // do
     EXPECTED(KEYWORD_do);
+
+    Dynstring.dtor(expected_sgntr);
+    Dynstring.dtor(received_sgntr);
     return true;
+    err:
+    Dynstring.dtor(expected_sgntr);
+    Dynstring.dtor(received_sgntr);
+    return false;
 }
 
 /** For cycle.
@@ -375,66 +451,83 @@ static bool for_assignment() {
  * @return bool.
  */
 static bool for_cycle() {
+    debug_msg("for ->\n");
     increase_nesting();
-    EXPECTED(KEYWORD_for); // for
+    dynstring_t *id_name = NULL;
+    dynstring_t *expected_sgntr = Dynstring.ctor("f");
+    dynstring_t *received_sgntr = Dynstring.ctor("");
+
+    // for
+    EXPECTED(KEYWORD_for);
+    // push a new symtable on the symstack
     SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
-    dynstring_t *id_name;
-
-    if (Scanner.get_curr_token().type == TOKEN_ID) {
-        id_name = Scanner.get_curr_token().attribute.id;
-    }
-
+    // get id, or get an error.
+    GET_ID_SAFE(id_name);
     // id
     EXPECTED(TOKEN_ID);
-
+    // check semantics
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, ID_TYPE_integer);
-
     // =
     EXPECTED(TOKEN_ASSIGN);
-    if (!Expr.parse(pfile, EXPR_DEFAULT, NULL)) {
-        debug_msg("\n\t\t[error] Expression parsing failed.\n");
-        return false;
-    }
+    // expr
+    PARSE_EXPR(EXPR_DEFAULT, received_sgntr);
+    // check signatures
+    CHECK_EXPR_SIGNATURES(expected_sgntr, received_sgntr, ERROR_TYPE_MISSMATCH);
+    // for reusing
+    Dynstring.clear(received_sgntr);
 
     // ,
     EXPECTED(TOKEN_COMMA);
 
     // terminating `expr` in for cycle.
-    if (!Expr.parse(pfile, true, NULL)) {
-        debug_msg("\n\t\t[error] Expression parsing failed.\n");
-        return false;
-    }
+    PARSE_EXPR(EXPR_DEFAULT, received_sgntr);
+    // check signatures for an assignment.
+    CHECK_EXPR_SIGNATURES(expected_sgntr, received_sgntr, ERROR_TYPE_MISSMATCH);
 
     // do | , `expr` do
     if (!for_assignment()) {
-        return false;
+        goto err;
     }
     // <fun_body>, which ends with 'end'
     if (!fun_body()) {
-        return false;
+        goto err;
     }
+
     SYMSTACK_POP();
+    Dynstring.dtor(id_name);
+    Dynstring.dtor(expected_sgntr);
+    Dynstring.dtor(received_sgntr);
+
     decrease_nesting();
     return true;
+    err:
+    Dynstring.dtor(id_name);
+    Dynstring.dtor(expected_sgntr);
+    Dynstring.dtor(received_sgntr);
+    return false;
 }
 
 /** If conditional statement.
  *
- * !rule <fun_stmt> -> if <cond_stmt>
+ * !rule <if_stmt> -> if <cond_stmt>
  *
  * @param pfile
  * @return
  */
 static bool if_statement() {
+    debug_msg("<if_stmt> ->\n");
+
+    // if
     EXPECTED(KEYWORD_if);
     SYMSTACK_PUSH(SCOPE_TYPE_condition, NULL);
-
+    // generate code
     Generator.push_cond_info();
-
     instructions.outer_cond_id = Symstack.get_scope_info(symstack).unique_id;
     instructions.cond_cnt = 1;
 
     return cond_stmt();
+    err:
+    return false;
 }
 
 /** Local variable definition.
@@ -445,32 +538,32 @@ static bool if_statement() {
  * @return
  */
 static bool var_definition() {
-    dynstring_t *id_name;
+    dynstring_t *id_name = NULL;
     int id_type;
     EXPECTED(KEYWORD_local);
 
-    if (Scanner.get_curr_token().type == TOKEN_ID) {
-        id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
-    }
-    EXPECTED(TOKEN_ID); // id
-
-    EXPECTED(TOKEN_COLON); // :
-
+    GET_ID_SAFE(id_name);
+    // id
+    EXPECTED(TOKEN_ID);
+    // :
+    EXPECTED(TOKEN_COLON);
+    // get id type
     id_type = Scanner.get_curr_token().type;
-
     // <datatype>
     if (!datatype()) {
-        return false;
+        goto err;
     }
-
-    SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
     // = `expr`
     if (!assignment(id_name)) {
-        Dynstring.dtor(id_name);
-        return false;
+        goto err;
     }
+    SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
+
     Dynstring.dtor(id_name);
     return true;
+    err:
+    Dynstring.dtor(id_name);
+    return false;
 }
 
 /** While cycle.
@@ -481,11 +574,13 @@ static bool var_definition() {
  * @return
  */
 static bool while_cycle() {
-    EXPECTED(KEYWORD_while);
+    debug_msg("<while_cycle> -> \n");
     increase_nesting();
+
+    // while
+    EXPECTED(KEYWORD_while);
     // create a new symtable for while cycle.
     SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
-
     // nested while
     if (!instructions.in_loop) {
         instructions.in_loop = true;
@@ -493,24 +588,22 @@ static bool while_cycle() {
         instructions.before_loop_start = instrList->tail;   // use when declaring vars in loop
     }
     Generator.while_header();
-
     // parse expressions
-    if (!Expr.parse(pfile, EXPR_DEFAULT, NULL)) {
-        debug_msg("\n\t\t[error] Expression parsing failed.\n");
-        return false;
-    }
-
+    PARSE_EXPR(EXPR_DEFAULT, NULL);
     // expression result in LF@%result
     Generator.while_cond();
-
+    // do
     EXPECTED(KEYWORD_do);
     if (!fun_body()) {
         return false;
     }
     // parent function pops a table from the stack.
     SYMSTACK_POP();
+
     decrease_nesting();
     return true;
+    err:
+    return false;
 }
 
 /** Return statement.
@@ -520,25 +613,25 @@ static bool while_cycle() {
  * @return
  */
 static bool return_stmt() {
+    debug_msg("<return_stmt> ->\n");
+    dynstring_t *received_rets = Dynstring.ctor("");
+    dynstring_t *expected_rets = NULL;
+
     EXPECTED(KEYWORD_return);
-    dynstring_t *sign_returns;
-    dynstring_t *return_types = Dynstring.ctor("");
-
-    // pointer is not NULL, because we are inside a function.
-    sign_returns = Symstack.get_parent_func(symstack)->function_semantics->definition.returns;
-
+    // create expected returns vector from returns
+    expected_rets = Dynstring.dup(Symstack.get_parent_func(symstack)->function_semantics->definition.returns);
     // return expr
-    if (!Expr.parse_expr_list(pfile, EXPR_RETURN, NULL)) {
-        return false;
-    }
+    PARSE_EXPR_LIST(EXPR_DEFAULT, received_rets);
+    // check signatures
+    CHECK_EXPR_SIGNATURES(expected_rets, received_rets, ERROR_FUNCTION_SEMANTICS);
 
-    if (!Semantics.check_return_semantics(sign_returns, return_types)) {
-        Dynstring.dtor(return_types);
-        return false;
-    }
-
-    Dynstring.dtor(return_types);
+    Dynstring.dtor(expected_rets);
+    Dynstring.dtor(received_rets);
     return true;
+    err:
+    Dynstring.dtor(expected_rets);
+    Dynstring.dtor(received_rets);
+    return false;
 }
 
 /** Repeat until cycle.
@@ -549,10 +642,13 @@ static bool return_stmt() {
  * @return
  */
 static bool repeat_until_cycle() {
+    debug_msg("<repeat_until> ->\n");
     increase_nesting();
-    EXPECTED(KEYWORD_repeat);
-    SYMSTACK_PUSH(SCOPE_TYPE_do_cycle, NULL);
 
+    // repeat
+    EXPECTED(KEYWORD_repeat);
+    // create a new scope.
+    SYMSTACK_PUSH(SCOPE_TYPE_do_cycle, NULL);
     // nested while
     if (!instructions.in_loop) {
         instructions.in_loop = true;
@@ -560,23 +656,21 @@ static bool repeat_until_cycle() {
         instructions.before_loop_start = instrList->tail;   // use when declaring vars in loop
     }
     Generator.repeat_until_header();
-
+    // repeat
     if (!repeat_body()) {
-        return false;
+        goto err;
     }
-
-    // expression represent a condition after an until keyword.
-    if (!Expr.parse(pfile, EXPR_DEFAULT, NULL)) {
-        debug_msg("\n\t\t[error] Expression parsing failed.\n");
-        return false;
-    }
-
+    // expr
+    PARSE_EXPR(EXPR_DEFAULT, NULL);
     // expression result in LF@%result
     Generator.repeat_until_cond();
-
+    // pop a symstack
     SYMSTACK_POP();
     decrease_nesting();
+
     return true;
+    err:
+    return false;
 }
 
 /** Statement inside the function.
@@ -625,22 +719,21 @@ static bool fun_stmt() {
             return break_();
 
         case TOKEN_ID:
-            if (!Expr.parse(pfile, EXPR_FUNC, NULL)) {
-                debug_msg("\n\t\t[error] Expression parsing failed.\n");
-                return false;
-            }
+            PARSE_EXPR(EXPR_FUNC, NULL);
             break;
 
         case TOKEN_DEAD:
             Errors.set_error(ERROR_LEXICAL);
-            return false;
+            goto err;
 
         default:
             Errors.set_error(ERROR_SYNTAX);
-            return false;
+            goto err;
     }
 
     return true;
+    err:
+    return false;
 }
 
 /** Statements inside the function
@@ -652,6 +745,7 @@ static bool fun_stmt() {
  */
 static bool fun_body() {
     debug_msg("<fun_body> ->\n");
+
     // end |
     if (Scanner.get_curr_token().type == KEYWORD_end) {
         EXPECTED(KEYWORD_end);
@@ -666,15 +760,19 @@ static bool fun_body() {
                     instructions.before_loop_start = NULL;
                 }
                 break;
+
             case SCOPE_TYPE_function:
                 Generator.func_end(Symstack.get_parent_func_name(symstack));
                 break;
+
             case SCOPE_TYPE_do_cycle:
                 break;
+
             case SCOPE_TYPE_condition:
                 Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
                 Generator.pop_cond_info();
                 break;
+
             default:
                 debug_msg("Shouldn't be here.\n");
                 assert(0);
@@ -684,6 +782,8 @@ static bool fun_body() {
     }
 
     return fun_stmt() && fun_body();
+    err:
+    return false;
 }
 
 /** List of parameter in function definition.
@@ -694,39 +794,38 @@ static bool fun_body() {
  * @return bool.
  */
 static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
-    dynstring_t *id_name;
     debug_msg("<other_funparam> ->\n");
+
+    dynstring_t *id_name = NULL;
+
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
     // ,
     EXPECTED(TOKEN_COMMA);
-
-    if (Scanner.get_curr_token().type == TOKEN_ID) {
-        id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
-    }
-
+    // get id
+    GET_ID_SAFE(id_name);
     // id
     EXPECTED(TOKEN_ID);
     // :
     EXPECTED(TOKEN_COLON);
-
+    // get type
     token_type_t id_type = Scanner.get_curr_token().type;
-
     // <datatype>
     if (!datatype()) {
-        return false;
+        goto err;
     }
-
-    // for an id in the symtable.
+    // semantic check.
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
-
     // for function info in the symtable.
     Semantics.add_param(&function_def_info, id_type);
-
+    // generate code
     Generator.func_start_param(id_name, 1);      // FIXME counter
 
     Dynstring.dtor(id_name);
     return other_funparams(pfile, function_def_info);
+    err:
+    Dynstring.dtor(id_name);
+    return false;
 }
 
 /** List with function parameters in the function definition.
@@ -737,35 +836,37 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
  * @return bool.
  */
 static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
-    dynstring_t *id_name;
     debug_msg("<funparam_def_list> ->\n");
+
+    dynstring_t *id_name = NULL;
+
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
-
-    if (Scanner.get_curr_token().type == TOKEN_ID) {
-        id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
-    }
-
+    // create a dynstring
+    GET_ID_SAFE(id_name);
     // id
     EXPECTED(TOKEN_ID);
     Generator.func_start_param(id_name, 0);    // need index of the param to the code generator, not the name
     // :
     EXPECTED(TOKEN_COLON);
-
+    // get type
     token_type_t id_type = Scanner.get_curr_token().type;
-    // add a datatype to function parameters
-    Semantics.add_param(&function_def_info, id_type);
     // <datatype>
     if (!datatype()) {
-        return false;
+        goto err;
     }
-
+    // add a datatype to function parameters
+    Semantics.add_param(&function_def_info, id_type);
     // parameters in function definition cannot be declared twice, nor be function names.
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
     Dynstring.dtor(id_name);
+
     // <other_funparams>
     return other_funparams(pfile, function_def_info);
+    err:
+    Dynstring.dtor(id_name);
+    return false;
 }
 
 /** Other datatypes.
@@ -777,14 +878,16 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
  */
 static bool other_datatypes(pfile_t *pfile, func_info_t function_decl_info) {
     debug_msg("<other_datatypes> ->\n");
+
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
-
     // ,
     EXPECTED(TOKEN_COMMA);
-
     Semantics.add_param(&function_decl_info, Scanner.get_curr_token().type);
+
     return datatype() && other_datatypes(pfile, function_decl_info);
+    err:
+    return false;
 }
 
 /** List of datatypes separated by a comma.
@@ -796,12 +899,15 @@ static bool other_datatypes(pfile_t *pfile, func_info_t function_decl_info) {
  */
 static bool datatype_list(pfile_t *pfile, func_info_t function_decl_info) {
     debug_msg("<datatype_list> ->\n");
+
     // ) |
     EXPECTED_OPT(TOKEN_RPAREN);
-
     Semantics.add_param(&function_decl_info, Scanner.get_curr_token().type);
+
     //<datatype> && <other_datatypes>
     return datatype() && other_datatypes(pfile, function_decl_info);
+    err:
+    return false;
 }
 
 /** list of return types of the function.
@@ -813,20 +919,21 @@ static bool datatype_list(pfile_t *pfile, func_info_t function_decl_info) {
  */
 static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
     debug_msg("<other_funrets> -> \n");
+
     // e |
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
         return true;
     }
     // ,
     EXPECTED(TOKEN_COMMA);
-
     Semantics.add_return(&function_info, Scanner.get_curr_token().type);
-
     // generate return var
     Generator.func_return_value(1);         // FIXME counter
 
     // <datatype> <other_funrets>
     return datatype() && other_funrets(pfile, function_info);
+    err:
+    return false;
 }
 
 /** Optional returns of the function.
@@ -846,14 +953,14 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
 
     // :
     EXPECTED(TOKEN_COLON);
-
     Semantics.add_return(&function_info, Scanner.get_curr_token().type);
-
     // generate return var
     Generator.func_return_value(0);
 
     // <datatype> <other_funrets>
     return (datatype() && other_funrets(pfile, function_info));
+    err:
+    return false;
 }
 
 /** Function declaration.
@@ -864,55 +971,51 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
  * @return bool
  */
 static bool function_declaration() {
-    dynstring_t *id_name;
-    symbol_t *symbol;
+    debug_msg("<function_declaration> ->\n");
+
+    dynstring_t *id_name = NULL;
+    symbol_t *symbol = NULL;
 
     // global
     EXPECTED(KEYWORD_global);
-
-    if (Scanner.get_curr_token().type == TOKEN_ID) {
-        id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
-    }
-
+    GET_ID_SAFE(id_name);
     // function name
     EXPECTED(TOKEN_ID);
-
     // Semantic control.
     // if we find a symbol on the stack, check it.
     if (Symstack.get_symbol(symstack, id_name, &symbol)) {
         // If function has been previously declared.
         if (Semantics.is_declared(symbol->function_semantics)) {
             Errors.set_error(ERROR_DEFINITION);
-            Dynstring.dtor(id_name);
-            return false;
+            goto err;
         }
     }
     // normally put id on the stack.
     symbol = Symstack.put_symbol(symstack, id_name, ID_TYPE_func_decl);
-    Dynstring.dtor(id_name);
-
     // :
     EXPECTED(TOKEN_COLON);
     // function
     EXPECTED(KEYWORD_function);
     // (
     EXPECTED(TOKEN_LPAREN);
-
     // <funparam_decl_list>
     if (!datatype_list(pfile, symbol->function_semantics->declaration)) {
-        return false;
+        goto err;
     }
-
     // <funretopt> can be empty
     if (!funretopt(pfile, symbol->function_semantics->declaration)) {
-        return false;
+        goto err;
     }
 
     // if function has previously been defined, then check function signatures.
     if (Semantics.is_defined(symbol->function_semantics)) {
         SEMANTIC_CHECK_FUNCTION_SIGNATURES(symbol);
     }
+
     return true;
+    err:
+    Dynstring.dtor(id_name);
+    return false;
 }
 
 /** Function definition.
@@ -923,71 +1026,56 @@ static bool function_declaration() {
  * @return bool.
  */
 static bool function_definition() {
-    // function
-    EXPECTED(KEYWORD_function);
+    debug_msg("<function_declaration> ->\n");
 
-    dynstring_t *id_name;
-    // We need to have a pointer to the symbol in the symbol table.
+    dynstring_t *id_name = NULL;
     symbol_t *symbol = NULL;
 
+    // function
+    EXPECTED(KEYWORD_function);
     debug_assert((local_table == global_table) && "tables must be equal now");
-
-    // it can be another token
-    if (Scanner.get_curr_token().type == TOKEN_ID) {
-        id_name = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));
-    }
-
+    // create dynstring to id_name
+    GET_ID_SAFE(id_name);
     // id
     EXPECTED(TOKEN_ID);
-
-    // Semantic control.
     // if we find a symbol on the stack, check it.
     if (Symstack.get_symbol(symstack, id_name, &symbol)) {
-        // we don't have to control if the symbol is a function,
-        // because in the grammar, there's only one options and this option is
-        // to be a function.
-        // If function has been defined, return false and set an error code.
+        // function has been defined yee
         if (Semantics.is_defined(symbol->function_semantics)) {
             Errors.set_error(ERROR_DEFINITION);
-            Dynstring.dtor(id_name); // free the name.
-            return false;
+            goto err;
         }
     }
     symbol = Symstack.put_symbol(symstack, id_name, ID_TYPE_func_def);
-
     // (
     EXPECTED(TOKEN_LPAREN);
-
     // push a symtable on to the stack.
     SYMSTACK_PUSH(SCOPE_TYPE_function, id_name);
-
     // generate code for new function start
-    debug_msg("[define] function %s\n", Dynstring.c_str(id_name));
+    debug_msg_s("\t[define] function %s\n", Dynstring.c_str(id_name));
     Generator.func_start(id_name);
-    Dynstring.dtor(id_name);
-
     // <funparam_def_list>
     if (!funparam_def_list(pfile, symbol->function_semantics->definition)) {
-        return false;
+        goto err;
     }
-
     // <funretopt>
     if (!funretopt(pfile, symbol->function_semantics->definition)) {
-        return false;
+        goto err;
     }
-
-    // check signatures
+    // check signatures if declared
     if (Semantics.is_declared(symbol->function_semantics)) {
         SEMANTIC_CHECK_FUNCTION_SIGNATURES(symbol);
     }
-
     // <fun_body>
     if (!fun_body()) {
-        return false;
+        goto err;
     }
-
     SYMSTACK_POP();
+
     return true;
+    err:
+    Dynstring.dtor(id_name);
+    return false;
 }
 
 /** Statement(global statement) rule.
@@ -1001,7 +1089,9 @@ static bool function_definition() {
  */
 static bool stmt() {
     debug_msg("<stmt> ->\n");
+
     token_t token = Scanner.get_curr_token();
+    dynstring_t *id_name = NULL;
 
     switch (token.type) {
         // function declaration: global id : function ( <datatype_list> <funretopt>
@@ -1014,18 +1104,13 @@ static bool stmt() {
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:;
-            dynstring_t *id_name = Dynstring.ctor(Dynstring.c_str(token.attribute.id));
+            id_name = Dynstring.ctor(Dynstring.c_str(token.attribute.id));
             // create frame before passing parameters
             Generator.func_createframe();
-
             // in expressions we pass the parameters
-            if (!Expr.parse(pfile, EXPR_GLOBAL, NULL)) {
-                debug_msg("\n\t\t[error] Expression parsing failed.\n");
-                return false;
-            }
+            PARSE_EXPR(EXPR_GLOBAL, NULL);
             // function call
             Generator.func_call(id_name);
-            Dynstring.dtor(id_name);
             break;
 
             // FIXME. I dont know how to solve this recursion.
@@ -1034,13 +1119,18 @@ static bool stmt() {
 
         case TOKEN_DEAD:
             Errors.set_error(ERROR_LEXICAL);
-            return false;
+            goto err;
 
         default:
             Errors.set_error(ERROR_SYNTAX);
-            return false;
+            goto err;
     }
+
+    Dynstring.dtor(id_name);
     return true;
+    err:
+    Dynstring.dtor(id_name);
+    return false;
 }
 
 /** List of global statements: function calls, function declarations, function definitions.
@@ -1057,6 +1147,8 @@ static bool stmt_list() {
 
     // <stmt> <stmt_list>
     return stmt() && stmt_list();
+    err:
+    return false;
 }
 
 /** Predicate to check if every declared function is also defined.
@@ -1078,42 +1170,43 @@ static bool declared_implies_defined(symbol_t *symbol) {
  * @return bool.
  */
 static bool program() {
-    dynstring_t *prolog_str = Dynstring.ctor("ifj21");
     debug_msg("=====================================\n\n\n");
     debug_msg("PARISNG STARTED\n");
     debug_msg("<program> ->\n");
 
+    dynstring_t *prolog_str = Dynstring.ctor("ifj21");
+
     // require keyword
     EXPECTED(KEYWORD_require);
-
     // "ifj21" which is a prolog string after require keyword
     if (Scanner.get_curr_token().type != TOKEN_STR) {
-        Dynstring.dtor(prolog_str);
         Errors.set_error(ERROR_SYNTAX);
-        return false;
+        goto err;
     }
+    // ifj21
     if (Dynstring.cmp(Scanner.get_curr_token().attribute.id, prolog_str) != 0) {
-        Dynstring.dtor(prolog_str);
         Errors.set_error(ERROR_SYNTAX);
-        return false;
+        goto err;
     }
+    // get "ifj21"
     EXPECTED(TOKEN_STR);
-
-    Dynstring.dtor(prolog_str);
-
+    // generate code;
     Generator.prog_start();
-
     // <stmt_list>
     if (!stmt_list()) {
-        return false;
+        goto err;
     }
-
-    //TODO: every declared function must be defined also. -- it is though.
+    // every declared function must be defined.
     if (!Symstack.traverse(symstack, declared_implies_defined)) {
         Errors.set_error(ERROR_DEFINITION);
-        return false;
+        goto err;
     }
+
+    Dynstring.dtor(prolog_str);
     return true;
+    err:
+    Dynstring.dtor(prolog_str);
+    return false;
 }
 
 /** Initialize symstack and global_frame structures
@@ -1172,14 +1265,14 @@ static void Free_parser() {
  */
 static bool Analyse(pfile_t *pfile_) {
     soft_assert(pfile_ != NULL, ERROR_INTERNAL);
-    Errors.set_error(ERROR_NOERROR);
+
     bool res = false;
     pfile = pfile_;
+    Errors.set_error(ERROR_NOERROR);
 
     // initialize structures(symstack, symtable)
     // add builtin functions.
     Init_parser();
-
     // get_symbol first token to get_symbol start
     if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) {
         Errors.set_error(ERROR_LEXICAL);
