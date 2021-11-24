@@ -75,7 +75,7 @@ if [[ "$name" == "all" ]]; then
     do
         echo "******** RET_VALUE = $NUM_TEST ********"
         cd "$TEST_DIR"
-        "$TEST_DIR/$0" "*" "$NUM_TEST" 2>&1 |  grep -e "tests\|fault"
+        "$TEST_DIR/$0" "*" "$NUM_TEST" 2>&1 |  grep -e "tests\|fault\|malloc"
         cd - 1>/dev/null
         echo "*******************************"
         echo ""
