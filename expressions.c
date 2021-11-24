@@ -785,7 +785,7 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type, dynstr
             symbol_t *symbol;
 
             if (Symtable.get_symbol(global_table, curr_tok.attribute.id, &symbol)) {
-                if (symbol->type == ID_TYPE_func_decl || symbol->type == ID_TYPE_func_def) {
+                if (symbol->type == ID_TYPE_func_def) {
                     debug_msg("SET IS FUNC\n");
                     second_op = OP_FUNC;
                     is_func = true;
@@ -1006,7 +1006,7 @@ static bool expr_stmt(pfile_t *pfile, expr_type_t expr_type, dynstring_t *vector
 
     symbol_t *symbol;
     if (Symtable.get_symbol(global_table, Scanner.get_curr_token().attribute.id, &symbol)) {
-        if (symbol->type == ID_TYPE_func_decl || symbol->type == ID_TYPE_func_def) {
+        if (symbol->type == ID_TYPE_func_def) {
             return parse_init(pfile, expr_type, vector_expr_types);
         }
     }
