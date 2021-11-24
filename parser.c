@@ -277,8 +277,10 @@ static inline bool datatype(pfile_t *pfile) {
  */
 static bool repeat_body(pfile_t *pfile) {
     debug_msg("<repeat_body> -> \n");
+
     // until |
     EXPECTED_OPT(KEYWORD_until);
+
     // a new solution which doesnt have to cause problems. But not tested yet, so i dont know.
     return fun_stmt(pfile) && repeat_body(pfile);
 }
@@ -592,11 +594,6 @@ static bool fun_stmt(pfile_t *pfile) {
         case TOKEN_DEAD:
             Errors.set_error(ERROR_LEXICAL);
             return false;
-
-            // FIXME: shit, I dont know what to do here...
-            // probably, I am not allowed to write code such that. But I really dont know.
-        case KEYWORD_end:
-            return true;
 
         default:
             Errors.set_error(ERROR_SYNTAX);
