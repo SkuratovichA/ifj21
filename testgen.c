@@ -1332,6 +1332,92 @@ int main() {
             "end                        "NL
     );
 
+    char *description80 = "for cycles, minus in the assignment";
+    int retcode80 = ERROR_NOERROR;
+    pfile_t *pf80 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    for i=0, -iterations, -1 do          "NL
+            "       write(\"I'm gonna be printed\\n\")"NL
+            "        for j=0, i<-iterations do        "NL
+            "            write(\"hello, n times\")    "NL
+            "        end                              "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(3)                                  "NL
+    );
+
+    char *description81 = "for cycles, minus in the assignment";
+    int retcode81 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf81 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : string )      "NL
+            "    for i=0, -iterations, -1 do          "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(\"helloo\")                         "NL
+    );
+
+    char *description82 = "for cycles, assignment in the condition.";
+    int retcode82 = ERROR_SYNTAX;
+    pfile_t *pf82 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    for i=0, b = 10, -1 do               "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(\"helloo\")                         "NL
+    );
+
+    char *description83 = "for cycles, assignment in the assignment part.";
+    int retcode83 = ERROR_SYNTAX;
+    pfile_t *pf83 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    local a : integer = 10               "NL
+            "    for i=0, 10, a = 20 do               "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(\"helloo\")                         "NL
+    );
+
+    char *description84 = "for cycles, type mismatch in the condition.";
+    int retcode84 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf84 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    local a : integer = 10               "NL
+            "    for i=0, true, 20 do                 "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(\"helloo\")                         "NL
+    );
+
+    char *description85 = "for cycles, type mismatch in the assignment.";
+    int retcode85 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf85 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    local a : integer = 10               "NL
+            "    for i=0, 20, true do                 "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(\"helloo\")                         "NL
+    );
+
+    char *description86 = "for cycles, no error.";
+    int retcode86 = ERROR_NOERROR;
+    pfile_t *pf86 = Pfile.ctor(
+            PROLOG
+            "function main(iterations : number )      "NL
+            "    local a : integer = 10               "NL
+            "    for a=0, 20, 2 do                    "NL
+            "       break                             "NL
+            "    end                                  "NL
+            "end                                      "NL
+            "main(\"helloo\")                         "NL
+    );
+
 
     TEST_CASE(1);
     TEST_CASE(2);
@@ -1420,5 +1506,12 @@ int main() {
     TEST_CASE(78);
     TEST_CASE(79);
 
+    TEST_CASE(80);
+    TEST_CASE(81);
+    TEST_CASE(82);
+    TEST_CASE(83);
+    TEST_CASE(84);
+    TEST_CASE(85);
+    TEST_CASE(86);
     return 0;
 }
