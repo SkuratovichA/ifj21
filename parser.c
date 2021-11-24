@@ -846,7 +846,7 @@ static bool function_declaration(pfile_t *pfile) {
 
     // Semantic control.
     // if we find a symbol on the stack, check it.
-    if (Symstack.get_symbol(symstack, id_name, &symbol, NULL)) {
+    if (Symstack.get_symbol(symstack, id_name, &symbol)) {
         // If function has been previously declared.
         if (Semantics.is_declared(symbol->function_semantics)) {
             Errors.set_error(ERROR_DEFINITION);
@@ -909,7 +909,7 @@ static bool function_definition(pfile_t *pfile) {
 
     // Semantic control.
     // if we find a symbol on the stack, check it.
-    if (Symstack.get_symbol(symstack, id_name, &symbol, NULL)) {
+    if (Symstack.get_symbol(symstack, id_name, &symbol)) {
         // we don't have to control if the symbol is a function,
         // because in the grammar, there's only one options and this option is
         // to be a function.
