@@ -1,5 +1,5 @@
-/tests/lexical_errors/
-/tests/semantic_errors/
-/tests/syntax_errors/
-/tests/valid_programs_krivka_tests/
-/tests/without_errors/
+/tests/lexical_errors/*
+/tests/semantic_errors/*
+/tests/syntax_errors/*
+/tests/valid_programs_krivka_tests/*
+/tests/without_errors/*
