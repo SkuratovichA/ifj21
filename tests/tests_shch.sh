@@ -25,31 +25,18 @@ COMPILE_FLAGS="-DDEBUG=on"
 
 # directory with source code
 # in this case, tests is pwd and ../ is src
-SRC_DIR="/Users/suka/Desktop/vut/sem3/ifj/proj/ifj21" #"`pwd`/.."
+cd .. 1>/dev/null
+SRC_DIR="`pwd`"
+cd - 1>/dev/null
+
+TEST_DIR="$SRC_DIR/tests"
+
 
 # directory with html for statistics and .json files with code coverage
 STAT_DIR="$SRC_DIR/statistics"
 
 # build directory(related to directory with tests)
 BUILD_DIR="$SRC_DIR/cmake-build-debug"
-
-#coverage_scanner()
-#{
-#    coverage_DIR="$SRC_DIR/CMakeFiles/scannerTests.dir"
-#
-#    cd "$BUILD_DIR" || { echo "ERROR: No directory exists: $BUILD_DIR" ; exit 1; }
-#
-#    { cmake $COMPILE_FLAGS .. 1>/dev/null && {
-#      { make $BIN_TARGET >/dev/null 2>/dev/null  && ./scannerTests ; } || {
-#        echo "ERROR: Cannot compile a target" ; exit 1; }
-#      }
-#    } || {
-#      echo "Cannot initialize cmake. Exiting..." ; exit 1;
-#    }
-#
-#    cd "$coverage_DIR" || { echo "ERROR: No such directory $coverage_DIR" ; exit 1 ; }
-#    gcovr -b --filter "$SRC_DIR" --json > code1.json || { echo "ERROR: cannot initialize gcovr. " ; }
-#}
 
 coverage_other()
 {
@@ -87,9 +74,12 @@ if [[ "$name" == "all" ]]; then
     for NUM_TEST in 0 2 3 4 5 6 7
     do
         echo "******** RET_VALUE = $NUM_TEST ********"
-        ./run_tests.sh "*" "$NUM_TEST" 1>/dev/null 2>/dev/null
+        cd "$TEST_DIR"
+        "$TEST_DIR/$0" "*" "$NUM_TEST" | grep -e "tests"
+        cd - 1>/dev/null
         echo "*******************************"
         echo ""
+        echo 
 
         coverage_other $NUM_TEST
     done
@@ -106,10 +96,11 @@ if [[ "$name" == "all" ]]; then
     exit 0 ;
 fi
 
+echo "BUILD_DIR = $BUILD_DIR"
 cd "$BUILD_DIR" || { echo "ERROR: no build dir" ; exit 1;  }
 rm -rf *
-cmake ..
-make "$BIN_TARGET" || { echo "ERROR: cannot make" ; exit 1; }
+cmake .. 1>/dev/null
+make "$BIN_TARGET" 1>/dev/null 2>/dev/null || { echo "ERROR: cannot make" ; exit 1; }
 
 cd "$SRC_DIR/tests" || { echo "ERROR. No tests directory" ; exit 1 ; }
 
@@ -121,6 +112,8 @@ elif [[ "$expected_err" -eq "2" ]]; then
     folder="syntax_errors"
 elif [[ "$expected_err" -ge "3" ]] && [[ "$expected_err" -le "7" ]]; then
     folder="semantic_errors"
+elif [[ "$expected_err" -eq "1" ]]; then
+    folder="lexical_errors"
 else
     echo "This script doesnt support this type of error $expected_err"
     exit 1
@@ -176,7 +169,7 @@ else
     if [ $err_files -ne 0 ]; then
         printf "$err_files/$all_files tests were ${RED}FAILED${NC}\n"
         err_files=$((all_files-err_files))
-        printf "$err_files/$all_files tests were ${GREEN}PASSED${NC}"
+        printf "$err_files/$all_files tests were ${GREEN}PASSED${NC}\n"
     else
         printf "$all_files/$all_files tests were ${GREEN}PASSED${NC}\n"
     fi
