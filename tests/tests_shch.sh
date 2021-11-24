@@ -76,7 +76,7 @@ if [[ "$name" == "all" ]]; then
         echo "******** RET_VALUE = $NUM_TEST ********"
         cd "$TEST_DIR"
         "$TEST_DIR/$0" "*" "$NUM_TEST" | grep -e "tests"
-        cd -
+        cd - 1>/dev/null
         echo "*******************************"
         echo ""
         echo 
