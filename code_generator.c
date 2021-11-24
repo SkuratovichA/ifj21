@@ -928,7 +928,9 @@ static void push_cond_info() {
     Dynstring.append(instructions.cond_info, instructions.cond_cnt);
     char cond_id_str[6] = "\0";
     sprintf(cond_id_str, "%.5lu", instructions.outer_cond_id);
-    Dynstring.cat(instructions.cond_info, Dynstring.ctor(cond_id_str));
+    dynstring_t *new_id_str = Dynstring.ctor(cond_id_str);
+    Dynstring.cat(instructions.cond_info, new_id_str);
+    Dynstring.dtor(new_id_str);
 }
 
 /*
