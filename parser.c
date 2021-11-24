@@ -75,19 +75,19 @@ static void print_error_unexpected_token(const char *a, const char *b) {
 
 /** Set an error code and return an error if there's a declaration error.
  */
-#define error_multiple_declaration(a)                               \
-    do {                                                           \
-        Errors.set_error(ERROR_DEFINITION);                        \
-        fprintf(stderr, "line %zu, character %zu\n",               \
-           Scanner.get_line(), Scanner.get_charpos());             \
+#define error_multiple_declaration(a)                                 \
+    do {                                                             \
+        Errors.set_error(ERROR_DEFINITION);                          \
+        fprintf(stderr, "line %zu, character %zu\n",                 \
+           Scanner.get_line(), Scanner.get_charpos());               \
         fprintf(stderr, "[error](semantic): variable with name '%s'" \
-           " has already been declared!\n", Dynstring.c_str(a));   \
-        return false;                                              \
+           " has already been declared!\n", Dynstring.c_str(a));     \
+        return false;                                                \
     } while (0)
 
 /** Macro expecting a non terminal from the scanner.
  */
-#define EXPECTED(p)                                                           \
+#define EXPECTED(p)                                                            \
     do {                                                                      \
         token_t tok__ = Scanner.get_curr_token();                             \
         if (tok__.type == (p)) {                                              \
