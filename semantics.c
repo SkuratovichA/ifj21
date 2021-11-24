@@ -7,12 +7,8 @@
  */
 #include "semantics.h"
 #include "dynstring.h"
-#include "symtable.h"
 #include "expressions.h"
 #include "parser.h"
-
-#define debug_msg_s(...)
-#define debug_msg(...)
 
 /** Function checks if return values and parameters
  *  of the function are equal.
@@ -103,7 +99,7 @@ static void Builtin(func_semantics_t *self) {
  * @param type id_type to convert.
  * @return a converted char.
  */
-static char of_id_type(id_type_t type) {
+static char of_id_type(int type) {
     switch (type) {
         case ID_TYPE_string:
             return 's';
@@ -211,22 +207,6 @@ static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin
         soft_assert(newbe->definition.params != NULL, ERROR_INTERNAL);
     }
 
-    //debug_msg("[ctor] Create a function semantics:\n"
-    //          "\t{ "
-    //          "\t\t\t.is_defined = '%s', .is_declared = '%s', is_builtin = '%s'\n"
-    //          "\t\t\tdefinition{ .params ='%s', returns ='%s'}\n"
-    //          "\t\t\tdeclaration{ .params ='%s', returns ='%s'}\n"
-    //          "\t}\n",
-    //          newbe->is_defined ? "true" : "false",
-    //          newbe->is_declared ? "true" : "false",
-    //          newbe->is_builtin ? "true" : "false",
-
-    //          Dynstring.c_str(newbe->definition.params),
-    //          Dynstring.c_str(newbe->definition.returns),
-
-    //          Dynstring.c_str(newbe->declaration.params),
-    //          Dynstring.c_str(newbe->declaration.returns)
-    //          );
     return newbe;
 }
 
@@ -311,8 +291,8 @@ static int type_to_token (id_type_t id_type) {
     }
 }
 
-static id_type_t token_to_type (token_t tok) {
-    switch (tok.type) {
+static int token_to_type(int typ) {
+    switch (typ) {
         case TOKEN_STR:
             return ID_TYPE_string;
         case TOKEN_NUM_I:
@@ -331,7 +311,7 @@ static id_type_t token_to_type (token_t tok) {
 static bool is_var_exists (token_t tok, expr_semantics_t *self) {
     symbol_t *symbol;
     bool res;
-    res = Symtable.get_symbol(local_table, tok.attribute.id, &symbol);
+    res = Symstack.get_symbol(symstack, tok.attribute.id, &symbol, NULL);
     if (res) {
         self->result_type = type_to_token(symbol->type);
         return true;
@@ -343,7 +323,7 @@ static bool is_var_exists (token_t tok, expr_semantics_t *self) {
 
 static bool type_compatability(expr_semantics_t *self) {
     if (self->sem_state == SEMANTIC_UNARY) {
-        id_type_t f_var_type = token_to_type(self->first_operand);
+        id_type_t f_var_type = token_to_type(self->first_operand.type);
 
         // String length
         if (self->op == OP_HASH && f_var_type == ID_TYPE_string) {
@@ -357,8 +337,8 @@ static bool type_compatability(expr_semantics_t *self) {
             return true;
         }
     } else {
-        id_type_t f_var_type = token_to_type(self->first_operand);
-        id_type_t s_var_type = token_to_type(self->second_operand);
+        id_type_t f_var_type = token_to_type(self->first_operand.type);
+        id_type_t s_var_type = token_to_type(self->second_operand.type);
 
         // Addition, subtraction, multiplication, float division
         if (self->op == OP_ADD || self->op == OP_SUB || self->op == OP_MUL || self->op == OP_DIV_F) {
@@ -421,7 +401,7 @@ static bool type_compatability(expr_semantics_t *self) {
             // nil
             if (self->op == OP_EQ || self->op == OP_NE) {
                 if ((f_var_type == ID_TYPE_boolean && s_var_type == ID_TYPE_boolean) ||
-                    (f_var_type == ID_TYPE_nil && s_var_type == ID_TYPE_nil)) {
+                    (f_var_type == ID_TYPE_nil || s_var_type == ID_TYPE_nil)) {
                     return true;
                 }
             }
@@ -466,13 +446,50 @@ static bool Check_expression(expr_semantics_t *self) {
     return type_compatability(self);
 }
 
+static bool Check_return_semantics(
+        dynstring_t *signature_returns,
+        dynstring_t *return_types
+) {
+    if (signature_returns == NULL || return_types == NULL) {
+        Errors.set_error(ERROR_INTERNAL);
+        return false;
+    }
+    // return more than we can.
+    if (Dynstring.len(return_types) > Dynstring.len(signature_returns)) {
+        Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+        return false;
+    }
+
+    // truncate to the length of the shortest string.
+    if (Dynstring.len(return_types) < Dynstring.len(signature_returns)) {
+        Dynstring.trunc_to_len(signature_returns, Dynstring.len(return_types));
+    }
+
+    // check datatypes.
+    // take in mind:
+    //               1. number is a superset of integer.
+    //               2. nil in signature_returns -> nil in return_types.
+    //               3. everything in signature_returns -> nil in return_types. returns[i] = 'n'
+    char *signature = Dynstring.c_str(signature_returns);
+    char *returns = Dynstring.c_str(return_types);
+    for (size_t i = 0; i < Dynstring.len(signature_returns); i++) {
+        if (signature[i] != returns[i]) {
+            bool err = !((signature[i] == 'f' && returns[i] == 'i') || returns[i] == 'n');
+            if (err) {
+                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
 
 const struct semantics_interface_t Semantics = {
-        .dtor = Dtor,
+        .ctor_expr = Ctor_expr,
         .ctor = Ctor,
         .dtor_expr = Dtor_expr,
-        .ctor_expr = Ctor_expr,
-        .check_expression = Check_expression,
+        .dtor = Dtor,
         .add_operand = Add_operand,
         .add_operator = Add_operator,
         .is_declared = Is_declared,
@@ -480,10 +497,15 @@ const struct semantics_interface_t Semantics = {
         .is_builtin = Is_builtin,
         .add_return = Add_return,
         .add_param = Add_param,
-        .check_signatures = Check_signatures,
         .declare = Declare,
         .define = Define,
         .builtin = Builtin,
         .set_returns = Set_returns,
         .set_params = Set_params,
+
+        .check_signatures = Check_signatures,
+        .check_expression = Check_expression,
+        .check_return_semantics = Check_return_semantics,
+        .of_id_type = of_id_type,
+        .token_to_id_type = token_to_type,
 };

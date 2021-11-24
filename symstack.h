@@ -113,6 +113,11 @@ struct symstack_interface_t {
      */
     char *(*get_parent_func_name)(symstack_t *);
 
+    /** Get a parent function as a symbol via pointer.
+     */
+    symbol_t *(*get_parent_func)(symstack_t *);
+
+
     /** Return information about the current scope.
      *
      * @param self symbol stack.

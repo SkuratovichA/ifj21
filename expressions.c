@@ -18,15 +18,23 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmacro-redefined"
 // undef debug macros
-#define debug_err(...)
-#define debug_msg(...)
-#define debug_msg_stdout(...)
-#define debug_msg_stderr(...)
-#define debug_todo(...)
-#define debug_assert(cond)
-#define debug_msg_s(...)
-#define DEBUG_SEP
+//#define debug_err(...)
+//#define debug_msg(...)
+//#define debug_msg_stdout(...)
+//#define debug_msg_stderr(...)
+//#define debug_todo(...)
+//#define debug_assert(cond)
+//#define debug_msg_s(...)
+//#define DEBUG_SEP
 #pragma GCC diagnostic pop
+
+
+#define IF_STACK_HEAD_IS(_item, _stack, _type)  \
+    (_item) = Stack.peek(_stack);               \
+    if (!(_item)) {                             \
+        return false;                           \
+    }                                           \
+    if ((_item)->type == (_type)) {
 
 /**
  * Precedence function table.
@@ -38,19 +46,19 @@
  * D = {#, not}
  *
  *  |   |  id |   ( |   ) |   A |   B |   C |   D |  .. | and |  or |   f |   , |   $ |
- *  | f |  14 |   0 |  14 |  12 |  10 |   6 |  14 |   8 |   4 |   2 |  15 |   0 |   0 |
- *  | g |  15 |  15 |   0 |  11 |   7 |   5 |  13 |   9 |   3 |   1 |  15 |   0 |   0 |
+ *  | f |  12 |   0 |  12 |  10 |   8 |   6 |  12 |   6 |   4 |   2 |  13 |   0 |   0 |
+ *  | g |  13 |  13 |   0 |  9 |   7 |   5 |  11 |   7 |   3 |   1 |  13 |   0 |   0 |
  */
 
 /**
  * f - represents rows of the precedence table.
  */
-static const int f[22] = {14, 0, 14, 12, 12, 12, 10, 10, 6, 6, 6, 6, 6, 6, 14, 14, 8, 4, 2, 15, 0, 0};
+static const int f[22] = {12, 0, 12, 10, 10, 10, 8, 8, 6, 6, 6, 6, 6, 6, 12, 12, 6, 4, 2, 13, 0, 0};
 
 /**
  * g - represents columns.
  */
-static const int g[22] = {15, 15, 0, 11, 11, 11, 7, 7, 5, 5, 5, 5, 5, 5, 13, 13, 9, 3, 1, 15, 0, 0};
+static const int g[22] = {13, 13, 0, 9, 9, 9, 7, 7, 5, 5, 5, 5, 5, 5, 11, 11, 7, 3, 1, 13, 0, 0};
 
 /**
  * @brief
@@ -182,19 +190,14 @@ static char *item_to_string(item_type_t type) {
     switch (type) {
         case ITEM_TYPE_EXPR:
             return "expr";
-            break;
         case ITEM_TYPE_LT:
             return "<";
-            break;
         case ITEM_TYPE_GT:
             return ">";
-            break;
         case ITEM_TYPE_EQ:
             return "=";
-            break;
         case ITEM_TYPE_DOLLAR:
             return "$";
-            break;
         default:
             return "unrecognized type";
     }
@@ -323,13 +326,9 @@ static bool precedence_cmp(op_list_t first_op, op_list_t second_op, int *cmp) {
 static bool expression(sstack_t *r_stack, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: expr\n");
 
-    stack_item_t *item = Stack.peek(r_stack);
+    stack_item_t *item;
 
-    if (!item) {
-        return false;
-    }
-
-    if (item->type == ITEM_TYPE_EXPR) {
+    IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_EXPR)
         Semantics.add_operand(expr_sem, item->token);
         Stack.pop(r_stack, stack_item_dtor);
         return true;
@@ -347,13 +346,9 @@ static bool expression(sstack_t *r_stack, expr_semantics_t *expr_sem) {
 static bool expression_f(sstack_t *r_stack) {
     debug_msg("EXPECTED: expr\n");
 
-    stack_item_t *item = Stack.peek(r_stack);
+    stack_item_t *item;
 
-    if (!item) {
-        return false;
-    }
-
-    if (item->type == ITEM_TYPE_EXPR) {
+    IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_EXPR)
         Stack.pop(r_stack, stack_item_dtor);
         return true;
     }
@@ -371,13 +366,9 @@ static bool expression_f(sstack_t *r_stack) {
 static bool single_op(sstack_t *r_stack, op_list_t exp_op) {
     debug_msg("EXPECTED: %s\n", op_to_string(exp_op));
 
-    stack_item_t *item = Stack.peek(r_stack);
+    stack_item_t *item;
 
-    if (!item) {
-        return false;
-    }
-
-    if (item->type == ITEM_TYPE_TOKEN) {
+    IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_TOKEN)
         if (get_op(item->token) == exp_op) {
             Stack.pop(r_stack, stack_item_dtor);
             return true;
@@ -399,13 +390,9 @@ static bool single_op(sstack_t *r_stack, op_list_t exp_op) {
 static bool operator(sstack_t *r_stack, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: binary operator\n");
 
-    stack_item_t *item = Stack.peek(r_stack);
+    stack_item_t *item;
 
-    if (!item) {
-        return false;
-    }
-
-    if (item->type == ITEM_TYPE_TOKEN) {
+    IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_TOKEN)
         op_list_t op = get_op(item->token);
         switch (op) {
             case OP_ADD:
@@ -731,7 +718,7 @@ static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_
  * @param expr_type type of expression to parse.
  * @return bool.
  */
-static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
+static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_expr_types) {
     bool hard_reduce = false;
     bool is_func = false;
     int func_entries = (expr_type == EXPR_FUNC) ? 1 : 0;
@@ -769,6 +756,10 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
             } else {
                 Errors.set_error(ERROR_SYNTAX);
                 return false;
+            }
+            // expr_type = {integer, number, nil, boolean, string}
+            if (vector_expr_types != NULL) {
+                Dynstring.append(vector_expr_types, Semantics.of_id_type(Semantics.token_to_id_type(expr->token.type)));
             }
             debug_msg("Successful parsing!\n");
             return true;
@@ -831,7 +822,7 @@ static bool parse(pfile_t *pfile, sstack_t *stack, expr_type_t expr_type) {
  * @param prev_token previous token.
  * @return bool.
  */
-static bool parse_init(pfile_t *pfile, expr_type_t expr_type, token_t *prev_token) {
+static bool parse_init(pfile_t *pfile, expr_type_t expr_type, token_t *prev_token, dynstring_t *vector_expr_type) {
     sstack_t *stack = Stack.ctor();
 
     // Push $ on stack
@@ -846,7 +837,7 @@ static bool parse_init(pfile_t *pfile, expr_type_t expr_type, token_t *prev_toke
     }
 
     // Parsing process
-    bool parse_result = parse(pfile, stack, expr_type);
+    bool parse_result = parse(pfile, stack, expr_type, vector_expr_type);
 
     // Delete $ from stack
     Stack.dtor(stack, stack_item_dtor);
@@ -861,16 +852,16 @@ static bool parse_init(pfile_t *pfile, expr_type_t expr_type, token_t *prev_toke
  * @param pfile program file to pass in to scanner.
  * @return bool.
  */
-static bool other_expr(pfile_t *pfile) {
+static bool other_expr(pfile_t *pfile, dynstring_t *vector_expr_types) {
     debug_msg("EXPECTED: , expr <other_expr>\n");
 
     // ,
     if (Scanner.get_curr_token().type == TOKEN_COMMA) {
         Scanner.get_next_token(pfile);
         // expr
-        if (parse_init(pfile, EXPR_DEFAULT, NULL)) {
+        if (parse_init(pfile, EXPR_DEFAULT, NULL, vector_expr_types)) {
             // <other_expr>
-            return other_expr(pfile);
+            return other_expr(pfile, vector_expr_types);
         } else {
             return false;
         }
@@ -888,17 +879,16 @@ static bool other_expr(pfile_t *pfile) {
  * @param pfile program file to pass in to scanner.
  * @return bool.
  */
-static bool Expr_list(pfile_t *pfile) {
+static bool Expr_list(pfile_t *pfile, dynstring_t *vector_expr_types) {
     debug_msg("EXPECTED: expr <other_expr>\n");
 
     // expr
-    if (parse_init(pfile, EXPR_DEFAULT, NULL)) {
-        // <other_expr>
-        return other_expr(pfile);
+    if (!parse_init(pfile, EXPR_DEFAULT, NULL, vector_expr_types)) {
+        return false;
     }
 
-    // Otherwise
-    return false;
+    // <other_expr>
+    return other_expr(pfile, vector_expr_types);
 }
 
 /**
@@ -931,7 +921,7 @@ static bool id_list(pfile_t *pfile) {
     // =
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
         Scanner.get_next_token(pfile);
-        return Expr_list(pfile);
+        return Expr_list(pfile, NULL);
     }
 
     // Otherwise
@@ -948,7 +938,7 @@ static bool id_list(pfile_t *pfile) {
  * @param prev_token previous token.
  * @return bool.
  */
-static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token) {
+static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token, dynstring_t *vector_expr_types) {
     debug_msg("EXPECTED: = expr | ( expr | <id_list>\n");
 
     // DEAD TOKEN
@@ -960,13 +950,13 @@ static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token) {
     // =
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
         Scanner.get_next_token(pfile);
-        return parse_init(pfile, EXPR_ASSIGN, NULL);
+        return parse_init(pfile, EXPR_ASSIGN, NULL, vector_expr_types);
     }
 
     // (
     if (Scanner.get_curr_token().type == TOKEN_LPAREN) {
         Scanner.get_next_token(pfile);
-        return parse_init(pfile, EXPR_FUNC, prev_token);
+        return parse_init(pfile, EXPR_FUNC, prev_token, vector_expr_types);
     }
 
     // <id_list>
@@ -981,7 +971,7 @@ static bool expr_stmt_next(pfile_t *pfile, token_t *prev_token) {
  * @param pfile program file to pass in to scanner.
  * @return bool.
  */
-static bool expr_stmt(pfile_t *pfile) {
+static bool expr_stmt(pfile_t *pfile, dynstring_t *vector_expr_types) {
     debug_msg("rule: id <expr_stmt_next>\n");
 
     // DEAD TOKEN
@@ -1001,7 +991,7 @@ static bool expr_stmt(pfile_t *pfile) {
     // <expr_stmt_next>
     token_t tok_id = Scanner.get_curr_token();
     Scanner.get_next_token(pfile);
-    return expr_stmt_next(pfile, &tok_id);
+    return expr_stmt_next(pfile, &tok_id, vector_expr_types);
 }
 
 /**
@@ -1012,11 +1002,11 @@ static bool expr_stmt(pfile_t *pfile) {
  * @param inside_stmt true when the function is called from parser.
  * @return bool.
  */
-static bool Parse_expression(pfile_t *pfile, bool inside_stmt) {
+static bool Parse_expression(pfile_t *pfile, bool inside_stmt, dynstring_t *vector_expr_types) {
     if (inside_stmt == true) {
-        return parse_init(pfile, EXPR_DEFAULT, NULL);
+        return parse_init(pfile, EXPR_DEFAULT, NULL, vector_expr_types);
     } else {
-        return expr_stmt(pfile);
+        return expr_stmt(pfile, vector_expr_types);
     }
 }
 

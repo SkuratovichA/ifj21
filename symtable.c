@@ -144,9 +144,10 @@ static bool builtin_name(dynstring_t *name) {
  * @param self BST.
  * @param id symbol name.
  * @param type symbol type.
+ * @param unique_id scope where the variable was declared.
  * @return pointer on the symbol in the binary tree. Newly created or already existed.
  */
-static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
+static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type, size_t unique_id) {
     if (self == NULL) {
         return NULL;
     }
@@ -177,6 +178,7 @@ static symbol_t *ST_Put(symtable_t *self, dynstring_t *id, id_type_t type) {
 
     (*iterator)->symbol.id = Dynstring.ctor(Dynstring.c_str(id));
     (*iterator)->symbol.type = type;
+    (*iterator)->symbol.id_of_parent_scope = unique_id;
 
     if (type == ID_TYPE_func_decl || type == ID_TYPE_func_def) {
         (*iterator)->symbol.function_semantics =
@@ -249,8 +251,9 @@ static void Add_builtin_function(symtable_t *self, char *name, char *params, cha
     dynstring_t *declreturnvec = Dynstring.ctor(returns);
 
 
-    ST_Put(self, dname, ID_TYPE_func_decl);
-    ST_Put(self, dname, ID_TYPE_func_def);
+    // self, dname, ID_TYPE_func_decl, 0=(global frame unique_id)
+    ST_Put(self, dname, ID_TYPE_func_decl, 0);
+    ST_Put(self, dname, ID_TYPE_func_def, 0);
 
     symbol_t *symbol;
     ST_Get(self, dname, &symbol);
