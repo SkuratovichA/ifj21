@@ -171,24 +171,24 @@ int main() {
             "end                                            "NL
 
             "function opposite(smth : boolean, a2 : boolean) : boolean"NL
-            "   if smth == a2 then return false else return true      "NL
+            "   if smth == a2 then return false else return true end  "NL
             "end                                                      "NL
             "                                                         "NL
-            "function main()                                           "NL
+            "function main()                                          "NL
             "   local myself : string  = \"me\"                       "NL
-            "   local love : bool                                     "NL
-            "   local hate : bool                                     "NL
-            "   local faith : bool                                    "NL
-            "   local heresy : bool                                   "NL
-            "   local death : bool                                    "NL
-            "   local life : bool                                     "NL
-            "   local indifference : bool                             "NL
-            "   local ugliness : bool                                 "NL
-            "   local art : bool                                      "NL
+            "   local love : boolean                                    "NL
+            "   local hate : boolean                                    "NL
+            "   local faith : boolean                                   "NL
+            "   local heresy : boolean                                  "NL
+            "   local death : boolean                                   "NL
+            "   local life : boolean                                    "NL
+            "   local indifference : boolean                            "NL
+            "   local ugliness : boolean                                "NL
+            "   local art : boolean                                     "NL
             "   while opposite(love, hate) == false and opposite(love, indifference) do                 "NL
             "       while opposite(art, ugliness) == false and opposite(art, indifference) do           "NL
-            "           while " "opposite(faith, heresy) == false and opposite(faith, indifference) do  "NL
-            "               while " "opposite(life, death) == false and opposite(life, indifference) do "NL
+            "           while opposite(faith, heresy) == false and opposite(faith, indifference) do  "NL
+            "               while opposite(life, death) == false and opposite(life, indifference) do "NL
             "                   is_beautiful(life)                                                      "NL
             "               end                                                                         "NL
             "           end                                                                             "NL
@@ -876,6 +876,116 @@ int main() {
             "end " NL
     );
 
+    char *description53 = "return types #1.";
+    int retcode53 = ERROR_NOERROR;
+    pfile_t *pf53 = Pfile.ctor(
+            PROLOG NL
+            "global foo : function(    string,     string ) : string, number "NL
+            "function foo (a : string, b : string) :  string, number         "NL
+            "    return \"hello\", 10.5 + 1.5                                "NL
+            "end                                                             "NL
+
+            "foo()                                                          "NL
+    );
+
+    char *description54 = "return types #2 no returns.";
+    int retcode54 = ERROR_NOERROR;
+    pfile_t *pf54 = Pfile.ctor(
+            PROLOG NL
+            "global foo : function(    string,     string ) : string, number "NL
+            "function foo (a : string, b : string) :  string, number         "NL
+            "end                                                             "NL
+
+            "foo()                                                          "NL
+    );
+
+    char *description55 = "return types #3. Typecasting";
+    int retcode55 = ERROR_NOERROR;
+    pfile_t *pf55 = Pfile.ctor(
+            PROLOG NL
+            "global foo : function(    string,     string ) : string, number "NL
+            "function foo (a : string, b : string) :  string, number         "NL
+            "    return \"hello\", 10                                        "NL
+            "end                                                             "NL
+
+            "foo()                                                          "NL
+    );
+
+    char *description56 = "return types #4. Exceed returns";
+    int retcode56 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf56 = Pfile.ctor(
+            PROLOG NL
+            "global foo : function(    string,     string ) : string, number "NL
+            "function foo (a : string, b : string) :  string, number         "NL
+            "    return \"hello\", 10, 10                                    "NL
+            "end                                                             "NL
+
+            "foo()                                                           "NL
+    );
+
+    char *description57 = "return types #5. Wrong return types";
+    int retcode57 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf57 = Pfile.ctor(
+            PROLOG NL
+            "global foo : function(    string,     string ) : string, number "NL
+            "function foo (a : string, b : string) :  string, number         "NL
+            "    return 10, 10                                               "NL
+            "end                                                             "NL
+
+            "foo()                                                           "NL
+    );
+
+    char *description58 = "return types #6. Typecasting nil in return.";
+    int retcode58 = ERROR_NOERROR;
+    pfile_t *pf58 = Pfile.ctor(
+            PROLOG NL
+            "global foo : function(    string,     string ) : string, number "NL
+            "function foo (a : string, b : string) :  string, number         "NL
+            "    return nil, nil                                             "NL
+            "end                                                             "NL
+
+            "foo()                                                           "NL
+    );
+
+    char *description59 = "return types #7. Typecasting nil in return.";
+    int retcode59 = ERROR_NOERROR;
+    pfile_t *pf59 = Pfile.ctor(
+            PROLOG NL
+            "global foo : function(    string,     string ) : string, number "NL
+            "function foo (a : string, b : string) :  string, number, boolean"NL
+            "    return nil, nil, true                                       "NL
+            "end                                                             "NL
+
+            "foo()                                                           "NL
+    );
+
+    char *description60 = "return types #8";
+    int retcode60 = ERROR_NOERROR;
+    pfile_t *pf60 = Pfile.ctor(
+            PROLOG
+            "function is_beautiful(life : boolean) : boolean          "NL
+            "   return false                                          "NL
+            "end                                                      "NL
+            "function opposite(smth : boolean, a2 : boolean) : boolean"NL
+            "   if smth == a2 then                                    "NL
+            "       return false                                      "NL
+            "   else                                                  "NL
+            "       return true                                       "NL
+            "   end                                                   "NL
+            "end                                                      "NL
+
+    );
+
+    char *description61 = "undef function";
+    int retcode61 = ERROR_NOERROR;
+    pfile_t *pf61 = Pfile.ctor(
+            PROLOG
+            "function main(life : boolean) : boolean                  "NL
+            "   return foo()                                          "NL
+            "end                                                      "NL
+
+    );
+
 
     TEST_CASE(1);
     TEST_CASE(2);
@@ -934,6 +1044,15 @@ int main() {
     TEST_CASE(50);
     TEST_CASE(51);
     TEST_CASE(52);
+    TEST_CASE(53);
+    TEST_CASE(54);
+    TEST_CASE(55);
+    TEST_CASE(56);
+    TEST_CASE(57);
+    TEST_CASE(58);
+    TEST_CASE(59);
+
+    TEST_CASE(60);
 
     return 0;
 }
