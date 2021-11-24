@@ -64,6 +64,7 @@ struct code_generator_interface_t {
 
     void (*var_declaration)(dynstring_t *);
     void (*var_definition)(dynstring_t *);
+    void (*var_assignment)(dynstring_t *);
     void (*cond_if)(size_t, size_t);
     void (*cond_elseif)(size_t, size_t);
     void (*cond_else)(size_t, size_t);

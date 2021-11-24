@@ -413,13 +413,23 @@ static void generate_var_value(token_t token) {
 }
 
 /*
+ * @brief Generates name of variable
+ *        scope_id%name
+ */
+static void generate_var_name(dynstring_t *var_name) {
+    symbol_t *symbol;
+    Symstack.get_local_symbol(symstack, var_name, &symbol);
+    ADD_INSTR_INT(symbol->id_of_parent_scope);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
+}
+
+/*
  * @brief Generates DEFVAR LF@%var.
  */
 static void generate_defvar(dynstring_t *var_name) {
     ADD_INSTR_PART("DEFVAR LF@%");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART_DYN(var_name);
+    generate_var_name(var_name);
     if (instructions.in_loop) {
         ADD_INSTR_WHILE();
     } else {
@@ -435,9 +445,7 @@ static void generate_var_definition(dynstring_t *var_name) {
     generate_defvar(var_name);
 
     ADD_INSTR_PART("MOVE LF@%");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART_DYN(var_name);
+    generate_var_name(var_name);
     ADD_INSTR_PART(" GF@%expr_result");
     ADD_INSTR_TMP();
 }
@@ -451,11 +459,19 @@ static void generate_var_declaration(dynstring_t *var_name) {
 
     // initialise to nil
     ADD_INSTR_PART("MOVE LF@%");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART_DYN(var_name);
+    generate_var_name(var_name);
     ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates assignment to a variable
+ *        MOVE LF@%0%i GF@%expr_result
+ */
+static void generate_var_assignment(dynstring_t *var_name) {
+    ADD_INSTR_PART("MOVE LF@%");
+    generate_var_name(var_name);
+    ADD_INSTR_PART(" GF@%expr_result");
 }
 
 /*
@@ -943,4 +959,5 @@ const struct code_generator_interface_t Generator = {
         .expression_pop = generate_expression_pop,
         .dtor = dtor,
         .print_instr_list = Print_instr_list,
+        .var_assignment = generate_var_assignment,
 };
