@@ -236,7 +236,7 @@ static symbol_t *SS_Put_symbol(symstack_t *self, dynstring_t *id, id_type_t type
         return NULL;
     }
 
-    return Symtable.put(self->head->table, id, type);
+    return Symtable.put(self->head->table, id, type, self->head->info.unique_id);
 }
 
 /** Return information about the current scope.
