@@ -27,6 +27,9 @@
           case ERROR_SYNTAX:                                                 \
               _filname = "../tests/syntax_errors/sasha" #number "_";          \
               break;                                                         \
+          case ERROR_LEXICAL:                                                \
+              _filname = "../tests/lexical_errors/sasha" #number "_";         \
+              break;                                                         \
           default:                                                           \
               debug_msg_s("Undefined error code: %d\n", retcode##number);     \
               _filname = "sasha";                                             \
@@ -1485,6 +1488,14 @@ int main() {
             "main()                                                        "NL
     );
 
+    char *description89 = "lexical error";
+    int retcode89 = ERROR_LEXICAL;
+    pfile_t *pf89 = Pfile.ctor(
+            PROLOG
+            "function main()"NL
+            "   12;13       "NL
+            "end            "NL
+    );
 
     TEST_CASE(1);
     TEST_CASE(2);
@@ -1582,5 +1593,7 @@ int main() {
     TEST_CASE(86);
     TEST_CASE(87);
     TEST_CASE(88);
+    TEST_CASE(89);
+
     return 0;
 }
