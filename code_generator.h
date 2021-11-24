@@ -98,6 +98,7 @@ struct code_generator_interface_t {
 
     void (*pop_cond_info)(void);
     void (*push_cond_info)(void);
+    void (*instr_break)(void);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.
