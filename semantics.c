@@ -311,7 +311,7 @@ static int token_to_type(int typ) {
 static bool is_var_exists (token_t tok, expr_semantics_t *self) {
     symbol_t *symbol;
     bool res;
-    res = Symstack.get_symbol(symstack, tok.attribute.id, &symbol);
+    res = Symstack.get_local_symbol(symstack, tok.attribute.id, &symbol);
     if (res) {
         self->result_type = type_to_token(symbol->type);
         return true;
