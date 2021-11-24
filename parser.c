@@ -220,7 +220,7 @@ static bool cond_body(pfile_t *pfile) {
 static bool cond_stmt(pfile_t *pfile) {
     debug_msg("<cond_stmt> -> \n");
 
-    if (!Expr.parse(pfile, true)) {
+    if (!Expr.parse(pfile, true, NULL)) {
         debug_msg("\n\t\t[error] Expression parsing failed.\n");
         instructions.cond_cnt = 0;
         return false;
@@ -305,7 +305,7 @@ static bool assignment(pfile_t *pfile, dynstring_t *var_name) {
 
     // =
     EXPECTED(TOKEN_ASSIGN);
-    if (!Expr.parse(pfile, true)) {
+    if (!Expr.parse(pfile, true, NULL)) {
         debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
@@ -328,7 +328,7 @@ static bool for_assignment(pfile_t *pfile) {
 
     EXPECTED(TOKEN_COMMA);
 
-    if (!Expr.parse(pfile, true)) {
+    if (!Expr.parse(pfile, true, NULL)) {
         debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
@@ -358,7 +358,7 @@ static bool for_cycle(pfile_t *pfile) {
 
     // =
     EXPECTED(TOKEN_ASSIGN);
-    if (!Expr.parse(pfile, true)) {
+    if (!Expr.parse(pfile, true, NULL)) {
         debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
@@ -367,22 +367,19 @@ static bool for_cycle(pfile_t *pfile) {
     EXPECTED(TOKEN_COMMA);
 
     // terminating `expr` in for cycle.
-    if (!Expr.parse(pfile, true)) {
+    if (!Expr.parse(pfile, true, NULL)) {
         debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
-    debug_msg("\n\n\n\n\n\n\n\n\n\nAAAAAAAAa\n\n\n");
 
     // do | , `expr` do
     if (!for_assignment(pfile)) {
         return false;
     }
-    debug_msg("\n\n\n\n\n\n\n\n\n\nRRRRRRRRR\n\n\n");
     // <fun_body>, which ends with 'end'
     if (!fun_body(pfile)) {
         return false;
     }
-    debug_msg("\n\n\n\n\n\n\n\n\n\nSSSSSSSSSSS\n\n\n");
     SYMSTACK_POP();
     return true;
 }
@@ -461,7 +458,7 @@ static bool while_cycle(pfile_t *pfile) {
     Generator.while_header();
 
     // parse expressions
-    if (!Expr.parse(pfile, true)) {
+    if (!Expr.parse(pfile, true, NULL)) {
         debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
@@ -488,7 +485,6 @@ static bool return_stmt(pfile_t *pfile) {
     EXPECTED(KEYWORD_return);
     dynstring_t *sign_returns;
     dynstring_t *return_types = Dynstring.ctor("");
-    size_t nil_pushes = 0;
 
     // pointer is not NULL, because we are inside a function.
     sign_returns = Symstack.get_parent_func(symstack)->function_semantics->definition.returns;
@@ -498,15 +494,11 @@ static bool return_stmt(pfile_t *pfile) {
         return false;
     }
 
-    if (!Semantics.check_return_semantics(sign_returns, return_types, &nil_pushes)) {
+    if (!Semantics.check_return_semantics(sign_returns, return_types)) {
         Dynstring.dtor(return_types);
         return false;
     }
 
-    while (nil_pushes--) {
-        debug_msg_s("\t\t\t\tPUSH NILL\n"); // TODO code generation
-        //Generator.return_nil();
-    }
     Dynstring.dtor(return_types);
     return true;
 }
@@ -535,7 +527,7 @@ static bool repeat_until_cycle(pfile_t *pfile) {
     }
 
     // expression represent a condition after an until keyword.
-    if (!Expr.parse(pfile, true)) {
+    if (!Expr.parse(pfile, true, NULL)) {
         debug_msg("\n\t\t[error] Expression parsing failed.\n");
         return false;
     }
@@ -589,7 +581,7 @@ static bool fun_stmt(pfile_t *pfile) {
             return repeat_until_cycle(pfile);
 
         case TOKEN_ID:
-            if (!Expr.parse(pfile, false)) {
+            if (!Expr.parse(pfile, false, NULL)) {
                 debug_msg("\n\t\t[error] Expression parsing failed.\n");
                 return false;
             }
@@ -640,8 +632,13 @@ static bool fun_body(pfile_t *pfile) {
                 break;
             case SCOPE_TYPE_do_cycle:
                 break;
+
+                // else <....> end
+            case SCOPE_TYPE_condition:
+                break;
             default:
                 debug_msg("Shouldn't be here.\n");
+                assert(0);
                 break;
         }
         return true;
@@ -984,7 +981,7 @@ static bool stmt(pfile_t *pfile) {
 
             // in expressions we pass the parameters
             // TODO add enum list with INSIDE_STMT, INSIDE_FUNC, GLOBAL_SCOPE
-            if (!Expr.parse(pfile, false)) {
+            if (!Expr.parse(pfile, false, NULL)) {
                 debug_msg("\n\t\t[error] Expression parsing failed.\n");
                 return false;
             }
