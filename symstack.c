@@ -151,7 +151,7 @@ static void SS_Dtor(symstack_t *self) {
  * @return true if symbol exists.
  */
 static bool SS_Get_symbol(symstack_t *self, dynstring_t *id,
-                          symbol_t **sym, stack_el_t **def_scope) {
+                          symbol_t **sym) {
     debug_msg("\n");
     if (self == NULL) {
         debug_msg_s("\t[getter] Stack is null. Returning false.\n");
@@ -162,9 +162,6 @@ static bool SS_Get_symbol(symstack_t *self, dynstring_t *id,
     while (st != NULL) {
         if (Symtable.get_symbol(st->table, id, sym)) {
             debug_msg_s("\t[getter] symbol found\n");
-            if (def_scope != NULL) {
-                *def_scope = st;
-            }
             return true;
         }
         st = st->next;
@@ -180,7 +177,7 @@ static bool SS_Get_symbol(symstack_t *self, dynstring_t *id,
  * @return true if symbol exists.
  */
 static bool SS_Get_local_symbol(symstack_t *self, dynstring_t *id,
-                                symbol_t **sym, stack_el_t **def_scope) {
+                                symbol_t **sym) {
     debug_msg("\n");
     if (self == NULL) {
         debug_msg_s("\t[getter] Stack is null. Returning false.\n");
@@ -192,9 +189,6 @@ static bool SS_Get_local_symbol(symstack_t *self, dynstring_t *id,
     while (st != NULL && st->next != NULL) {
         if (Symtable.get_symbol(st->table, id, sym)) {
             debug_msg_s("\t[getter] symbol found\n");
-            if (def_scope != NULL) {
-                *def_scope = st;
-            }
             return true;
         }
         st = st->next;
@@ -262,7 +256,7 @@ static symbol_t *SS_Get_parent_func(symstack_t *self) {
     while (iter != NULL) {
         if (iter->info.scope_type == SCOPE_TYPE_function) {
             // set a pointer.
-            Symstack.get_symbol(self, iter->fun_name, &sym, NULL);
+            Symstack.get_symbol(self, iter->fun_name, &sym);
             return sym;
         }
         iter = iter->next;

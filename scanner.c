@@ -454,7 +454,7 @@ static token_t lex_relate_op(pfile_t *pfile) {
                         pfile), (token_t) {.type = TOKEN_ASSIGN});
             case '~':
                 charpos++;
-                return Pfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_EQ} : (Pfile.ungetc(
+                return Pfile.pgetc(pfile) == '=' ? (token_t) {.type = TOKEN_NE} : (Pfile.ungetc(
                         pfile), (token_t) {.type = TOKEN_DEAD});
             default:
                 break;

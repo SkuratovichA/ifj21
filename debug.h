@@ -17,6 +17,9 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <string.h>
+
+#define __FILENAME__ ((strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__))
 
 #define debug_msg(...) debug_print(stderr, __VA_ARGS__)
 #define debug_msg_stdout(...) debug_print(stdout, __VA_ARGS__)
@@ -30,13 +33,14 @@
         debug_msg(__VA_ARGS__);        \
     } while(0)
 
-#define debug_print(_dst, ...)                           \
+#define debug_print(_dst, ...)                          \
     do {                                                \
-        fprintf((_dst), __FILE__ ":%.4d in %s %*s%s: ", \
+        fprintf((_dst),"%s:%.4d in %s %*s%s: ",         \
+            __FILENAME__,                               \
             __LINE__,                                   \
             __FUNCTION__,                               \
              /*an indentation number*/                  \
-            (int)(30 - strlen(__FUNCTION__)),           \
+            (int)(20 - strlen(__FUNCTION__)),           \
             "", " "                                     \
             );                                          \
         fprintf((_dst), __VA_ARGS__);                   \

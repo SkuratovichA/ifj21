@@ -5,9 +5,9 @@ size_t __ADDRESS_OF_START_LIST;
 /*
  * Global variables used for code generator.
  */
-list_t *instrList;              // pointer to the list of instr that is currently used
-static dynstring_t *tmp_instr;         // instruction that is currently being generated
-instructions_t instructions;    // structure that holds info about generated code
+list_t *instrList;                      // pointer to the list of instr that is currently used
+static dynstring_t *tmp_instr;          // instruction that is currently being generated
+instructions_t instructions;            // structure that holds info about generated code
 
 /*
  * Adds new instruction to the list of instructions.
@@ -61,7 +61,7 @@ void ADD_INSTR_WHILE() {
  */
 void ADD_INSTR_INT(uint64_t num) {
     char str[MAX_CHAR] = "\0";
-    sprintf(str, "%*llu", MAX_CHAR - 1, num);
+    sprintf(str, "%lu", num);
     ADD_INSTR_PART(str);
 }
 
@@ -78,7 +78,7 @@ void INSTR_CHANGE_ACTIVE_LIST(list_t *newList) {
  *          result: %res
  */
 static void generate_func_reads() {
-    ADD_INSTR("LABEL $READS \n"
+    ADD_INSTR("LABEL $reads \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%res \n"
               "READ LF@%res string \n"
@@ -92,7 +92,7 @@ static void generate_func_reads() {
  *          result: %res
  */
 static void generate_func_readi() {
-    ADD_INSTR("LABEL $READI \n"
+    ADD_INSTR("LABEL $readi \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%res \n"
               "READ LF@%res int \n"
@@ -106,7 +106,7 @@ static void generate_func_readi() {
  *          result: %res
  */
 static void generate_func_readn() {
-    ADD_INSTR("LABEL $READN \n"
+    ADD_INSTR("LABEL $readn \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%res \n"
               "READ LF@%res float \n"
@@ -125,7 +125,7 @@ static void generate_func_readn() {
  *          params: FIXME
  */
 static void generate_func_write() {
-    ADD_INSTR("LABEL $WRITE \n"
+    ADD_INSTR("LABEL $write \n"
               "PUSHFRAME \n"
               "DEFVAR LF@p0 \n"
               "MOVE LF@p0 LF@%0 \n"
@@ -141,7 +141,7 @@ static void generate_func_write() {
  *          result: %res
  */
 static void generate_func_tointeger() {
-    ADD_INSTR("LABEL $TOINTEGER \n"
+    ADD_INSTR("LABEL $tointeger \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%res \n"
               "DEFVAR LF@p0 \n"
@@ -158,7 +158,7 @@ static void generate_func_tointeger() {
  *          result: %res
  */
 static void generate_func_chr() {
-    ADD_INSTR("LABEL $CHR \n"
+    ADD_INSTR("LABEL $chr \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%res \n"
               "MOVE LF@%res nil@nil \n"
@@ -182,7 +182,7 @@ static void generate_func_chr() {
  *          result: %res
  */
 static void generate_func_ord() {
-    ADD_INSTR("LABEL $ORD \n"
+    ADD_INSTR("LABEL $ord \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%res \n"
               "MOVE LF@%res nil@nil \n"
@@ -211,7 +211,7 @@ static void generate_func_ord() {
  *          result: %res
 */
 static void generate_func_substr() {
-    ADD_INSTR("LABEL $SUBSTR \n"
+    ADD_INSTR("LABEL $substr \n"
               "PUSHFRAME \n"
               "# define vars for params and result\n"
               "DEFVAR LF@%res \n"
@@ -266,6 +266,7 @@ static void generate_func_call(dynstring_t *func_name) {
  */
 static void generate_main_start() {
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
+    ADD_INSTR("\n# main scope");
     ADD_INSTR("LABEL $$MAIN");
     ADD_INSTR("CREATEFRAME");
     ADD_INSTR("PUSHFRAME");
@@ -289,7 +290,7 @@ static void generate_main_end() {
  */
 static void generate_func_start(dynstring_t *func_name) {
     INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
-    ADD_INSTR_PART("LABEL $");   // add name of function
+    ADD_INSTR_PART("\nLABEL $");   // add name of function
     ADD_INSTR_PART_DYN(func_name);
     ADD_INSTR_TMP();
     ADD_INSTR("PUSHFRAME");
@@ -303,6 +304,7 @@ static void generate_func_start(dynstring_t *func_name) {
  * @brief Generates function end.
  */
 static void generate_func_end(char *func_name) {
+    ADD_INSTR("# generate_function_end");
     ADD_INSTR_PART("LABEL $");
     ADD_INSTR_PART(func_name);
     ADD_INSTR_PART("$end");
@@ -325,6 +327,7 @@ static void generate_func_end(char *func_name) {
  *      MOVE LF@%p0 LF@%0
  */
 static void generate_func_start_param(dynstring_t *param_name, size_t index) {
+    ADD_INSTR("# generate_function_start_param");
     ADD_INSTR_PART("DEFVAR LF@%");
     ADD_INSTR_PART_DYN(param_name);
     ADD_INSTR_TMP();
@@ -343,6 +346,7 @@ static void generate_func_start_param(dynstring_t *param_name, size_t index) {
  *      MOVE LF@%return0 nil@nil
  */
 static void generate_func_return_value(size_t index) {
+    ADD_INSTR("# generate_function_return_value");
     ADD_INSTR_PART("DEFVAR LF@%return");
     ADD_INSTR_INT(index);
     ADD_INSTR_TMP();
@@ -367,7 +371,7 @@ static void generate_var_value(token_t token) {
             char *str_id = Dynstring.c_str(token.attribute.id);
             for (unsigned i = 0; i < str_len; i++) {
                 // check format (check what to do with not printable chars?)
-                if (!isprint(str_id[i]) || str_id[i] == '#' || str_id[i] == '\\') {
+                if (str_id[i] == ' ' || !isprint(str_id[i]) || str_id[i] == '#' || str_id[i] == '\\') {
                     // print as an escape sequence
                     sprintf(str_tmp, "\\%03d", str_id[i]);
                 } else {
@@ -384,7 +388,7 @@ static void generate_var_value(token_t token) {
             break;
         case TOKEN_NUM_I:
             ADD_INSTR_PART("int@");
-            sprintf(str_tmp, "%llu", token.attribute.num_i);
+            sprintf(str_tmp, "%lu", token.attribute.num_i);
             ADD_INSTR_PART(str_tmp);
             break;
         case KEYWORD_nil:
@@ -409,13 +413,23 @@ static void generate_var_value(token_t token) {
 }
 
 /*
+ * @brief Generates name of variable
+ *        scope_id%name
+ */
+static void generate_var_name(dynstring_t *var_name) {
+    symbol_t *symbol;
+    Symstack.get_local_symbol(symstack, var_name, &symbol);
+    ADD_INSTR_INT(symbol->id_of_parent_scope);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
+}
+
+/*
  * @brief Generates DEFVAR LF@%var.
  */
 static void generate_defvar(dynstring_t *var_name) {
     ADD_INSTR_PART("DEFVAR LF@%");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART_DYN(var_name);
+    generate_var_name(var_name);
     if (instructions.in_loop) {
         ADD_INSTR_WHILE();
     } else {
@@ -431,9 +445,7 @@ static void generate_var_definition(dynstring_t *var_name) {
     generate_defvar(var_name);
 
     ADD_INSTR_PART("MOVE LF@%");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART_DYN(var_name);
+    generate_var_name(var_name);
     ADD_INSTR_PART(" GF@%expr_result");
     ADD_INSTR_TMP();
 }
@@ -447,11 +459,19 @@ static void generate_var_declaration(dynstring_t *var_name) {
 
     // initialise to nil
     ADD_INSTR_PART("MOVE LF@%");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART_DYN(var_name);
+    generate_var_name(var_name);
     ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates assignment to a variable
+ *        MOVE LF@%0%i GF@%expr_result
+ */
+static void generate_var_assignment(dynstring_t *var_name) {
+    ADD_INSTR_PART("MOVE LF@%");
+    generate_var_name(var_name);
+    ADD_INSTR_PART(" GF@%expr_result");
 }
 
 /*
@@ -486,7 +506,7 @@ static void generate_func_createframe() {
  * @brief Generates condition label.
  */
 static void generate_cond_label(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR_PART("LABEL $");
+    ADD_INSTR_PART("LABEL $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$");
     ADD_INSTR_INT(cond_num);
@@ -499,11 +519,12 @@ static void generate_cond_label(size_t if_scope_id, size_t cond_num) {
  * generates sth like: JUMPIFNEQ $23$next_cond LF@%result bool@true
  */
 static void generate_cond_if(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR_PART("JUMPIFNEQ $");
+    ADD_INSTR("\n# condition - if check");
+    ADD_INSTR_PART("JUMPIFNEQ $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$");
     ADD_INSTR_INT(cond_num);
-    ADD_INSTR_PART(" LF@%result bool@true");
+    ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
 }
 
@@ -514,11 +535,12 @@ static void generate_cond_if(size_t if_scope_id, size_t cond_num) {
  *                     LABEL $scope$new_scope_num
  */
 static void generate_cond_elseif(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR_PART("JUMP $");
+    ADD_INSTR_PART("JUMP $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP();
 
+    ADD_INSTR("\n# condition - elseif part");
     generate_cond_label(if_scope_id, cond_num);
 }
 
@@ -526,21 +548,16 @@ static void generate_cond_elseif(size_t if_scope_id, size_t cond_num) {
  * @brief Generates start of else statement.
  *          JUMP $id_scope$end
  *          LABEL $id_scope$else
- *          JUMPIFNEQ $id_scope$end
  *          --- else body ---
  */
 static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR_PART("JUMP $");
+    ADD_INSTR_PART("JUMP $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP();
 
+    ADD_INSTR("\n# condition - else part");
     generate_cond_label(if_scope_id, cond_num - 1);
-
-    ADD_INSTR_PART("JUMPIFNEQ $");
-    ADD_INSTR_INT(if_scope_id);
-    ADD_INSTR_PART("$end LF@%result bool@true");
-    ADD_INSTR_TMP();
 }
 
 /*
@@ -550,12 +567,14 @@ static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
  * Yes, I need two labels rn.
  */
 static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR_PART("LABEL $");
+    ADD_INSTR("\n# condition end");
+    ADD_INSTR_PART("LABEL $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP();
 
     generate_cond_label(if_scope_id, cond_num);
+    ADD_INSTR("");
 }
 
 /*
@@ -563,6 +582,7 @@ static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
  * generates sth like: LABEL $while$id
  */
 static void generate_while_header() {
+    ADD_INSTR("\n# while");
     ADD_INSTR_PART("LABEL $while$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
@@ -573,9 +593,9 @@ static void generate_while_header() {
  * generates sth like: JUMPIFEQ $end$id LF@%result bool@true
  */
 static void generate_while_cond() {
-    ADD_INSTR_PART("JUMPIFEQ $end$");
+    ADD_INSTR_PART("JUMPIFNEQ $while$end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART(" LF@%result bool@true");
+    ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
 }
 
@@ -589,9 +609,10 @@ static void generate_while_end() {
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
 
-    ADD_INSTR_PART("LABEL $end$");
+    ADD_INSTR_PART("LABEL $while$end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
+    ADD_INSTR("");
 }
 
 /*
@@ -599,6 +620,7 @@ static void generate_while_end() {
  *        LABEL $end$id
  */
 static void generate_end() {
+    ADD_INSTR("#generate_end");
     ADD_INSTR_PART("LABEL $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
@@ -621,7 +643,7 @@ static void generate_repeat_until_header() {
 static void generate_repeat_until_cond() {
     ADD_INSTR_PART("JUMPIFEQ $repeat$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART(" LF@%result bool@true");
+    ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
 }
 
@@ -644,7 +666,7 @@ static void generate_for_header(dynstring_t *var_name) {
 static void generate_for_cond() {
     ADD_INSTR_PART("JUMPIFNEQ $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART(" LF@%result bool@true");
+    ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
 }
 
@@ -701,6 +723,7 @@ static void generate_prog_start() {
 }
 
 void generate_division_check(bool integer) {
+    ADD_INSTR("# zero division check");
     ADD_INSTR("POPS GF@%expr_result");
     if (integer) {
         ADD_INSTR("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF@%expr_result int@0");
@@ -711,6 +734,7 @@ void generate_division_check(bool integer) {
 }
 
 static void generate_nil_check(token_t token) {
+    ADD_INSTR("# nil check");
     ADD_INSTR_PART("JUMPIFEQ $$ERROR_NIL ");
     generate_var_value(token);
     ADD_INSTR_PART(" nil@nil");
@@ -718,6 +742,7 @@ static void generate_nil_check(token_t token) {
 }
 
 static void retype_first_or_both(expr_semantics_t *expr) {
+    ADD_INSTR("# retype_first_or_both");
     ADD_INSTR("POPS GF@%expr_result2 \n"
               "POPS GF@%expr_result \n"
               "INT2FLOAT GF@%expr_result GF@%expr_result");
@@ -729,6 +754,7 @@ static void retype_first_or_both(expr_semantics_t *expr) {
 }
 
 static void retype_second() {
+    ADD_INSTR("# retype_second");
     ADD_INSTR("POPS GF@%expr_result \n"
               "INT2FLOAT GF@%expr_result GF@%expr_result \n"
               "PUSHS GF@%expr_result");
@@ -818,7 +844,7 @@ static void generate_expression(expr_semantics_t *expr) {
             ADD_INSTR("EQS");
             break;
         case OP_NE:
-            ADD_INSTR("EQS"
+            ADD_INSTR("EQS \n"
                       "NOTS");
             break;
         case OP_NOT:
@@ -862,7 +888,9 @@ static void initialise_generator() {
     instructions.outer_loop_id = 0;
     instructions.before_loop_start = NULL;
     instructions.outer_cond_id = 0;
-    instructions.cond_cnt = 0;
+    instructions.cond_cnt = 1;
+    instructions.label_cnt = 0;
+    instructions.cond_info = Dynstring.ctor("");
     // sets active instructions list
     instrList = instructions.startList;
 }
@@ -872,6 +900,7 @@ static void dtor() {
     List.dtor(instructions.startList, (void (*)(void *)) (Dynstring.dtor)); // use Dynstring.dtor or free?
     List.dtor(instructions.instrListFunctions, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
     List.dtor(instructions.mainList, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
+    Dynstring.dtor(instructions.cond_info);
     Dynstring.dtor(tmp_instr);
 }
 
@@ -892,6 +921,28 @@ static void Print_instr_list(instr_list_t instr_list_type) {
     }
 }
 
+/*
+ * @brief Saves info about current cond scope into dynstring instructions.cond_info
+ */
+static void push_cond_info() {
+    Dynstring.append(instructions.cond_info, instructions.cond_cnt);
+    char cond_id_str[6] = "\0";
+    sprintf(cond_id_str, "%.5lu", instructions.outer_cond_id);
+    dynstring_t *new_id_str = Dynstring.ctor(cond_id_str);
+    Dynstring.cat(instructions.cond_info, new_id_str);
+    Dynstring.dtor(new_id_str);
+}
+
+/*
+ * @brief Gets info about current cond scope from dynstring instructions.cond_info
+ *        - saves it to outer_cond_id and cond_cnt
+ */
+static void pop_cond_info() {
+    long unsigned num = strtoul(&Dynstring.c_str(instructions.cond_info)[Dynstring.len(instructions.cond_info) - 5], NULL, 10);
+    instructions.outer_cond_id = num;
+    instructions.cond_cnt = Dynstring.c_str(instructions.cond_info)[Dynstring.len(instructions.cond_info) - 6];
+    Dynstring.trunc_to_len(instructions.cond_info, Dynstring.len(instructions.cond_info) - 6);
+}
 
 /**
  * Interface to use when dealing with code generator.
@@ -926,4 +977,7 @@ const struct code_generator_interface_t Generator = {
         .expression_pop = generate_expression_pop,
         .dtor = dtor,
         .print_instr_list = Print_instr_list,
+        .var_assignment = generate_var_assignment,
+        .pop_cond_info = pop_cond_info,
+        .push_cond_info = push_cond_info,
 };

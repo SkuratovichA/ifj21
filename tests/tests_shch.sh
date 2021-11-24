@@ -25,31 +25,18 @@ COMPILE_FLAGS="-DDEBUG=on"
 
 # directory with source code
 # in this case, tests is pwd and ../ is src
-SRC_DIR="/Users/suka/Desktop/vut/sem3/ifj/proj/ifj21" #"`pwd`/.."
+cd .. 1>/dev/null
+SRC_DIR="`pwd`"
+cd - 1>/dev/null
+
+TEST_DIR="$SRC_DIR/tests"
+
 
 # directory with html for statistics and .json files with code coverage
 STAT_DIR="$SRC_DIR/statistics"
 
 # build directory(related to directory with tests)
 BUILD_DIR="$SRC_DIR/cmake-build-debug"
-
-#coverage_scanner()
-#{
-#    coverage_DIR="$SRC_DIR/CMakeFiles/scannerTests.dir"
-#
-#    cd "$BUILD_DIR" || { echo "ERROR: No directory exists: $BUILD_DIR" ; exit 1; }
-#
-#    { cmake $COMPILE_FLAGS .. 1>/dev/null && {
-#      { make $BIN_TARGET >/dev/null 2>/dev/null  && ./scannerTests ; } || {
-#        echo "ERROR: Cannot compile a target" ; exit 1; }
-#      }
-#    } || {
-#      echo "Cannot initialize cmake. Exiting..." ; exit 1;
-#    }
-#
-#    cd "$coverage_DIR" || { echo "ERROR: No such directory $coverage_DIR" ; exit 1 ; }
-#    gcovr -b --filter "$SRC_DIR" --json > code1.json || { echo "ERROR: cannot initialize gcovr. " ; }
-#}
 
 coverage_other()
 {
@@ -84,32 +71,43 @@ if [[ "$name" == "all" ]]; then
     # create a directory for html pages
     mkdir "$STAT_DIR/html" || { echo "$STAT_DIR/html already exists " ; }
 
-    for NUM_TEST in 0 2 3 4 5 6 7
+    for NUM_TEST in 0 1 2 3 4 5 6 7
     do
         echo "******** RET_VALUE = $NUM_TEST ********"
-        ./run_tests.sh "*" "$NUM_TEST" 1>/dev/null 2>/dev/null
+        cd "$TEST_DIR"
+        "$TEST_DIR/$0" "*" "$NUM_TEST" 2>&1 |  grep -e "tests\|fault\|malloc"
+        cd - 1>/dev/null
         echo "*******************************"
         echo ""
+        echo 
 
         coverage_other $NUM_TEST
     done
 
     gcovr --filter "$SRC_DIR" --add-tracefile "$STAT_DIR/code0.json"  \
-                             --add-tracefile "$STAT_DIR/code2.json" \
+			     --add-tracefile "$STAT_DIR/code1.json" \
+			     --add-tracefile "$STAT_DIR/code2.json" \
                              --add-tracefile "$STAT_DIR/code3.json" \
                              --add-tracefile "$STAT_DIR/code4.json" \
                              --add-tracefile "$STAT_DIR/code5.json" \
                              --add-tracefile "$STAT_DIR/code6.json" \
                              --add-tracefile "$STAT_DIR/code7.json" \
                              --html --html-details -o "$STAT_DIR/html/coverage.html" || { echo "ERROR: cannot cover" ; }
-    open "$STAT_DIR/html/coverage.html"
+    
+   if [[ $OSTYPE == 'darwin'* ]]; then #if MACOS
+       open "$STAT_DIR/html/coverage.html"
+    else
+       xdg-open "$STAT_DIR/html/coverage.html"
+    fi
+    
     exit 0 ;
 fi
 
+echo "BUILD_DIR = $BUILD_DIR"
 cd "$BUILD_DIR" || { echo "ERROR: no build dir" ; exit 1;  }
 rm -rf *
-cmake ..
-make "$BIN_TARGET" || { echo "ERROR: cannot make" ; exit 1; }
+cmake .. 1>/dev/null
+make "$BIN_TARGET" 1>/dev/null 2>/dev/null || { echo "ERROR: cannot make" ; exit 1; }
 
 cd "$SRC_DIR/tests" || { echo "ERROR. No tests directory" ; exit 1 ; }
 
@@ -121,6 +119,8 @@ elif [[ "$expected_err" -eq "2" ]]; then
     folder="syntax_errors"
 elif [[ "$expected_err" -ge "3" ]] && [[ "$expected_err" -le "7" ]]; then
     folder="semantic_errors"
+elif [[ "$expected_err" -eq "1" ]]; then
+    folder="lexical_errors"
 else
     echo "This script doesnt support this type of error $expected_err"
     exit 1
@@ -176,7 +176,7 @@ else
     if [ $err_files -ne 0 ]; then
         printf "$err_files/$all_files tests were ${RED}FAILED${NC}\n"
         err_files=$((all_files-err_files))
-        printf "$err_files/$all_files tests were ${GREEN}PASSED${NC}"
+        printf "$err_files/$all_files tests were ${GREEN}PASSED${NC}\n"
     else
         printf "$all_files/$all_files tests were ${GREEN}PASSED${NC}\n"
     fi
@@ -202,7 +202,12 @@ if [[ "$coverage" == "coverage" ]]; then
     coverage_other 0
     echo "source directory $SRC_DIR"
     gcovr --filter "$SRC_DIR" --add-tracefile "$STAT_DIR/code0.json" --html --html-details -o "$STAT_DIR/html/coverage.html"
-    open "$STAT_DIR/html/coverage.html"
+
+   if [[ $OSTYPE == 'darwin'* ]]; then #if MACOS
+       open "$STAT_DIR/html/coverage.html"
+    else
+       xdg-open "$STAT_DIR/html/coverage.html"
+    fi
 fi
 
 

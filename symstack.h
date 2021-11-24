@@ -88,7 +88,7 @@ struct symstack_interface_t {
      * @param sym a pointer to symbol to store a pointer to the object if we find it.
      * @return true if symbol exists.
      */
-    bool (*get_symbol)(symstack_t *, dynstring_t *, symbol_t **, stack_el_t **);
+    bool (*get_symbol)(symstack_t *, dynstring_t *, symbol_t **);
 
     /** Get top table.
      *
@@ -142,5 +142,5 @@ struct symstack_interface_t {
      * @param sym a pointer to symbol to store a pointer to the object if we find it.
      * @return true if symbol exists.
      */
-    bool (*get_local_symbol)(symstack_t *, dynstring_t *, symbol_t **, stack_el_t **);
+    bool (*get_local_symbol)(symstack_t *, dynstring_t *, symbol_t **);
 };
