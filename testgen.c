@@ -12,7 +12,7 @@
 
 #define TEST_CASE(number) \
 do {                                                            \
-    char *_filname;                                              \
+    char *_filname;                                             \
     switch (retcode##number) {                                  \
         case_5 (ERROR_DEFINITION,                               \
                 ERROR_TYPE_MISSMATCH,                           \
@@ -21,31 +21,34 @@ do {                                                            \
                 ERROR_SEMANTICS_OTHER                           \
                 ):                                              \
             _filname = "../tests/semantic_errors/sasha" #number "_";       \
-            break;                                                        \
-        case ERROR_NOERROR:                                               \
+            break;                                                         \
+        case ERROR_NOERROR:                                                \
             _filname = "../tests/without_errors/sasha" #number "_";        \
-            break;                                                        \
-        case ERROR_SYNTAX:                                                \
+            break;                                                         \
+        case ERROR_SYNTAX:                                                 \
             _filname = "../tests/syntax_errors/sasha" #number "_";         \
-            break;                                                        \
-        default:                                                          \
+            break;                                                         \
+        default:                                                           \
             debug_msg_s("Undefined error code: %d\n", retcode##number);    \
             _filname = "sasha";                                            \
-    }                                                                     \
-    dynstring_t *filnam = Dynstring.ctor(_filname);                         \
+    }                                                                      \
+    dynstring_t *filnam = Dynstring.ctor(_filname);                        \
     Dynstring.append(filnam, retcode ## number + '0');                     \
     Dynstring.cat(filnam, Dynstring.ctor(".tl"));                          \
-    FILE *fil = fopen(Dynstring.c_str(filnam), "w");                        \
+    FILE *fil = fopen(Dynstring.c_str(filnam), "w");                       \
     assert(fil);                                                           \
     fprintf(fil, "-- test case %d.\n"                                      \
-                "-- Description : %s\n\n"                                 \
-                "-- Expected : '%d'\n",                                   \
-                    number, description ## number, retcode ## number);    \
-        fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                 \
+                "-- Description : %s\n\n"                                  \
+                "-- Expected : '%d'\n",                                    \
+                    number, description ## number, retcode ## number);     \
+        fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                \
         fclose(fil);                                                       \
     Pfile.dtor(pf ## number);                                              \
-    debug_msg_s("file created: %s %s%c.tl\n",Dynstring.c_str(filnam), _filname, retcode##number + '0'); \
-    Dynstring.dtor(filnam);             \
+    debug_msg_s("file created: "                                           \
+        "%s %s%c.tl\n",                                                    \
+        Dynstring.c_str(filnam),                                           \
+        _filname, retcode##number + '0');                                  \
+    Dynstring.dtor(filnam);                                                \
 } while (0)
 
 

@@ -25,7 +25,9 @@ COMPILE_FLAGS="-DDEBUG=on"
 
 # directory with source code
 # in this case, tests is pwd and ../ is src
-SRC_DIR="/Users/suka/Desktop/vut/sem3/ifj/proj/ifj21" #"`pwd`/.."
+cd ..
+SRC_DIR="`pwd`"
+cd -
 
 # directory with html for statistics and .json files with code coverage
 STAT_DIR="$SRC_DIR/statistics"
