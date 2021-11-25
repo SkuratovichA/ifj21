@@ -244,23 +244,23 @@ int main() {
             "end                                                     "NL
             "                                                        "NL
             "global die :function ()                                 "NL
-            "                                             "NL
-            "function main()                              "NL
-            "    local suka: number = 12                  "NL
-            "                                             "NL
-            "    if suka > 10 then                        "NL
-            "        write(\"suka (number)> 10\")         "NL
-            "        local suka:string = \"AAAAAAAAA\"    "NL
-            "        if #suka > 10 then                   "NL
-            "            must_not_be_reached()            "NL
-            "        elseif #suka < 10 then               "NL
-            "            die()                            "NL
-            "        else                                 "NL
-            "            must_not_be_reached()            "NL
-            "        end                                  "NL
-            "    end                                      "NL
-            "end                                          "NL
-            "main()                                       "NL
+            "                                                        "NL
+            "function main()                                         "NL
+            "    local suka: number = 12                             "NL
+            "                                                        "NL
+            "    if suka > 10 then                                   "NL
+            "        write(\"suka (number)> 10\")                    "NL
+            "        local suka:string = \"AAAAAAAAA\"               "NL
+            "        if #suka > 10 then                              "NL
+            "            must_not_be_reached()                       "NL
+            "        elseif #suka < 10 then                          "NL
+            "            die()                                       "NL
+            "        else                                            "NL
+            "            must_not_be_reached()                       "NL
+            "        end                                             "NL
+            "    end                                                 "NL
+            "end                                                     "NL
+            "main()                                                  "NL
             NL
     );
 
@@ -474,14 +474,14 @@ int main() {
     int retcode23 = ERROR_DEFINITION;
     pfile_t *pf23 = Pfile.ctor(
             PROLOG
-            "function me() : string"
-            "end "
+            "function me() : string "NL
+            "end                    "NL
 
-            "function me() : integer"
-            "end "
+            "function me() : integer"NL
+            "end                    "NL
 
-            "function me() : boolean"
-            "end "
+            "function me() : boolean"NL
+            "end                     "
     );
 
     char *description24 = "more repuntil. No Until";
@@ -504,7 +504,7 @@ int main() {
             "                              write(not_true)                   "NL
             "                         until false                            "NL
             "                     until 1 < 0                                "NL
-            "                 until 2 + 2 = 5                                "NL
+            "                 until 2 + 2 == 5                               "NL
             "             until false                                        "NL
             "         until true and false                                   "NL
             "                                                                "NL
@@ -954,12 +954,13 @@ int main() {
     int retcode59 = ERROR_NOERROR;
     pfile_t *pf59 = Pfile.ctor(
             PROLOG NL
-            "global foo : function(    string,     string ) : string, number "NL
-            "function foo (a : string, b : string) :  string, number, boolean"NL
-            "    return nil, nil, true                                       "NL
-            "end                                                             "NL
-
-            "foo()                                                           "NL
+            "global foo : function(string,string ) :               "NL
+            "                              string, number, boolean "NL
+            "function foo (a : string, b : string) :               "NL
+            "                              string, number, boolean "NL
+            "    return nil, nil, true                             "NL
+            "end                                                   "NL
+            "foo()                                                 "NL
     );
 
     char *description60 = "return types #8";
@@ -1578,6 +1579,83 @@ int main() {
             "                                                                                             "NL
     );
 
+    char *description94 = "wrong parameters";
+    int retcode94 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf94 = Pfile.ctor(
+            "global name : function (integer, number, string,                   "NL
+            "                        string, number, integer, integer, nil, nil,"NL
+            "                        nil, number)                               "NL
+            "function name    (a : integer, b : number, c : string, d : nil) end"NL
+            "                                                                   "NL
+            "function main()                                                    "NL
+            "end                                                                "NL
+            "                                                                   "NL
+            "main()                                                             "NL
+    );
+
+    char *description95 = "condition with wrong types. Condition cannot be a string";
+    int retcode95 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf95 = Pfile.ctor(
+            PROLOG
+            "function write_numbers(counter : string)"NL
+            "   while counter do                "NL
+            "        write(counter, \"\n\")           "NL
+            "    end                                  "NL
+            "end                                      "NL
+    );
+
+
+    char *description96 = "condition with wrong types. Condition cannot be a number";
+    int retcode96 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf96 = Pfile.ctor(
+            PROLOG
+            "function write_numbers(counter : string) "NL
+            "   while #counter do                     "NL
+            "        write(counter, \"\n\")           "NL
+            "    end                                  "NL
+            "end                                      "NL
+    );
+
+    char *description97 = "condition with wrong types. Condition can be nil";
+    int retcode97 = ERROR_NOERROR;
+    pfile_t *pf97 = Pfile.ctor(
+            PROLOG
+            "function write_numbers(counter : nil)    "NL
+            "   while counter do                     "NL
+            "        write(counter, \"\n\")           "NL
+            "    end                                  "NL
+            "end                                      "NL
+    );
+
+    char *description98 = "condition with wrong syntax. nil cannot have length";
+    int retcode98 = ERROR_SYNTAX;
+    pfile_t *pf98 = Pfile.ctor(
+            PROLOG
+            "function write_numbers(counter : nil)    "NL
+            "   while #counter do                     "NL
+            "        write(counter, \"\n\")           "NL
+            "    end                                  "NL
+            "end                                      "NL
+    );
+
+    char *description99 = "repeat_until";
+    int retcode99 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf99 = Pfile.ctor(
+            PROLOG
+            "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"NL
+            "    write(\"I'm about 2bee printed only once!\")    "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function yours()                                    "NL
+            "   local a : string = \"arst\"                      "NL
+            "   repeat                                           "NL
+            "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()  "NL
+            "       a = false                                    "NL
+            "   until a                                          "NL
+            "end                                                 "NL
+            "yours()                                             "NL
+    );
+
     TEST_CASE(1);
     TEST_CASE(2);
     TEST_CASE(3);
@@ -1680,6 +1758,11 @@ int main() {
     TEST_CASE(91);
     TEST_CASE(92);
     TEST_CASE(93);
-
+    TEST_CASE(94);
+    TEST_CASE(95);
+    TEST_CASE(96);
+    TEST_CASE(97);
+    TEST_CASE(98);
+    TEST_CASE(99);
     return 0;
 }

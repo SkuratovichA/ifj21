@@ -13,6 +13,19 @@
 #include "tests/tests.h"
 #include "errors.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmacro-redefined"
+//undef debug macros
+#define debug_err(...)
+#define debug_msg(...)
+#define debug_msg_stdout(...)
+#define debug_msg_stderr(...)
+#define debug_todo(...)
+#define debug_assert(cond)
+#define debug_msg_s(...)
+#define DEBUG_SEP
+#pragma GCC diagnostic pop
+
 
 /** A node of a symbol table which is a binary search tree.
  */
