@@ -1,6 +1,5 @@
 require "ifj21"
 
-require "ifj21"
 function main()
     local a : integer = 1
     local b : number = 3.0 + 4.2

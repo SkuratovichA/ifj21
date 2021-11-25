@@ -1,4 +1,4 @@
---require "ifj21"
+require "ifj21"
 
 function chuj(n : number, a : number) : number
 	if a == 7 then 

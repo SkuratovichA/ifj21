@@ -18,6 +18,7 @@
 #include "symstack.h"
 #include "expressions.h"
 #include "code_generator.h"
+#include "semantics.h"
 
 
 static pfile_t *pfile;
@@ -373,8 +374,30 @@ static bool assignment(dynstring_t *id_name, int id_type) {
 
     // =
     EXPECTED(TOKEN_ASSIGN);
+
+    dynstring_t *received_rets = Dynstring.ctor("");
+    PARSE_EXPR(EXPR_DEFAULT, received_rets);
+
+    // semantics of assignment
+    dynstring_t *req_rets = Dynstring.ctor("");
+    Dynstring.append(req_rets, Semantics.of_id_type(Semantics.keyword_to_id_type(var_type)));
+    if (Dynstring.cmp(req_rets, received_rets) != 0) {
+        if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
+            strcmp(Dynstring.c_str(received_rets), "i") == 0) {
+            // TODO: v tomto pripade je nutne pretypovat vysledek
+        } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
+            Errors.set_error(ERROR_TYPE_MISSMATCH);
+            return false;
+        }
+    }
+    Dynstring.dtor(req_rets);
+    Dynstring.dtor(received_rets);
+    // semantics of assignment end
+
+    /* SASHA :
     PARSE_EXPR(EXPR_DEFAULT, received_signature);
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
+    */
     // expression result is in GF@%expr_result
     Generator.var_definition(id_name);
 
@@ -558,6 +581,7 @@ static bool var_definition() {
     if (!datatype()) {
         goto err;
     }
+
     // = `expr`
     if (!assignment(id_name, id_type)) {
         goto err;

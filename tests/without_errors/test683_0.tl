@@ -1,6 +1,6 @@
 require "ifj21"
 
-require "ifj21"
+
 function main()
     local i : integer
     write("69\n")

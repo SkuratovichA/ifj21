@@ -202,4 +202,6 @@ struct semantics_interface_t {
     char (*of_id_type)(int);
 
     int (*token_to_id_type)(int);
+
+    int (*keyword_to_id_type)(int);
 };
