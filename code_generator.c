@@ -127,11 +127,7 @@ static void generate_func_readn() {
  */
 static void generate_func_write() {
     ADD_INSTR("LABEL $write \n"
-              "PUSHFRAME \n"
-              "DEFVAR LF@p0 \n"
-              "MOVE LF@p0 LF@%0 \n"
-              "WRITE LF@p0 \n"
-              "POPFRAME \n"
+              "WRITE GF@%expr_result \n"
               "RETURN \n");
 }
 
