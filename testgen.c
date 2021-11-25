@@ -954,12 +954,13 @@ int main() {
     int retcode59 = ERROR_NOERROR;
     pfile_t *pf59 = Pfile.ctor(
             PROLOG NL
-            "global foo : function(    string,     string ) : string, number "NL
-            "function foo (a : string, b : string) :  string, number, boolean"NL
-            "    return nil, nil, true                                       "NL
-            "end                                                             "NL
-
-            "foo()                                                           "NL
+            "global foo : function(string,string ) :               "NL
+            "                              string, number, boolean "NL
+            "function foo (a : string, b : string) :               "NL
+            "                              string, number, boolean "NL
+            "    return nil, nil, true                             "NL
+            "end                                                   "NL
+            "foo()                                                 "NL
     );
 
     char *description60 = "return types #8";
