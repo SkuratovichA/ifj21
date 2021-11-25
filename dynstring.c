@@ -172,21 +172,15 @@ static void Str_cat(dynstring_t *s1, dynstring_t *s2) {
     soft_assert(s1 != NULL, ERROR_INTERNAL);
     soft_assert(s1->str != NULL, ERROR_INTERNAL);
 
-    // in case of aliasing strings.
-    dynstring_t *tmp = Dynstring.ctor(Dynstring.c_str(s2));
-    int64_t diff = (int64_t) s1->size - (int64_t) tmp->len - (int64_t) s1->len;
-    soft_assert(diff < (int64_t) s1->size, ERROR_INTERNAL);
-
-    if (diff <= 2) {
-        s1->size *= 2;
+    bool needs_realloc = s1->size <= s1->len + s2->len;
+    if (needs_realloc) {
+        s1->size += s2->size;
         s1->str = realloc(s1->str, s1->size + sizeof(dynstring_t));
         soft_assert(s1->str, ERROR_INTERNAL);
     }
 
-    strcat(s1->str, tmp->str);
+    strcat(s1->str, s2->str);
     s1->len = strlen(s1->str);
-
-    Dynstring.dtor(tmp);
 }
 
 static void Trunc_to_len(dynstring_t *self, size_t new_len) {

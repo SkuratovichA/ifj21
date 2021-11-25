@@ -271,6 +271,22 @@ static void Dtor_expr(expr_semantics_t *self) {
         return;
     }
 
+    if (self->sem_state == SEMANTIC_OPERAND
+        || self->sem_state == SEMANTIC_UNARY
+        || self->sem_state == SEMANTIC_PARENTS
+        || self->sem_state == SEMANTIC_FUNCTION) {
+        if (self->first_operand.type == TOKEN_ID) {
+            Dynstring.dtor(self->first_operand.attribute.id);
+        }
+    } else if (self->sem_state == SEMANTIC_BINARY) {
+        if (self->first_operand.type == TOKEN_ID) {
+            Dynstring.dtor(self->first_operand.attribute.id);
+        }
+        if (self->second_operand.type == TOKEN_ID) {
+            Dynstring.dtor(self->second_operand.attribute.id);
+        }
+    }
+
     Dynstring.dtor(self->func_types);
     Dynstring.dtor(self->func_rets);
     free(self);
@@ -294,18 +310,30 @@ static void Add_operand(expr_semantics_t *self, token_t tok) {
 
     if (self->sem_state == SEMANTIC_PARENTS) {
         self->first_operand = tok;
+        if (tok.type == TOKEN_ID) {
+            self->first_operand.attribute.id = Dynstring.dup(tok.attribute.id);
+        }
         return;
     }
 
     if (self->op == OP_UNDEFINED) {
         self->first_operand = tok;
+        if (tok.type == TOKEN_ID) {
+            self->first_operand.attribute.id = Dynstring.dup(tok.attribute.id);
+        }
         self->sem_state = SEMANTIC_OPERAND;
     } else {
         if (self->sem_state == SEMANTIC_IDLE) {
             self->first_operand = tok;
+            if (tok.type == TOKEN_ID) {
+                self->first_operand.attribute.id = Dynstring.dup(tok.attribute.id);
+            }
             self->sem_state = SEMANTIC_UNARY;
         } else {
             self->second_operand = tok;
+            if (tok.type == TOKEN_ID) {
+                self->second_operand.attribute.id = Dynstring.dup(tok.attribute.id);
+            }
             self->sem_state = SEMANTIC_BINARY;
         }
     }
@@ -449,23 +477,23 @@ static bool Check_expression(expr_semantics_t *self) {
                   Dynstring.c_str(symbol->function_semantics->definition.params),
                   Dynstring.c_str(self->func_types));
 
+        debug_msg("FUNC_DECL_RETS = \"%s\", FUNC_DEF_RETS = \"%s\"\n",
+                  Dynstring.c_str(symbol->function_semantics->declaration.returns),
+                  Dynstring.c_str(symbol->function_semantics->definition.returns));
+
         if (symbol->function_semantics->is_declared) {
             if (Dynstring.cmp(symbol->function_semantics->declaration.params, self->func_types) != 0) {
                 Errors.set_error(ERROR_FUNCTION_SEMANTICS);
                 return false;
             }
+            Dynstring.cat(self->func_rets, symbol->function_semantics->declaration.returns);
         } else if (symbol->function_semantics->is_defined) {
             if (Dynstring.cmp(symbol->function_semantics->definition.params, self->func_types) != 0) {
                 Errors.set_error(ERROR_FUNCTION_SEMANTICS);
                 return false;
             }
+            Dynstring.cat(self->func_rets, symbol->function_semantics->definition.returns);
         }
-
-//        if (symbol->function_semantics->is_declared) {
-//            Dynstring.cat(self->func_rets, symbol->function_semantics->declaration.returns);
-//        } else {
-//            Dynstring.cat(self->func_rets, symbol->function_semantics->definition.returns);
-//        }
 
         return true;
     }
