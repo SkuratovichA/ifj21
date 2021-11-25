@@ -2,7 +2,7 @@
 
 
 ## Program that compares our ifj21 output with teal output 
-
+## TEST ONLY PROGRAM THAT ARE GIVING SOME OUTPUT
 #sed '/require "ifj21"/d'
 
 
@@ -11,7 +11,7 @@ folder="without_errors"
 RED='\033[0;31m'
 NC='\033[0m'
 GREEN='\033[0;32m'
-
+YELLOW='\033[00;33m'
 
 temp_file=".tmp"
 ifj21_code=".ifj21_code"
@@ -83,6 +83,9 @@ do
 		printf "$all_files: ${RED}FAILED${NC} $file\n"
 		printf "$all_files: ${RED}FAILED${NC} $file your = $ret_val, expected $expected_err\n" >> ERRORS
 	else
+		if [ -z "$ret_val" ] && [ -z "$ret_val"]; then
+			continue 
+		fi	
 		printf "$all_files: ${GREEN}SUCCESFUL${NC} $file\n"
 	fi
 done
