@@ -428,6 +428,7 @@ static void generate_var_name(dynstring_t *var_name) {
  * @brief Generates DEFVAR LF@%var.
  */
 static void generate_defvar(dynstring_t *var_name) {
+    debug_msg("\n\t- generate_defvar: %s\n", Dynstring.c_str(var_name));
     ADD_INSTR_PART("DEFVAR LF@%");
     generate_var_name(var_name);
     if (instructions.in_loop) {
@@ -435,6 +436,29 @@ static void generate_defvar(dynstring_t *var_name) {
     } else {
         ADD_INSTR_TMP();
     }
+}
+
+/*
+ * @brief Generates temporary variable (eg. LF@%3%tmp)
+ */
+static void generate_tmp_var_definition(char *var_name) {
+    debug_msg("\n\t- generate_tmp_var_definition: %s\n", var_name);
+    ADD_INSTR_PART("DEFVAR LF@%");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART(var_name);
+    if (instructions.in_loop) {
+        ADD_INSTR_WHILE();
+    } else {
+        ADD_INSTR_TMP();
+    }
+
+    ADD_INSTR_PART("MOVE LF@%");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART(var_name);
+    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_TMP();
 }
 
 /*
@@ -600,9 +624,9 @@ static void generate_while_cond() {
 }
 
 /*
- * @brief Generates end.
- *        LABEL $end$id
- */
+* @brief Generates end.
+*        LABEL $end$id
+*/
 static void generate_end() {
     ADD_INSTR("#generate_end");
     ADD_INSTR_PART("LABEL $end$");
@@ -647,27 +671,83 @@ static void generate_repeat_until_cond() {
     generate_end();
 }
 
-/*
- * TODO
- * @brief Generates for loop header.
- * generates sth like: LABEL $for$id
- */
-static void generate_for_header(dynstring_t *var_name) {
-    generate_var_definition(var_name);
-    ADD_INSTR_PART("LABEL $for$");
+static void generate_for_default_step() {
+    ADD_INSTR_PART("DEFVAR LF@%");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%step");
+    if (instructions.in_loop) {
+        ADD_INSTR_WHILE();
+    } else {
+        ADD_INSTR_TMP();
+    }
+
+    ADD_INSTR_PART("MOVE LF@%");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%step GF@%expr_result");
     ADD_INSTR_TMP();
 }
 
 /*
  * @brief Generates for loop condition check.
  * generates sth like: JUMPIFEQ $end$id LF@%result bool@true
+ * @param var_name name of the control variable
  */
-static void generate_for_cond() {
-    ADD_INSTR_PART("JUMPIFNEQ $end$");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART(" GF@%expr_result bool@true");
-    ADD_INSTR_TMP();
+static void generate_for_cond(dynstring_t *var_name) {
+    size_t scope_id = Symstack.get_scope_info(symstack).unique_id;
+    ADD_INSTR("\n# for");
+    ADD_INSTR_PART("LABEL $for$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART(  "\n# check if step is < 0 \n"
+                     "LT GF@%expr_result LF@%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%step int@0 \n"
+                   "JUMPIFEQ $for$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("$step_le GF@%expr_result bool@true \n"
+                   "    # step >= 0 \n"
+                   "    # if i <= cond then break \n"
+                   "    PUSHS LF@%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
+    ADD_INSTR_PART("\n    PUSHS LF@%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%terminating_cond");
+    ADD_INSTR_PART("\n    POPS GF@%expr_result2 \n"
+                   "    POPS GF@%expr_result \n"
+                   "    LT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
+                   "    EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
+                   "    OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
+                   "    PUSHS GF@%expr_result \n"
+                   "    JUMPIFNEQ $end$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART(" GF@%expr_result bool@true \n"
+                   "    JUMP $for$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("$body \n"
+                   "LABEL $for$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("$step_le \n"
+                   "    # step < 0 \n"
+                   "    # if i >= cond then break \n"
+                   "    PUSHS LF@%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
+    ADD_INSTR_PART("\n    PUSHS LF@%cond \n"
+                   "    POPS GF@%expr_result2 \n"
+                   "    POPS GF@%expr_result \n"
+                   "    GT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
+                   "    EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
+                   "    OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
+                   "    PUSHS GF@%expr_result \n"
+                   "    JUMPIFNEQ $end$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART(" GF@%expr_result bool@true \n"
+                   "\nLABEL $for$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("$body \n"
+                   "# for loop body \n");
 }
 
 /*
@@ -676,13 +756,23 @@ static void generate_for_cond() {
  *                     JUMP $for$id
  *                     LABEL $end$id
  */
-static void generate_for_end() {
+static void generate_for_end(dynstring_t *var_name) {
+    ADD_INSTR("# for loop end");
+    ADD_INSTR_PART("ADD LF@%");\
+    generate_var_name(var_name);
+    ADD_INSTR_PART(" LF@%");
+    generate_var_name(var_name);
+    ADD_INSTR_PART(" LF@%");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%step");
+    ADD_INSTR_TMP();
     ADD_INSTR_PART("JUMP $for$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
 
     ADD_INSTR_PART("LABEL $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("\n");
     ADD_INSTR_TMP();
 }
 
@@ -706,7 +796,6 @@ static void generate_prog_start() {
 
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
-    // TODO: add built-in functions every time or when needed?
     generate_func_ord();
     generate_func_chr();
     generate_func_substr();
@@ -897,9 +986,9 @@ static void initialise_generator() {
 
 static void dtor() {
     debug_msg("\n");
-    List.dtor(instructions.startList, (void (*)(void *)) (Dynstring.dtor)); // use Dynstring.dtor or free?
-    List.dtor(instructions.instrListFunctions, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
-    List.dtor(instructions.mainList, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
+    List.dtor(instructions.startList, (void (*)(void *)) (Dynstring.dtor));
+    List.dtor(instructions.instrListFunctions, (void (*)(void *)) Dynstring.dtor);
+    List.dtor(instructions.mainList, (void (*)(void *)) Dynstring.dtor);
     Dynstring.dtor(instructions.cond_info);
     Dynstring.dtor(tmp_instr);
 }
@@ -945,7 +1034,7 @@ static void pop_cond_info() {
 }
 
 static void generate_break() {
-    ADD_INSTR("# break");
+    ADD_INSTR_PART("\n# break \n");
     ADD_INSTR_PART("JUMP $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
@@ -978,8 +1067,9 @@ const struct code_generator_interface_t Generator = {
         .end = generate_end,
         .repeat_until_header = generate_repeat_until_header,
         .repeat_until_cond = generate_repeat_until_cond,
-        .for_header = generate_for_header,
         .for_cond = generate_for_cond,
+        .for_end = generate_for_end,
+        .for_default_step = generate_for_default_step,
         .initialise = initialise_generator,
         .expression = generate_expression,
         .expression_pop = generate_expression_pop,
@@ -989,4 +1079,5 @@ const struct code_generator_interface_t Generator = {
         .pop_cond_info = pop_cond_info,
         .push_cond_info = push_cond_info,
         .instr_break = generate_break,
+        .tmp_var_definition = generate_tmp_var_definition,
 };
