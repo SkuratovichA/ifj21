@@ -367,7 +367,7 @@ static bool assignment(dynstring_t *id_name, int id_type) {
         return true;
     }
 
-    dynstring_t *received_signature = NULL;
+    dynstring_t *received_signature = Dynstring.ctor("");
     dynstring_t *expected_signature = Dynstring.ctor("");
     Dynstring.append(expected_signature, Semantics.of_id_type(id_type));
 
