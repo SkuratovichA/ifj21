@@ -13,6 +13,7 @@
 #include "stdbool.h"
 #include "code_generator.h"
 #include "semantics.h"
+#include "parser.h"
 
 
 #pragma GCC diagnostic push
@@ -1011,6 +1012,8 @@ static bool expr_stmt(expr_type_t expr_type, dynstring_t *vector_expr_types) {
     }
 
     // id or name of a builtin function
+    dynstring_t *id_name;
+    GET_ID_SAFE(id_name);
     if (Scanner.get_curr_token().type != TOKEN_ID) {
         Errors.set_error(ERROR_SYNTAX);
         return false;
@@ -1029,9 +1032,17 @@ static bool expr_stmt(expr_type_t expr_type, dynstring_t *vector_expr_types) {
         return false;
     }
 
-    // <expr_stmt_next>
+    // =
+    if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
+        Scanner.get_next_token(pfile);
+        return parse_init(EXPR_DEFAULT, vector_expr_types);
+    }
+
+    Dynstring.dtor(id_name);
+
+    // <id_list>
     Scanner.get_next_token(pfile);
-    return expr_stmt_next(vector_expr_types);
+    return id_list(pfile);
 }
 
 /**

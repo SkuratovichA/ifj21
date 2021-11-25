@@ -32,13 +32,6 @@ static void print_error_unexpected_token(const char *a, const char *b) {
     fprintf(stderr, "[error](syntax): Expected '%s', got '%s' instead\n", a, b);
 }
 
-#define GET_ID_SAFE(_idname)                                                 \
-    do {                                                                    \
-        if (Scanner.get_curr_token().type == TOKEN_ID) {                    \
-            _idname = Dynstring.dup(Scanner.get_curr_token().attribute.id); \
-        }                                                                   \
-    } while (0)
-
 #define CHECK_EXPR_SIGNATURES(accepted, received, errtype)                             \
     do {                                                                              \
         if (!Semantics.check_signatures_compatibility(accepted, received, errtype)) { \
