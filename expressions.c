@@ -781,6 +781,8 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
             } else if (expr_type == EXPR_DEFAULT) {
                 Errors.set_error(ERROR_SYNTAX);
                 return false;
+            } else if (expr_type == EXPR_RETURN) {
+                return true;
             }
 
             if (vector_expr_types != NULL) {
@@ -930,13 +932,15 @@ static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vecto
  * @param vector_expr_types result expression type/s.
  * @return bool.
  */
-static bool other_id(expr_type_t expr_type, dynstring_t *vector_expr_types) {
+static bool other_id(dynstring_t *vector_expr_types) {
     debug_msg("<other_id> ->\n");
+    debug_msg("TOKEN - %s\n", Scanner.to_string(Scanner.get_curr_token().type));
 
     CHECK_DEAD_TOKEN();
 
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
-        return Expr_list(pfile, expr_type, vector_expr_types);
+        Scanner.get_next_token(pfile);
+        return Expr_list(pfile, EXPR_DEFAULT, vector_expr_types);
     }
 
     // ,
@@ -947,7 +951,8 @@ static bool other_id(expr_type_t expr_type, dynstring_t *vector_expr_types) {
 
         if (Scanner.get_curr_token().type == TOKEN_ID) {
             // <other_id>
-            return other_id(expr_type, vector_expr_types);
+            Scanner.get_next_token(pfile);
+            return other_id(vector_expr_types);
         }
     }
 
@@ -964,8 +969,9 @@ static bool other_id(expr_type_t expr_type, dynstring_t *vector_expr_types) {
  * @param vector_expr_types result expression type/s.
  * @return bool.
  */
-static bool id_list(expr_type_t expr_type, dynstring_t *vector_expr_types) {
+static bool id_list(dynstring_t *vector_expr_types) {
     debug_msg("<id_list> ->\n");
+    debug_msg("TOKEN - %s\n", Scanner.to_string(Scanner.get_curr_token().type));
 
     // expr_stmt was processed an ID which is not function,
     // so it is not necessary to check current token on ID here
@@ -979,12 +985,12 @@ static bool id_list(expr_type_t expr_type, dynstring_t *vector_expr_types) {
 
     // =
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
-        return parse_init(expr_type, vector_expr_types);
+        Scanner.get_next_token(pfile);
+        return parse_init(EXPR_DEFAULT, vector_expr_types);
     }
 
     // <other_id>
-    Scanner.get_next_token(pfile);
-    return other_id(expr_type, vector_expr_types);
+    return other_id(vector_expr_types);
 }
 
 /**
@@ -1026,7 +1032,7 @@ static bool expr_stmt(expr_type_t expr_type, dynstring_t *vector_expr_types) {
     }
 
     // <id_list>
-    return id_list(expr_type, vector_expr_types);
+    return id_list(vector_expr_types);
 }
 
 /**

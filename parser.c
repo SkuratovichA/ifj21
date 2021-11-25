@@ -656,7 +656,7 @@ static bool return_stmt() {
     // create expected returns vector from returns
     expected_rets = Dynstring.dup(Symstack.get_parent_func(symstack)->function_semantics->definition.returns);
     // return expr
-    PARSE_EXPR_LIST(EXPR_DEFAULT, received_rets);
+    PARSE_EXPR_LIST(EXPR_RETURN, received_rets);
     // check signatures
     CHECK_EXPR_SIGNATURES(expected_rets, received_rets, ERROR_FUNCTION_SEMANTICS);
 
