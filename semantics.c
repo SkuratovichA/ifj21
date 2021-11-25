@@ -471,6 +471,12 @@ static bool Check_expression(expr_semantics_t *self) {
         // We know that the function was already declared/defined
         symbol_t *symbol;
 
+        dynstring_t *str_cmp = Dynstring.ctor("write");
+        if (Dynstring.cmp(self->first_operand.attribute.id, str_cmp) == 0) {
+            return true;
+        }
+        Dynstring.dtor(str_cmp);
+
         Symtable.get_symbol(global_table, self->first_operand.attribute.id, &symbol);
 
         debug_msg("FUNC_DECL = \"%s\", FUNC_DEF = \"%s\", PARSE_SIGNATURE = \"%s\"\n",
