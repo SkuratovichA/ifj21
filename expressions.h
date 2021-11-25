@@ -82,6 +82,7 @@ typedef enum expr_type {
 typedef struct stack_item {
     item_type_t type;
     token_t token;
+    dynstring_t *ret_types;
 } stack_item_t;
 
 struct expr_interface_t {

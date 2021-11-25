@@ -44,12 +44,12 @@ typedef enum conv_type {
 /** List of semantic states
  */
 typedef enum semantic_state {
-    SEMANTIC_DISABLED,
     SEMANTIC_IDLE,
     SEMANTIC_PARENTS,
     SEMANTIC_OPERAND,
     SEMANTIC_UNARY,
     SEMANTIC_BINARY,
+    SEMANTIC_FUNCTION
 } semantic_type_t;
 
 /** Semantic information about an expression.
@@ -61,6 +61,8 @@ typedef struct expr_semantics {
     op_list_t op;
     conv_type_t conv_type;
     int result_type;
+    dynstring_t * func_types;
+    dynstring_t * func_rets;
 } expr_semantics_t;
 
 

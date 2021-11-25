@@ -119,6 +119,40 @@ static char of_id_type(int type) {
     }
 }
 
+static int type_to_token (id_type_t id_type) {
+    switch (id_type) {
+        case ID_TYPE_string:
+            return TOKEN_STR;
+        case ID_TYPE_integer:
+            return TOKEN_NUM_I;
+        case ID_TYPE_number:
+            return TOKEN_NUM_F;
+        case ID_TYPE_boolean:
+            return KEYWORD_boolean;
+        case ID_TYPE_nil:
+            return KEYWORD_nil;
+        default:
+            return TOKEN_DEAD;
+    }
+}
+
+static int token_to_type(int typ) {
+    switch (typ) {
+        case TOKEN_STR:
+            return ID_TYPE_string;
+        case TOKEN_NUM_I:
+            return ID_TYPE_integer;
+        case TOKEN_NUM_F:
+            return ID_TYPE_number;
+        case KEYWORD_boolean:
+            return ID_TYPE_boolean;
+        case KEYWORD_nil:
+            return ID_TYPE_nil;
+        default:
+            return ID_TYPE_UNDEF;
+    }
+}
+
 /** Add a return type to a function semantics.
  *
  * @param self info to add a param.
@@ -222,6 +256,8 @@ static expr_semantics_t *Ctor_expr() {
     expr_sem->op = OP_UNDEFINED;
     expr_sem->conv_type = NO_CONVERSION;
     expr_sem->result_type = ID_TYPE_UNDEF;
+    expr_sem->func_types = Dynstring.ctor("");
+    expr_sem->func_rets = Dynstring.ctor("");
 
     return expr_sem;
 }
@@ -235,6 +271,8 @@ static void Dtor_expr(expr_semantics_t *self) {
         return;
     }
 
+    Dynstring.dtor(self->func_types);
+    Dynstring.dtor(self->func_rets);
     free(self);
 }
 
@@ -244,9 +282,18 @@ static void Dtor_expr(expr_semantics_t *self) {
  * @param tok operand.
  */
 static void Add_operand(expr_semantics_t *self, token_t tok) {
-    if (self->sem_state == SEMANTIC_DISABLED ||
-        self->sem_state == SEMANTIC_UNARY ||
+    if (self->sem_state == SEMANTIC_UNARY ||
         self->sem_state == SEMANTIC_BINARY) {
+        return;
+    }
+
+    if (self->sem_state == SEMANTIC_FUNCTION) {
+        Dynstring.append(self->func_types, of_id_type(token_to_type(tok.type)));
+        return;
+    }
+
+    if (self->sem_state == SEMANTIC_PARENTS) {
+        self->first_operand = tok;
         return;
     }
 
@@ -265,47 +312,12 @@ static void Add_operand(expr_semantics_t *self, token_t tok) {
 }
 
 static void Add_operator(expr_semantics_t *self, op_list_t op) {
-    if (self->sem_state == SEMANTIC_DISABLED ||
-        self->sem_state == SEMANTIC_UNARY ||
+    if (self->sem_state == SEMANTIC_UNARY ||
         self->sem_state == SEMANTIC_BINARY) {
         return;
     }
 
     self->op = op;
-}
-
-static int type_to_token (id_type_t id_type) {
-    switch (id_type) {
-        case ID_TYPE_string:
-            return TOKEN_STR;
-        case ID_TYPE_integer:
-            return TOKEN_NUM_I;
-        case ID_TYPE_number:
-            return TOKEN_NUM_F;
-        case ID_TYPE_boolean:
-            return KEYWORD_boolean;
-        case ID_TYPE_nil:
-            return KEYWORD_nil;
-        default:
-            return TOKEN_DEAD;
-    }
-}
-
-static int token_to_type(int typ) {
-    switch (typ) {
-        case TOKEN_STR:
-            return ID_TYPE_string;
-        case TOKEN_NUM_I:
-            return ID_TYPE_integer;
-        case TOKEN_NUM_F:
-            return ID_TYPE_number;
-        case KEYWORD_boolean:
-            return ID_TYPE_boolean;
-        case KEYWORD_nil:
-            return ID_TYPE_nil;
-        default:
-            return ID_TYPE_UNDEF;
-    }
 }
 
 static bool is_var_exists (token_t tok, expr_semantics_t *self) {
@@ -422,7 +434,33 @@ static bool type_compatability(expr_semantics_t *self) {
 }
 
 static bool Check_expression(expr_semantics_t *self) {
-    if (self->sem_state == SEMANTIC_DISABLED || self->sem_state == SEMANTIC_IDLE) {
+    if (self->sem_state == SEMANTIC_IDLE) {
+        return true;
+    }
+
+    if (self->sem_state == SEMANTIC_FUNCTION) {
+        // We know that the function was already declared/defined
+        symbol_t *symbol;
+
+        Symtable.get_symbol(global_table, self->first_operand.attribute.id, &symbol);
+
+        debug_msg("FUNC_DECL = \"%s\", FUNC_DEF = \"%s\", PARSE_SIGNATURE = \"%s\"\n",
+                  Dynstring.c_str(symbol->function_semantics->declaration.params),
+                  Dynstring.c_str(symbol->function_semantics->definition.params),
+                  Dynstring.c_str(self->func_types));
+
+        if (Dynstring.cmp(symbol->function_semantics->declaration.params, self->func_types) != 0 ||
+            Dynstring.cmp(symbol->function_semantics->definition.params, self->func_types) != 0) {
+            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+            return false;
+        }
+
+        if (symbol->function_semantics->is_declared) {
+            Dynstring.cat(self->func_rets, symbol->function_semantics->declaration.returns);
+        } else {
+            Dynstring.cat(self->func_rets, symbol->function_semantics->definition.returns);
+        }
+
         return true;
     }
 
