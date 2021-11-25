@@ -23,7 +23,18 @@
 #include "symstack.h"
 #include "debug.h"
 
-void error_unexpected_token(const char *, const char *);
+void print_error_unexpected_token(const char *, const char *);
+
+/** Return an error(syntax)
+ */
+#define error_unexpected_token(a)                               \
+    do {                                                       \
+        Errors.set_error(ERROR_SYNTAX);                        \
+        print_error_unexpected_token(Scanner.to_string(a),     \
+        Scanner.to_string(Scanner.get_curr_token().type));     \
+        goto err;                                              \
+    } while (0)
+
 
 /** Macro expecting a non terminal from the scanner.
  */

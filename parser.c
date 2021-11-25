@@ -72,16 +72,6 @@ void print_error_unexpected_token(const char *a, const char *b) {
         local_table = Symstack.top(symstack);  \
      } while(0)
 
-/** Return an error(syntax)
- */
-#define error_unexpected_token(a)                               \
-    do {                                                       \
-        Errors.set_error(ERROR_SYNTAX);                        \
-        print_error_unexpected_token(Scanner.to_string(a),     \
-        Scanner.to_string(Scanner.get_curr_token().type));     \
-        goto err;                                              \
-    } while (0)
-
 /** Set an error code and return an error if there's a declaration error.
  */
 #define error_multiple_declaration(a)                                 \
