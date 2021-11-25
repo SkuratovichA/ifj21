@@ -947,10 +947,9 @@ static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vecto
  * !rule <other_id> -> , id <other_id> | = <expr_list>
  *
  * @param expr_type type of expression.
- * @param vector_expr_types result expression type/s.
  * @return bool.
  */
-static bool other_id(dynstring_t *vector_expr_types) {
+static bool other_id() {
     debug_msg("<other_id> ->\n");
     debug_msg("TOKEN - %s\n", Scanner.to_string(Scanner.get_curr_token().type));
 
@@ -958,7 +957,7 @@ static bool other_id(dynstring_t *vector_expr_types) {
 
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
         Scanner.get_next_token(pfile);
-        return Expr_list(pfile, EXPR_DEFAULT, vector_expr_types);
+        return Expr_list(pfile, EXPR_DEFAULT, NULL);
     }
 
     // ,
@@ -970,7 +969,7 @@ static bool other_id(dynstring_t *vector_expr_types) {
         if (Scanner.get_curr_token().type == TOKEN_ID) {
             // <other_id>
             Scanner.get_next_token(pfile);
-            return other_id(vector_expr_types);
+            return other_id();
         }
     }
 
@@ -984,10 +983,9 @@ static bool other_id(dynstring_t *vector_expr_types) {
  * !rule <id_list> -> id <other_id> | = expr
  *
  * @param expr_type type of expression.
- * @param vector_expr_types result expression type/s.
  * @return bool.
  */
-static bool id_list(dynstring_t *vector_expr_types) {
+static bool id_list() {
     debug_msg("<id_list> ->\n");
     debug_msg("TOKEN - %s\n", Scanner.to_string(Scanner.get_curr_token().type));
 
@@ -1001,16 +999,36 @@ static bool id_list(dynstring_t *vector_expr_types) {
     // =
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
         Scanner.get_next_token(pfile);
-        if (!parse_init(EXPR_DEFAULT, vector_expr_types)) {
+        dynstring_t *received_rets = Dynstring.ctor("");
+        if (!parse_init(EXPR_DEFAULT, received_rets)) {
             goto err;
         }
+
+        // semantics of assignment
+        symbol_t * symbol;
+        dynstring_t *req_rets = Dynstring.ctor("");
+        Symtable.get_symbol(local_table, id_name, &symbol);
+        Dynstring.append(req_rets, Semantics.of_id_type(symbol->type));
+        debug_msg("requested - %s, received - %s\n", Dynstring.c_str(req_rets), Dynstring.c_str(received_rets));
+        if (Dynstring.cmp(req_rets, received_rets) != 0) {
+            if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
+                strcmp(Dynstring.c_str(received_rets), "i") == 0) {
+                // TODO: v tomto pripade je nutne pretypovat vysledek
+            } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
+                Errors.set_error(ERROR_TYPE_MISSMATCH);
+                return false;
+            }
+        }
+        Dynstring.dtor(req_rets);
+        // semantics of assignment end
+
         Generator.var_assignment(id_name);
         Dynstring.dtor(id_name);
         return true;
     }
     Dynstring.dtor(id_name);
     // <other_id>
-    return other_id(vector_expr_types);
+    return other_id();
 
     err:
     Dynstring.dtor(id_name);
@@ -1023,10 +1041,9 @@ static bool id_list(dynstring_t *vector_expr_types) {
  * !rule <expr_stmt> -> id ( expr ) | <id_list>
  *
  * @param expr_type type of expression.
- * @param vector_expr_types result expression type/s.
  * @return bool.
  */
-static bool expr_stmt(expr_type_t expr_type, dynstring_t *vector_expr_types) {
+static bool expr_stmt(expr_type_t expr_type) {
     debug_msg("<expr_stmt> ->\n");
 
     // DEAD TOKEN
@@ -1045,7 +1062,7 @@ static bool expr_stmt(expr_type_t expr_type, dynstring_t *vector_expr_types) {
     symbol_t *symbol;
     if (Symtable.get_symbol(global_table, Scanner.get_curr_token().attribute.id, &symbol)) {
         if (symbol->type == ID_TYPE_func_decl || symbol->type == ID_TYPE_func_def) {
-            return parse_init(expr_type, vector_expr_types);
+            return parse_init(expr_type, NULL);
         }
     }
 
@@ -1056,7 +1073,7 @@ static bool expr_stmt(expr_type_t expr_type, dynstring_t *vector_expr_types) {
     }
 
     // <id_list>
-    return id_list(vector_expr_types);
+    return id_list();
 }
 
 /**
@@ -1070,7 +1087,7 @@ static bool expr_stmt(expr_type_t expr_type, dynstring_t *vector_expr_types) {
 static bool Parse_expression(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vector_expr_types) {
     pfile = pfile_;
     if (expr_type == EXPR_FUNC || expr_type == EXPR_GLOBAL) {
-        return expr_stmt(expr_type, vector_expr_types);
+        return expr_stmt(expr_type);
     } else {
         return parse_init(expr_type, vector_expr_types);
     }
