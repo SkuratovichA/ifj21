@@ -504,7 +504,7 @@ int main() {
             "                              write(not_true)                   "NL
             "                         until false                            "NL
             "                     until 1 < 0                                "NL
-            "                 until 2 + 2 = 5                                "NL
+            "                 until 2 + 2 == 5                               "NL
             "             until false                                        "NL
             "         until true and false                                   "NL
             "                                                                "NL
@@ -1578,6 +1578,21 @@ int main() {
             "                                                                                             "NL
     );
 
+
+    char *description94 = "wrong parameters";
+    int retcode94 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf94 = Pfile.ctor(
+            "global name : function (integer, number, string,                   "NL
+            "                        string, number, integer, integer, nil, nil,"NL
+            "                        nil, number)                               "NL
+            "function name    (a : integer, b : number, c : string, d : nil) end"NL
+            "                                                                   "NL
+            "function main()                                                    "NL
+            "end                                                                "NL
+            "                                                                   "NL
+            "main()                                                             "NL
+    );
+
     TEST_CASE(1);
     TEST_CASE(2);
     TEST_CASE(3);
@@ -1680,5 +1695,6 @@ int main() {
     TEST_CASE(91);
     TEST_CASE(92);
     TEST_CASE(93);
+    TEST_CASE(94);
     return 0;
 }
