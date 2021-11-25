@@ -470,87 +470,32 @@ static token_t lex_relate_op(pfile_t *pfile) {
  * @return token
  */
 static token_t lex_number(pfile_t *pfile) {
-    state = STATE_NUM_INIT;
-    dynstring_t *ascii_num = Dynstring.ctor(""); // ctor an empty string
+    state = STATE_NUM_1_WHOLE_FIN;
+    charpos--;
 
-    bool is_fp = true; // suppose it is true.
     int ch;
     bool accepted = false;
-    charpos--;
+    dynstring_t *ascii_num = Dynstring.ctor("");
+    token_t token = {.type = TOKEN_DEAD};
 
     while (!accepted && (ch = Pfile.pgetc(pfile)) != EOF) {
         charpos++;
         switch (state) {
-            case STATE_NUM_INIT:
-                if (ch == '0') {
-                    state = STATE_NUM_1;
-                } else if (isdigit(ch)) {
-                    state = STATE_NUM_2;
-                } else {
-                    accepted = true;
-                    break;
-                }
-                Dynstring.append(ascii_num, (char) ch);
-                break;
-
-                // we got here from number init state and there was 0.
-                // final, got 0.
-            case STATE_NUM_1:
-                // append char is after the statement, so an empty statement is here.
-                if (isdigit(ch)) {
-                    state = STATE_NUM_3;
-                    Dynstring.append(ascii_num, (char) ch);
-                } else if (ch == '.') {
-                    state = STATE_NUM_7;
-                    Dynstring.append(ascii_num, (char) ch);
-                } else {
-                    // null has been accepted, so it is a legit integer.
-                    is_fp = false;
-                    accepted = true;
-                    state = STATE_NUM_FINAL;
-                }
-                break;
-
-                // 1-9 has been accepted, so is is an integer now.
-            case STATE_NUM_2:
-                if (isdigit(ch)) {
-                    // append character after if statement.
-                    ;;
-                } else if (ch == '.') {
-                    state = STATE_NUM_7;
+            case STATE_NUM_1_WHOLE_FIN:
+                if (ch == '.') {
+                    state = STATE_NUM_2_FP_DOT;
                 } else if (ch == 'e' || ch == 'E') {
-                    state = STATE_NUM_5;
-                } else {
-                    is_fp = false;
+                    state = STATE_NUM_4_EXP_MARK;
+                } else if (!isdigit(ch)) {
                     accepted = true;
-                    state = STATE_NUM_FINAL;
                     break;
                 }
                 Dynstring.append(ascii_num, (char) ch);
                 break;
 
-                // tro zeros have been accepted.
-            case STATE_NUM_3:
+            case STATE_NUM_2_FP_DOT:
                 if (isdigit(ch)) {
-                    state = STATE_NUM_4;
-                } else if (ch == '.') {
-                    state = STATE_NUM_7;
-                } else {
-                    is_fp = false;
-                    state = STATE_NUM_FINAL;
-                    accepted = true;
-                    break;
-                }
-                Dynstring.append(ascii_num, (char) ch);
-                break;
-
-            case STATE_NUM_4:
-                if (isdigit(ch)) { ;;
-                } else if (ch == '.') {
-                    state = STATE_NUM_7;
-                } else if (ch == 'e' || ch == 'E') {
-                    // got an exponent
-                    state = STATE_NUM_5;
+                    state = STATE_NUM_3_FP_FIN;
                 } else {
                     accepted = true;
                     break;
@@ -558,79 +503,68 @@ static token_t lex_number(pfile_t *pfile) {
                 Dynstring.append(ascii_num, (char) ch);
                 break;
 
-            case STATE_NUM_5:
-                if (isdigit(ch)) {
-                    state = STATE_NUM_9;
-                    Dynstring.append(ascii_num, (char) ch);
-                } else if (ch == '+' || ch == '-') {
-                    state = STATE_NUM_6;
-                    Dynstring.append(ascii_num, (char) ch);
-                } else {
+            case STATE_NUM_3_FP_FIN:
+                if (ch == 'e' || ch == 'E') {
+                    state = STATE_NUM_4_EXP_MARK;
+                } else if (!isdigit(ch)) {
                     accepted = true;
+                    break;
                 }
+                Dynstring.append(ascii_num, (char) ch);
                 break;
 
-            case STATE_NUM_6:
-                if (isdigit(ch)) {
-                    state = STATE_NUM_9;
-                    Dynstring.append(ascii_num, (char) ch);
-                } else {
+            case STATE_NUM_4_EXP_MARK:
+                if (ch == '+' || ch == '-') {
+                    state = STATE_NUM_5_EXP_SIGN;
+                } else if (!isdigit(ch)) {
                     accepted = true;
+                    break;
+                } else {
+                    state = STATE_NUM_6_EXP_FIN;
                 }
+                Dynstring.append(ascii_num, (char) ch);
                 break;
 
-            case STATE_NUM_7:
+            case STATE_NUM_5_EXP_SIGN:
                 if (isdigit(ch)) {
-                    state = STATE_NUM_8;
-                    Dynstring.append(ascii_num, (char) ch);
+                    state = STATE_NUM_6_EXP_FIN;
                 } else {
                     accepted = true;
+                    break;
                 }
+                Dynstring.append(ascii_num, (char) ch);
                 break;
 
-            case STATE_NUM_8:
-                if (isdigit(ch)) {
-                    Dynstring.append(ascii_num, (char) ch);
-                } else if (ch == 'e' || ch == 'E') {
-                    Dynstring.append(ascii_num, (char) ch);
-                    state = STATE_NUM_5;
-                } else {
+            case STATE_NUM_6_EXP_FIN:
+                if (!isdigit(ch)) {
                     accepted = true;
-                    state = STATE_NUM_FINAL;
+                    break;
                 }
+                Dynstring.append(ascii_num, (char) ch);
                 break;
-
-            case STATE_NUM_9:
-                if (isdigit(ch)) {
-                    Dynstring.append(ascii_num, (char) ch);
-                } else {
-                    accepted = true;
-                    state = STATE_NUM_FINAL;
-                }
-                break;
-
             default:
                 break;
         }
     }
-    if (state != STATE_NUM_FINAL) {
-        Dynstring.dtor(ascii_num);
-        return (token_t) {.type = TOKEN_DEAD};
+    Pfile.ungetc(pfile);
+
+    // error
+    if (state != STATE_NUM_1_WHOLE_FIN &&
+        state != STATE_NUM_3_FP_FIN &&
+        state != STATE_NUM_6_EXP_FIN) {
+        goto ret;
     }
 
-    Pfile.ungetc(pfile);
-    token_t token;
-
-    // TODO: actually we can get rid of it and left number as string but with market that its an integer or a float.
-    if (is_fp) {
-        token.type = TOKEN_NUM_F;
-        token.attribute.num_f = strtod(Dynstring.c_str(ascii_num), NULL);
-    } else {
+    if (state == STATE_NUM_1_WHOLE_FIN) {
         token.type = TOKEN_NUM_I;
         token.attribute.num_i = strtoull(Dynstring.c_str(ascii_num), NULL, 10);
+    } else {
+        token.type = TOKEN_NUM_F;
+        token.attribute.num_f = strtod(Dynstring.c_str(ascii_num), NULL);
     }
-    Dynstring.dtor(ascii_num);
 
+    ret:
+    Dynstring.dtor(ascii_num);
     return token;
 }
 
@@ -813,96 +747,3 @@ const struct scanner_interface Scanner = {
         .get_charpos = Get_charpos,
         .init = Init_scanner,
 };
-
-
-#ifdef SELFTEST_scanner
-#include "tests/tests.h"
-
-int main() {
-    token_t token;
-
-    //********************************************************************//
-    //****************************** NUMBERS *****************************//
-
-    // floats ok
-    printf("Test 1 - float numbers, good\n");
-
-    pfile_t *pfile = Pfile.getfile("../tests/number_ok.tl", "r");
-    if (!pfile) {
-        goto nexttest;
-    }
-    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type != TOKEN_NUM_F) {
-            Tests.failed("expected: got: with attribute:\n");
-        } else {
-            Tests.passed("%d\n", nu);
-        }
-    }
-    if (0) {
-        nexttest:
-        Tests.failed("Cannot open the file!\n");
-    }
-    Pfile.dtor(pfile);
-
-    // integer ok
-    printf("Test 3 - integer numbers, good\n");
-    pfile = Pfile.getfile("../tests/integer_ok.tl", "r");
-    if (!pfile) {
-        goto nexttest3;
-    }
-    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type != TOKEN_NUM_I) {
-            Tests.failed("expected: got: with attribute:\n");
-        } else {
-            Tests.passed("%d\n", nu);
-        }// green [PASSED]
-    }
-    if (0) {
-        nexttest3:
-        Tests.failed("Cannot open the file!\n");
-    }
-    Pfile.dtor(pfile);
-
-
-    // identifier ok
-    printf("Test 5 - identifiers, good\n");
-    pfile = Pfile.getfile("../tests/identif_ok.tl", "r");
-    if (!pfile) {
-        goto nexttest5;
-    }
-    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type != TOKEN_ID) {
-            Tests.failed("expected: got: with attribute:\n");
-        } else {
-            Tests.passed("%d\n", nu);
-        }// green [PASSED]
-    }
-    if (0) {
-        nexttest5:
-        Tests.failed("Cannot open the file!\n");
-    }
-    Pfile.dtor(pfile);
-
-    // strings good
-    printf("Test 7 - strings, good\n");
-    pfile = Pfile.getfile("../tests/string_ok.tl", "r");
-    if (!pfile) {
-        goto nexttest7;
-    }
-    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type != TOKEN_STR) {
-            Tests.failed("expected: got: with attribute:\n");
-        } else {
-            Tests.passed("%d\n", nu);
-        }// green [PASSED]
-    }
-    if (0) {
-        nexttest7:
-        Tests.failed("Cannot open the file!\n");
-    }
-    Pfile.dtor(pfile);
-
-    return 0;
-}
-
-#endif
