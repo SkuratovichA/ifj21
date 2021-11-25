@@ -749,6 +749,7 @@ static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_
 static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_expr_types) {
     bool hard_reduce = false;
     bool is_func = false;
+    bool is_write = false;
     int func_entries = -1;
     int cmp;
 
@@ -756,7 +757,7 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
         // Peek item from the stack
         stack_item_t *top = (stack_item_t *) Stack.peek(stack);
 
-//        debug_msg("Function entries: %d\n", func_entries);
+        debug_msg("Function entries: %d\n", func_entries);
         debug_msg("Next: \"%s\"\n", Scanner.to_string(Scanner.get_curr_token().type));
 
         // Pop expression if we have it on the top of the stack
@@ -785,6 +786,7 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
                 return true;
             }
 
+            // id =
             if (vector_expr_types != NULL) {
                 Dynstring.append(vector_expr_types, Semantics.of_id_type(Semantics.token_to_id_type(expr->token.type)));
             }
@@ -816,8 +818,24 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
                     debug_msg("SET IS FUNC\n");
                     second_op = OP_FUNC;
                     is_func = true;
+
+                    dynstring_t *str_cmp = Dynstring.ctor("write");
+                    if (Dynstring.cmp(curr_tok.attribute.id, str_cmp) == 0) {
+                        is_write = true;
+                    }
+                    Dynstring.dtor(str_cmp);
                 }
             }
+        }
+
+        if (first_op == OP_RPAREN && is_write) {
+            is_write = false;
+            debug_msg("write function end here\n");
+        }
+
+        if (is_write && top->type == ITEM_TYPE_TOKEN && expr &&
+            (top->token.type == TOKEN_COMMA || top->token.type == TOKEN_LPAREN)) {
+            debug_msg("jsem carka po vyrazu\n");
         }
 
         // Precedence comparison
