@@ -73,72 +73,141 @@ struct code_generator_interface_t {
      */
     void (*var_assignment)(dynstring_t *);
 
+    /*
+     * @brief Generates expressions reduce.
+     * @param expr stores info about the expr to be processed.
+     */
+    void (*expression)(expr_semantics_t *);
 
     /*
-     * @brief Generates program start (adds header, define built-in functions).
+     * @brief Generates pop from the stack to GF@%expr_result.
      */
-    void (*prog_start)(void);
+    void (*expression_pop)(void);
 
+    /*
+     * @brief Gets info about current cond scope from
+     *        global dynstring instructions.cond_info
+     */
+    void (*push_cond_info)(void);
+
+    /*
+     * @brief Saves info about current cond scope into
+     *        global dynstring instructions.cond_info
+     */
+    void (*pop_cond_info)(void);
+
+    /*
+     * @brief Generates start of if block. The result of expression
+     *        in the condition is expected in LF@%result variable.
+     */
+    void (*cond_if)(size_t, size_t);
+
+    /*
+     * @brief Generates start of else if block - JUMP $end
+     *        from the previous block and LABEL for new elseif block.
+     */
+    void (*cond_elseif)(size_t, size_t);
+
+    /*
+     * @brief Generates start of else statement.
+     */
+    void (*cond_else)(size_t, size_t);
+
+    /*
+     * @brief Generates end of if statement.
+     */
+    void (*cond_end)(size_t, size_t);
+
+    /*
+     * @brief Generates break instruction.
+     */
+    void (*instr_break)(void);
+
+    /*
+     * @brief Generates while loop header.
+     */
+    void (*while_header)(void);
+
+    /*
+     * @brief Generates while loop condition check.
+     */
+    void (*while_cond)(void);
+
+    /*
+     * @brief Generates while loop end.
+     */
+    void (*while_end)(void);
+
+    /*
+     * @brief Generates repeat until loop header.
+     */
+    void (*repeat_until_header)(void);
+
+    /*
+     * @brief Generates repeat until loop condition check and end label.
+     */
+    void (*repeat_until_cond)(void);
+
+    /*
+     * @brief Generates variable for default step in for loop,
+     *        initialise it to 1.
+     */
+    void (*for_default_step)(void);
+
+    /*
+     * @brief Generates for loop condition check.
+     */
+    void (*for_cond)(dynstring_t *);
+
+    /*
+     * @brief Generates for loop end.
+     */
+    void (*for_end)(dynstring_t *);
+
+    /*
+     * @brief Generates function definition start.
+     */
     void (*func_start)(dynstring_t *);
+
+    /*
+     * @brief Generates function definition end.
+     */
     void (*func_end)(char *);
+
+    /*
+     * @brief Generates passing param from TF to LF.
+     */
     void (*func_start_param)(dynstring_t*, size_t);
-    void (*func_return_value)(size_t);
+
+    /*
+     * @brief Generates parameter pass to a function.
+     */
     void (*func_pass_param)(size_t);
 
     /*
-     * @brief Generates createframe instr before passing parameters to a function
+     * @brief Generates return value of return parameter with index.
      */
-    void (*func_createframe)(void);
+    void (*func_return_value)(size_t);
 
     /*
-     * @brief Generates function end.
+     * @brief Generates creation of a frame before passing parameters to a function
      */
-    void (*main_end)(void);
+    void (*func_createframe)(void);
 
     /*
      * @brief Generates function call.
      */
     void (*func_call)(dynstring_t *);
 
+    /*
+     * @brief Generates end of main scope.
+     */
+    void (*main_end)(void);
 
-    void (*cond_if)(size_t, size_t);
-
-    void (*cond_elseif)(size_t, size_t);
-
-    void (*cond_else)(size_t, size_t);
-
-    void (*cond_end)(size_t, size_t);
-
-    void (*while_header)(void);
-
-    void (*while_cond)(void);
-
-    void (*while_end)(void);
-
-    void (*end)(void);
-
-    void (*repeat_until_header)(void);
-
-    void (*repeat_until_cond)(void);
-
-    void (*for_cond)(dynstring_t *);
-
-    void (*for_end)(dynstring_t *);
-
-    void (*for_default_step)(void);
-
-
-    void (*expression)(expr_semantics_t *);
-
-    void (*expression_pop)(void);
-
-
-    void (*pop_cond_info)(void);
-
-    void (*push_cond_info)(void);
-
-    void (*instr_break)(void);
-
+    /*
+     * @brief Generates program start (adds header, define built-in functions).
+     */
+    void (*prog_start)(void);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.
