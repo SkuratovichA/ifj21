@@ -23,7 +23,7 @@
 #include "symstack.h"
 #include "debug.h"
 
-void error_unexpected_token(int);
+void error_unexpected_token(const char *, const char *);
 
 /** Macro expecting a non terminal from the scanner.
  */
