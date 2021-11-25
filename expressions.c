@@ -973,35 +973,30 @@ static bool id_list(dynstring_t *vector_expr_types) {
     debug_msg("<id_list> ->\n");
     debug_msg("TOKEN - %s\n", Scanner.to_string(Scanner.get_curr_token().type));
 
-    dynstring_t *id_name;
+    dynstring_t *id_name = NULL;
     GET_ID_SAFE(id_name);
 
     // expr_stmt was processed an ID which is not function,
     // so it is not necessary to check current token on ID here
     Scanner.get_next_token(pfile);
 
-    // DEAD TOKEN
-    if (Scanner.get_curr_token().type == TOKEN_DEAD) {
-        Errors.set_error(ERROR_LEXICAL);
-        Dynstring.dtor(id_name);
-        return false;
-    }
-
     // =
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
         Scanner.get_next_token(pfile);
-        if (parse_init(EXPR_DEFAULT, vector_expr_types)) {
-            Generator.var_assignment(id_name);
-            Dynstring.dtor(id_name);
-            return true;
-        } else {
-            Dynstring.dtor(id_name);
-            return false;
+        if (!parse_init(EXPR_DEFAULT, vector_expr_types)) {
+            goto err;
         }
+        Generator.var_assignment(id_name);
+        Dynstring.dtor(id_name);
+        return true;
     }
     Dynstring.dtor(id_name);
     // <other_id>
     return other_id(vector_expr_types);
+
+    err:
+    Dynstring.dtor(id_name);
+    return false;
 }
 
 /**
