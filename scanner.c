@@ -6,7 +6,6 @@
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
  */
 #include "scanner.h"
-#include "tests/tests.h"
 
 
 /** Previous token is used for error handling, if I will not give a d&ck.
@@ -316,6 +315,7 @@ static token_t lex_identif(pfile_t *pfile) {
     state = STATE_ID_INIT;
     int ch;
     bool accepted = false;
+    charpos--;
 
     token_t token = {.type = TOKEN_ID, .attribute.id = Dynstring.ctor("")};
 
@@ -367,6 +367,7 @@ static bool process_comment(pfile_t *pfile) {
     state = STATE_COMMENT_INIT;
     bool accepted = false;
     int ch;
+    charpos--;
 
     // != EOF is not a true "DFA" way of thinking, but it is more clearly
     while (!accepted && (ch = Pfile.pgetc(pfile)) != EOF) {
@@ -475,6 +476,7 @@ static token_t lex_number(pfile_t *pfile) {
     bool is_fp = true; // suppose it is true.
     int ch;
     bool accepted = false;
+    charpos--;
 
     while (!accepted && (ch = Pfile.pgetc(pfile)) != EOF) {
         charpos++;
@@ -642,12 +644,12 @@ static token_t scanner(pfile_t *pfile) {
     token_t token = {0,};
 
     next_lexeme:
+    charpos++;
     state = STATE_INIT;
     ch = Pfile.pgetc(pfile);
-    charpos++;
 
     switch (ch) {
-        #define X(a) case TOKEN(a): charpos++; token.type = TOKEN(a); break;
+        #define X(a) case TOKEN(a): token.type = TOKEN(a); break;
         SINGLE_CHAR_TOKENS(X)
         #undef X
 
@@ -658,7 +660,7 @@ static token_t scanner(pfile_t *pfile) {
             break;
 
         case_2('\t', ' '):
-            charpos += (ch == '\t') ? 4 : 1;
+            charpos += (ch == '\t') ? 3 : 0;
             goto next_lexeme;
             break;
 
@@ -676,7 +678,6 @@ static token_t scanner(pfile_t *pfile) {
         case '-':
             if (Pfile.peek_at(pfile, 0) == '-') {
                 Pfile.pgetc(pfile);
-                charpos++;
                 if (!process_comment(pfile)) {
                     token = (token_t) {.type = TOKEN_DEAD};
                     break;
@@ -815,6 +816,7 @@ const struct scanner_interface Scanner = {
 
 
 #ifdef SELFTEST_scanner
+#include "tests/tests.h"
 
 int main() {
     token_t token;

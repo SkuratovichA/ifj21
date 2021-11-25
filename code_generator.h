@@ -1,3 +1,9 @@
+/**
+ * @file code_generator.h
+ *
+ * @author Lucie Svobodova
+ */
+
 #pragma once
 
 #include "dynstring.h"
@@ -43,9 +49,13 @@ struct code_generator_interface_t {
     void (*prog_start)(void);
 
     void (*func_start)(dynstring_t *);
+
     void (*func_end)(char *);
+
     void (*func_start_param)(dynstring_t*, size_t);
+
     void (*func_return_value)(size_t);
+
     void (*func_pass_param)(size_t);
 
     /*
@@ -64,12 +74,19 @@ struct code_generator_interface_t {
     void (*func_call)(dynstring_t *);
 
     void (*var_declaration)(dynstring_t *);
+
     void (*var_definition)(dynstring_t *);
+
     void (*var_assignment)(dynstring_t *);
+
     void (*cond_if)(size_t, size_t);
+
     void (*cond_elseif)(size_t, size_t);
+
     void (*cond_else)(size_t, size_t);
+
     void (*cond_end)(size_t, size_t);
+
     void (*while_header)(void);
 
     void (*while_cond)(void);
@@ -97,6 +114,7 @@ struct code_generator_interface_t {
     void (*print_instr_list)(instr_list_t);
 
     void (*pop_cond_info)(void);
+
     void (*push_cond_info)(void);
 };
 

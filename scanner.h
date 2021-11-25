@@ -1,8 +1,6 @@
 /**
  * @file scanner.h
  *
- * @brief Header file for scanner.
- *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
  */
 #pragma once

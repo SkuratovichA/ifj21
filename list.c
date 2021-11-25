@@ -1,8 +1,6 @@
 /**
  * @file list.c
  *
- * @brief
- *
  * @author Svobodova Lucie
  */
 #include "list.h"

@@ -1,9 +1,7 @@
 /**
  * @file stack.h
  *
- * @brief The file contains ...
- *
- * @author Lucie Svobodova <xplagiat01@vutbr.cz
+ * @author Lucie Svobodova
  */
 #pragma once
 

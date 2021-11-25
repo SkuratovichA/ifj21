@@ -1,10 +1,9 @@
 /**
  * @file expressions.h
  *
- * @brief
- *
- * @author
+ * @author Evgeny Torbin
  */
+
 #pragma once
 
 #include "progfile.h"
