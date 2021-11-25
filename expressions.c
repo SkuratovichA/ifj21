@@ -807,19 +807,18 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
                 if (func_entries == -1) {
                     func_entries = 0;
                 }
-
                 func_entries++;
             }
             first_op = OP_FUNC;
             is_func = false;
             inside_func = true;
             debug_msg("func starts here\n");
+            Generator.func_createframe();
         }
 
         // Check if identifier is a function
         if (curr_tok.type == TOKEN_ID && !hard_reduce) {
             symbol_t *symbol;
-
             if (Symtable.get_symbol(global_table, curr_tok.attribute.id, &symbol)) {
                 if (symbol->type == ID_TYPE_func_decl || symbol->type == ID_TYPE_func_def) {
                     debug_msg("SET IS FUNC\n");
@@ -843,15 +842,17 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
 
             params_cnt = 0;
             inside_func = false;
-            // TODO generate code
+            Generator.func_call(Dynstring.c_str(func_name));
             Dynstring.dtor(func_name);
             debug_msg("function ends here\n");
         }
 
-        if (is_write && top->type == ITEM_TYPE_TOKEN && expr &&
+        if (top->type == ITEM_TYPE_TOKEN && expr &&
             (top->token.type == TOKEN_COMMA || top->token.type == TOKEN_LPAREN)) {
             Generator.expression_pop();
-            Generator.func_call("write");
+            if (!is_write) {
+                Generator.func_pass_param(params_cnt++);
+            }
         }
 
         // Precedence comparison

@@ -822,7 +822,7 @@ static bool fun_body(char *id_name) {
                 // FIXME - can be also for loop
                 Generator.while_end();
                 if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
-                    instructions.in_loop = false;       // FIXME - nested loops problem!!!
+                    instructions.in_loop = false;
                     instructions.outer_loop_id = 0;
                     instructions.before_loop_start = NULL;
                 }
@@ -866,7 +866,7 @@ static bool fun_body(char *id_name) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
+static bool other_funparams(pfile_t *pfile, func_info_t function_def_info, size_t param_index) {
     debug_msg("<other_funparam> ->\n");
 
     dynstring_t *id_name = NULL;
@@ -892,10 +892,10 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info) {
     // for function info in the symtable.
     Semantics.add_param(&function_def_info, id_type);
     // generate code
-    Generator.func_start_param(id_name, 1);      // FIXME counter
+    Generator.func_start_param(id_name, param_index++);
 
     Dynstring.dtor(id_name);
-    return other_funparams(pfile, function_def_info);
+    return other_funparams(pfile, function_def_info, param_index);
     err:
     Dynstring.dtor(id_name);
     return false;
@@ -919,7 +919,8 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
     GET_ID_SAFE(id_name);
     // id
     EXPECTED(TOKEN_ID);
-    Generator.func_start_param(id_name, 0);    // need index of the param to the code generator, not the name
+    size_t param_index = 0;
+    Generator.func_start_param(id_name, param_index++);
     // :
     EXPECTED(TOKEN_COLON);
     // get type
@@ -936,7 +937,7 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
     Dynstring.dtor(id_name);
 
     // <other_funparams>
-    return other_funparams(pfile, function_def_info);
+    return other_funparams(pfile, function_def_info, param_index);
     err:
     Dynstring.dtor(id_name);
     return false;
@@ -990,7 +991,7 @@ static bool datatype_list(pfile_t *pfile, func_info_t function_decl_info) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
+static bool other_funrets(pfile_t *pfile, func_info_t function_info, size_t ret_num) {
     debug_msg("<other_funrets> -> \n");
 
     // e |
@@ -1001,10 +1002,10 @@ static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
     EXPECTED(TOKEN_COMMA);
     Semantics.add_return(&function_info, Scanner.get_curr_token().type);
     // generate return var
-    Generator.func_return_value(1);         // FIXME counter
+    Generator.func_return_value(ret_num++);
 
     // <datatype> <other_funrets>
-    return datatype() && other_funrets(pfile, function_info);
+    return datatype() && other_funrets(pfile, function_info, ret_num);
     err:
     return false;
 }
@@ -1028,10 +1029,11 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
     EXPECTED(TOKEN_COLON);
     Semantics.add_return(&function_info, Scanner.get_curr_token().type);
     // generate return var
-    Generator.func_return_value(0);
+    size_t ret_num = 0;
+    Generator.func_return_value(ret_num++);
 
     // <datatype> <other_funrets>
-    return (datatype() && other_funrets(pfile, function_info));
+    return (datatype() && other_funrets(pfile, function_info, ret_num));
     err:
     return false;
 }
@@ -1179,12 +1181,7 @@ static bool stmt() {
             // function calling: id ( <list_expr> )
         case TOKEN_ID:;
             GET_ID_SAFE(id_name);
-            // create frame before passing parameters
-            Generator.func_createframe();
-            // in expressions we pass the parameters
             PARSE_EXPR(EXPR_GLOBAL, NULL);
-            // function call
-            Generator.func_call(Dynstring.c_str(id_name));
             break;
 
             // FIXME. I dont know how to solve this recursion.

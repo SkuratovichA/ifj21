@@ -347,12 +347,9 @@ static void generate_var_value(token_t token) {
         case TOKEN_ID:
             ADD_INSTR_PART("LF@%");
             symbol_t *symbol;
-            bool exists = Symstack.get_local_symbol(symstack, token.attribute.id, &symbol);
-            if (!exists) {
-                ADD_INSTR("# DOESN'T EXIST");
+            if (!Symstack.get_local_symbol(symstack, token.attribute.id, &symbol)) {
                 ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
             } else {
-                ADD_INSTR("# EXISTS");
                 ADD_INSTR_INT(symbol->id_of_parent_scope);
             }
             ADD_INSTR_PART("%");
@@ -612,7 +609,7 @@ static void generate_expression(expr_semantics_t *expr) {
                       "PUSHS GF@%expr_result");
             break;
         default:
-            ADD_INSTR("# unrecognized instruction");
+            ADD_INSTR("# unrecognized_instruction");
     }
 }
 
@@ -916,10 +913,6 @@ static void generate_func_start(dynstring_t *func_name) {
     ADD_INSTR_PART_DYN(func_name);
     ADD_INSTR_TMP();
     ADD_INSTR("PUSHFRAME");
-
-    // TODO remove this and make another function - we need to define LF@%result... after starting function definition
-    ADD_INSTR("DEFVAR LF@%result");
-    ADD_INSTR("MOVE LF@%result nil@nil");
 }
 
 /*
@@ -931,13 +924,6 @@ static void generate_func_end(char *func_name) {
     ADD_INSTR_PART(func_name);
     ADD_INSTR_PART("$end");
     ADD_INSTR_TMP();
-
-    // FIXME - remove these instructions
-    ADD_INSTR("WRITE GF@%expr_result \n"
-              "WRITE string@\\010\n"
-              "DEFVAR LF@type_var \n"
-              "TYPE LF@type_var GF@%expr_result \n"
-              "WRITE LF@type_var");
 
     ADD_INSTR("POPFRAME");
     ADD_INSTR("RETURN\n");
@@ -953,11 +939,11 @@ static void generate_func_end(char *func_name) {
 static void generate_func_start_param(dynstring_t *param_name, size_t index) {
     ADD_INSTR("# generate_function_start_param");
     ADD_INSTR_PART("DEFVAR LF@%");
-    ADD_INSTR_PART_DYN(param_name);
+    generate_var_name(param_name, true);
     ADD_INSTR_TMP();
 
     ADD_INSTR_PART("MOVE LF@%");
-    ADD_INSTR_PART_DYN(param_name);
+    generate_var_name(param_name, true);
     ADD_INSTR_PART(" LF@%");
     ADD_INSTR_INT(index);
     ADD_INSTR_TMP();
@@ -976,8 +962,7 @@ static void generate_func_pass_param(size_t param_index) {
 
     ADD_INSTR_PART("MOVE TF@%");
     ADD_INSTR_INT(param_index);
-    ADD_INSTR_PART(" ");
-    generate_var_value(Scanner.get_curr_token());
+    ADD_INSTR_PART(" GF@%expr_result");
     ADD_INSTR_TMP();
 }
 
@@ -1004,9 +989,6 @@ static void generate_func_return_value(size_t index) {
  */
 static void generate_func_createframe() {
     ADD_INSTR("CREATEFRAME");
-
-    // TODO remove this instruction when foo() parsing is handled
-    ADD_INSTR("PUSHS int@2");
 }
 
 /*
@@ -1031,13 +1013,10 @@ static void generate_main_start() {
 
 /*
  * @brief Generates end of main scope.
- * FIXME is this function necessary?
  */
 static void generate_main_end() {
     ADD_INSTR("LABEL $$MAIN$end");
     ADD_INSTR("CLEARS");
-    // TODO remove
-    ADD_INSTR("WRITE string@\\010\\010SUCCESSFUL\\010");
 }
 
 /*
