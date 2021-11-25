@@ -154,6 +154,23 @@ static int token_to_type(int typ) {
     }
 }
 
+static int keyword_to_type(int typ) {
+    switch (typ) {
+        case KEYWORD_string:
+            return ID_TYPE_string;
+        case KEYWORD_number:
+            return ID_TYPE_integer;
+        case KEYWORD_integer:
+            return ID_TYPE_number;
+        case KEYWORD_boolean:
+            return ID_TYPE_boolean;
+        case KEYWORD_nil:
+            return ID_TYPE_nil;
+        default:
+            return ID_TYPE_UNDEF;
+    }
+}
+
 /** Add a return type to a function semantics.
  *
  * @param self info to add a param.
@@ -592,4 +609,5 @@ const struct semantics_interface_t Semantics = {
         .check_signatures_compatibility = Check_signatures_compatibility,
         .of_id_type = of_id_type,
         .token_to_id_type = token_to_type,
+        .keyword_to_id_type = keyword_to_type
 };

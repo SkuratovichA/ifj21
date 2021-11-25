@@ -18,6 +18,7 @@
 #include "symstack.h"
 #include "expressions.h"
 #include "code_generator.h"
+#include "semantics.h"
 
 
 static pfile_t *pfile;
@@ -388,7 +389,7 @@ static bool repeat_body() {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool assignment(dynstring_t *var_name) {
+static bool assignment(dynstring_t *var_name, int var_type) {
     debug_msg("<assignment> -> \n");
 
     // e |
@@ -399,7 +400,26 @@ static bool assignment(dynstring_t *var_name) {
     }
     // =
     EXPECTED(TOKEN_ASSIGN);
-    PARSE_EXPR(EXPR_DEFAULT, NULL);
+
+    dynstring_t *received_rets = Dynstring.ctor("");
+    PARSE_EXPR(EXPR_DEFAULT, received_rets);
+
+    // semantics of assignment
+    dynstring_t *req_rets = Dynstring.ctor("");
+    Dynstring.append(req_rets, Semantics.of_id_type(Semantics.keyword_to_id_type(var_type)));
+    if (Dynstring.cmp(req_rets, received_rets) != 0) {
+        if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
+            strcmp(Dynstring.c_str(received_rets), "i") == 0) {
+            // TODO: v tomto pripade je nutne pretypovat vysledek
+        } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
+            Errors.set_error(ERROR_TYPE_MISSMATCH);
+            return false;
+        }
+    }
+    Dynstring.dtor(req_rets);
+    Dynstring.dtor(received_rets);
+    // semantics of assignment end
+
     // expression result is in GF@%expr_result
     Generator.var_definition(var_name);
 
@@ -579,8 +599,9 @@ static bool var_definition() {
     if (!datatype()) {
         goto err;
     }
+
     // = `expr`
-    if (!assignment(id_name)) {
+    if (!assignment(id_name, id_type)) {
         goto err;
     }
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
