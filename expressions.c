@@ -1052,5 +1052,5 @@ static bool Parse_expression(pfile_t *pfile_, expr_type_t expr_type, dynstring_t
  */
 const struct expr_interface_t Expr = {
         .parse = Parse_expression,
-        //.parse_expr_list = Expr_list
+        .parse_expr_list = Expr_list
 };
