@@ -1,4 +1,4 @@
---require "ifj21"
+require "ifj21"
 
 function chuj(n : integer, s : string) : integer
     local a : integer = 0
