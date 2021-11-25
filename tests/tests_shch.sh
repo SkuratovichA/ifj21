@@ -155,13 +155,14 @@ do
 
         rm tmp.txt
     else
-        "$BUILD_DIR/$BIN_TARGET" < "$file" 2>&1 | grep "xpression parsing failed"
+        "$BUILD_DIR/$BIN_TARGET" < "$file" 2>&1 | grep "xpression parsing failed" > tmp
         ret_val=${PIPESTATUS[0]}
     fi
 
-    if [ $ret_val -ne "$expected_err" ]; then
+    if [ "$ret_val" -ne "$expected_err" ]; then
         err_files=$((err_files+1))
         printf "$file ${RED}FAILED${NC} ret_val = $ret_val, expected $expected_err\n"
+        cat tmp
         echo ""
     fi
 done
