@@ -11,16 +11,16 @@
  * Structure that holds information needed for the code generator.
  */
 typedef struct {
-    list_t *startList;                  // instr that are first in the program
+    list_t *startList;                  // instrs that are first in the program
     list_t *instrListFunctions;         // instr list for defining functions
     list_t *mainList;                   // instr list for the main scope
     bool in_loop;                       // var that indicates whether we are in loop
     size_t outer_loop_id;               // id of scope of the most outer loop
-    list_item_t *before_loop_start;     // pointer to the most outer loop (if !in_loop -> NULL)
+    list_item_t *before_loop_start;     // ptr to instr before the most outer loop
+                                        // if (!in_loop) before_loop_start == NULL
     size_t outer_cond_id;               // id of scope of the most outer if
     char cond_cnt;                      // counter of elseif/else branches after if
-    dynstring_t *cond_info;             // info about nested if
-    size_t label_cnt;                   // labels counter
+    dynstring_t *cond_info;             // dynstring with info about nested ifs
 } instructions_t;
 
 typedef enum instr_list {
@@ -36,6 +36,43 @@ extern list_t *instrList;
  * A structure that store pointers to the functions from code_generator.c. So we can use them in different files as interface.
  */
 struct code_generator_interface_t {
+
+    /*
+     * @brief Initialises the code generator.
+     */
+    void (*initialise)(void);
+
+    /*
+     * @brief Cleans the code generator.
+     */
+    void (*dtor)(void);
+
+    /*
+     * @brief Prints the list of instructions.
+     */
+    void (*print_instr_list)(instr_list_t);
+
+    /*
+     * @brief Generates variable declaration.
+     */
+    void (*var_declaration)(dynstring_t *);
+
+    /*
+     * @brief Generates variable declaration.
+     */
+    void (*var_definition)(dynstring_t *);
+
+    /*
+     * @brief Generates variable used for code generating.
+     */
+    void (*tmp_var_definition)(char *);
+
+    /*
+     * @brief Generates assignment to a variable
+     *        MOVE LF@%0%i GF@%expr_result
+     */
+    void (*var_assignment)(dynstring_t *);
+
 
     /*
      * @brief Generates program start (adds header, define built-in functions).
@@ -63,11 +100,6 @@ struct code_generator_interface_t {
      */
     void (*func_call)(dynstring_t *);
 
-    void (*var_declaration)(dynstring_t *);
-
-    void (*var_definition)(dynstring_t *);
-
-    void (*var_assignment)(dynstring_t *);
 
     void (*cond_if)(size_t, size_t);
 
@@ -95,15 +127,11 @@ struct code_generator_interface_t {
 
     void (*for_default_step)(void);
 
-    void (*initialise)(void);
 
     void (*expression)(expr_semantics_t *);
 
     void (*expression_pop)(void);
 
-    void (*dtor)(void);
-
-    void (*print_instr_list)(instr_list_t);
 
     void (*pop_cond_info)(void);
 
@@ -111,7 +139,6 @@ struct code_generator_interface_t {
 
     void (*instr_break)(void);
 
-    void (*tmp_var_definition)(char *);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.

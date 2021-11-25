@@ -115,14 +115,9 @@ static void generate_func_readn() {
 }
 
 /*
- * FIXME
- *      function write (term1, term2, ..., termn)
- *      right now it prints only one term
- */
-/*
  * @brief   Generates built-in function write().
+ *          (only for one term)
  *          function write (term1, term2, ..., termn)
- *          params: FIXME
  */
 static void generate_func_write() {
     ADD_INSTR("LABEL $write \n"
@@ -253,6 +248,200 @@ static void generate_func_substr() {
 }
 
 /*
+ * @brief Initialises the code generator.
+ */
+static void initialise_generator() {
+    debug_msg("\n");
+    tmp_instr = Dynstring.ctor("");
+    // initialise the instructions structure
+    instructions.startList = List.ctor();
+    instructions.instrListFunctions = List.ctor();
+    instructions.mainList = List.ctor();
+    instructions.in_loop = false;
+    instructions.outer_loop_id = 0;
+    instructions.before_loop_start = NULL;
+    instructions.outer_cond_id = 0;
+    instructions.cond_cnt = 1;
+    instructions.cond_info = Dynstring.ctor("");
+    // sets instructions list active
+    instrList = instructions.startList;
+}
+
+/*
+ * @brief Cleans the code generator.
+ */
+static void dtor() {
+    debug_msg("\n");
+    List.dtor(instructions.startList, (void (*)(void *)) (Dynstring.dtor));
+    List.dtor(instructions.instrListFunctions, (void (*)(void *)) Dynstring.dtor);
+    List.dtor(instructions.mainList, (void (*)(void *)) Dynstring.dtor);
+    Dynstring.dtor(instructions.cond_info);
+    Dynstring.dtor(tmp_instr);
+}
+
+/*
+ * @brief Prints the list of instructions.
+ */
+static void Print_instr_list(instr_list_t instr_list_type) {
+    switch (instr_list_type) {
+        case LIST_INSTR_START:
+            List.print_list(instructions.startList, (char *(*)(void *)) Dynstring.c_str);
+            break;
+        case LIST_INSTR_FUNC:
+            List.print_list(instructions.instrListFunctions, (char *(*)(void *)) Dynstring.c_str);
+            break;
+        case LIST_INSTR_MAIN:
+            List.print_list(instructions.mainList, (char *(*)(void *)) Dynstring.c_str);
+            break;
+        default:
+            printf("Undefined instruction list.\n");
+            break;
+    }
+}
+
+
+/*
+ * @brief Generates code with value of the token.
+ */
+static void generate_var_value(token_t token) {
+    char str_tmp[MAX_CHAR];
+    memset(str_tmp, '\0', MAX_CHAR);
+    switch (token.type) {
+        case TOKEN_STR:
+            ADD_INSTR_PART("string@");
+            // transform the string format
+            unsigned str_len = Dynstring.len(token.attribute.id);
+            char *str_id = Dynstring.c_str(token.attribute.id);
+            for (unsigned i = 0; i < str_len; i++) {
+                // check format (check what to do with not printable chars?)
+                if (str_id[i] == ' ' || !isprint(str_id[i]) || str_id[i] == '#' || str_id[i] == '\\') {
+                    // print as an escape sequence
+                    sprintf(str_tmp, "\\%03d", str_id[i]);
+                } else {
+                    sprintf(str_tmp, "%c", str_id[i]);
+                }
+                ADD_INSTR_PART(str_tmp);
+                memset(str_tmp, '\0', MAX_CHAR);
+            }
+            break;
+        case TOKEN_NUM_F:
+            ADD_INSTR_PART("float@");
+            sprintf(str_tmp, "%a", token.attribute.num_f);
+            ADD_INSTR_PART(str_tmp);
+            break;
+        case TOKEN_NUM_I:
+            ADD_INSTR_PART("int@");
+            sprintf(str_tmp, "%lu", token.attribute.num_i);
+            ADD_INSTR_PART(str_tmp);
+            break;
+        case KEYWORD_nil:
+            ADD_INSTR_PART("nil@nil");
+            break;
+        case KEYWORD_0:
+            ADD_INSTR_PART("bool@false");
+            break;
+        case KEYWORD_1:
+            ADD_INSTR_PART("bool@true");
+            break;
+        case TOKEN_ID:
+            ADD_INSTR_PART("LF@%");
+            symbol_t *symbol;
+            bool exists = Symstack.get_local_symbol(symstack, token.attribute.id, &symbol);
+            if (!exists) {
+                ADD_INSTR("# DOESN'T EXIST");
+                ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+            } else {
+                ADD_INSTR("# EXISTS");
+                ADD_INSTR_INT(symbol->id_of_parent_scope);
+            }
+            ADD_INSTR_PART("%");
+            ADD_INSTR_PART_DYN(token.attribute.id);
+            break;
+        default:
+            ADD_INSTR_PART("unexpected_token");
+            break;
+    }
+}
+
+/*
+ * @brief Generates the name of variable.
+ *        scope_id%name
+ */
+static void generate_var_name(dynstring_t *var_name, bool new_def) {
+    symbol_t *symbol;
+    if (new_def || !Symstack.get_local_symbol(symstack, var_name, &symbol)) {
+        ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    } else {
+        ADD_INSTR_INT(symbol->id_of_parent_scope);
+    }
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
+}
+
+/*
+ * @brief Generates DEFVAR LF@%var.
+ */
+static void generate_defvar(dynstring_t *var_name) {
+    ADD_INSTR_PART("DEFVAR LF@%");
+    generate_var_name(var_name, true);  // true == new variable
+    if (instructions.in_loop) {
+        ADD_INSTR_WHILE();
+    } else {
+        ADD_INSTR_TMP();
+    }
+}
+
+/*
+ * @brief Generates variable declaration.
+ */
+static void generate_var_declaration(dynstring_t *var_name) {
+    generate_defvar(var_name);
+
+    // initialise to nil
+    ADD_INSTR_PART("MOVE LF@%");
+    generate_var_name(var_name, true);  // true == new variable
+    ADD_INSTR_PART(" nil@nil");
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates variable declaration.
+ */
+static void generate_var_definition(dynstring_t *var_name) {
+    generate_defvar(var_name);
+
+    ADD_INSTR_PART("MOVE LF@%");
+    generate_var_name(var_name, true);   // true == new variable
+    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates variable used for code generating.
+ */
+static void generate_tmp_var_definition(char *var_name) {
+    dynstring_t *name = Dynstring.ctor(var_name);
+    generate_defvar(name);
+
+    ADD_INSTR_PART("MOVE LF@%");
+    generate_var_name(name, true);  // true == new variable
+    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_TMP();
+    Dynstring.dtor(name);
+}
+
+/*
+ * @brief Generates assignment to a variable
+ *        MOVE LF@%0%i GF@%expr_result
+ */
+static void generate_var_assignment(dynstring_t *var_name) {
+    ADD_INSTR_PART("MOVE LF@%");
+    generate_var_name(var_name, false); // false == already declared var
+    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_TMP();
+}
+
+/*
  * @brief Generates function call.
  */
 static void generate_func_call(dynstring_t *func_name) {
@@ -355,164 +544,6 @@ static void generate_func_return_value(size_t index) {
     ADD_INSTR_INT(index);
     ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP();
-}
-
-/*
- * @brief Generates code with value of the token.
- */
-static void generate_var_value(token_t token) {
-    char str_tmp[MAX_CHAR];
-    memset(str_tmp, '\0', MAX_CHAR);
-    switch (token.type) {
-        case TOKEN_STR:
-            ADD_INSTR_PART("string@");
-            // transform the string format
-            unsigned str_len = Dynstring.len(token.attribute.id);
-            char *str_id = Dynstring.c_str(token.attribute.id);
-            for (unsigned i = 0; i < str_len; i++) {
-                // check format (check what to do with not printable chars?)
-                if (str_id[i] == ' ' || !isprint(str_id[i]) || str_id[i] == '#' || str_id[i] == '\\') {
-                    // print as an escape sequence
-                    sprintf(str_tmp, "\\%03d", str_id[i]);
-                } else {
-                    sprintf(str_tmp, "%c", str_id[i]);
-                }
-                ADD_INSTR_PART(str_tmp);
-                memset(str_tmp, '\0', MAX_CHAR);
-            }
-            break;
-        case TOKEN_NUM_F:
-            ADD_INSTR_PART("float@");
-            sprintf(str_tmp, "%a", token.attribute.num_f);
-            ADD_INSTR_PART(str_tmp);
-            break;
-        case TOKEN_NUM_I:
-            ADD_INSTR_PART("int@");
-            sprintf(str_tmp, "%lu", token.attribute.num_i);
-            ADD_INSTR_PART(str_tmp);
-            break;
-        case KEYWORD_nil:
-            ADD_INSTR_PART("nil@nil");
-            break;
-        case KEYWORD_0:
-            ADD_INSTR_PART("bool@false");
-            break;
-        case KEYWORD_1:
-            ADD_INSTR_PART("bool@true");
-            break;
-        case TOKEN_ID:
-            ADD_INSTR_PART("LF@%");
-            symbol_t *symbol;
-            bool exists = Symstack.get_local_symbol(symstack, token.attribute.id, &symbol);
-            if (!exists) {
-                ADD_INSTR("# DOESN'T EXIST");
-                ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-            } else {
-                ADD_INSTR("# EXISTS");
-                ADD_INSTR_INT(symbol->id_of_parent_scope);
-            }
-            ADD_INSTR_PART("%");
-            ADD_INSTR_PART_DYN(token.attribute.id);
-            break;
-        default:
-            ADD_INSTR_PART("unexpected_token");
-            break;
-    }
-}
-
-/*
- * @brief Generates name of variable
- *        scope_id%name
- */
-static void generate_var_name(dynstring_t *var_name) {
-    symbol_t *symbol;
-    if (Symstack.get_local_symbol(symstack, var_name, &symbol)) {
-        ADD_INSTR_INT(symbol->id_of_parent_scope);
-    } else {
-        ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    }
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART_DYN(var_name);
-}
-
-/*
- * @brief Generates DEFVAR LF@%var.
- */
-static void generate_defvar(dynstring_t *var_name) {
-    debug_msg("\n\t- generate_defvar: %s\n", Dynstring.c_str(var_name));
-    ADD_INSTR_PART("DEFVAR LF@%");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART_DYN(var_name);
-    if (instructions.in_loop) {
-        ADD_INSTR_WHILE();
-    } else {
-        ADD_INSTR_TMP();
-    }
-}
-
-/*
- * @brief Generates temporary variable (eg. LF@%3%tmp)
- */
-static void generate_tmp_var_definition(char *var_name) {
-    debug_msg("\n\t- generate_tmp_var_definition: %s\n", var_name);
-    ADD_INSTR_PART("DEFVAR LF@%");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART(var_name);
-    if (instructions.in_loop) {
-        ADD_INSTR_WHILE();
-    } else {
-        ADD_INSTR_TMP();
-    }
-
-    ADD_INSTR_PART("MOVE LF@%");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART(var_name);
-    ADD_INSTR_PART(" GF@%expr_result");
-    ADD_INSTR_TMP();
-}
-
-/*
- * @brief Generates variable declaration.
- */
-static void generate_var_definition(dynstring_t *var_name) {
-    debug_msg("\n\t- generate_var_definition: %s\n", Dynstring.c_str(var_name));
-    generate_defvar(var_name);
-
-    ADD_INSTR_PART("MOVE LF@%");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART_DYN(var_name);
-    ADD_INSTR_PART(" GF@%expr_result");
-    ADD_INSTR_TMP();
-}
-
-/*
- * @brief Generates variable declaration.
- */
-static void generate_var_declaration(dynstring_t *var_name) {
-    debug_msg("\n\t- generate_var_declaration: %s\n", Dynstring.c_str(var_name));
-    generate_defvar(var_name);
-
-    // initialise to nil
-    ADD_INSTR_PART("MOVE LF@%");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART_DYN(var_name);
-    ADD_INSTR_PART(" nil@nil");
-    ADD_INSTR_TMP();
-}
-
-/*
- * @brief Generates assignment to a variable
- *        MOVE LF@%0%i GF@%expr_result
- */
-static void generate_var_assignment(dynstring_t *var_name) {
-    ADD_INSTR_PART("MOVE LF@%");
-    generate_var_name(var_name);
-    ADD_INSTR_PART(" GF@%expr_result");
 }
 
 /*
@@ -776,9 +807,9 @@ static void generate_for_cond(dynstring_t *var_name) {
 static void generate_for_end(dynstring_t *var_name) {
     ADD_INSTR("# for loop end");
     ADD_INSTR_PART("ADD LF@%");\
-    generate_var_name(var_name);
+    generate_var_name(var_name, false);
     ADD_INSTR_PART(" LF@%");
-    generate_var_name(var_name);
+    generate_var_name(var_name, false);
     ADD_INSTR_PART(" LF@%");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART("%step");
@@ -975,54 +1006,9 @@ static void generate_expression(expr_semantics_t *expr) {
     }
 }
 
-/*
- * @brief Initialises the code generator.
- */
-static void initialise_generator() {
-    debug_msg("\n");
-    // initialise tmp_instr to empty dynstring
-    tmp_instr = Dynstring.ctor("");
 
-    // initialise the instructions structure
-    instructions.startList = List.ctor();
-    instructions.instrListFunctions = List.ctor();
-    instructions.mainList = List.ctor();
-    instructions.in_loop = false;
-    instructions.outer_loop_id = 0;
-    instructions.before_loop_start = NULL;
-    instructions.outer_cond_id = 0;
-    instructions.cond_cnt = 1;
-    instructions.label_cnt = 0;
-    instructions.cond_info = Dynstring.ctor("");
-    // sets active instructions list
-    instrList = instructions.startList;
-}
 
-static void dtor() {
-    debug_msg("\n");
-    List.dtor(instructions.startList, (void (*)(void *)) (Dynstring.dtor));
-    List.dtor(instructions.instrListFunctions, (void (*)(void *)) Dynstring.dtor);
-    List.dtor(instructions.mainList, (void (*)(void *)) Dynstring.dtor);
-    Dynstring.dtor(instructions.cond_info);
-    Dynstring.dtor(tmp_instr);
-}
 
-static void Print_instr_list(instr_list_t instr_list_type) {
-    switch (instr_list_type) {
-        case LIST_INSTR_START:
-            List.print_list(instructions.startList, (char *(*)(void *)) Dynstring.c_str);
-            break;
-        case LIST_INSTR_FUNC:
-            List.print_list(instructions.instrListFunctions, (char *(*)(void *)) Dynstring.c_str);
-            break;
-        case LIST_INSTR_MAIN:
-            List.print_list(instructions.mainList, (char *(*)(void *)) Dynstring.c_str);
-            break;
-        default:
-            printf("Undefined instruction list.\n");
-            break;
-    }
-}
 
 /*
  * @brief Saves info about current cond scope into dynstring instructions.cond_info
@@ -1060,6 +1046,14 @@ static void generate_break() {
  * Functions are in struct so we can use them in different files.
  */
 const struct code_generator_interface_t Generator = {
+        .initialise = initialise_generator,
+        .dtor = dtor,
+        .print_instr_list = Print_instr_list,
+        .var_declaration = generate_var_declaration,
+        .var_definition = generate_var_definition,
+        .tmp_var_definition = generate_tmp_var_definition,
+        .var_assignment = generate_var_assignment,
+
         .prog_start = generate_prog_start,
         .func_start = generate_func_start,
         .func_end = generate_func_end,
@@ -1069,8 +1063,6 @@ const struct code_generator_interface_t Generator = {
         .func_createframe = generate_func_createframe,
         .main_end = generate_main_end,
         .func_call = generate_func_call,
-        .var_declaration = generate_var_declaration,
-        .var_definition = generate_var_definition,
         .cond_if = generate_cond_if,
         .cond_elseif = generate_cond_elseif,
         .cond_else = generate_cond_else,
@@ -1084,14 +1076,9 @@ const struct code_generator_interface_t Generator = {
         .for_cond = generate_for_cond,
         .for_end = generate_for_end,
         .for_default_step = generate_for_default_step,
-        .initialise = initialise_generator,
         .expression = generate_expression,
         .expression_pop = generate_expression_pop,
-        .dtor = dtor,
-        .print_instr_list = Print_instr_list,
-        .var_assignment = generate_var_assignment,
         .pop_cond_info = pop_cond_info,
         .push_cond_info = push_cond_info,
         .instr_break = generate_break,
-        .tmp_var_definition = generate_tmp_var_definition,
 };
