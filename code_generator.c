@@ -590,13 +590,25 @@ static void generate_while_header() {
 
 /*
  * @brief Generates while loop condition check.
- * generates sth like: JUMPIFEQ $end$id LF@%result bool@true
+ * generates sth like: JUMPIFNEQ $end$id LF@%result bool@true
  */
 static void generate_while_cond() {
-    ADD_INSTR_PART("JUMPIFNEQ $while$end$");
+    ADD_INSTR_PART("JUMPIFNEQ $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
+}
+
+/*
+* @brief Generates end.
+*        LABEL $end$id
+*/
+static void generate_end() {
+    ADD_INSTR("#generate_end");
+    ADD_INSTR_PART("LABEL $end$");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_TMP();
+    ADD_INSTR("");
 }
 
 /*
@@ -609,21 +621,7 @@ static void generate_while_end() {
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
 
-    ADD_INSTR_PART("LABEL $while$end$");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_TMP();
-    ADD_INSTR("");
-}
-
-/*
- * @brief Generates end.
- *        LABEL $end$id
- */
-static void generate_end() {
-    ADD_INSTR("#generate_end");
-    ADD_INSTR_PART("LABEL $end$");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_TMP();
+    generate_end();
 }
 
 /*
@@ -645,6 +643,8 @@ static void generate_repeat_until_cond() {
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
+
+    generate_end();
 }
 
 /*
@@ -944,6 +944,14 @@ static void pop_cond_info() {
     Dynstring.trunc_to_len(instructions.cond_info, Dynstring.len(instructions.cond_info) - 6);
 }
 
+static void generate_break() {
+    ADD_INSTR("# break");
+    ADD_INSTR_PART("JUMP $end$");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_TMP();
+    ADD_INSTR("");
+}
+
 /**
  * Interface to use when dealing with code generator.
  * Functions are in struct so we can use them in different files.
@@ -980,4 +988,5 @@ const struct code_generator_interface_t Generator = {
         .var_assignment = generate_var_assignment,
         .pop_cond_info = pop_cond_info,
         .push_cond_info = push_cond_info,
+        .instr_break = generate_break,
 };

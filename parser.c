@@ -210,6 +210,8 @@ static bool break_() {
         goto err;
     }
 
+    Generator.instr_break();
+
     return true;
     err:
     return false;
