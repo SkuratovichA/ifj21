@@ -750,7 +750,10 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
     bool hard_reduce = false;
     bool is_func = false;
     bool is_write = false;
+    bool inside_func = false;
+    dynstring_t *func_name = NULL;
     int func_entries = -1;
+    int params_cnt = 0;
     int cmp;
 
     while (Scanner.get_curr_token().type != TOKEN_DEAD) {
@@ -777,7 +780,9 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
         // Check if success
         if (is_parse_success(first_op, second_op, hard_reduce) || is_function_end(expr_type, func_entries)) {
             if (expr) {
-                Generator.expression_pop();
+                if (expr_type != EXPR_GLOBAL && expr_type != EXPR_FUNC) {
+                    Generator.expression_pop();
+                }
                 stack_item_dtor(expr);
             } else if (expr_type == EXPR_DEFAULT) {
                 Errors.set_error(ERROR_SYNTAX);
@@ -807,6 +812,8 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
             }
             first_op = OP_FUNC;
             is_func = false;
+            inside_func = true;
+            debug_msg("func starts here\n");
         }
 
         // Check if identifier is a function
@@ -818,6 +825,7 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
                     debug_msg("SET IS FUNC\n");
                     second_op = OP_FUNC;
                     is_func = true;
+                    func_name = Dynstring.dup(curr_tok.attribute.id);
 
                     dynstring_t *str_cmp = Dynstring.ctor("write");
                     if (Dynstring.cmp(curr_tok.attribute.id, str_cmp) == 0) {
@@ -828,14 +836,20 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
             }
         }
 
-        if (first_op == OP_RPAREN && is_write) {
-            is_write = false;
-            debug_msg("write function end here\n");
+        if (first_op == OP_RPAREN && inside_func) {
+            if (is_write) {
+                is_write = false;
+            }
+
+            params_cnt = 0;
+            inside_func = false;
+            // TODO generate code
+            Dynstring.dtor(func_name);
+            debug_msg("function ends here\n");
         }
 
-        if (is_write && top->type == ITEM_TYPE_TOKEN && expr &&
-            (top->token.type == TOKEN_COMMA || top->token.type == TOKEN_LPAREN)) {
-            debug_msg("jsem carka po vyrazu\n");
+        if (top->type == ITEM_TYPE_TOKEN && expr && (top->token.type == TOKEN_COMMA || top->token.type == TOKEN_LPAREN)) {
+            debug_msg("function, param %d\n", ++params_cnt);
         }
 
         // Precedence comparison
