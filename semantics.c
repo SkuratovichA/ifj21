@@ -449,23 +449,23 @@ static bool Check_expression(expr_semantics_t *self) {
                   Dynstring.c_str(symbol->function_semantics->definition.params),
                   Dynstring.c_str(self->func_types));
 
+        debug_msg("FUNC_DECL_RETS = \"%s\", FUNC_DEF_RETS = \"%s\"\n",
+                  Dynstring.c_str(symbol->function_semantics->declaration.returns),
+                  Dynstring.c_str(symbol->function_semantics->definition.returns));
+
         if (symbol->function_semantics->is_declared) {
             if (Dynstring.cmp(symbol->function_semantics->declaration.params, self->func_types) != 0) {
                 Errors.set_error(ERROR_FUNCTION_SEMANTICS);
                 return false;
             }
+            Dynstring.cat(self->func_rets, symbol->function_semantics->declaration.returns);
         } else if (symbol->function_semantics->is_defined) {
             if (Dynstring.cmp(symbol->function_semantics->definition.params, self->func_types) != 0) {
                 Errors.set_error(ERROR_FUNCTION_SEMANTICS);
                 return false;
             }
+            Dynstring.cat(self->func_rets, symbol->function_semantics->definition.returns);
         }
-
-//        if (symbol->function_semantics->is_declared) {
-//            Dynstring.cat(self->func_rets, symbol->function_semantics->declaration.returns);
-//        } else {
-//            Dynstring.cat(self->func_rets, symbol->function_semantics->definition.returns);
-//        }
 
         return true;
     }
