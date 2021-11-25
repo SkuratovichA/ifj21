@@ -461,7 +461,7 @@ static bool for_cycle() {
 
     increase_nesting();
     // push a new symtable on the symstack
-    SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
+    SYMSTACK_PUSH(SCOPE_TYPE_for_cycle, NULL);
 
     // for
     EXPECTED(KEYWORD_for);
@@ -587,7 +587,7 @@ static bool while_cycle() {
     // while
     EXPECTED(KEYWORD_while);
     // create a new symtable for while cycle.
-    SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
+    SYMSTACK_PUSH(SCOPE_TYPE_while_cycle, NULL);
     // nested while
     if (!instructions.in_loop) {
         instructions.in_loop = true;
@@ -775,7 +775,7 @@ static bool fun_body() {
         EXPECTED(KEYWORD_end);
 
         switch (Symstack.get_scope_info(symstack).scope_type) {
-            case SCOPE_TYPE_cycle:
+            case SCOPE_TYPE_while_cycle:
                 // FIXME - can be also for loop
                 Generator.while_end();
                 if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
@@ -787,6 +787,9 @@ static bool fun_body() {
 
             case SCOPE_TYPE_function:
                 Generator.func_end(Symstack.get_parent_func_name(symstack));
+                break;
+
+            case SCOPE_TYPE_for_cycle:
                 break;
 
             case SCOPE_TYPE_do_cycle:
