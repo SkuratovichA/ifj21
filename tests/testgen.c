@@ -1,10 +1,10 @@
 
 #include <stdio.h>
 
-#include "errors.h"
-#include "parser.h"
-#include "progfile.h"
-#include "list.h"
+#include "../errors.h"
+#include "../parser.h"
+#include "../progfile.h"
+#include "../list.h"
 
 
 #define NL "\n"
