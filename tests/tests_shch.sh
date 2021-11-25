@@ -155,8 +155,8 @@ do
 
         rm tmp.txt
     else
-        "$BUILD_DIR"/"$BIN_TARGET" < "$file" 2>/dev/null 1>/dev/null
-        ret_val=$?
+        "$BUILD_DIR/$BIN_TARGET" < "$file" 2>&1 | grep "xpression parsing failed"
+        ret_val=${PIPESTATUS[0]}
     fi
 
     if [ $ret_val -ne "$expected_err" ]; then

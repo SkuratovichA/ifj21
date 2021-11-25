@@ -244,23 +244,23 @@ int main() {
             "end                                                     "NL
             "                                                        "NL
             "global die :function ()                                 "NL
-            "                                             "NL
-            "function main()                              "NL
-            "    local suka: number = 12                  "NL
-            "                                             "NL
-            "    if suka > 10 then                        "NL
-            "        write(\"suka (number)> 10\")         "NL
-            "        local suka:string = \"AAAAAAAAA\"    "NL
-            "        if #suka > 10 then                   "NL
-            "            must_not_be_reached()            "NL
-            "        elseif #suka < 10 then               "NL
-            "            die()                            "NL
-            "        else                                 "NL
-            "            must_not_be_reached()            "NL
-            "        end                                  "NL
-            "    end                                      "NL
-            "end                                          "NL
-            "main()                                       "NL
+            "                                                        "NL
+            "function main()                                         "NL
+            "    local suka: number = 12                             "NL
+            "                                                        "NL
+            "    if suka > 10 then                                   "NL
+            "        write(\"suka (number)> 10\")                    "NL
+            "        local suka:string = \"AAAAAAAAA\"               "NL
+            "        if #suka > 10 then                              "NL
+            "            must_not_be_reached()                       "NL
+            "        elseif #suka < 10 then                          "NL
+            "            die()                                       "NL
+            "        else                                            "NL
+            "            must_not_be_reached()                       "NL
+            "        end                                             "NL
+            "    end                                                 "NL
+            "end                                                     "NL
+            "main()                                                  "NL
             NL
     );
 
@@ -474,14 +474,14 @@ int main() {
     int retcode23 = ERROR_DEFINITION;
     pfile_t *pf23 = Pfile.ctor(
             PROLOG
-            "function me() : string"
-            "end "
+            "function me() : string "NL
+            "end                    "NL
 
-            "function me() : integer"
-            "end "
+            "function me() : integer"NL
+            "end                    "NL
 
-            "function me() : boolean"
-            "end "
+            "function me() : boolean"NL
+            "end                     "
     );
 
     char *description24 = "more repuntil. No Until";
