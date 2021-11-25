@@ -1012,9 +1012,9 @@ static void generate_func_createframe() {
 /*
  * @brief Generates function call.
  */
-static void generate_func_call(dynstring_t *func_name) {
+static void generate_func_call(char *func_name) {
     ADD_INSTR_PART("CALL $");
-    ADD_INSTR_PART_DYN(func_name);
+    ADD_INSTR_PART(func_name);
     ADD_INSTR_TMP();
 }
 

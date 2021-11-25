@@ -835,7 +835,8 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
 
         if (is_write && top->type == ITEM_TYPE_TOKEN && expr &&
             (top->token.type == TOKEN_COMMA || top->token.type == TOKEN_LPAREN)) {
-            debug_msg("jsem carka po vyrazu\n");
+            Generator.expression_pop();
+            Generator.func_call("write");
         }
 
         // Precedence comparison

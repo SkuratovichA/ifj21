@@ -1163,7 +1163,7 @@ static bool stmt() {
             // in expressions we pass the parameters
             PARSE_EXPR(EXPR_GLOBAL, NULL);
             // function call
-            Generator.func_call(id_name);
+            Generator.func_call(Dynstring.c_str(id_name));
             break;
 
             // FIXME. I dont know how to solve this recursion.
