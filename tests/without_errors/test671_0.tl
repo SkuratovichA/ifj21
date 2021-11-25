@@ -1,4 +1,4 @@
---require "ifj21"
+require "ifj21"
 
 
 function main ()
