@@ -56,6 +56,15 @@ struct dynstring_interface_t {
     int (*cmp)(dynstring_t *, dynstring_t *);
 
     /**
+     * @brief Compares a dynstring and a c_string
+     *
+     * @param s1 dynstring
+     * @param s2 c_string
+     * @returns -1, 0, 1 depends on lexicographical ordering of two strings.
+     */
+    int (*cmp_c_str)(dynstring_t *, char *);
+
+    /**
      * @brief Return len of given dynstring_t.
      *
      * @param str
@@ -101,6 +110,7 @@ struct dynstring_interface_t {
     * @returns duplicated dynstring.
     */
     dynstring_t *(*dup)(dynstring_t *);
+
 
     void (*trunc_to_len)(dynstring_t *, size_t);
 };
