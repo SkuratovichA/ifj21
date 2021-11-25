@@ -32,18 +32,18 @@ static void print_error_unexpected_token(const char *a, const char *b) {
     fprintf(stderr, "[error](syntax): Expected '%s', got '%s' instead\n", a, b);
 }
 
-#define GET_ID_SAFE(_idname)                                                                    \
-    do {                                                                                       \
-        if (Scanner.get_curr_token().type == TOKEN_ID) {                                       \
-            _idname = Dynstring.ctor(Dynstring.c_str(Scanner.get_curr_token().attribute.id));  \
-        }                                                                                      \
+#define GET_ID_SAFE(_idname)                                                 \
+    do {                                                                    \
+        if (Scanner.get_curr_token().type == TOKEN_ID) {                    \
+            _idname = Dynstring.dup(Scanner.get_curr_token().attribute.id); \
+        }                                                                   \
     } while (0)
 
-#define CHECK_EXPR_SIGNATURES(accepted, received, errtype)                     \
-    do {                                                                      \
+#define CHECK_EXPR_SIGNATURES(accepted, received, errtype)                             \
+    do {                                                                              \
         if (!Semantics.check_signatures_compatibility(accepted, received, errtype)) { \
-            goto err;                                                         \
-        }                                                                     \
+            goto err;                                                                 \
+        }                                                                             \
     } while(0)
 
 /** If there's a mismatch in number/type of parameters, then return false.
@@ -1131,7 +1131,7 @@ static bool stmt() {
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:;
-            id_name = Dynstring.ctor(Dynstring.c_str(token.attribute.id));
+            GET_ID_SAFE(id_name);
             // create frame before passing parameters
             Generator.func_createframe();
             // in expressions we pass the parameters
