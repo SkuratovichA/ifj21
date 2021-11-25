@@ -32,13 +32,6 @@ static void print_error_unexpected_token(const char *a, const char *b) {
     fprintf(stderr, "[error](syntax): Expected '%s', got '%s' instead\n", a, b);
 }
 
-#define GET_ID_SAFE(_idname)                                                 \
-    do {                                                                    \
-        if (Scanner.get_curr_token().type == TOKEN_ID) {                    \
-            _idname = Dynstring.dup(Scanner.get_curr_token().attribute.id); \
-        }                                                                   \
-    } while (0)
-
 #define CHECK_EXPR_SIGNATURES(accepted, received, errtype)                             \
     do {                                                                              \
         if (!Semantics.check_signatures_compatibility(accepted, received, errtype)) { \
@@ -199,7 +192,7 @@ static void decrease_nesting() {
 
 static bool cond_stmt();
 
-static bool fun_body();
+static bool fun_body(char *);
 
 static bool fun_stmt();
 
@@ -209,6 +202,7 @@ static bool break_() {
         Errors.set_error(ERROR_SYNTAX);
         goto err;
     }
+
     Generator.instr_break();
 
     return true;
@@ -232,7 +226,7 @@ static bool else_stmt() {
     instructions.cond_cnt++;
     Generator.cond_else(instructions.outer_cond_id, instructions.cond_cnt);
     // <fun_body>
-    if (!fun_body()) {
+    if (!fun_body("")) {
         goto err;
     }
     SYMSTACK_POP();
@@ -427,7 +421,13 @@ static bool for_assignment() {
     dynstring_t *received_signature = NULL;
 
     // do |
+
+    if (Scanner.get_curr_token().type == KEYWORD_do) {
+        // generate step = 1
+        Generator.for_default_step();
+    }
     EXPECTED_OPT(KEYWORD_do);
+
     // ,
     EXPECTED(TOKEN_COMMA);
     expected_signature = Dynstring.ctor("f");
@@ -435,6 +435,10 @@ static bool for_assignment() {
     // expr
     PARSE_EXPR(EXPR_DEFAULT, received_signature);
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
+
+    // generate step
+    Generator.tmp_var_definition("step");
+
     // do
     EXPECTED(KEYWORD_do);
 
@@ -466,6 +470,13 @@ static bool for_cycle() {
 
     // for
     EXPECTED(KEYWORD_for);
+
+    if (!instructions.in_loop) {
+        instructions.in_loop = true;
+        instructions.outer_loop_id = Symstack.get_scope_info(symstack).unique_id;
+        instructions.before_loop_start = instrList->tail;   // use when declaring vars in loop
+    }
+
     // get id, or get an error.
     GET_ID_SAFE(id_name);
     // id
@@ -481,6 +492,9 @@ static bool for_cycle() {
     // for reusing
     Dynstring.clear(received_signature);
 
+    // generate for assignment
+    Generator.var_definition(id_name);
+
     // ,
     EXPECTED(TOKEN_COMMA);
 
@@ -489,12 +503,19 @@ static bool for_cycle() {
     // check signatures for an assignment.
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
 
+    // generate terminating `expr`
+    Generator.tmp_var_definition("terminating_cond");
+
     // do | , `expr` do
     if (!for_assignment()) {
         goto err;
     }
+
+    // generate for condition check
+    Generator.for_cond(id_name);
+
     // <fun_body>, which ends with 'end'
-    if (!fun_body()) {
+    if (!fun_body(Dynstring.c_str(id_name))) {
         goto err;
     }
 
@@ -558,11 +579,12 @@ static bool var_definition() {
     if (!datatype()) {
         goto err;
     }
+    SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
     // = `expr`
     if (!assignment(id_name)) {
         goto err;
     }
-    SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
+    //SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
     Dynstring.dtor(id_name);
     return true;
@@ -604,7 +626,7 @@ static bool while_cycle() {
     Generator.while_cond();
     // do
     EXPECTED(KEYWORD_do);
-    if (!fun_body()) {
+    if (!fun_body("")) {
         return false;
     }
     // parent function pops a table from the stack.
@@ -768,7 +790,7 @@ static bool fun_stmt() {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool fun_body() {
+static bool fun_body(char *id_name) {
     debug_msg("<fun_body> ->\n");
 
     // end |
@@ -790,7 +812,10 @@ static bool fun_body() {
                 Generator.func_end(Symstack.get_parent_func_name(symstack));
                 break;
 
-            case SCOPE_TYPE_for_cycle:
+            case SCOPE_TYPE_for_cycle:;
+                dynstring_t *var_name = Dynstring.ctor(id_name);
+                Generator.for_end(var_name);
+                Dynstring.dtor(var_name);
                 break;
 
             case SCOPE_TYPE_do_cycle:
@@ -809,7 +834,7 @@ static bool fun_body() {
         return true;
     }
 
-    return fun_stmt() && fun_body();
+    return fun_stmt() && fun_body(id_name);
     err:
     return false;
 }
@@ -1054,7 +1079,7 @@ static bool function_declaration() {
  * @return bool.
  */
 static bool function_definition() {
-    debug_msg("<function_declaration> ->\n");
+    debug_msg("<function_definition> ->\n");
 
     dynstring_t *id_name = NULL;
     symbol_t *symbol = NULL;
@@ -1095,11 +1120,12 @@ static bool function_definition() {
         SEMANTIC_CHECK_FUNCTION_SIGNATURES(symbol);
     }
     // <fun_body>
-    if (!fun_body()) {
+    if (!fun_body("")) {
         goto err;
     }
     SYMSTACK_POP();
 
+    Dynstring.dtor(id_name);
     return true;
     err:
     Dynstring.dtor(id_name);
