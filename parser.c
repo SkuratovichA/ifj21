@@ -380,7 +380,7 @@ static bool assignment(dynstring_t *id_name, int id_type) {
 
     // semantics of assignment
     dynstring_t *req_rets = Dynstring.ctor("");
-    Dynstring.append(req_rets, Semantics.of_id_type(Semantics.keyword_to_id_type(var_type)));
+    Dynstring.append(req_rets, Semantics.of_id_type(Semantics.keyword_to_id_type(id_type)));
     if (Dynstring.cmp(req_rets, received_rets) != 0) {
         if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
             strcmp(Dynstring.c_str(received_rets), "i") == 0) {
