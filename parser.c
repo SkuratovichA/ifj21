@@ -579,12 +579,11 @@ static bool var_definition() {
     if (!datatype()) {
         goto err;
     }
-    SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
     // = `expr`
     if (!assignment(id_name)) {
         goto err;
     }
-    //SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
+    SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
     Dynstring.dtor(id_name);
     return true;
