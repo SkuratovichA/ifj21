@@ -549,7 +549,7 @@ static bool check_rule(sstack_t *r_stack, int *func_entries, expr_semantics_t *e
             Semantics.add_operand(expr_sem, item->token);
             Stack.pop(r_stack, stack_item_dtor);
 
-            if (Stack.peek(r_stack) != NULL) {
+            if (Stack.peek(r_stack) == NULL) {
                 return true;
             }
 
@@ -832,7 +832,7 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
         }
 
         is_write = !(first_op == OP_RPAREN && is_write);
-        debug_msg("%s", !is_write ? "write function ends here\n" : "");
+        debug_msg("%s\n", !is_write ? "write function ends here" : "");
 
         if (is_write && top->type == ITEM_TYPE_TOKEN &&
             expr && (top->token.type == TOKEN_COMMA ||
