@@ -420,27 +420,27 @@ static bool assignment(dynstring_t *var_name) {
  */
 static bool for_assignment() {
     debug_msg("<for_assignment> ->\n");
-    dynstring_t *expected_sgntr = NULL;
-    dynstring_t *received_sgntr = NULL;
+    dynstring_t *expected_signature = NULL;
+    dynstring_t *received_signature = NULL;
 
     // do |
     EXPECTED_OPT(KEYWORD_do);
     // ,
     EXPECTED(TOKEN_COMMA);
-    expected_sgntr = Dynstring.ctor("f");
-    received_sgntr = Dynstring.ctor("");
+    expected_signature = Dynstring.ctor("f");
+    received_signature = Dynstring.ctor("");
     // expr
-    PARSE_EXPR(EXPR_DEFAULT, received_sgntr);
-    CHECK_EXPR_SIGNATURES(expected_sgntr, received_sgntr, ERROR_TYPE_MISSMATCH);
+    PARSE_EXPR(EXPR_DEFAULT, received_signature);
+    CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // do
     EXPECTED(KEYWORD_do);
 
-    Dynstring.dtor(expected_sgntr);
-    Dynstring.dtor(received_sgntr);
+    Dynstring.dtor(expected_signature);
+    Dynstring.dtor(received_signature);
     return true;
     err:
-    Dynstring.dtor(expected_sgntr);
-    Dynstring.dtor(received_sgntr);
+    Dynstring.dtor(expected_signature);
+    Dynstring.dtor(received_signature);
     return false;
 }
 
@@ -452,15 +452,17 @@ static bool for_assignment() {
  */
 static bool for_cycle() {
     debug_msg("for ->\n");
-    increase_nesting();
+
     dynstring_t *id_name = NULL;
-    dynstring_t *expected_sgntr = Dynstring.ctor("f");
-    dynstring_t *received_sgntr = Dynstring.ctor("");
+    dynstring_t *expected_signature = Dynstring.ctor("f");
+    dynstring_t *received_signature = Dynstring.ctor("");
+
+    increase_nesting();
+    // push a new symtable on the symstack
+    SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
 
     // for
     EXPECTED(KEYWORD_for);
-    // push a new symtable on the symstack
-    SYMSTACK_PUSH(SCOPE_TYPE_cycle, NULL);
     // get id, or get an error.
     GET_ID_SAFE(id_name);
     // id
@@ -470,19 +472,19 @@ static bool for_cycle() {
     // =
     EXPECTED(TOKEN_ASSIGN);
     // expr
-    PARSE_EXPR(EXPR_DEFAULT, received_sgntr);
+    PARSE_EXPR(EXPR_DEFAULT, received_signature);
     // check signatures
-    CHECK_EXPR_SIGNATURES(expected_sgntr, received_sgntr, ERROR_TYPE_MISSMATCH);
+    CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // for reusing
-    Dynstring.clear(received_sgntr);
+    Dynstring.clear(received_signature);
 
     // ,
     EXPECTED(TOKEN_COMMA);
 
     // terminating `expr` in for cycle.
-    PARSE_EXPR(EXPR_DEFAULT, received_sgntr);
+    PARSE_EXPR(EXPR_DEFAULT, received_signature);
     // check signatures for an assignment.
-    CHECK_EXPR_SIGNATURES(expected_sgntr, received_sgntr, ERROR_TYPE_MISSMATCH);
+    CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
 
     // do | , `expr` do
     if (!for_assignment()) {
@@ -494,16 +496,16 @@ static bool for_cycle() {
     }
 
     SYMSTACK_POP();
-    Dynstring.dtor(id_name);
-    Dynstring.dtor(expected_sgntr);
-    Dynstring.dtor(received_sgntr);
-
     decrease_nesting();
+
+    Dynstring.dtor(id_name);
+    Dynstring.dtor(expected_signature);
+    Dynstring.dtor(received_signature);
     return true;
     err:
     Dynstring.dtor(id_name);
-    Dynstring.dtor(expected_sgntr);
-    Dynstring.dtor(received_sgntr);
+    Dynstring.dtor(expected_signature);
+    Dynstring.dtor(received_signature);
     return false;
 }
 
@@ -577,6 +579,9 @@ static bool while_cycle() {
     debug_msg("<while_cycle> -> \n");
     increase_nesting();
 
+    dynstring_t *expected_signature = Dynstring.ctor("b");
+    dynstring_t *received_signature = Dynstring.ctor("");
+
     // while
     EXPECTED(KEYWORD_while);
     // create a new symtable for while cycle.
@@ -589,7 +594,9 @@ static bool while_cycle() {
     }
     Generator.while_header();
     // parse expressions
-    PARSE_EXPR(EXPR_DEFAULT, NULL);
+    PARSE_EXPR(EXPR_DEFAULT, received_signature);
+    // check operation semantics
+    CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // expression result in LF@%result
     Generator.while_cond();
     // do
@@ -599,10 +606,14 @@ static bool while_cycle() {
     }
     // parent function pops a table from the stack.
     SYMSTACK_POP();
-
     decrease_nesting();
+
+    Dynstring.dtor(expected_signature);
+    Dynstring.dtor(received_signature);
     return true;
     err:
+    Dynstring.dtor(expected_signature);
+    Dynstring.dtor(received_signature);
     return false;
 }
 
@@ -643,12 +654,16 @@ static bool return_stmt() {
  */
 static bool repeat_until_cycle() {
     debug_msg("<repeat_until> ->\n");
+
+    dynstring_t *expected_signature = Dynstring.ctor("b");
+    dynstring_t *received_signature = Dynstring.ctor("");
+
     increase_nesting();
+    // create a new scope.
+    SYMSTACK_PUSH(SCOPE_TYPE_do_cycle, NULL);
 
     // repeat
     EXPECTED(KEYWORD_repeat);
-    // create a new scope.
-    SYMSTACK_PUSH(SCOPE_TYPE_do_cycle, NULL);
     // nested while
     if (!instructions.in_loop) {
         instructions.in_loop = true;
@@ -661,15 +676,22 @@ static bool repeat_until_cycle() {
         goto err;
     }
     // expr
-    PARSE_EXPR(EXPR_DEFAULT, NULL);
+    PARSE_EXPR(EXPR_DEFAULT, received_signature);
+    // check type compatibility in 'until' condition.
+    CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // expression result in LF@%result
     Generator.repeat_until_cond();
+
     // pop a symstack
     SYMSTACK_POP();
     decrease_nesting();
 
+    Dynstring.dtor(expected_signature);
+    Dynstring.dtor(received_signature);
     return true;
     err:
+    Dynstring.dtor(expected_signature);
+    Dynstring.dtor(received_signature);
     return false;
 }
 
