@@ -402,7 +402,15 @@ static void generate_var_value(token_t token) {
             break;
         case TOKEN_ID:
             ADD_INSTR_PART("LF@%");
-            ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+            symbol_t *symbol;
+            bool exists = Symstack.get_local_symbol(symstack, token.attribute.id, &symbol);
+            if (!exists) {
+                ADD_INSTR("# DOESN'T EXIST");
+                ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+            } else {
+                ADD_INSTR("# EXISTS");
+                ADD_INSTR_INT(symbol->id_of_parent_scope);
+            }
             ADD_INSTR_PART("%");
             ADD_INSTR_PART_DYN(token.attribute.id);
             break;
@@ -418,8 +426,11 @@ static void generate_var_value(token_t token) {
  */
 static void generate_var_name(dynstring_t *var_name) {
     symbol_t *symbol;
-    Symstack.get_local_symbol(symstack, var_name, &symbol);
-    ADD_INSTR_INT(symbol->id_of_parent_scope);
+    if (Symstack.get_local_symbol(symstack, var_name, &symbol)) {
+        ADD_INSTR_INT(symbol->id_of_parent_scope);
+    } else {
+        ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    }
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
 }
@@ -430,7 +441,9 @@ static void generate_var_name(dynstring_t *var_name) {
 static void generate_defvar(dynstring_t *var_name) {
     debug_msg("\n\t- generate_defvar: %s\n", Dynstring.c_str(var_name));
     ADD_INSTR_PART("DEFVAR LF@%");
-    generate_var_name(var_name);
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
     if (instructions.in_loop) {
         ADD_INSTR_WHILE();
     } else {
@@ -469,7 +482,9 @@ static void generate_var_definition(dynstring_t *var_name) {
     generate_defvar(var_name);
 
     ADD_INSTR_PART("MOVE LF@%");
-    generate_var_name(var_name);
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
     ADD_INSTR_PART(" GF@%expr_result");
     ADD_INSTR_TMP();
 }
@@ -483,7 +498,9 @@ static void generate_var_declaration(dynstring_t *var_name) {
 
     // initialise to nil
     ADD_INSTR_PART("MOVE LF@%");
-    generate_var_name(var_name);
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
     ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP();
 }
@@ -794,7 +811,6 @@ static void generate_prog_start() {
               "LABEL $$ERROR_DIV_BY_ZERO \n"
               "EXIT int@9");
 
-
     INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
     generate_func_ord();
     generate_func_chr();
@@ -807,8 +823,6 @@ static void generate_prog_start() {
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
     generate_main_start();
-
-
 }
 
 void generate_division_check(bool integer) {
