@@ -157,7 +157,8 @@ static void print_error_unexpected_token(const char *a, const char *b) {
 #define PARSE_EXPR(expr_type, received_signature)                      \
     do {                                                              \
         if (!Expr.parse(pfile, expr_type, received_signature)) {       \
-            debug_msg("\n\t\t[error] Expression parsing failed.\n");  \
+            debug_msg("\n");                                          \
+            debug_msg_s("\t\t[error] Expression parsing failed.\n");  \
             goto err;                                                 \
         }                                                             \
     } while(0)
@@ -165,7 +166,8 @@ static void print_error_unexpected_token(const char *a, const char *b) {
 #define PARSE_EXPR_LIST(expr_type, received_signature)                      \
     do {                                                                   \
         if (!Expr.parse_expr_list(pfile, expr_type, received_signature)) {  \
-            debug_msg("\n\t\t[error] Expression parsing failed.\n");       \
+            debug_msg("\n");                                               \
+            debug_msg_s("\t\t[error] Expression parsing failed.\n");       \
             goto err;                                                      \
         }                                                                  \
     } while(0)
