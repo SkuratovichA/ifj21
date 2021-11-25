@@ -1,10 +1,7 @@
 /**
  * @file progfile.h
  *
- * @brief Program file implementation. (buffered file)
- *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
- *
  */
 #include "progfile.h"
 #include "dynstring.h"

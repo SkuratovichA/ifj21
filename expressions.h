@@ -5,6 +5,7 @@
  *
  * @author Evgeny Torbin <xtorbi00@vutbr.cz>
  */
+
 #pragma once
 
 #include "progfile.h"

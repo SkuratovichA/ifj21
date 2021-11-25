@@ -14,7 +14,6 @@ set(UTILS_SOURCES
         progfile.c
         scanner.c
         symstack.c
-        tests/tests.c
         parser.c
         expressions.c
         semantics.c
@@ -29,18 +28,6 @@ set(DATASTRUCTURES
 set(PROJ_FILES
         ${DATASTRUCTURES} ${UTILS_SOURCES}
         )
-
-# AddressSanitize
-set(CMAKE_C_FLAGS_ASAN
-        "-fsanitize=address"
-        "-fsanitize-address-use-after-scope"
-        "-fno-omit-frame-pointer"
-        "-g"
-        "-O1"
-        CACHE STRING "Flags used by the C compiler during AddressSanitizer builds."
-        FORCE)
-
-set(CMAKE_EXE_LINKER_FLAGS "-fsanitize=address")
 
 set(DEVELOP_FLAGS
         #-Wno-unused-parameter
@@ -58,7 +45,6 @@ add_compile_options(
         -Wall -Wextra -pedantic -g
         ${DEVELOP_FLAGS}
         ${CODE_COVERAGE_FLAGS}
-        #${CMAKE_C_FLAGS_ASAN}
 )
 # flag for enabling code coverage on mac
 set(CMAKE_EXE_LINKER_FLAGS
@@ -76,47 +62,6 @@ message(STATUS ${PROJECT_NAME} " execucumber compiled.")
 #testgen file
 # program to generate tests inputs.
 add_executable(testgen
-        testgen.c
+        tests/testgen.c
         ${PROJ_FILES}
         )
-
-
-#scanner tests
-set(ATTRIBUTE scanner)
-add_executable(test_${ATTRIBUTE}
-        ${PROJ_FILES}
-        )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
-message(STATUS ${ATTRIBUTE} " execucumber compiled.")
-
-#stack tests
-set(ATTRIBUTE stack)
-add_executable(test_${ATTRIBUTE}
-        ${PROJ_FILES}
-        )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
-message(STATUS ${ATTRIBUTE} " execucumber compiled.")
-
-#list tests
-set(ATTRIBUTE list)
-add_executable(test_${ATTRIBUTE}
-        ${PROJ_FILES}
-        )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
-message(STATUS ${ATTRIBUTE} " execucumber compiled.")
-
-#dynstring tests.
-set(ATTRIBUTE dynstring)
-add_executable(test_${ATTRIBUTE}
-        ${PROJ_FILES}
-        )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
-message(STATUS ${ATTRIBUTE} " execucumber compiled.")
-
-#symtable tests
-set(ATTRIBUTE symtable)
-add_executable(test_${ATTRIBUTE}
-        ${PROJ_FILES}
-        )
-target_compile_options(test_${ATTRIBUTE} PRIVATE -DSELFTEST_${ATTRIBUTE} -DDEBUG${ATTRIBUTE})
-message(STATUS ${ATTRIBUTE} " execucumber compiled.")

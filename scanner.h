@@ -1,8 +1,6 @@
 /**
  * @file scanner.h
  *
- * @brief Header file for scanner.
- *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
  */
 #pragma once
@@ -63,17 +61,12 @@ typedef struct token {
     X(COMMENT_BLOCK_2)        \
     X(COMMENT_BLOCK_END)      \
     X(COMMENT_FINAL)          \
-    X(NUM_1)                  \
-    X(NUM_2)                  \
-    X(NUM_3)                  \
-    X(NUM_4)                  \
-    X(NUM_5)                  \
-    X(NUM_6)                  \
-    X(NUM_7)                  \
-    X(NUM_8)                  \
-    X(NUM_9)                  \
-    X(NUM_INIT)               \
-    X(NUM_FINAL)
+    X(NUM_1_WHOLE_FIN)        \
+    X(NUM_2_FP_DOT)           \
+    X(NUM_3_FP_FIN)           \
+    X(NUM_4_EXP_MARK)         \
+    X(NUM_5_EXP_SIGN)         \
+    X(NUM_6_EXP_FIN)
 
 #define KEYWORDS(X) \
     X(do)       \

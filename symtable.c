@@ -10,22 +10,7 @@
  */
 
 #include "symtable.h"
-#include "tests/tests.h"
 #include "errors.h"
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmacro-redefined"
-//undef debug macros
-#define debug_err(...)
-#define debug_msg(...)
-#define debug_msg_stdout(...)
-#define debug_msg_stderr(...)
-#define debug_todo(...)
-#define debug_assert(cond)
-#define debug_msg_s(...)
-#define DEBUG_SEP
-#pragma GCC diagnostic pop
-
 
 /** A node of a symbol table which is a binary search tree.
  */
@@ -334,6 +319,7 @@ const struct symtable_interface_t Symtable = {
 #ifdef SELFTEST_symtable
 #define HELLO "HELLO"
 
+#include "tests/tests.h"
 int main() {
     debug_msg("symtable selfdebug\n");
 

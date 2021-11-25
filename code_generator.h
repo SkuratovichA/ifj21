@@ -1,3 +1,9 @@
+/**
+ * @file code_generator.h
+ *
+ * @author Lucie Svobodova
+ */
+
 #pragma once
 
 #include "dynstring.h"

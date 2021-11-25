@@ -1,8 +1,6 @@
 /**
  * @file progfile.h
  *
- * @brief Program file header.
- *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
  */
 #pragma once

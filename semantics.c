@@ -5,6 +5,7 @@
  *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
  */
+
 #include "semantics.h"
 #include "dynstring.h"
 #include "expressions.h"

@@ -1,3 +1,9 @@
+/**
+ * @file code_generator.c
+ *
+ * @author Lucie Svobodova
+ */
+
 #include "code_generator.h"
 
 size_t __ADDRESS_OF_START_LIST;
