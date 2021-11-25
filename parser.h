@@ -23,6 +23,29 @@
 #include "symstack.h"
 #include "debug.h"
 
+void error_unexpected_token(int);
+
+/** Macro expecting a non terminal from the scanner.
+ */
+#define EXPECTED(p)                                                            \
+    do {                                                                      \
+        token_t tok__ = Scanner.get_curr_token();                             \
+        if (tok__.type == (p)) {                                              \
+            if (tok__.type == TOKEN_ID || tok__.type == TOKEN_STR) {          \
+                debug_msg("\t%s = { '%s' }\n", Scanner.to_string(tok__.type), \
+                   Dynstring.c_str(tok__.attribute.id));                      \
+            } else {                                                          \
+                debug_msg("\t%s\n", Scanner.to_string(tok__.type));           \
+            }                                                                 \
+            if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) {            \
+                Errors.set_error(ERROR_LEXICAL);                              \
+                goto err;                                                     \
+            }                                                                 \
+        } else {                                                              \
+            error_unexpected_token((p));                                      \
+        }                                                                     \
+    } while(0)
+
 #define GET_ID_SAFE(_idname)                                                 \
     do {                                                                    \
         if (Scanner.get_curr_token().type == TOKEN_ID) {                    \
