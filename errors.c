@@ -55,7 +55,7 @@ static void Set_error(int errcode) {
             // 5 - semantic error - wrong number/type of parameters(function calling/return) or return values
             errmsg = "Wrong number of parameters/return values!";
             break;
-        case ERROR_SEMANTICS_TYPE_INCOMPATABLE:
+        case ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY:
             // 6 - semantic error of type compatibility in arithmetic, string and relation operators.
             errmsg = "Type incompatibility error!";
             break;

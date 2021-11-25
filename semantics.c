@@ -429,7 +429,7 @@ static bool type_compatability(expr_semantics_t *self) {
         }
     }
 
-    Errors.set_error(ERROR_SEMANTICS_TYPE_INCOMPATABLE);
+    Errors.set_error(ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
     return false;
 }
 
@@ -484,37 +484,42 @@ static bool Check_expression(expr_semantics_t *self) {
     return type_compatability(self);
 }
 
-static bool Check_return_semantics(
-        dynstring_t *signature_returns,
-        dynstring_t *return_types
-) {
-    if (signature_returns == NULL || return_types == NULL) {
+static bool Check_signatures_compatibility(dynstring_t *signature_expected,
+                                           dynstring_t *return_received,
+                                           int error) {
+    debug_msg("\n");
+    if (signature_expected == NULL || return_received == NULL) {
+        debug_msg_s("\t%s is NULL!\n", signature_expected == NULL ? "expected signature" : "received signature");
         Errors.set_error(ERROR_INTERNAL);
         return false;
     }
     // return more than we can.
-    if (Dynstring.len(return_types) > Dynstring.len(signature_returns)) {
-        Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+    if (Dynstring.len(return_received) > Dynstring.len(signature_expected)) {
+        debug_msg_s("\t#received_signature(%zu) > #expected_signature(%zu)\n",
+                    Dynstring.len(return_received), Dynstring.len(signature_expected));
+        Errors.set_error(error);
         return false;
     }
 
     // truncate to the length of the shortest string.
-    if (Dynstring.len(return_types) < Dynstring.len(signature_returns)) {
-        Dynstring.trunc_to_len(signature_returns, Dynstring.len(return_types));
+    if (Dynstring.len(return_received) < Dynstring.len(signature_expected)) {
+        Dynstring.trunc_to_len(signature_expected, Dynstring.len(return_received));
     }
 
     // check datatypes.
     // take in mind:
     //               1. number is a superset of integer.
-    //               2. nil in signature_returns -> nil in return_types.
-    //               3. everything in signature_returns -> nil in return_types. returns[i] = 'n'
-    char *signature = Dynstring.c_str(signature_returns);
-    char *returns = Dynstring.c_str(return_types);
-    for (size_t i = 0; i < Dynstring.len(signature_returns); i++) {
-        if (signature[i] != returns[i]) {
-            bool err = !((signature[i] == 'f' && returns[i] == 'i') || returns[i] == 'n');
+    //               2. nil in signature_expected -> nil in return_received.
+    //               3. everything in signature_expected -> nil in return_received. received[i] = 'n'
+    char *expected = Dynstring.c_str(signature_expected);
+    char *received = Dynstring.c_str(return_received);
+    for (size_t i = 0; i < Dynstring.len(signature_expected); i++) {
+        if (expected[i] != received[i]) {
+            bool err = !((expected[i] == 'f' && received[i] == 'i') || received[i] == 'n');
             if (err) {
-                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+                debug_msg_s("\tmismatched signatures: exp(%s) x res(%s)\n",
+                            Dynstring.c_str(signature_expected), Dynstring.c_str(return_received));
+                Errors.set_error(error);
                 return false;
             }
         }
@@ -543,7 +548,7 @@ const struct semantics_interface_t Semantics = {
 
         .check_signatures = Check_signatures,
         .check_expression = Check_expression,
-        .check_return_semantics = Check_return_semantics,
+        .check_signatures_compatibility = Check_signatures_compatibility,
         .of_id_type = of_id_type,
         .token_to_id_type = token_to_type,
 };

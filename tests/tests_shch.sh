@@ -75,7 +75,7 @@ if [[ "$name" == "all" ]]; then
     do
         echo "******** RET_VALUE = $NUM_TEST ********"
         cd "$TEST_DIR"
-        "$TEST_DIR/$0" "*" "$NUM_TEST" 2>&1 |  grep -e "tests\|fault"
+        "$TEST_DIR/$0" "*" "$NUM_TEST" 2>&1 |  grep -e "tests\|fault\|malloc"
         cd - 1>/dev/null
         echo "*******************************"
         echo ""
@@ -155,13 +155,14 @@ do
 
         rm tmp.txt
     else
-        "$BUILD_DIR"/"$BIN_TARGET" < "$file" 2>/dev/null 1>/dev/null
-        ret_val=$?
+        "$BUILD_DIR/$BIN_TARGET" < "$file" 2>&1 | grep "xpression parsing failed" > tmp
+        ret_val=${PIPESTATUS[0]}
     fi
 
-    if [ $ret_val -ne "$expected_err" ]; then
+    if [ "$ret_val" -ne "$expected_err" ]; then
         err_files=$((err_files+1))
         printf "$file ${RED}FAILED${NC} ret_val = $ret_val, expected $expected_err\n"
+        cat tmp
         echo ""
     fi
 done
