@@ -1579,7 +1579,6 @@ int main() {
             "                                                                                             "NL
     );
 
-
     char *description94 = "wrong parameters";
     int retcode94 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf94 = Pfile.ctor(
@@ -1592,6 +1591,69 @@ int main() {
             "end                                                                "NL
             "                                                                   "NL
             "main()                                                             "NL
+    );
+
+    char *description95 = "condition with wrong types. Condition cannot be a string";
+    int retcode95 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf95 = Pfile.ctor(
+            PROLOG
+            "function write_numbers(counter : string)"NL
+            "   while counter do                "NL
+            "        write(counter, \"\n\")           "NL
+            "    end                                  "NL
+            "end                                      "NL
+    );
+
+
+    char *description96 = "condition with wrong types. Condition cannot be a number";
+    int retcode96 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf96 = Pfile.ctor(
+            PROLOG
+            "function write_numbers(counter : string) "NL
+            "   while #counter do                     "NL
+            "        write(counter, \"\n\")           "NL
+            "    end                                  "NL
+            "end                                      "NL
+    );
+
+    char *description97 = "condition with wrong types. Condition can be nil";
+    int retcode97 = ERROR_NOERROR;
+    pfile_t *pf97 = Pfile.ctor(
+            PROLOG
+            "function write_numbers(counter : nil)    "NL
+            "   while counter do                     "NL
+            "        write(counter, \"\n\")           "NL
+            "    end                                  "NL
+            "end                                      "NL
+    );
+
+    char *description98 = "condition with wrong syntax. nil cannot have length";
+    int retcode98 = ERROR_SYNTAX;
+    pfile_t *pf98 = Pfile.ctor(
+            PROLOG
+            "function write_numbers(counter : nil)    "NL
+            "   while #counter do                     "NL
+            "        write(counter, \"\n\")           "NL
+            "    end                                  "NL
+            "end                                      "NL
+    );
+
+    char *description99 = "repeat_until";
+    int retcode99 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf99 = Pfile.ctor(
+            PROLOG
+            "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"NL
+            "    write(\"I'm about 2bee printed only once!\")    "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function yours()                                    "NL
+            "   local a : string = \"arst\"                      "NL
+            "   repeat                                           "NL
+            "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()  "NL
+            "       a = false                                    "NL
+            "   until a                                          "NL
+            "end                                                 "NL
+            "yours()                                             "NL
     );
 
     TEST_CASE(1);
@@ -1697,5 +1759,10 @@ int main() {
     TEST_CASE(92);
     TEST_CASE(93);
     TEST_CASE(94);
+    TEST_CASE(95);
+    TEST_CASE(96);
+    TEST_CASE(97);
+    TEST_CASE(98);
+    TEST_CASE(99);
     return 0;
 }
