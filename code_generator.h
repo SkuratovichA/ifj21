@@ -64,12 +64,19 @@ struct code_generator_interface_t {
     void (*func_call)(dynstring_t *);
 
     void (*var_declaration)(dynstring_t *);
+
     void (*var_definition)(dynstring_t *);
+
     void (*var_assignment)(dynstring_t *);
+
     void (*cond_if)(size_t, size_t);
+
     void (*cond_elseif)(size_t, size_t);
+
     void (*cond_else)(size_t, size_t);
+
     void (*cond_end)(size_t, size_t);
+
     void (*while_header)(void);
 
     void (*while_cond)(void);
@@ -82,9 +89,9 @@ struct code_generator_interface_t {
 
     void (*repeat_until_cond)(void);
 
-    void (*for_header)(dynstring_t *);
+    void (*for_cond)(dynstring_t *);
 
-    void (*for_cond)(void);
+    void (*for_end)(dynstring_t *);
 
     void (*initialise)(void);
 
@@ -97,8 +104,12 @@ struct code_generator_interface_t {
     void (*print_instr_list)(instr_list_t);
 
     void (*pop_cond_info)(void);
+
     void (*push_cond_info)(void);
+
     void (*instr_break)(void);
+
+    void (*tmp_var_definition)(char *);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.
