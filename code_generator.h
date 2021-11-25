@@ -93,6 +93,8 @@ struct code_generator_interface_t {
 
     void (*for_end)(dynstring_t *);
 
+    void (*for_default_step)(void);
+
     void (*initialise)(void);
 
     void (*expression)(expr_semantics_t *);

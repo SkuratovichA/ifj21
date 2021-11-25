@@ -671,6 +671,22 @@ static void generate_repeat_until_cond() {
     generate_end();
 }
 
+static void generate_for_default_step() {
+    ADD_INSTR_PART("DEFVAR LF@%");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%step");
+    if (instructions.in_loop) {
+        ADD_INSTR_WHILE();
+    } else {
+        ADD_INSTR_TMP();
+    }
+
+    ADD_INSTR_PART("MOVE LF@%");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%step GF@%expr_result");
+    ADD_INSTR_TMP();
+}
+
 /*
  * @brief Generates for loop condition check.
  * generates sth like: JUMPIFEQ $end$id LF@%result bool@true
@@ -1053,6 +1069,7 @@ const struct code_generator_interface_t Generator = {
         .repeat_until_cond = generate_repeat_until_cond,
         .for_cond = generate_for_cond,
         .for_end = generate_for_end,
+        .for_default_step = generate_for_default_step,
         .initialise = initialise_generator,
         .expression = generate_expression,
         .expression_pop = generate_expression_pop,

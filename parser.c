@@ -428,9 +428,12 @@ static bool for_assignment() {
     dynstring_t *received_signature = NULL;
 
     // do |
-    EXPECTED_OPT(KEYWORD_do);
 
-    // TODO somehow generate step = 1
+    if (Scanner.get_curr_token().type == KEYWORD_do) {
+        // generate step = 1
+        Generator.for_default_step();
+    }
+    EXPECTED_OPT(KEYWORD_do);
 
     // ,
     EXPECTED(TOKEN_COMMA);
