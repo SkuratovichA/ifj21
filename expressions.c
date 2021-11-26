@@ -16,112 +16,6 @@
 
 static pfile_t *pfile;
 
-/**
- * Precedence function table.
- * f, g - precedence functions.
- *
- * A = {*, /, //},
- * B = {+, -},
- * C = {<, <=, >, >=, ==, ~=}
- * D = {#, not}
- *
- *  |   |  id |   ( |   ) |   A |   B |   C |   D |  .. | and |  or |   f |   , |   $ |
- *  | f |  12 |   0 |  12 |  10 |   8 |   6 |  12 |   6 |   4 |   2 |  13 |   0 |   0 |
- *  | g |  13 |  13 |   0 |  9 |   7 |   5 |  11 |   7 |   3 |   1 |  13 |   0 |   0 |
- */
-
-/**
- * f - represents rows of the precedence table.
- */
-static const int f[22] = {12, 0, 12, 10, 10, 10, 8, 8, 6, 6, 6, 6, 6, 6, 12, 12, 6, 4, 2, 13, 0, 0};
-
-/**
- * g - represents columns.
- */
-static const int g[22] = {13, 13, 0, 9, 9, 9, 7, 7, 5, 5, 5, 5, 5, 5, 11, 11, 7, 3, 1, 13, 0, 0};
-
-/**
- * @brief Convert operator to string for debugging.
- *
- * @param op
- * @return char *.
- */
-static char *op_to_string(op_list_t op) {
-    switch (op) {
-        case OP_ID:
-            return "id";
-        case OP_LPAREN:
-            return "(";
-        case OP_RPAREN:
-            return ")";
-        case OP_HASH:
-            return "#";
-        case OP_NOT:
-            return "not";
-        case OP_MUL:
-            return "*";
-        case OP_DIV_I:
-            return "//";
-        case OP_DIV_F:
-            return "/";
-        case OP_ADD:
-            return "+";
-        case OP_SUB:
-            return "-";
-        case OP_LT:
-            return "<";
-        case OP_LE:
-            return "<=";
-        case OP_GT:
-            return ">";
-        case OP_GE:
-            return ">=";
-        case OP_EQ:
-            return "==";
-        case OP_NE:
-            return "~=";
-        case OP_STRCAT:
-            return "..";
-        case OP_AND:
-            return "and";
-        case OP_OR:
-            return "or";
-        case OP_FUNC:
-            return "func";
-        case OP_COMMA:
-            return ",";
-        case OP_DOLLAR:
-            return "$";
-        default:
-            return "unrecognized operator";
-    }
-}
-
-/**
- * @brief Convert stack item to string.
- * Process all items except ITEM_TYPE_TOKEN.
- *
- * @param type
- * @return char *.
- */
-static char *item_to_string(item_type_t type) {
-    switch (type) {
-        case ITEM_TYPE_TOKEN:
-            return "token";
-        case ITEM_TYPE_EXPR:
-            return "expr";
-        case ITEM_TYPE_LT:
-            return "<";
-        case ITEM_TYPE_GT:
-            return ">";
-        case ITEM_TYPE_EQ:
-            return "=";
-        case ITEM_TYPE_DOLLAR:
-            return "$";
-        default:
-            return "unrecognized type";
-    }
-}
 
 // TODO: reimplement
 // how to implement a function:
@@ -222,44 +116,60 @@ static char *item_to_string(item_type_t type) {
 
 
 // APIs:
-//      1: <return_stmt> is called outside parser.
-//         @param received_signature is an INITIALIZED empty vector.
-//         API: bool parse_return_stmt(pfile, dynstring_t *received_signature)
-//         semantic control of <return signature> x <its function signature> are performed in parser.c
-
-//      2: <id_list> = <expr_list>
-//         id()
-//         API: bool parse_functino_expr(pfile);
-//         parsed, checked, controlled, generated inside Expr module.
-
-//      3: assignment
-//         <expr>
-//         @param received_signature is an INITIALIZED empty vector.
-//         API: bool parse_assignment(pfile, dynstring_t *received_signature)
-//         semantic controls are performed inside parser.c
 
 
 /**
- * @brief Expression parsing driven by a precedence table.
+ * @brief Expression in return statement.
+ *        semantic control of <return signature> x <its function signature> are performed in parser.c
  *
- * @param pfile_ program file to pass in to scanner.
- * @param expr_type type of expression.
- * @param vector_expr_types result expression type/s.
- * @return bool.
+ * @param pfile_
+ * @param received_signature is an initialized empty vector.
+ * @return true if successive parsing performed.
  */
-static bool Parse_expression(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vector_expr_types) {
+static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature) {
     pfile = pfile_;
-
-    return expr_type == EXPR_FUNC || expr_type == EXPR_GLOBAL ?
-           expr_stmt(expr_type) :
-           parse_init(expr_type, vector_expr_types);
+    assert(false);
 }
 
+/**
+ * @brief Assignment expression after = in the local assignment
+ *        semantic controls are performed inside parser.c
+ * @param received_signature is an initialized empty vector.
+ * @return true if successive parsing performed.
+ */
+static bool Assignment_expression(pfile_t *pfile_, dynstring_t *received_signature) {
+    pfile = pfile_;
+    assert(false);
+}
+
+/**
+ * @brief Function calling in the global scope. `id( ...`
+ *
+ * @param pfile_
+ * @return true if successive parsing and semantic analysis of expressions performed.
+ */
+static bool Global_expression(pfile_t *pfile_) {
+    pfile = pfile_;
+    assert(false);
+}
+
+/**
+ * @brief Function calling or assignments in the local scope.
+ *
+ * @param pfile_
+ * @return true if successive parsing and semantic analysis of expressions performed.
+ */
+static bool Function_expression(pfile_t *pfile_) {
+    pfile = pfile_;
+    assert(false);
+}
 
 /**
  * Functions are in struct so we can use them in different files.
  */
 const struct expr_interface_t Expr = {
-        .parse = Parse_expression,
-        .parse_expr_list = Expr_list
+        .function_expression = Function_expression,
+        .global_expression = Global_expression,
+        .assignment_expression = Assignment_expression,
+        .return_expressions = Return_expressions,
 };
