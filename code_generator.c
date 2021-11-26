@@ -442,6 +442,14 @@ static void generate_var_assignment(dynstring_t *var_name) {
 }
 
 /*
+ * @brief Converts GF@%expr_result int -> float
+ */
+static void retype_expr_result(void) {
+    ADD_INSTR("# retype GF@%expr_result");
+    ADD_INSTR("INT2FLOAT GF@%expr_result GF@%expr_result");
+}
+
+/*
  * @brief Generates division check.
  * @param is_integer specifies whether the number
  *        to check is integer (true) or float (false).
@@ -1063,6 +1071,7 @@ const struct code_generator_interface_t Generator = {
         .var_definition = generate_var_definition,
         .tmp_var_definition = generate_tmp_var_definition,
         .var_assignment = generate_var_assignment,
+        .retype_expr_result = retype_expr_result,
         .expression = generate_expression,
         .expression_pop = generate_expression_pop,
         .push_cond_info = push_cond_info,
