@@ -970,7 +970,7 @@ static bool other_expr(expr_type_t expr_type, dynstring_t *vector_expr_types, li
         // semantics of assignment end
 
         // <other_expr>
-        return other_expr(vector_expr_types, ids_list);;
+        return other_expr(expr_type, vector_expr_types, ids_list, ret_cnt);
     }
 
     if (ids_list != NULL && List.get_head(ids_list) != NULL) {
