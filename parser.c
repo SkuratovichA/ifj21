@@ -18,6 +18,7 @@
 #include "symstack.h"
 #include "expressions.h"
 #include "code_generator.h"
+#include "semantics.h"
 
 
 static pfile_t *pfile;
@@ -27,7 +28,7 @@ static pfile_t *pfile;
  * @param a expected.
  * @param b given.
  */
-static void print_error_unexpected_token(const char *a, const char *b) {
+void print_error_unexpected_token(const char *a, const char *b) {
     fprintf(stderr, "line %zu, character %zu\n", Scanner.get_line(), Scanner.get_charpos());
     fprintf(stderr, "[error](syntax): Expected '%s', got '%s' instead\n", a, b);
 }
@@ -72,16 +73,6 @@ static void print_error_unexpected_token(const char *a, const char *b) {
         local_table = Symstack.top(symstack);  \
      } while(0)
 
-/** Return an error(syntax)
- */
-#define error_unexpected_token(a)                               \
-    do {                                                       \
-        Errors.set_error(ERROR_SYNTAX);                        \
-        print_error_unexpected_token(Scanner.to_string(a),     \
-        Scanner.to_string(Scanner.get_curr_token().type));     \
-        goto err;                                              \
-    } while (0)
-
 /** Set an error code and return an error if there's a declaration error.
  */
 #define error_multiple_declaration(a)                                 \
@@ -93,27 +84,6 @@ static void print_error_unexpected_token(const char *a, const char *b) {
            " has already been declared!\n", Dynstring.c_str(a));     \
         return false;                                                \
     } while (0)
-
-/** Macro expecting a non terminal from the scanner.
- */
-#define EXPECTED(p)                                                            \
-    do {                                                                      \
-        token_t tok__ = Scanner.get_curr_token();                             \
-        if (tok__.type == (p)) {                                              \
-            if (tok__.type == TOKEN_ID || tok__.type == TOKEN_STR) {          \
-                debug_msg("\t%s = { '%s' }\n", Scanner.to_string(tok__.type), \
-                   Dynstring.c_str(tok__.attribute.id));                      \
-            } else {                                                          \
-                debug_msg("\t%s\n", Scanner.to_string(tok__.type));           \
-            }                                                                 \
-            if (TOKEN_DEAD == Scanner.get_next_token(pfile).type) {            \
-                Errors.set_error(ERROR_LEXICAL);                              \
-                goto err;                                                     \
-            }                                                                 \
-        } else {                                                              \
-            error_unexpected_token((p));                                      \
-        }                                                                     \
-    } while(0)
 
 /** if there's a condition of type '<a> -> b | c', you have to add
  * EXPECTED_OPT(b) in the function.
@@ -388,23 +358,36 @@ static bool repeat_body() {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool assignment(dynstring_t *var_name, int var_type) {
+static bool assignment(dynstring_t *id_name, int id_type) {
     debug_msg("<assignment> -> \n");
 
     // e |
     if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
         // generate var declaration
-        Generator.var_declaration(var_name);
+        Generator.var_declaration(id_name);
         return true;
     }
+
+    dynstring_t *received_signature = Dynstring.ctor("");
+    dynstring_t *expected_signature = Dynstring.ctor("");
+    Dynstring.append(expected_signature, Semantics.of_id_type(id_type));
+
     // =
     EXPECTED(TOKEN_ASSIGN);
-    PARSE_EXPR(EXPR_DEFAULT, NULL);
-    // expression result is in GF@%expr_result
-    Generator.var_definition(var_name);
 
+    PARSE_EXPR(EXPR_DEFAULT, received_signature);
+    // todo: add type recasting in the case of "i" and "f" in the assignment
+    CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
+
+    // expression result is in GF@%expr_result
+    Generator.var_definition(id_name);
+
+    Dynstring.dtor(expected_signature);
+    Dynstring.dtor(received_signature);
     return true;
     err:
+    Dynstring.dtor(expected_signature);
+    Dynstring.dtor(received_signature);
     return false;
 }
 
@@ -873,8 +856,11 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info, size_
     // generate code
     Generator.func_start_param(id_name, param_index++);
 
+    if (!other_funparams(pfile, function_def_info, param_index)) {
+        goto err;
+    }
+
     Dynstring.dtor(id_name);
-    return other_funparams(pfile, function_def_info, param_index);
     err:
     Dynstring.dtor(id_name);
     return false;
@@ -984,7 +970,11 @@ static bool other_funrets(pfile_t *pfile, func_info_t function_info, size_t ret_
     Generator.func_return_value(ret_num++);
 
     // <datatype> <other_funrets>
-    return datatype() && other_funrets(pfile, function_info, ret_num);
+    if (!datatype() || !other_funrets(pfile, function_info, ret_num)) {
+        goto err;
+    }
+
+    return true;
     err:
     return false;
 }
@@ -1001,7 +991,7 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
 
     // e |
     if (Scanner.get_curr_token().type != TOKEN_COLON) {
-        return true;
+        goto noerr;
     }
 
     // :
@@ -1012,7 +1002,12 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
     Generator.func_return_value(ret_num++);
 
     // <datatype> <other_funrets>
-    return (datatype() && other_funrets(pfile, function_info, ret_num));
+    if (!datatype() || !other_funrets(pfile, function_info, ret_num)) {
+        goto err;
+    }
+
+    noerr:
+    return true;
     err:
     return false;
 }

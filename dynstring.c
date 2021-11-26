@@ -203,6 +203,10 @@ static dynstring_t *Str_dup(dynstring_t *s) {
     return Str_ctor(s->str);
 }
 
+static int Cmp_c_str(dynstring_t *s1, char *s2) {
+    return strcmp(Dynstring.c_str(s1), s2);
+}
+
 /**
  * Interface to use when dealing with dynstrings.
  * Functions are in struct so we can use them in different files.
@@ -220,6 +224,7 @@ const struct dynstring_interface_t Dynstring = {
         .dup = Str_dup,
         .clear = Str_clear,
         .trunc_to_len = Trunc_to_len,
+        .cmp_c_str = Cmp_c_str,
 };
 
 #ifdef SELFTEST_dynstring

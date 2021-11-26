@@ -15,6 +15,15 @@
 #include "code_generator.h"
 
 static pfile_t *pfile;
+
+#define CHECK_DEAD_TOKEN()                                     \
+    do {                                                      \
+        if (Scanner.get_curr_token().type == TOKEN_DEAD) {    \
+            Errors.set_error(ERROR_LEXICAL);                  \
+            return false;                                     \
+        }                                                     \
+    } while(0)
+
 #define IF_STACK_HEAD_IS(_item, _stack, _type)  \
     (_item) = Stack.peek(_stack);               \
     if (!(_item)) {                             \
@@ -223,6 +232,7 @@ static char *to_str(stack_item_t *item) {
 static stack_item_t *stack_item_ctor(item_type_t type, token_t *token) {
     stack_item_t *new_item = calloc(1, sizeof(stack_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
+
     new_item->type = type;
 
     if (type == ITEM_TYPE_TOKEN || type == ITEM_TYPE_EXPR) {
@@ -336,7 +346,7 @@ static bool precedence_cmp(op_list_t first_op, op_list_t second_op, int *cmp) {
 static bool expression(sstack_t *r_stack, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: expr\n");
 
-    stack_item_t *item;
+    stack_item_t *item = NULL;
     CHECK_STACK_TOP(item, r_stack);
 
     if (item->type == ITEM_TYPE_EXPR) {
@@ -357,7 +367,7 @@ static bool expression(sstack_t *r_stack, expr_semantics_t *expr_sem) {
 static bool expression_f(sstack_t *r_stack, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: expr\n");
 
-    stack_item_t *item;
+    stack_item_t *item = NULL;
     CHECK_STACK_TOP(item, r_stack);
 
     if (item->type == ITEM_TYPE_EXPR) {
@@ -379,7 +389,7 @@ static bool expression_f(sstack_t *r_stack, expr_semantics_t *expr_sem) {
 static bool single_op(sstack_t *r_stack, op_list_t exp_op) {
     debug_msg("EXPECTED: %s\n", op_to_string(exp_op));
 
-    stack_item_t *item;
+    stack_item_t *item = NULL;
     CHECK_STACK_TOP(item, r_stack);
 
     if (item->type == ITEM_TYPE_TOKEN) {
@@ -404,7 +414,7 @@ static bool single_op(sstack_t *r_stack, op_list_t exp_op) {
 static bool operator(sstack_t *r_stack, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: binary operator\n");
 
-    stack_item_t *item;
+    stack_item_t *item = NULL;
     CHECK_STACK_TOP(item, r_stack);
 
     if (item->type == ITEM_TYPE_TOKEN) {
@@ -515,34 +525,39 @@ static bool check_rule(sstack_t *r_stack, int *func_entries, expr_semantics_t *e
         return operator(r_stack, expr_sem);
     }
 
-    if (item->type == ITEM_TYPE_TOKEN) {
-        op_list_t op = get_op(item->token);
-        switch (get_op(item->token)) {
-            // # expr | not expr
-            case OP_HASH:
-            case OP_NOT:
-                Semantics.add_operator(expr_sem, op);
-                Stack.pop(r_stack, stack_item_dtor);
-                return expression(r_stack, expr_sem);
-                // ( expr )
-            case OP_LPAREN:
-                expr_sem->sem_state = SEMANTIC_PARENTS;
-                Stack.pop(r_stack, stack_item_dtor);
-                return expression(r_stack, expr_sem) && single_op(r_stack, OP_RPAREN);
-                // id | id ( <arguments>
-            case OP_ID:
-                Semantics.add_operand(expr_sem, item->token);
-                Stack.pop(r_stack, stack_item_dtor);
+    if (item->type != ITEM_TYPE_TOKEN) {
+        return false;
+    }
 
-                if (Stack.peek(r_stack) != NULL) {
-                    expr_sem->sem_state = SEMANTIC_FUNCTION;
-                    return single_op(r_stack, OP_LPAREN) && arguments(r_stack, expr_sem, func_entries);
-                }
+    op_list_t op = get_op(item->token);
+    switch (get_op(item->token)) {
+        // # expr | not expr
+        case OP_HASH:
+        case OP_NOT:
+            Semantics.add_operator(expr_sem, op);
+            Stack.pop(r_stack, stack_item_dtor);
+            return expression(r_stack, expr_sem);
 
+            // ( expr )
+        case OP_LPAREN:
+            expr_sem->sem_state = SEMANTIC_PARENTS;
+            Stack.pop(r_stack, stack_item_dtor);
+            return expression(r_stack, expr_sem) && single_op(r_stack, OP_RPAREN);
+
+            // id | id ( <arguments>
+        case OP_ID:
+            Semantics.add_operand(expr_sem, item->token);
+            Stack.pop(r_stack, stack_item_dtor);
+
+            if (Stack.peek(r_stack) == NULL) {
                 return true;
-            default:
-                break;
-        }
+            }
+
+            expr_sem->sem_state = SEMANTIC_FUNCTION;
+            return single_op(r_stack, OP_LPAREN) && arguments(r_stack, expr_sem, func_entries);
+
+        default:
+            break;
     }
 
     // Otherwise
@@ -559,7 +574,7 @@ static bool check_rule(sstack_t *r_stack, int *func_entries, expr_semantics_t *e
  */
 static stack_item_t *pop_expr(sstack_t *stack, stack_item_t **top) {
     stack_item_t *expr = NULL;
-    stack_item_t *tmp;
+    stack_item_t *tmp = NULL;
 
     if ((*top)->type == ITEM_TYPE_EXPR) {
         debug_msg("Expression popped\n");
@@ -600,7 +615,9 @@ static void shift(sstack_t *stack, stack_item_t *expr, int const cmp) {
     // Push token from the input
     Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_TOKEN, NULL));
 
-    Scanner.get_next_token(pfile);
+    token_type_t typ = Scanner.get_curr_token().type;
+    EXPECTED(typ);
+    err:; //see the magic
 }
 
 /**
@@ -635,13 +652,8 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
 
     if (!check_rule(r_stack, func_entries, expr_sem) || Stack.peek(r_stack) != NULL) {
         debug_msg("Reduction error!\n");
-        Stack.dtor(r_stack, stack_item_dtor);
-        Semantics.dtor_expr(expr_sem);
-        Errors.set_error(ERROR_SYNTAX);
-        return false;
+        goto err1;
     }
-
-    Stack.dtor(r_stack, stack_item_dtor);
 
     // Delete less than symbol
     if (top->type == ITEM_TYPE_LT) {
@@ -672,8 +684,7 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
     // Semantic controls
     if (!Semantics.check_expression(expr_sem)) {
         // Return code will be set by semantics
-        Semantics.dtor_expr(expr_sem);
-        return false;
+        goto err2;
     }
 
     // Generate code here
@@ -684,11 +695,18 @@ static bool reduce(sstack_t *stack, stack_item_t *expr, int *func_entries) {
     }
 
     // Push an expression
-    token_t expr_tok = { .type = expr_sem->result_type };
-
+    token_t expr_tok = {.type = expr_sem->result_type};
     Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_EXPR, &expr_tok));
+
+    Stack.dtor(r_stack, stack_item_dtor);
     Semantics.dtor_expr(expr_sem);
     return true;
+    err1:
+    Errors.set_error(ERROR_SYNTAX);
+    err2:
+    Stack.dtor(r_stack, stack_item_dtor);
+    Semantics.dtor_expr(expr_sem);
+    return false;
 }
 
 /**
@@ -764,9 +782,7 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
         op_list_t second_op = get_op(curr_tok);
 
         // Check on expression end
-        if (!hard_reduce && is_expr_end(first_op, second_op, func_entries)) {
-            hard_reduce = true;
-        }
+        hard_reduce = hard_reduce == false ? is_expr_end(first_op, second_op, func_entries) : true;
 
         // Check if success
         if (is_parse_success(first_op, second_op, hard_reduce) || is_function_end(expr_type, func_entries)) {
@@ -808,7 +824,8 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
 
         // Check if identifier is a function
         if (curr_tok.type == TOKEN_ID && !hard_reduce) {
-            symbol_t *symbol;
+            symbol_t *symbol = NULL;
+
             if (Symtable.get_symbol(global_table, curr_tok.attribute.id, &symbol)) {
                 if (symbol->type == ID_TYPE_func_decl || symbol->type == ID_TYPE_func_def) {
                     debug_msg("SET IS FUNC\n");
@@ -816,11 +833,7 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
                     is_func = true;
                     func_name = Dynstring.dup(curr_tok.attribute.id);
 
-                    dynstring_t *str_cmp = Dynstring.ctor("write");
-                    if (Dynstring.cmp(curr_tok.attribute.id, str_cmp) == 0) {
-                        is_write = true;
-                    }
-                    Dynstring.dtor(str_cmp);
+                    is_write = Dynstring.cmp_c_str(curr_tok.attribute.id, "write") == 0;
                 }
             }
         }
@@ -888,11 +901,17 @@ static bool parse_init(expr_type_t expr_type, dynstring_t *vector_expr_type) {
     Stack.push(stack, dollar);
 
     // Parsing process
-    bool parse_result = parse(stack, expr_type, vector_expr_type);
+    if (!parse(stack, expr_type, vector_expr_type)) {
+        goto err;
+    }
 
     // Delete $ from stack
     Stack.dtor(stack, stack_item_dtor);
-    return parse_result;
+    return true;
+    err:
+    Stack.dtor(stack, stack_item_dtor);
+    return false;
+
 }
 
 /**
@@ -906,74 +925,23 @@ static bool parse_init(expr_type_t expr_type, dynstring_t *vector_expr_type) {
 static bool other_expr(expr_type_t expr_type, dynstring_t *vector_expr_types, list_t *ids_list, int ret_cnt) {
     debug_msg("<other_expr> ->\n");
 
-    CHECK_DEAD_TOKEN();
+    if (Scanner.get_curr_token().type != TOKEN_COMMA) {
+        return true;
+    }
 
     // ,
-    if (Scanner.get_curr_token().type == TOKEN_COMMA) {
-        Scanner.get_next_token(pfile);
+    EXPECTED(TOKEN_COMMA);
 
-        // check var
-        symbol_t * symbol;
-        dynstring_t *received_rets = Dynstring.ctor("");
-        dynstring_t *id_name;
-        bool ignore_expr = false;
-        if (ids_list != NULL) {
-            id_name = List.get_head(ids_list);
-            if (id_name == NULL) {
-                ignore_expr = true;
-            } else if (!Symstack.get_local_symbol(symstack, id_name, &symbol)) {
-                Errors.set_error(ERROR_DEFINITION);
-                return false;
-            }
-        }
-
-        // expr
-        if (!parse_init(EXPR_DEFAULT, (ids_list) ? received_rets : vector_expr_types)) {
-            Dynstring.dtor(received_rets);
-            return false;
-        }
-
-        if (expr_type == EXPR_RETURN) {
-            Generator.func_pass_return(ret_cnt++);
-        }
-
-        // semantics of assignment
-        if (ids_list != NULL && !ignore_expr) {
-            dynstring_t *req_rets = Dynstring.ctor("");
-            Dynstring.append(req_rets, Semantics.of_id_type(symbol->type));
-            debug_msg("requested - %s, received - %s\n", Dynstring.c_str(req_rets), Dynstring.c_str(received_rets));
-            if (Dynstring.cmp(req_rets, received_rets) != 0) {
-                if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
-                    strcmp(Dynstring.c_str(received_rets), "i") == 0) {
-                    // converts expressions result int -> float
-                    Generator.retype_expr_result();
-                } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
-                    Errors.set_error(ERROR_TYPE_MISSMATCH);
-                    Dynstring.dtor(req_rets);
-                    Dynstring.dtor(received_rets);
-                    return false;
-                }
-            }
-            Generator.var_assignment(id_name);
-            List.delete_first(ids_list, (void (*)(void *)) Dynstring.dtor);
-            Dynstring.dtor(req_rets);
-        }
-        Dynstring.dtor(received_rets);
-        // semantics of assignment end
-
-        // <other_expr>
-        return other_expr(expr_type, vector_expr_types, ids_list, ret_cnt);
+    // expr
+    if (!parse_init(EXPR_DEFAULT, vector_expr_types)) {
+        goto err;
     }
 
-    if (ids_list != NULL && List.get_head(ids_list) != NULL) {
-        Errors.set_error(ERROR_SEMANTICS_OTHER);
-        return false;
-    }
-
-    // Otherwise
-    return true;
+    // <other_expr>
+    return other_expr(vector_expr_types);
+    err:
+    return false;
 }
-
 /**
  * @brief
  *
@@ -987,61 +955,21 @@ static bool other_expr(expr_type_t expr_type, dynstring_t *vector_expr_types, li
 static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vector_expr_types, list_t *ids_list) {
     debug_msg("<expr_list> ->\n");
     pfile = pfile_;
-
-    CHECK_DEAD_TOKEN();
-
-    // check var
-    symbol_t * symbol;
-    dynstring_t *received_rets = Dynstring.ctor("");
-    dynstring_t *id_name;
-    bool ignore_expr = false;
-    if (ids_list != NULL) {
-        id_name = List.get_head(ids_list);
-        if (id_name == NULL) {
-            ignore_expr = true;
-        } else if (!Symstack.get_local_symbol(symstack, id_name, &symbol)) {
-            Errors.set_error(ERROR_DEFINITION);
-            return false;
-        }
-    }
+    int ret_cnt = 0;
 
     // expr
-    if (!parse_init(expr_type, (ids_list) ? received_rets : vector_expr_types)) {
-        Dynstring.dtor(received_rets);
-        return false;
+    if (!parse_init(expr_type, vector_expr_types)) {
+        goto err;
     }
-
-    int ret_cnt = 0;
-    if (expr_type == EXPR_RETURN) {
-        Generator.func_pass_return(ret_cnt++);
-    }
-
-    // semantics of assignment
-    if (ids_list != NULL && !ignore_expr) {
-        dynstring_t *req_rets = Dynstring.ctor("");
-        Dynstring.append(req_rets, Semantics.of_id_type(symbol->type));
-        debug_msg("requested - %s, received - %s\n", Dynstring.c_str(req_rets), Dynstring.c_str(received_rets));
-        if (Dynstring.cmp(req_rets, received_rets) != 0) {
-            if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
-                strcmp(Dynstring.c_str(received_rets), "i") == 0) {
-                // converts expressions result int -> float
-                Generator.retype_expr_result();
-            } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
-                Errors.set_error(ERROR_TYPE_MISSMATCH);
-                Dynstring.dtor(req_rets);
-                Dynstring.dtor(received_rets);
-                return false;
-            }
-        }
-        Generator.var_assignment(id_name);
-        List.delete_first(ids_list, (void (*)(void *)) Dynstring.dtor);
-        Dynstring.dtor(req_rets);
-    }
-    Dynstring.dtor(received_rets);
-    // semantics of assignment end
 
     // <other_expr>
-    return other_expr(expr_type, vector_expr_types, ids_list, ret_cnt);
+    if (!other_expr(expr_type, vector_expr_types, ids_list, ret_cnt)) {
+        goto err;
+    }
+
+    return true;
+    err:
+    return false;
 }
 
 /**
@@ -1055,28 +983,33 @@ static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vecto
 static bool other_id(list_t *ids_list) {
     debug_msg("<other_id> ->\n");
     debug_msg("TOKEN - %s\n", Scanner.to_string(Scanner.get_curr_token().type));
+    dynstring_t *id_name = NULL;
 
-    CHECK_DEAD_TOKEN();
-
+    // =
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
-        Scanner.get_next_token(pfile);
-        return Expr_list(pfile, EXPR_DEFAULT, NULL, ids_list);
+        EXPECTED(TOKEN_ASSIGN);
+        if (!Expr_list(pfile, EXPR_DEFAULT, NULL, ids_list)) {
+            goto err;
+        }
+        goto noerr;
     }
 
     // ,
-    if (Scanner.get_curr_token().type == TOKEN_COMMA) {
-        Scanner.get_next_token(pfile);
+    EXPECTED(TOKEN_COMMA);
+    GET_ID_SAFE(id_name);
+    // id
+    EXPECTED(TOKEN_ID);
 
-        CHECK_DEAD_TOKEN();
-
-        if (Scanner.get_curr_token().type == TOKEN_ID) {
-            List.append(ids_list, Dynstring.dup(Scanner.get_curr_token().attribute.id));
-            // <other_id>
-            Scanner.get_next_token(pfile);
-            return other_id(ids_list);
-        }
+    List.append(ids_list, id_name);
+    if (!other_id(ids_list)) {
+        goto err;
     }
 
+    noerr:
+    Dynstring.dtor(id_name);
+    return true;
+    err:
+    Dynstring.dtor(id_name);
     Errors.set_error(ERROR_SYNTAX);
     return false;
 }
@@ -1093,8 +1026,14 @@ static bool id_list() {
     debug_msg("<id_list> ->\n");
     debug_msg("TOKEN - %s\n", Scanner.to_string(Scanner.get_curr_token().type));
 
+    dynstring_t *received_rets = Dynstring.ctor("");
+    dynstring_t *req_rets = Dynstring.ctor("");
     dynstring_t *id_name = NULL;
+    list_t *ids_list = List.ctor();
+
     GET_ID_SAFE(id_name);
+    // id
+    EXPECTED(TOKEN_ID);
 
     // expr_stmt was processed an ID which is not function,
     // so it is not necessary to check current token on ID here
@@ -1106,18 +1045,17 @@ static bool id_list() {
         symbol_t * symbol;
         if (!Symstack.get_local_symbol(symstack, id_name, &symbol)) {
             Errors.set_error(ERROR_DEFINITION);
-            return false;
+            goto err;
         }
 
         Scanner.get_next_token(pfile);
-        dynstring_t *received_rets = Dynstring.ctor("");
 
         if (!parse_init(EXPR_DEFAULT, received_rets)) {
             goto err;
         }
 
         // semantics of assignment
-        dynstring_t *req_rets = Dynstring.ctor("");
+        Symtable.get_symbol(local_table, id_name, &symbol);
         Dynstring.append(req_rets, Semantics.of_id_type(symbol->type));
         debug_msg("requested - %s, received - %s\n", Dynstring.c_str(req_rets), Dynstring.c_str(received_rets));
         if (Dynstring.cmp(req_rets, received_rets) != 0) {
@@ -1126,31 +1064,32 @@ static bool id_list() {
                 // convert int -> float
                 Generator.retype_expr_result();
             } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
-                Dynstring.dtor(req_rets);
                 Errors.set_error(ERROR_TYPE_MISSMATCH);
-                Dynstring.dtor(req_rets);
-                Dynstring.dtor(received_rets);
-                return false;
+                goto err;
             }
         }
-        Dynstring.dtor(req_rets);
-        Dynstring.dtor(received_rets);
-        // semantics of assignment end
-
         Generator.var_assignment(id_name);
-        Dynstring.dtor(id_name);
+        goto noerr;
         return true;
     }
-    list_t *ids_list = List.ctor();
-    List.append(ids_list, Dynstring.dup(id_name));
-    Dynstring.dtor(id_name);
-    // <other_id>
-    bool res = other_id(ids_list);
-    List.dtor(ids_list, (void (*)(void *)) Dynstring.dtor);
-    return res;
 
-    err:
+    List.append(ids_list, Dynstring.dup(id_name));
+    // <other_id>
+    if (!other_id(ids_list)) {
+        goto err;
+    }
+
+    noerr:
+    List.dtor(ids_list, (void (*)(void*))Dynstring.dtor);
     Dynstring.dtor(id_name);
+    Dynstring.dtor(req_rets);
+    Dynstring.dtor(id_name);
+    return true;
+    err:
+    List.dtor(ids_list, (void (*)(void*))Dynstring.dtor);
+    Dynstring.dtor(id_name);
+    Dynstring.dtor(req_rets);
+    Dynstring.dtor(received_rets);
     return false;
 }
 
@@ -1165,20 +1104,12 @@ static bool id_list() {
 static bool expr_stmt(expr_type_t expr_type) {
     debug_msg("<expr_stmt> ->\n");
 
-    // DEAD TOKEN
-    if (Scanner.get_curr_token().type == TOKEN_DEAD) {
-        Errors.set_error(ERROR_LEXICAL);
-        return false;
-    }
+    symbol_t *symbol = NULL;
 
-    // ID or name of a builtin function
-    if (Scanner.get_curr_token().type != TOKEN_ID) {
-        Errors.set_error(ERROR_SYNTAX);
-        return false;
-    }
+    // id
+    EXPECTED(TOKEN_ID);
 
     // Parse expression if ID is a function
-    symbol_t *symbol;
     if (Symtable.get_symbol(global_table, Scanner.get_curr_token().attribute.id, &symbol)) {
         if (symbol->type == ID_TYPE_func_decl || symbol->type == ID_TYPE_func_def) {
             return parse_init(expr_type, NULL);
@@ -1188,11 +1119,13 @@ static bool expr_stmt(expr_type_t expr_type) {
     // Assignment in global scope is not valid
     if (expr_type == EXPR_GLOBAL) {
         Errors.set_error(ERROR_DEFINITION);
-        return false;
+        goto err;
     }
 
     // <id_list>
     return id_list();
+    err:
+    return false;
 }
 
 /**
@@ -1205,11 +1138,10 @@ static bool expr_stmt(expr_type_t expr_type) {
  */
 static bool Parse_expression(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vector_expr_types) {
     pfile = pfile_;
-    if (expr_type == EXPR_FUNC || expr_type == EXPR_GLOBAL) {
-        return expr_stmt(expr_type);
-    } else {
-        return parse_init(expr_type, vector_expr_types);
-    }
+
+    return expr_type == EXPR_FUNC || expr_type == EXPR_GLOBAL ?
+           expr_stmt(expr_type) :
+           parse_init(expr_type, vector_expr_types);
 }
 
 
@@ -1220,157 +1152,3 @@ const struct expr_interface_t Expr = {
         .parse = Parse_expression,
         .parse_expr_list = Expr_list
 };
-
-#ifdef SELFTEST_expressions
-#include "tests/tests.h"
-#include "parser.h"
-
-int main() {
-
-    pfile_t *pf;
-    char *req = "require \"ifj21\"\n function main()\n local foo : integer = ";
-    char *end = " end\n";
-    char fin[1000];
-    char *s[200];
-
-    s[0] = "a";
-    s[1] = "a + b - c + d - e";
-    s[2] = "a * b / c * a * c";
-    s[3] = "a + b + c + d - a - b - c - d * a * b * c * d / a / b / c / d // a // b // c // d";
-    s[4] = "a + c // b - d * a - d / e // f";
-    s[5] = "5 + (a - 3 - (3 * a // b)) - c";
-    s[6] = "1 + 39 - 23 // 23881 / 23 * 1342";
-    s[7] = "a + 2 * 19228 - b";
-    s[8] = "12.3 + a - 6.3e7";
-    s[9] = "x // 143.11E2";
-    s[10] = "21 + 231 - abc * z / 23 // 345.3 + 13e93";
-    s[11] = "(a + d) ";
-    s[12] = "a + (b + (c + (d + (e + f))))";
-    s[13] = "a * (23 - e) / (7 * a)";
-    s[14] = "a + ((a // (a - a)) * (a / (a + a - a))) + a";
-    s[15] = "(a - (b * c))";
-    s[16] = "#a + #b";
-    s[17] = "a .. b + c * #d";
-    s[18] = "#a \"goto hell\"";
-    s[19] = "a + #\"hello\" - 5";
-    s[20] = "naaa .. bbb + a .. b";
-    s[21] = "f(a + b * c)";
-    s[22] = "a * c()";
-    s[23] = "f(g())";
-    s[24] = "a + f(x, y(a + b)) - z * d";
-    s[25] = "a(b(c(d(e, f(g, h , i()))), j(), k(l(m))))";
-    s[26] = "a < b";
-    s[27] = "a >= b + c - d";
-    s[28] = "b / (a < b >= c) - d < e";
-    s[29] = "c <= d >= a";
-    s[30] = "#\"xyz\" > b";
-    s[31] = "a .. c > #e";
-    s[32] = "f() > g(a + b)";
-    s[33] = "2 < 5 < 8 < q";
-    s[34] = "a >= b <= 3";
-    s[35] = "a\nd = 3";
-    s[36] = "a + b / c\n d = a + b";
-    s[37] = "(a)\nb=3";
-    s[38] = "(a + b / c)/nb = (a + b)";
-    s[39] = "(3 + a\n+ b + d)";
-    s[40] = "a\na, b = 1";
-    s[41] = "a\na, b = 1, 2";
-    s[42] = "a + b\na, b, c = c, b, a";
-    s[43] = "1\na = a";
-    s[44] = "a + 1\na, b, c, d = 1, a+b, 2, (d*e)";
-    s[45] = "(a + 1)\na, b, c = (a + b + c)";
-    s[46] = "(a) + 1\n(a) = (a) + 2";
-    s[47] = "#a\na = #a + #b";
-    s[48] = "a + b .. c\nd, e, f = a .. b";
-    s[49] = "1\na, b, c, d, e = a .. b + #c + d .. e * #d // 2";
-    s[50] = "a\na, b = foo(), bar()";
-    s[51] = "foo()\na = bar()";
-    s[52] = "a() + b(a + c)\na = a + 1";
-    s[53] = "foo(a)";
-    s[54] = "a\na, b, c, d, e = foo(x + y)";
-
-    unsigned num_of_tests_valid = 55; // don't forget to add 1 (bcs counting from 0)
-                    // eg. number_of_tests_valid = 11 when the last assignment is s[10]
-
-    fprintf(stdout, "\x1b[33m" "TESTS - VALID INPUT\n" "\x1b[0m");
-
-    unsigned i = 0;
-    while (i < num_of_tests_valid) {
-        strcat(strcat(strcat(fin, req), s[i]), end);
-        pf = Pfile.ctor(fin);
-        fprintf(stdout, "[%d] ", i);
-        TEST_EXPECT(Parser.analyse(pf), true, s[i]);
-        Pfile.dtor(pf);
-        memcpy(fin, "\0", 1000);
-        i++;
-    }
-
-    s[i] = "-";
-    s[i+1] = "a - - a";
-    s[i+2] = "a + b + / c";
-    s[i+3] = "na /";
-    s[i+4] = "// a";
-    s[i+5] = "a + c // b - d * a - d / e /// f";
-    s[i+6] = "1 + - 23 // 23881 /* 23 * 1342";
-    s[i+7] = "a a + 2 * 19228 b";
-    s[i+8] = "12.3 + a 3 - 6.3e7";
-    s[i+9] = "* x /* / 143.11E4";
-    s[i+10] = "21 + + + 231 - abc * z z / 23 // 345.3 + 13e93";
-    s[i+11] = "a + (b * d * * d)";
-    s[i+12] = "a + (b + (c + (d + (e + f)))))";
-    s[i+13] = "a * ((23 - e) / (7 * a)";
-    s[i+14] = "a + ((a // (a - a)) * (a / (a + a - a))) + a(";
-    s[i+15] = "(a - (b * c)) -";
-    s[i+16] = "#a + ##b";
-    s[i+17] = "a .. .. b + c * #d";
-    s[i+18] = "#a hey";
-    s[i+19] = "a + \"hello\" - 5";
-    s[i+20] = "n * b .. + bbb";
-    s[i+21] = "f(a + b * c) g()";
-    s[i+22] = "f(g()";
-    s[i+23] = "a * c())";
-    s[i+24] = "\"a + f f(x, y(a + b)) - z * d\"";
-    s[i+25] = "a <+ b";
-    s[i+26] = "a >< b + d";
-    s[i+27] = "a <> b";
-    s[i+28] = "a >>> b";
-    s[i+29] = "a + b <> c - d";
-    s[i+30] = "a < b # < c";
-    s[i+31] = "<";
-    s[i+32] = "< a >";
-    s[i+33] = "a\nd d";
-    s[i+34] = "a a";
-    s[i+35] = "a\nd = d = d";
-    s[i+36] = "a = a\nd";
-    s[i+37] = "a\na, a, a";
-    s[i+38] = "a, #a, #a";
-    s[i+39] = "a = 3";
-    s[i+40] = "a .. b\n= 3";
-    s[i+41] = "3\n3 = a";
-    s[i+42] = "a\na\na = n";
-    s[i+43] = "()";
-    s[i+44] = "(a = b)";
-    s[i+45] = "a + (b + c)\nd + 1";
-    s[i+46] = "d + 1 = 4";
-    s[i+47] = "(a + b * c)\nd * e = e * f";
-    s[i+48] = "a\na() = b";
-    s[i+49] = "a\na, b() = 1, 2";
-    s[i+50] = "a() = a()";
-
-    unsigned num_of_tests = num_of_tests_valid + 50;    // the number in the last s[i + num_of_tests]
-                                // (eg. num_of_tests = 10 when the last s assignment is s[i + 10])
-
-    fprintf(stdout, "\x1b[33m" "TESTS - INVALID INPUT\n" "\x1b[0m");
-    while (i < num_of_tests + 1) {
-        strcat(strcat(strcat(fin, req), s[i]), end);
-        pf = Pfile.ctor(fin);
-        fprintf(stdout, "[%d] ", i);
-        TEST_EXPECT(Parser.analyse(pf), false, s[i]);
-        Pfile.dtor(pf);
-        memcpy(fin, "\0", 1000);
-        i++;
-    }
-
-    return 0;
-}
-#endif

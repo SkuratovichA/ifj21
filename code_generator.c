@@ -382,7 +382,7 @@ static void generate_var_value(token_t token) {
  *        false if it should be found in the symtable
  */
 static void generate_var_name(dynstring_t *var_name, bool new_def) {
-    symbol_t *symbol;
+    symbol_t *symbol = NULL;
     if (new_def || !Symstack.get_local_symbol(symstack, var_name, &symbol)) {
         ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     } else {
@@ -419,7 +419,7 @@ static void generate_var_declaration(dynstring_t *var_name) {
 }
 
 /*
- * @brief Generates variable declaration.
+ * @brief Generates variable definition.
  */
 static void generate_var_definition(dynstring_t *var_name) {
     generate_defvar(var_name);
