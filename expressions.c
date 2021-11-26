@@ -1015,16 +1015,22 @@ static bool id_list() {
 
     // =
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
+        // check var
+        symbol_t * symbol;
+        if (!Symstack.get_local_symbol(symstack, id_name, &symbol)) {
+            Errors.set_error(ERROR_DEFINITION);
+            return false;
+        }
+
         Scanner.get_next_token(pfile);
         dynstring_t *received_rets = Dynstring.ctor("");
+
         if (!parse_init(EXPR_DEFAULT, received_rets)) {
             goto err;
         }
 
         // semantics of assignment
-        symbol_t * symbol;
         dynstring_t *req_rets = Dynstring.ctor("");
-        Symtable.get_symbol(local_table, id_name, &symbol);
         Dynstring.append(req_rets, Semantics.of_id_type(symbol->type));
         debug_msg("requested - %s, received - %s\n", Dynstring.c_str(req_rets), Dynstring.c_str(received_rets));
         if (Dynstring.cmp(req_rets, received_rets) != 0) {
@@ -1038,15 +1044,20 @@ static bool id_list() {
             }
         }
         Dynstring.dtor(req_rets);
+        Dynstring.dtor(received_rets);
         // semantics of assignment end
 
         Generator.var_assignment(id_name);
         Dynstring.dtor(id_name);
         return true;
     }
+    //list_t *ids_list = List.ctor();
+    //List.append(ids_list, Dynstring.dup(id_name));
     Dynstring.dtor(id_name);
     // <other_id>
-    return other_id();
+    bool res = other_id();
+    //List.dtor(ids_list, (void (*)(void *)) Dynstring.dtor);
+    return res;
 
     err:
     Dynstring.dtor(id_name);

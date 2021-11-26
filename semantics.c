@@ -159,9 +159,9 @@ static int keyword_to_type(int typ) {
         case KEYWORD_string:
             return ID_TYPE_string;
         case KEYWORD_number:
-            return ID_TYPE_integer;
-        case KEYWORD_integer:
             return ID_TYPE_number;
+        case KEYWORD_integer:
+            return ID_TYPE_integer;
         case KEYWORD_boolean:
             return ID_TYPE_boolean;
         case KEYWORD_nil:
