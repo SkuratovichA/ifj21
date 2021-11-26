@@ -838,11 +838,11 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
         if (first_op == OP_RPAREN && inside_func) {
             if (is_write) {
                 is_write = false;
+            } else {
+                Generator.func_call(Dynstring.c_str(func_name));
             }
-
             params_cnt = 0;
             inside_func = false;
-            Generator.func_call(Dynstring.c_str(func_name));
             Dynstring.dtor(func_name);
             debug_msg("function ends here\n");
         }
@@ -852,6 +852,8 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
             Generator.expression_pop();
             if (!is_write) {
                 Generator.func_pass_param(params_cnt++);
+            } else {
+                Generator.func_call("write");
             }
         }
 
