@@ -941,7 +941,6 @@ static bool other_expr(expr_type_t expr_type, dynstring_t *vector_expr_types, li
             return false;
         }
 
-        int ret_cnt = 0;
         if (expr_type == EXPR_RETURN) {
             Generator.func_pass_return(ret_cnt++);
         }
