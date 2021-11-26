@@ -180,7 +180,7 @@ static char *item_to_string(item_type_t type) {
 //              ...
 //              if (pointer != NULL) ...
 
-//      5: All declarations of variables are at the beginning of the function
+//      5: All declarations of variables are at the beginning of the function if there's a possibility to.
 
 //     6: DONT WRITE LONG FUNCTIONS, try to separate them into smaller ones.
 
