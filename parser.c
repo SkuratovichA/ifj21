@@ -821,7 +821,6 @@ static bool fun_body(char *id_name) {
 
         switch (Symstack.get_scope_info(symstack).scope_type) {
             case SCOPE_TYPE_while_cycle:
-                // FIXME - can be also for loop
                 Generator.while_end();
                 if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
                     instructions.in_loop = false;
@@ -1244,7 +1243,7 @@ static bool declared_implies_defined(symbol_t *symbol) {
  */
 static bool program() {
     debug_msg("=====================================\n\n\n");
-    debug_msg("PARISNG STARTED\n");
+    debug_msg("PARSING STARTED\n");
     debug_msg("<program> ->\n");
 
     dynstring_t *prolog_str = Dynstring.ctor("ifj21");

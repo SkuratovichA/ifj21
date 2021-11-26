@@ -802,7 +802,6 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
 
         if (is_func) {
             debug_msg("UNSET IS FUNC\n");
-            // TODO move this
             if (second_op == OP_LPAREN) {
                 if (func_entries == -1) {
                     func_entries = 0;
@@ -955,7 +954,8 @@ static bool other_expr(expr_type_t expr_type, dynstring_t *vector_expr_types, li
             if (Dynstring.cmp(req_rets, received_rets) != 0) {
                 if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
                     strcmp(Dynstring.c_str(received_rets), "i") == 0) {
-                    // TODO: v tomto pripade je nutne pretypovat vysledek
+                    // converts expressions result int -> float
+                    Generator.retype_expr_result();
                 } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
                     Errors.set_error(ERROR_TYPE_MISSMATCH);
                     Dynstring.dtor(req_rets);
@@ -1033,7 +1033,8 @@ static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vecto
         if (Dynstring.cmp(req_rets, received_rets) != 0) {
             if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
                 strcmp(Dynstring.c_str(received_rets), "i") == 0) {
-                // TODO: v tomto pripade je nutne pretypovat vysledek
+                // converts expressions result int -> float
+                Generator.retype_expr_result();
             } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
                 Errors.set_error(ERROR_TYPE_MISSMATCH);
                 Dynstring.dtor(req_rets);
