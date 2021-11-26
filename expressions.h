@@ -15,7 +15,7 @@
 struct expr_interface_t {
     bool (*return_expressions)(pfile_t *, dynstring_t *);
 
-    bool (*assignment_expression)(pfile_t *, dynstring_t *);
+    bool (*default_expression)(pfile_t *, dynstring_t *);
 
     bool (*function_expression)(pfile_t *);
 

@@ -64,6 +64,15 @@ void print_error_unexpected_token(const char *, const char *);
         }                                                                   \
     } while (0)
 
+#define EXPECTED_OPT(_tok)                                      \
+    do {                                                       \
+        if (Scanner.get_curr_token().type == (TOKEN_EOFILE)) { \
+            EXPECTED(_tok);                                    \
+            goto noerr;                                        \
+        }                                                      \
+    } while (0)
+
+
 /** A symbol stack with symbol tables for the program.
  */
 symstack_t *symstack;

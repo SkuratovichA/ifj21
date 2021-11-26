@@ -85,19 +85,6 @@ void print_error_unexpected_token(const char *a, const char *b) {
         return false;                                                \
     } while (0)
 
-/** if there's a condition of type '<a> -> b | c', you have to add
- * EXPECTED_OPT(b) in the function.
- */
-#define EXPECTED_OPT(toktype)                                                         \
-    do {                                                                             \
-        if (Scanner.get_curr_token().type == (toktype)) {                            \
-            /* OR use Scanner.get_next_token, but let it be clear in case we want */ \
-            /* to change Scanner.get_next_token or add debug messages. */            \
-            EXPECTED((toktype));                                                     \
-            return true;                                                             \
-        }                                                                            \
-    } while(0)
-
 /** Check semantics(for functions, variables, but not for expressions).
  */
 #define SEMANTICS_SYMTABLE_CHECK_AND_PUT(name, type)                     \
@@ -117,22 +104,40 @@ void print_error_unexpected_token(const char *a, const char *b) {
         Symstack.put_symbol(symstack, _name, type);                     \
     } while (0)
 
-#define PARSE_EXPR(expr_type, received_signature)                      \
+#define PARSE_DEFAULT_EXPRESSION(received_signature)                 \
+    do {                                                               \
+        if (!Expr.default_expression(pfile, received_signature)) {   \
+            debug_msg("\n");                                           \
+            debug_msg_s("\t\t[error] assignment expression failed.\n");\
+            goto err;                                                  \
+        }                                                              \
+    } while(0)
+
+#define PARSE_RETURN_EXPRESSIONS(received_signature)                   \
     do {                                                              \
-        if (!Expr.parse(pfile, expr_type, received_signature)) {       \
+        if (!Expr.return_expressions(pfile, received_signature)) {     \
             debug_msg("\n");                                          \
-            debug_msg_s("\t\t[error] Expression parsing failed.\n");  \
+            debug_msg_s("\t\t[error] return expression failed.\n");   \
             goto err;                                                 \
         }                                                             \
     } while(0)
 
-#define PARSE_EXPR_LIST(expr_type, received_signature, ids_list)                        \
-    do {                                                                                \
-        if (!Expr.parse_expr_list(pfile, expr_type, received_signature, ids_list)) {    \
-            debug_msg("\n");                                                            \
-            debug_msg_s("\t\t[error] Expression parsing failed.\n");                    \
-            goto err;                                                                   \
-        }                                                                               \
+#define PARSE_FUNCTION_EXPRESSION()                                    \
+    do {                                                              \
+        if (!Expr.function_expression(pfile)) {                        \
+            debug_msg("\n");                                          \
+            debug_msg_s("\t\t[error] function expression failed.\n"); \
+            goto err;                                                 \
+        }                                                             \
+    } while(0)
+
+#define PARSE_GLOBAL_EXPRESSION()                                      \
+    do {                                                              \
+        if (!Expr.global_expression(pfile)) {                          \
+            debug_msg("\n");                                          \
+            debug_msg_s("\t\t[error] global expression failed.\n");   \
+            goto err;                                                 \
+        }                                                             \
     } while(0)
 
 
@@ -278,17 +283,29 @@ static bool cond_body() {
  */
 static bool cond_stmt() {
     debug_msg("<cond_stmt> -> \n");
+    dynstring_t *received_signature = Dynstring.ctor("");
+    dynstring_t *expected_signature = Dynstring.ctor("b");
 
     // expr
-    PARSE_EXPR(EXPR_DEFAULT, NULL);
+    PARSE_DEFAULT_EXPRESSION(received_signature);
+    // semantic check
+    CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
     // then
     EXPECTED(KEYWORD_then);
     // generate condition evaluation (JUMPIFNEQ ...)
     instructions.cond_cnt++;
     Generator.cond_if(instructions.outer_cond_id, instructions.cond_cnt);
 
-    return cond_body();
+    if (!cond_body()) {
+        goto err;
+    }
+
+    Dynstring.dtor(received_signature);
+    Dynstring.dtor(expected_signature);
+    return true;
     err:
+    Dynstring.dtor(received_signature);
+    Dynstring.dtor(expected_signature);
     return false;
 }
 
@@ -345,6 +362,8 @@ static bool repeat_body() {
 
     // a new solution which doesnt have to cause problems. But not tested yet, so i dont know.
     return fun_stmt() && repeat_body();
+    noerr:
+    return true;
     err:
     return false;
 }
@@ -361,27 +380,29 @@ static bool repeat_body() {
 static bool assignment(dynstring_t *id_name, int id_type) {
     debug_msg("<assignment> -> \n");
 
-    // e |
-    if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
-        // generate var declaration
-        Generator.var_declaration(id_name);
-        return true;
-    }
-
     dynstring_t *received_signature = Dynstring.ctor("");
     dynstring_t *expected_signature = Dynstring.ctor("");
     Dynstring.append(expected_signature, Semantics.of_id_type(id_type));
 
+    // e |
+    if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
+        // generate var declaration
+        Generator.var_declaration(id_name);
+        goto noerr;
+    }
+
     // =
     EXPECTED(TOKEN_ASSIGN);
+    // <expr>
+    PARSE_DEFAULT_EXPRESSION(received_signature);
 
-    PARSE_EXPR(EXPR_DEFAULT, received_signature);
     // todo: add type recasting in the case of "i" and "f" in the assignment
+    // probably add flag for recasting i -> f
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
-
     // expression result is in GF@%expr_result
     Generator.var_definition(id_name);
 
+    noerr:
     Dynstring.dtor(expected_signature);
     Dynstring.dtor(received_signature);
     return true;
@@ -400,31 +421,27 @@ static bool assignment(dynstring_t *id_name, int id_type) {
  */
 static bool for_assignment() {
     debug_msg("<for_assignment> ->\n");
-    dynstring_t *expected_signature = NULL;
-    dynstring_t *received_signature = NULL;
+    dynstring_t *expected_signature = Dynstring.ctor("f");
+    dynstring_t *received_signature = Dynstring.ctor("");
 
-    // do |
-
+    // do. No explicit step given.
     if (Scanner.get_curr_token().type == KEYWORD_do) {
         // generate step = 1
         Generator.for_default_step();
+        goto noerr;
     }
-    EXPECTED_OPT(KEYWORD_do);
 
     // ,
     EXPECTED(TOKEN_COMMA);
-    expected_signature = Dynstring.ctor("f");
-    received_signature = Dynstring.ctor("");
     // expr
-    PARSE_EXPR(EXPR_DEFAULT, received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature);
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
-
     // generate step
     Generator.tmp_var_definition("step");
 
+    noerr:
     // do
     EXPECTED(KEYWORD_do);
-
     Dynstring.dtor(expected_signature);
     Dynstring.dtor(received_signature);
     return true;
@@ -451,6 +468,7 @@ static bool for_cycle() {
     // push a new symtable on the symstack
     SYMSTACK_PUSH(SCOPE_TYPE_for_cycle, NULL);
 
+
     // for
     EXPECTED(KEYWORD_for);
 
@@ -469,7 +487,7 @@ static bool for_cycle() {
     // =
     EXPECTED(TOKEN_ASSIGN);
     // expr
-    PARSE_EXPR(EXPR_DEFAULT, received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature);
     // check signatures
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // for reusing
@@ -482,7 +500,7 @@ static bool for_cycle() {
     EXPECTED(TOKEN_COMMA);
 
     // terminating `expr` in for cycle.
-    PARSE_EXPR(EXPR_DEFAULT, received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature);
     // check signatures for an assignment.
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
 
@@ -585,15 +603,16 @@ static bool var_definition() {
  */
 static bool while_cycle() {
     debug_msg("<while_cycle> -> \n");
+
     increase_nesting();
+    // create a new symtable for while cycle.
+    SYMSTACK_PUSH(SCOPE_TYPE_while_cycle, NULL);
 
     dynstring_t *expected_signature = Dynstring.ctor("b");
     dynstring_t *received_signature = Dynstring.ctor("");
 
     // while
     EXPECTED(KEYWORD_while);
-    // create a new symtable for while cycle.
-    SYMSTACK_PUSH(SCOPE_TYPE_while_cycle, NULL);
     // nested while
     if (!instructions.in_loop) {
         instructions.in_loop = true;
@@ -602,7 +621,7 @@ static bool while_cycle() {
     }
     Generator.while_header();
     // parse expressions
-    PARSE_EXPR(EXPR_DEFAULT, received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature);
     // check operation semantics
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // expression result in LF@%result
@@ -610,11 +629,13 @@ static bool while_cycle() {
     // do
     EXPECTED(KEYWORD_do);
     if (!fun_body("")) {
-        return false;
+        goto err;
     }
-    // parent function pops a table from the stack.
+
+    // delete a symstack for while cycle.
     SYMSTACK_POP();
     decrease_nesting();
+
 
     Dynstring.dtor(expected_signature);
     Dynstring.dtor(received_signature);
@@ -634,13 +655,13 @@ static bool while_cycle() {
 static bool return_stmt() {
     debug_msg("<return_stmt> ->\n");
     dynstring_t *received_rets = Dynstring.ctor("");
-    dynstring_t *expected_rets = NULL;
+    // create expected returns vector from returns
+    dynstring_t *expected_rets = Dynstring.dup(
+            Symstack.get_parent_func(symstack)->function_semantics->definition.returns);
 
     EXPECTED(KEYWORD_return);
-    // create expected returns vector from returns
-    expected_rets = Dynstring.dup(Symstack.get_parent_func(symstack)->function_semantics->definition.returns);
     // return expr
-    PARSE_EXPR_LIST(EXPR_RETURN, received_rets, NULL);
+    PARSE_RETURN_EXPRESSIONS(received_rets);
     // check signatures
     CHECK_EXPR_SIGNATURES(expected_rets, received_rets, ERROR_FUNCTION_SEMANTICS);
 
@@ -684,7 +705,7 @@ static bool repeat_until_cycle() {
         goto err;
     }
     // expr
-    PARSE_EXPR(EXPR_DEFAULT, received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature);
     // check type compatibility in 'until' condition.
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // expression result in LF@%result
@@ -749,7 +770,7 @@ static bool fun_stmt() {
             return break_();
 
         case TOKEN_ID:
-            PARSE_EXPR(EXPR_FUNC, NULL);
+            PARSE_FUNCTION_EXPRESSION();
             break;
 
         case TOKEN_DEAD:
@@ -776,47 +797,48 @@ static bool fun_stmt() {
 static bool fun_body(char *id_name) {
     debug_msg("<fun_body> ->\n");
 
-    // end |
-    if (Scanner.get_curr_token().type == KEYWORD_end) {
-        EXPECTED(KEYWORD_end);
-
-        switch (Symstack.get_scope_info(symstack).scope_type) {
-            case SCOPE_TYPE_while_cycle:
-                Generator.while_end();
-                if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
-                    instructions.in_loop = false;
-                    instructions.outer_loop_id = 0;
-                    instructions.before_loop_start = NULL;
-                }
-                break;
-
-            case SCOPE_TYPE_function:
-                Generator.func_end(Symstack.get_parent_func_name(symstack));
-                break;
-
-            case SCOPE_TYPE_for_cycle:;
-                dynstring_t *var_name = Dynstring.ctor(id_name);
-                Generator.for_end(var_name);
-                Dynstring.dtor(var_name);
-                break;
-
-            case SCOPE_TYPE_do_cycle:
-                break;
-
-            case SCOPE_TYPE_condition:
-                Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
-                Generator.pop_cond_info();
-                break;
-
-            default:
-                debug_msg("Shouldn't be here.\n");
-                assert(0);
-                break;
-        }
-        return true;
+    if (Scanner.get_curr_token().type != KEYWORD_end) {
+        return fun_stmt() && fun_body(id_name);
     }
 
-    return fun_stmt() && fun_body(id_name);
+    // end |
+    EXPECTED(KEYWORD_end);
+
+    switch (Symstack.get_scope_info(symstack).scope_type) {
+        case SCOPE_TYPE_while_cycle:
+            Generator.while_end();
+            if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
+                instructions.in_loop = false;
+                instructions.outer_loop_id = 0;
+                instructions.before_loop_start = NULL;
+            }
+            break;
+
+        case SCOPE_TYPE_function:
+            Generator.func_end(Symstack.get_parent_func_name(symstack));
+            break;
+
+        case SCOPE_TYPE_for_cycle:;
+            dynstring_t *var_name = Dynstring.ctor(id_name);
+            Generator.for_end(var_name);
+            Dynstring.dtor(var_name);
+            break;
+
+        case SCOPE_TYPE_do_cycle:
+            break;
+
+        case SCOPE_TYPE_condition:
+            Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
+            Generator.pop_cond_info();
+            break;
+
+        default:
+            debug_msg("Shouldn't be here.\n");
+            assert(0);
+            break;
+    }
+
+    return true;
     err:
     return false;
 }
@@ -860,6 +882,7 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info, size_
         goto err;
     }
 
+    noerr:
     Dynstring.dtor(id_name);
     err:
     Dynstring.dtor(id_name);
@@ -899,10 +922,15 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
     // parameters in function definition cannot be declared twice, nor be function names.
     SEMANTICS_SYMTABLE_CHECK_AND_PUT(id_name, id_type);
 
-    Dynstring.dtor(id_name);
-
     // <other_funparams>
-    return other_funparams(pfile, function_def_info, param_index);
+    if (!other_funparams(pfile, function_def_info, param_index)) {
+        goto err;
+    }
+
+
+    noerr:
+    Dynstring.dtor(id_name);
+    return true;
     err:
     Dynstring.dtor(id_name);
     return false;
@@ -925,6 +953,8 @@ static bool other_datatypes(pfile_t *pfile, func_info_t function_decl_info) {
     Semantics.add_param(&function_decl_info, Scanner.get_curr_token().type);
 
     return datatype() && other_datatypes(pfile, function_decl_info);
+    noerr:
+    return true;
     err:
     return false;
 }
@@ -945,6 +975,8 @@ static bool datatype_list(pfile_t *pfile, func_info_t function_decl_info) {
 
     //<datatype> && <other_datatypes>
     return datatype() && other_datatypes(pfile, function_decl_info);
+    noerr:
+    return true;
     err:
     return false;
 }
@@ -991,7 +1023,7 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
 
     // e |
     if (Scanner.get_curr_token().type != TOKEN_COLON) {
-        goto noerr;
+        return true;
     }
 
     // :
@@ -1006,7 +1038,6 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
         goto err;
     }
 
-    noerr:
     return true;
     err:
     return false;
@@ -1023,7 +1054,7 @@ static bool function_declaration() {
     debug_msg("<function_declaration> ->\n");
 
     dynstring_t *id_name = NULL;
-    symbol_t *symbol = NULL;
+    symbol_t *symbol;
 
     // global
     EXPECTED(KEYWORD_global);
@@ -1061,6 +1092,7 @@ static bool function_declaration() {
         SEMANTIC_CHECK_FUNCTION_SIGNATURES(symbol);
     }
 
+    Dynstring.dtor(id_name);
     return true;
     err:
     Dynstring.dtor(id_name);
@@ -1154,8 +1186,7 @@ static bool stmt() {
 
             // function calling: id ( <list_expr> )
         case TOKEN_ID:;
-            GET_ID_SAFE(id_name);
-            PARSE_EXPR(EXPR_GLOBAL, NULL);
+            PARSE_GLOBAL_EXPRESSION();
             break;
 
             // FIXME. I dont know how to solve this recursion.
@@ -1192,6 +1223,8 @@ static bool stmt_list() {
 
     // <stmt> <stmt_list>
     return stmt() && stmt_list();
+    noerr:
+    return true;
     err:
     return false;
 }

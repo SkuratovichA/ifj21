@@ -119,7 +119,7 @@ static pfile_t *pfile;
 
 
 /**
- * @brief Expression in return statement.
+ * @brief Expression in the return statement.
  *        semantic control of <return signature> x <its function signature> are performed in parser.c
  *
  * @param pfile_
@@ -132,12 +132,14 @@ static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature)
 }
 
 /**
- * @brief Assignment expression after = in the local assignment
+ * @brief Default expression after = in the local assignment
+ *        Or an expression in the conditional statement in cycles, conditions.
  *        semantic controls are performed inside parser.c
+ *
  * @param received_signature is an initialized empty vector.
  * @return true if successive parsing performed.
  */
-static bool Assignment_expression(pfile_t *pfile_, dynstring_t *received_signature) {
+static bool Default_expression(pfile_t *pfile_, dynstring_t *received_signature) {
     pfile = pfile_;
     assert(false);
 }
@@ -170,6 +172,6 @@ static bool Function_expression(pfile_t *pfile_) {
 const struct expr_interface_t Expr = {
         .function_expression = Function_expression,
         .global_expression = Global_expression,
-        .assignment_expression = Assignment_expression,
+        .default_expression = Default_expression,
         .return_expressions = Return_expressions,
 };
