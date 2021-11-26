@@ -203,7 +203,7 @@ struct code_generator_interface_t {
     /*
      * @brief Generates function call.
      */
-    void (*func_call)(dynstring_t *);
+    void (*func_call)(char *);
 
     /*
      * @brief Generates end of main scope.
