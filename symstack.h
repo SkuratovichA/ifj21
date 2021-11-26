@@ -17,9 +17,10 @@
 
 
 // types of scopes
-#define SCOPE_TYPE_T(X) \
+#define SCOPE_TYPE_T(X)   \
     X(function)          \
-    X(cycle)             \
+    X(while_cycle)       \
+    X(for_cycle)         \
     X(do_cycle)          \
     X(condition)         \
     X(global)            \

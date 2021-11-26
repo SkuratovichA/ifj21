@@ -1,12 +1,8 @@
 /**
  * @file ifj21.c
  *
- * @brief main() program.
- *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
- * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
- * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
- * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ * @author Lucie Svobodova
  */
 
 #include "errors.h"

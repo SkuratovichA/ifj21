@@ -1,8 +1,6 @@
 /**
  * @file errors.h
  *
- * @brief
- *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
  */
 #pragma once

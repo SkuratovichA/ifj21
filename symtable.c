@@ -10,9 +10,7 @@
  */
 
 #include "symtable.h"
-#include "tests/tests.h"
 #include "errors.h"
-
 
 /** A node of a symbol table which is a binary search tree.
  */
@@ -321,6 +319,7 @@ const struct symtable_interface_t Symtable = {
 #ifdef SELFTEST_symtable
 #define HELLO "HELLO"
 
+#include "tests/tests.h"
 int main() {
     debug_msg("symtable selfdebug\n");
 

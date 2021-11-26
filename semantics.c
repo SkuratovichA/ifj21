@@ -5,6 +5,7 @@
  *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
  */
+
 #include "semantics.h"
 #include "dynstring.h"
 #include "expressions.h"
@@ -153,6 +154,23 @@ static int token_to_type(int typ) {
     }
 }
 
+static int keyword_to_type(int typ) {
+    switch (typ) {
+        case KEYWORD_string:
+            return ID_TYPE_string;
+        case KEYWORD_number:
+            return ID_TYPE_number;
+        case KEYWORD_integer:
+            return ID_TYPE_integer;
+        case KEYWORD_boolean:
+            return ID_TYPE_boolean;
+        case KEYWORD_nil:
+            return ID_TYPE_nil;
+        default:
+            return ID_TYPE_UNDEF;
+    }
+}
+
 /** Add a return type to a function semantics.
  *
  * @param self info to add a param.
@@ -271,6 +289,22 @@ static void Dtor_expr(expr_semantics_t *self) {
         return;
     }
 
+    if (self->sem_state == SEMANTIC_OPERAND
+        || self->sem_state == SEMANTIC_UNARY
+        || self->sem_state == SEMANTIC_PARENTS
+        || self->sem_state == SEMANTIC_FUNCTION) {
+        if (self->first_operand.type == TOKEN_ID) {
+            Dynstring.dtor(self->first_operand.attribute.id);
+        }
+    } else if (self->sem_state == SEMANTIC_BINARY) {
+        if (self->first_operand.type == TOKEN_ID) {
+            Dynstring.dtor(self->first_operand.attribute.id);
+        }
+        if (self->second_operand.type == TOKEN_ID) {
+            Dynstring.dtor(self->second_operand.attribute.id);
+        }
+    }
+
     Dynstring.dtor(self->func_types);
     Dynstring.dtor(self->func_rets);
     free(self);
@@ -294,18 +328,30 @@ static void Add_operand(expr_semantics_t *self, token_t tok) {
 
     if (self->sem_state == SEMANTIC_PARENTS) {
         self->first_operand = tok;
+        if (tok.type == TOKEN_ID) {
+            self->first_operand.attribute.id = Dynstring.dup(tok.attribute.id);
+        }
         return;
     }
 
     if (self->op == OP_UNDEFINED) {
         self->first_operand = tok;
+        if (tok.type == TOKEN_ID) {
+            self->first_operand.attribute.id = Dynstring.dup(tok.attribute.id);
+        }
         self->sem_state = SEMANTIC_OPERAND;
     } else {
         if (self->sem_state == SEMANTIC_IDLE) {
             self->first_operand = tok;
+            if (tok.type == TOKEN_ID) {
+                self->first_operand.attribute.id = Dynstring.dup(tok.attribute.id);
+            }
             self->sem_state = SEMANTIC_UNARY;
         } else {
             self->second_operand = tok;
+            if (tok.type == TOKEN_ID) {
+                self->second_operand.attribute.id = Dynstring.dup(tok.attribute.id);
+            }
             self->sem_state = SEMANTIC_BINARY;
         }
     }
@@ -442,6 +488,12 @@ static bool Check_expression(expr_semantics_t *self) {
         // We know that the function was already declared/defined
         symbol_t *symbol;
 
+        dynstring_t *str_cmp = Dynstring.ctor("write");
+        if (Dynstring.cmp(self->first_operand.attribute.id, str_cmp) == 0) {
+            return true;
+        }
+        Dynstring.dtor(str_cmp);
+
         Symtable.get_symbol(global_table, self->first_operand.attribute.id, &symbol);
 
         debug_msg("FUNC_DECL = \"%s\", FUNC_DEF = \"%s\", PARSE_SIGNATURE = \"%s\"\n",
@@ -449,15 +501,21 @@ static bool Check_expression(expr_semantics_t *self) {
                   Dynstring.c_str(symbol->function_semantics->definition.params),
                   Dynstring.c_str(self->func_types));
 
-        if (Dynstring.cmp(symbol->function_semantics->declaration.params, self->func_types) != 0 ||
-            Dynstring.cmp(symbol->function_semantics->definition.params, self->func_types) != 0) {
-            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
-            return false;
-        }
+        debug_msg("FUNC_DECL_RETS = \"%s\", FUNC_DEF_RETS = \"%s\"\n",
+                  Dynstring.c_str(symbol->function_semantics->declaration.returns),
+                  Dynstring.c_str(symbol->function_semantics->definition.returns));
 
         if (symbol->function_semantics->is_declared) {
+            if (Dynstring.cmp(symbol->function_semantics->declaration.params, self->func_types) != 0) {
+                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+                return false;
+            }
             Dynstring.cat(self->func_rets, symbol->function_semantics->declaration.returns);
-        } else {
+        } else if (symbol->function_semantics->is_defined) {
+            if (Dynstring.cmp(symbol->function_semantics->definition.params, self->func_types) != 0) {
+                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+                return false;
+            }
             Dynstring.cat(self->func_rets, symbol->function_semantics->definition.returns);
         }
 
@@ -484,11 +542,9 @@ static bool Check_expression(expr_semantics_t *self) {
     return type_compatability(self);
 }
 
-static bool Check_signatures_compatibility(
-        dynstring_t *signature_expected,
-        dynstring_t *return_received,
-        int error
-) {
+static bool Check_signatures_compatibility(dynstring_t *signature_expected,
+                                           dynstring_t *return_received,
+                                           int error) {
     debug_msg("\n");
     if (signature_expected == NULL || return_received == NULL) {
         debug_msg_s("\t%s is NULL!\n", signature_expected == NULL ? "expected signature" : "received signature");
@@ -512,12 +568,12 @@ static bool Check_signatures_compatibility(
     // take in mind:
     //               1. number is a superset of integer.
     //               2. nil in signature_expected -> nil in return_received.
-    //               3. everything in signature_expected -> nil in return_received. returns[i] = 'n'
+    //               3. everything in signature_expected -> nil in return_received. received[i] = 'n'
     char *expected = Dynstring.c_str(signature_expected);
-    char *returns = Dynstring.c_str(return_received);
+    char *received = Dynstring.c_str(return_received);
     for (size_t i = 0; i < Dynstring.len(signature_expected); i++) {
-        if (expected[i] != returns[i]) {
-            bool err = !((expected[i] == 'f' && returns[i] == 'i') || returns[i] == 'n');
+        if (expected[i] != received[i]) {
+            bool err = !((expected[i] == 'f' && received[i] == 'i') || received[i] == 'n');
             if (err) {
                 debug_msg_s("\tmismatched signatures: exp(%s) x res(%s)\n",
                             Dynstring.c_str(signature_expected), Dynstring.c_str(return_received));
@@ -553,4 +609,5 @@ const struct semantics_interface_t Semantics = {
         .check_signatures_compatibility = Check_signatures_compatibility,
         .of_id_type = of_id_type,
         .token_to_id_type = token_to_type,
+        .keyword_to_id_type = keyword_to_type
 };

@@ -1,8 +1,6 @@
 /**
  * @file macros.h
  *
- * @brief Macros nobody used.
- *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
  */
 #pragma once

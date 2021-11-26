@@ -1,8 +1,6 @@
 /**
  * @file parser.h
  *
- * @brief Header file for parser.
- *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
  */
 #pragma once
@@ -24,6 +22,13 @@
 #include "symtable.h"
 #include "symstack.h"
 #include "debug.h"
+
+#define GET_ID_SAFE(_idname)                                                 \
+    do {                                                                    \
+        if (Scanner.get_curr_token().type == TOKEN_ID) {                    \
+            _idname = Dynstring.dup(Scanner.get_curr_token().attribute.id); \
+        }                                                                   \
+    } while (0)
 
 /** A symbol stack with symbol tables for the program.
  */

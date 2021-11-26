@@ -1,3 +1,9 @@
+/**
+ * @file code_generator.c
+ *
+ * @author Lucie Svobodova
+ */
+
 #include "code_generator.h"
 
 size_t __ADDRESS_OF_START_LIST;
@@ -115,22 +121,13 @@ static void generate_func_readn() {
 }
 
 /*
- * FIXME
- *      function write (term1, term2, ..., termn)
- *      right now it prints only one term
- */
-/*
  * @brief   Generates built-in function write().
+ *          (only for one term)
  *          function write (term1, term2, ..., termn)
- *          params: FIXME
  */
 static void generate_func_write() {
     ADD_INSTR("LABEL $write \n"
-              "PUSHFRAME \n"
-              "DEFVAR LF@p0 \n"
-              "MOVE LF@p0 LF@%0 \n"
-              "WRITE LF@p0 \n"
-              "POPFRAME \n"
+              "WRITE GF@%expr_result \n"
               "RETURN \n");
 }
 
@@ -253,108 +250,69 @@ static void generate_func_substr() {
 }
 
 /*
- * @brief Generates function call.
+ * @brief Generates nil check function.
  */
-static void generate_func_call(dynstring_t *func_name) {
-    ADD_INSTR_PART("CALL $");
-    ADD_INSTR_PART_DYN(func_name);
-    ADD_INSTR_TMP();
+static void nil_check_func() {
+    ADD_INSTR("LABEL $$nil_check \n"
+              "POPS GF@%expr_result2 \n"
+              "POPS GF@%expr_result \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+              "PUSHS GF@%expr_result \n"
+              "PUSHS GF@%expr_result2 \n"
+              "RETURN");
 }
 
 /*
- * @brief Generates main scope start.
+ * @brief Initialises the code generator.
  */
-static void generate_main_start() {
-    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
-    ADD_INSTR("\n# main scope");
-    ADD_INSTR("LABEL $$MAIN");
-    ADD_INSTR("CREATEFRAME");
-    ADD_INSTR("PUSHFRAME");
+static void initialise_generator() {
+    debug_msg("\n");
+    tmp_instr = Dynstring.ctor("");
+    // initialise the instructions structure
+    instructions.startList = List.ctor();
+    instructions.instrListFunctions = List.ctor();
+    instructions.mainList = List.ctor();
+    instructions.in_loop = false;
+    instructions.outer_loop_id = 0;
+    instructions.before_loop_start = NULL;
+    instructions.outer_cond_id = 0;
+    instructions.cond_cnt = 1;
+    instructions.cond_info = Dynstring.ctor("");
+    // sets instructions list active
+    instrList = instructions.startList;
 }
 
 /*
- * @brief Generates function end.
- * FIXME is this function necessary?
+ * @brief Cleans the code generator.
  */
-static void generate_main_end() {
-    ADD_INSTR("LABEL $$MAIN$end");
-    ADD_INSTR("CLEARS");
-    // TODO remove
-    ADD_INSTR("WRITE string@\\010\\010SUCCESSFUL\\010");
+static void dtor() {
+    debug_msg("\n");
+    List.dtor(instructions.startList, (void (*)(void *)) (Dynstring.dtor));
+    List.dtor(instructions.instrListFunctions, (void (*)(void *)) Dynstring.dtor);
+    List.dtor(instructions.mainList, (void (*)(void *)) Dynstring.dtor);
+    Dynstring.dtor(instructions.cond_info);
+    Dynstring.dtor(tmp_instr);
 }
 
 /*
- * @brief Generates function start.
- * generates sth like: LABEL $foo
- *                     PUSHFRAME
+ * @brief Prints the list of instructions.
  */
-static void generate_func_start(dynstring_t *func_name) {
-    INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
-    ADD_INSTR_PART("\nLABEL $");   // add name of function
-    ADD_INSTR_PART_DYN(func_name);
-    ADD_INSTR_TMP();
-    ADD_INSTR("PUSHFRAME");
-
-    // TODO remove this and make another function - we need to define LF@%result... after starting function definition
-    ADD_INSTR("DEFVAR LF@%result");
-    ADD_INSTR("MOVE LF@%result nil@nil");
-}
-
-/*
- * @brief Generates function end.
- */
-static void generate_func_end(char *func_name) {
-    ADD_INSTR("# generate_function_end");
-    ADD_INSTR_PART("LABEL $");
-    ADD_INSTR_PART(func_name);
-    ADD_INSTR_PART("$end");
-    ADD_INSTR_TMP();
-    // FIXME - remove these instructions
-    ADD_INSTR("WRITE GF@%expr_result \n"
-              "WRITE string@\\010\n"
-              "DEFVAR LF@type_var \n"
-              "TYPE LF@type_var GF@%expr_result \n"
-              "WRITE LF@type_var");
-    ADD_INSTR("POPFRAME");
-    ADD_INSTR("RETURN\n");
-    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
-}
-
-/*
- * @brief Generates saving param from TF to LF.
- * generates sth like:
- *      DEFVAR LF@%p0
- *      MOVE LF@%p0 LF@%0
- */
-static void generate_func_start_param(dynstring_t *param_name, size_t index) {
-    ADD_INSTR("# generate_function_start_param");
-    ADD_INSTR_PART("DEFVAR LF@%");
-    ADD_INSTR_PART_DYN(param_name);
-    ADD_INSTR_TMP();
-
-    ADD_INSTR_PART("MOVE LF@%");
-    ADD_INSTR_PART_DYN(param_name);
-    ADD_INSTR_PART(" LF@%");
-    ADD_INSTR_INT(index);
-    ADD_INSTR_TMP();
-}
-
-/*
- * @brief Generates return value of return parameter with index.
- * generates sth like:
- *      DEFVAR LF@%return0
- *      MOVE LF@%return0 nil@nil
- */
-static void generate_func_return_value(size_t index) {
-    ADD_INSTR("# generate_function_return_value");
-    ADD_INSTR_PART("DEFVAR LF@%return");
-    ADD_INSTR_INT(index);
-    ADD_INSTR_TMP();
-
-    ADD_INSTR_PART("MOVE LF@%return");
-    ADD_INSTR_INT(index);
-    ADD_INSTR_PART(" nil@nil");
-    ADD_INSTR_TMP();
+static void Print_instr_list(instr_list_t instr_list_type) {
+    switch (instr_list_type) {
+        case LIST_INSTR_START:
+            List.print_list(instructions.startList, (char *(*)(void *)) Dynstring.c_str);
+            break;
+        case LIST_INSTR_FUNC:
+            List.print_list(instructions.instrListFunctions, (char *(*)(void *)) Dynstring.c_str);
+            break;
+        case LIST_INSTR_MAIN:
+            List.print_list(instructions.mainList, (char *(*)(void *)) Dynstring.c_str);
+            break;
+        default:
+            printf("Undefined instruction list.\n");
+            break;
+    }
 }
 
 /*
@@ -402,7 +360,12 @@ static void generate_var_value(token_t token) {
             break;
         case TOKEN_ID:
             ADD_INSTR_PART("LF@%");
-            ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+            symbol_t *symbol;
+            if (!Symstack.get_local_symbol(symstack, token.attribute.id, &symbol)) {
+                ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+            } else {
+                ADD_INSTR_INT(symbol->id_of_parent_scope);
+            }
             ADD_INSTR_PART("%");
             ADD_INSTR_PART_DYN(token.attribute.id);
             break;
@@ -413,13 +376,18 @@ static void generate_var_value(token_t token) {
 }
 
 /*
- * @brief Generates name of variable
+ * @brief Generates the name of variable.
  *        scope_id%name
+ * @param new_def true if the variable is being declared now
+ *        false if it should be found in the symtable
  */
-static void generate_var_name(dynstring_t *var_name) {
+static void generate_var_name(dynstring_t *var_name, bool new_def) {
     symbol_t *symbol;
-    Symstack.get_local_symbol(symstack, var_name, &symbol);
-    ADD_INSTR_INT(symbol->id_of_parent_scope);
+    if (new_def || !Symstack.get_local_symbol(symstack, var_name, &symbol)) {
+        ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    } else {
+        ADD_INSTR_INT(symbol->id_of_parent_scope);
+    }
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
 }
@@ -429,7 +397,7 @@ static void generate_var_name(dynstring_t *var_name) {
  */
 static void generate_defvar(dynstring_t *var_name) {
     ADD_INSTR_PART("DEFVAR LF@%");
-    generate_var_name(var_name);
+    generate_var_name(var_name, true);  // true == new variable
     if (instructions.in_loop) {
         ADD_INSTR_WHILE();
     } else {
@@ -440,28 +408,40 @@ static void generate_defvar(dynstring_t *var_name) {
 /*
  * @brief Generates variable declaration.
  */
-static void generate_var_definition(dynstring_t *var_name) {
-    debug_msg("\n\t- generate_var_definition: %s\n", Dynstring.c_str(var_name));
+static void generate_var_declaration(dynstring_t *var_name) {
     generate_defvar(var_name);
 
+    // initialise to nil
     ADD_INSTR_PART("MOVE LF@%");
-    generate_var_name(var_name);
-    ADD_INSTR_PART(" GF@%expr_result");
+    generate_var_name(var_name, true);  // true == new variable
+    ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP();
 }
 
 /*
  * @brief Generates variable declaration.
  */
-static void generate_var_declaration(dynstring_t *var_name) {
-    debug_msg("\n\t- generate_var_declaration: %s\n", Dynstring.c_str(var_name));
+static void generate_var_definition(dynstring_t *var_name) {
     generate_defvar(var_name);
 
-    // initialise to nil
     ADD_INSTR_PART("MOVE LF@%");
-    generate_var_name(var_name);
-    ADD_INSTR_PART(" nil@nil");
+    generate_var_name(var_name, true);   // true == new variable
+    ADD_INSTR_PART(" GF@%expr_result");
     ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates variable used for code generating.
+ */
+static void generate_tmp_var_definition(char *var_name) {
+    dynstring_t *name = Dynstring.ctor(var_name);
+    generate_defvar(name);
+
+    ADD_INSTR_PART("MOVE LF@%");
+    generate_var_name(name, true);  // true == new variable
+    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_TMP();
+    Dynstring.dtor(name);
 }
 
 /*
@@ -470,40 +450,240 @@ static void generate_var_declaration(dynstring_t *var_name) {
  */
 static void generate_var_assignment(dynstring_t *var_name) {
     ADD_INSTR_PART("MOVE LF@%");
-    generate_var_name(var_name);
+    generate_var_name(var_name, false); // false == already declared var
     ADD_INSTR_PART(" GF@%expr_result");
-}
-
-/*
- * @brief Generates parameter pass to a function.
- * generates sth like:
- *          DEFVAR TF@%0
- *          MOVE TF@%0 int@42
- */
-static void generate_func_pass_param(size_t param_index) {
-    ADD_INSTR_PART("DEFVAR TF@%");
-    ADD_INSTR_INT(param_index);
-    ADD_INSTR_TMP();
-
-    ADD_INSTR_PART("MOVE TF@%");
-    ADD_INSTR_INT(param_index);
-    ADD_INSTR_PART(" ");
-    generate_var_value(Scanner.get_curr_token());
     ADD_INSTR_TMP();
 }
 
 /*
- * @brief Generates creation of a frame before passing parameters to a function
+ * @brief Converts GF@%expr_result int -> float
  */
-static void generate_func_createframe() {
-    ADD_INSTR("CREATEFRAME");
-
-    // TODO remove this instruction when foo() parsing is handled
-    ADD_INSTR("PUSHS int@2");
+static void retype_expr_result(void) {
+    ADD_INSTR("# retype GF@%expr_result");
+    ADD_INSTR("INT2FLOAT GF@%expr_result GF@%expr_result");
 }
 
 /*
- * @brief Generates condition label.
+ * @brief Generates division check.
+ * @param is_integer specifies whether the number
+ *        to check is integer (true) or float (false).
+ */
+static void generate_division_check(bool is_integer) {
+    ADD_INSTR("# zero division check");
+    ADD_INSTR("POPS GF@%expr_result");
+    if (is_integer) {
+        ADD_INSTR("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF@%expr_result int@0");
+    } else {
+        ADD_INSTR("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF@%expr_result float@0x0p+0");
+    }
+    ADD_INSTR("PUSHS GF@%expr_result");
+}
+
+/*
+ * @brief Generates nil check.
+ */
+static void generate_nil_check() {
+    ADD_INSTR("# nil check");
+    ADD_INSTR("CALL $$nil_check");
+}
+
+/*
+ * @brief Converts first or both int expressions to float.
+ * @param expr stores info about the expr to be converted.
+ */
+static void retype_first_or_both(expr_semantics_t *expr) {
+    ADD_INSTR("# convert int -> float");
+    ADD_INSTR("POPS GF@%expr_result2 \n"
+              "POPS GF@%expr_result \n"
+              "INT2FLOAT GF@%expr_result GF@%expr_result");
+    if (expr->conv_type == CONVERT_BOTH) {
+        ADD_INSTR("# convert int -> float");
+        ADD_INSTR("INT2FLOAT GF@%expr_result2 GF@%expr_result2");
+    }
+    ADD_INSTR("PUSHS GF@%expr_result \n"
+              "PUSHS GF@%expr_result2");
+}
+
+/*
+ * @brief Converts second int expression to float.
+ * @param expr stores info about the expr to be converted.
+ */
+static void retype_second() {
+    ADD_INSTR("# convert int -> float");
+    ADD_INSTR("POPS GF@%expr_result \n"
+              "INT2FLOAT GF@%expr_result GF@%expr_result \n"
+              "PUSHS GF@%expr_result");
+}
+
+/*
+ * @brief Generates conversion int -> float if needed
+ *        and pushes operands on the stack.
+ * @param expr stores info about the expr to be converted.
+ */
+static void retype_and_push(expr_semantics_t *expr) {
+    if (expr->conv_type == CONVERT_FIRST || expr->conv_type == CONVERT_BOTH) {
+        retype_first_or_both(expr);
+    }
+    if (expr->conv_type == CONVERT_SECOND) {
+        retype_second();
+    }
+}
+
+/*
+ * @brief Generates code for pushing operand on the stack (with nil check).
+ * @param expr stores info about the expr to be pushed.
+ */
+static void generate_expression_operand(expr_semantics_t *expr) {
+    ADD_INSTR_PART("PUSHS ");
+    generate_var_value(expr->first_operand);
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates expressions reduce.
+ * @param expr stores info about the expr to be processed.
+ */
+static void generate_expression(expr_semantics_t *expr) {
+    soft_assert(expr, ERROR_INTERNAL);
+
+    // SEMANTIC_OPERAND - push one operand on the stack
+    if (expr->sem_state == SEMANTIC_OPERAND) {
+        generate_expression_operand(expr);
+        return;
+    }
+
+    // generate type conversion if needed
+    retype_and_push(expr);
+
+    // generate operation
+    switch (expr->op) {
+        case OP_ADD:    // '+'
+            generate_nil_check();
+            ADD_INSTR("ADDS");
+            break;
+        case OP_SUB:    // '-'
+            generate_nil_check();
+            ADD_INSTR("SUBS");
+            break;
+        case OP_MUL:    // '*'
+            generate_nil_check();
+            ADD_INSTR("MULS");
+            break;
+        case OP_DIV_I:  // '/'
+            generate_nil_check();
+            generate_division_check(true); // true == int div check
+            ADD_INSTR("IDIVS");
+            break;
+        case OP_DIV_F:  // '//'
+            generate_nil_check();
+            generate_division_check(false); // false == float div check
+            ADD_INSTR("DIVS");
+            break;
+        case OP_LT:     // '<'
+            generate_nil_check();
+            ADD_INSTR("LTS");
+            break;
+        case OP_LE:     // '<='
+            ADD_INSTR("POPS GF@%expr_result2 \n"
+                      "POPS GF@%expr_result \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+                      "LT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
+                      "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
+                      "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
+                      "PUSHS GF@%expr_result");
+            break;
+        case OP_GT:     // '>'
+            generate_nil_check();
+            ADD_INSTR("GTS");
+            break;
+        case OP_GE:     // '>='
+            ADD_INSTR("POPS GF@%expr_result2 \n"
+                      "POPS GF@%expr_result \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+                      "GT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
+                      "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
+                      "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
+                      "PUSHS GF@%expr_result");
+            break;
+        case OP_EQ:     // '=='
+            ADD_INSTR("EQS");
+            break;
+        case OP_NE:     // '~='
+            ADD_INSTR("EQS \n"
+                      "NOTS");
+            break;
+        case OP_NOT:    // 'not'
+            ADD_INSTR("POPS GF@%expr_result2 \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+                      "PUSHS GF@%expr_result2");
+            ADD_INSTR("NOTS");
+            break;
+        case OP_AND:    // 'and'
+            generate_nil_check();
+            ADD_INSTR("ANDS");
+            break;
+        case OP_OR:     // 'or'
+            generate_nil_check();
+            ADD_INSTR("ORS");
+            break;
+        case OP_HASH:   // '#'
+            ADD_INSTR("POPS GF@%expr_result2 \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+                      "STRLEN GF@%expr_result GF@%expr_result2 \n"
+                      "PUSHS GF@%expr_result");
+            break;
+        case OP_STRCAT: // '..'
+            ADD_INSTR("POPS GF@%expr_result2 \n"
+                      "POPS GF@%expr_result \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+                      "CONCAT GF@%expr_result GF@%expr_result GF@%expr_result2 \n"
+                      "PUSHS GF@%expr_result");
+            break;
+        default:
+            ADD_INSTR("# unrecognized_instruction");
+    }
+}
+
+/*
+ * @brief Generates pop from the stack to GF@%expr_result.
+ */
+static void generate_expression_pop() {
+    ADD_INSTR("POPS GF@%expr_result");
+}
+
+/*
+ * @brief Saves info about current cond scope into
+ *        global dynstring instructions.cond_info
+ *        - gets info from instructions struct
+ */
+static void push_cond_info() {
+    Dynstring.append(instructions.cond_info, instructions.cond_cnt);
+    char cond_id_str[6] = "\0";
+    sprintf(cond_id_str, "%.5lu", instructions.outer_cond_id);
+    dynstring_t *new_id_str = Dynstring.ctor(cond_id_str);
+    Dynstring.cat(instructions.cond_info, new_id_str);
+    Dynstring.dtor(new_id_str);
+}
+
+/*
+ * @brief Gets info about current cond scope from
+ *        global dynstring instructions.cond_info
+ *        - saves info to outer_cond_id and cond_cnt
+ */
+static void pop_cond_info() {
+    long unsigned num = strtoul(&Dynstring.c_str(instructions.cond_info)
+                [Dynstring.len(instructions.cond_info) - 5], NULL, 10);
+    instructions.outer_cond_id = num;
+    instructions.cond_cnt = Dynstring.c_str(instructions.cond_info)
+                                        [Dynstring.len(instructions.cond_info) - 6];
+    Dynstring.trunc_to_len(instructions.cond_info, Dynstring.len(instructions.cond_info) - 6);
+}
+
+/*
+ * @brief Generates condition label.     LABEL $if$id$scope_num
  */
 static void generate_cond_label(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_PART("LABEL $if$");
@@ -514,9 +694,9 @@ static void generate_cond_label(size_t if_scope_id, size_t cond_num) {
 }
 
 /*
- * @brief Generates start of if block. The result of expression in the condition
- *        is expected in LF@%result (LF@%result0?) variable.
- * generates sth like: JUMPIFNEQ $23$next_cond LF@%result bool@true
+ * @brief Generates start of if block. The result of expression
+ *        in the condition is expected in LF@%result variable.
+ *         generates: JUMPIFNEQ $if$id$next_cond LF@%result bool@true
  */
 static void generate_cond_if(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR("\n# condition - if check");
@@ -529,10 +709,10 @@ static void generate_cond_if(size_t if_scope_id, size_t cond_num) {
 }
 
 /*
- * @brief Generates start of else if block - JUMP $end from previous block
- *        and LABEL for new elseif block.
- * generates sth like: JUMP $scope$end
- *                     LABEL $scope$new_scope_num
+ * @brief Generates start of else if block - JUMP $end
+ *        from the previous block and LABEL for new elseif block.
+ * generates sth like: JUMP $if$id$end
+ *                     LABEL $if$id$scope_num
  */
 static void generate_cond_elseif(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_PART("JUMP $if$");
@@ -546,9 +726,8 @@ static void generate_cond_elseif(size_t if_scope_id, size_t cond_num) {
 
 /*
  * @brief Generates start of else statement.
- *          JUMP $id_scope$end
- *          LABEL $id_scope$else
- *          --- else body ---
+ *          JUMP $if$id$end
+ *          LABEL $if$id$scope_num
  */
 static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_PART("JUMP $if$");
@@ -562,9 +741,8 @@ static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
 
 /*
  * @brief Generates end of if statement.
- * generates sth like: LABEL $scope$end
- *                     LABEL $scope$new_scope_num
- * Yes, I need two labels rn.
+ * generates sth like: LABEL $if$id$end
+ *                     LABEL $if$id$scope_num
  */
 static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR("\n# condition end");
@@ -574,6 +752,29 @@ static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
     ADD_INSTR_TMP();
 
     generate_cond_label(if_scope_id, cond_num);
+    ADD_INSTR("");
+}
+
+/*
+ * @brief Generates break instruction.
+ */
+static void generate_break() {
+    ADD_INSTR_PART("\n# break \n");
+    ADD_INSTR_PART("JUMP $end$");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_TMP();
+    ADD_INSTR("");
+}
+
+/*
+* @brief Generates label end.
+*        LABEL $end$id
+*/
+static void generate_end() {
+    ADD_INSTR("#generate_end");
+    ADD_INSTR_PART("LABEL $end$");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_TMP();
     ADD_INSTR("");
 }
 
@@ -590,25 +791,13 @@ static void generate_while_header() {
 
 /*
  * @brief Generates while loop condition check.
- * generates sth like: JUMPIFNEQ $end$id LF@%result bool@true
+ * generates sth like: JUMPIFNEQ $end$id GF@%expr_result bool@true
  */
 static void generate_while_cond() {
     ADD_INSTR_PART("JUMPIFNEQ $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
-}
-
-/*
- * @brief Generates end.
- *        LABEL $end$id
- */
-static void generate_end() {
-    ADD_INSTR("#generate_end");
-    ADD_INSTR_PART("LABEL $end$");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_TMP();
-    ADD_INSTR("");
 }
 
 /*
@@ -635,8 +824,9 @@ static void generate_repeat_until_header() {
 }
 
 /*
- * @brief Generates repeat until loop condition check.
- * generates sth like: JUMPIFEQ $repeat$id LF@%result bool@true
+ * @brief Generates repeat until loop condition check and end label.
+ * generates sth like: JUMPIFEQ $repeat$id GF@%expr_result bool@true
+ *                     LABEL $end$id
  */
 static void generate_repeat_until_cond() {
     ADD_INSTR_PART("JUMPIFEQ $repeat$");
@@ -648,26 +838,79 @@ static void generate_repeat_until_cond() {
 }
 
 /*
- * TODO
- * @brief Generates for loop header.
- * generates sth like: LABEL $for$id
+ * @brief Generates variable for default step in for loop,
+ *        initialise it to 1.
  */
-static void generate_for_header(dynstring_t *var_name) {
-    generate_var_definition(var_name);
-    ADD_INSTR_PART("LABEL $for$");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+static void generate_for_default_step() {
+    dynstring_t *var_name = Dynstring.ctor("step");
+    generate_defvar(var_name);
+
+    ADD_INSTR_PART("MOVE LF@%");
+    generate_var_name(var_name, true);
+    ADD_INSTR_PART(" GF@%expr_result");
     ADD_INSTR_TMP();
 }
 
 /*
  * @brief Generates for loop condition check.
- * generates sth like: JUMPIFEQ $end$id LF@%result bool@true
+ * @param var_name name of the control variable
  */
-static void generate_for_cond() {
-    ADD_INSTR_PART("JUMPIFNEQ $end$");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_PART(" GF@%expr_result bool@true");
-    ADD_INSTR_TMP();
+static void generate_for_cond(dynstring_t *var_name) {
+    size_t scope_id = Symstack.get_scope_info(symstack).unique_id;
+    ADD_INSTR("\n# for");
+    ADD_INSTR_PART("LABEL $for$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART(  "\n# check if step is < 0 \n"
+                     "LT GF@%expr_result LF@%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%step int@0 \n"
+                   "JUMPIFEQ $for$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("$step_le GF@%expr_result bool@true \n"
+                   "    # step >= 0 \n"
+                   "    # if i <= cond then break \n"
+                   "    PUSHS LF@%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
+    ADD_INSTR_PART("\n    PUSHS LF@%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%terminating_cond");
+    ADD_INSTR_PART("\n    POPS GF@%expr_result2 \n"
+                   "    POPS GF@%expr_result \n"
+                   "    LT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
+                   "    EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
+                   "    OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
+                   "    PUSHS GF@%expr_result \n"
+                   "    JUMPIFNEQ $end$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART(" GF@%expr_result bool@true \n"
+                   "    JUMP $for$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("$body \n"
+                   "LABEL $for$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("$step_le \n"
+                   "    # step < 0 \n"
+                   "    # if i >= cond then break \n"
+                   "    PUSHS LF@%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
+    ADD_INSTR_PART("\n    PUSHS LF@%cond \n"
+                   "    POPS GF@%expr_result2 \n"
+                   "    POPS GF@%expr_result \n"
+                   "    GT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
+                   "    EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
+                   "    OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
+                   "    PUSHS GF@%expr_result \n"
+                   "    JUMPIFNEQ $end$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART(" GF@%expr_result bool@true \n"
+                   "\nLABEL $for$");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("$body \n"
+                   "# for loop body \n");
 }
 
 /*
@@ -676,14 +919,150 @@ static void generate_for_cond() {
  *                     JUMP $for$id
  *                     LABEL $end$id
  */
-static void generate_for_end() {
+static void generate_for_end(dynstring_t *var_name) {
+    ADD_INSTR("# for loop end");
+    ADD_INSTR_PART("ADD LF@%");\
+    generate_var_name(var_name, false);
+    ADD_INSTR_PART(" LF@%");
+    generate_var_name(var_name, false);
+    ADD_INSTR_PART(" LF@%");
+    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    ADD_INSTR_PART("%step");
+    ADD_INSTR_TMP();
     ADD_INSTR_PART("JUMP $for$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
 
-    ADD_INSTR_PART("LABEL $end$");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
+    generate_end();
+}
+
+/*
+ * @brief Generates function definition start.
+ * generates sth like: LABEL $foo
+ *                     PUSHFRAME
+ */
+static void generate_func_start(dynstring_t *func_name) {
+    INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
+    ADD_INSTR_PART("\nLABEL $");   // add name of function
+    ADD_INSTR_PART_DYN(func_name);
     ADD_INSTR_TMP();
+    ADD_INSTR("PUSHFRAME");
+}
+
+/*
+ * @brief Generates function definition end.
+ */
+static void generate_func_end(char *func_name) {
+    ADD_INSTR("# function end");
+    ADD_INSTR_PART("LABEL $");
+    ADD_INSTR_PART(func_name);
+    ADD_INSTR_PART("$end");
+    ADD_INSTR_TMP();
+
+    ADD_INSTR("POPFRAME");
+    ADD_INSTR("RETURN\n");
+    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
+}
+
+/*
+ * @brief Generates passing param from TF to LF.
+ * generates sth like:
+ *      DEFVAR LF@%param
+ *      MOVE LF@%param LF@%0
+ */
+static void generate_func_start_param(dynstring_t *param_name, size_t index) {
+    ADD_INSTR("# generate_function_start_param");
+    ADD_INSTR_PART("DEFVAR LF@%");
+    generate_var_name(param_name, true);
+    ADD_INSTR_TMP();
+
+    ADD_INSTR_PART("MOVE LF@%");
+    generate_var_name(param_name, true);
+    ADD_INSTR_PART(" LF@%");
+    ADD_INSTR_INT(index);
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates parameter pass to a function.
+ * generates sth like:
+ *          DEFVAR TF@%0
+ *          MOVE TF@%0 int@42
+ */
+static void generate_func_pass_param(size_t param_index) {
+    ADD_INSTR_PART("DEFVAR TF@%");
+    ADD_INSTR_INT(param_index);
+    ADD_INSTR_TMP();
+
+    ADD_INSTR_PART("MOVE TF@%");
+    ADD_INSTR_INT(param_index);
+    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates passing return value.
+ * generates sth like:
+ *          MOVE LF@%return0 GF@%expr_type
+ */
+static void generate_func_pass_return(size_t index) {
+    ADD_INSTR_PART("MOVE LF@%return");
+    ADD_INSTR_INT(index);
+    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates return value of return parameter with index.
+ * generates sth like:
+ *      DEFVAR LF@%return0
+ *      MOVE LF@%return0 nil@nil
+ */
+static void generate_func_return_value(size_t index) {
+    ADD_INSTR("# generate_function_return_value");
+    ADD_INSTR_PART("DEFVAR LF@%return");
+    ADD_INSTR_INT(index);
+    ADD_INSTR_TMP();
+
+    ADD_INSTR_PART("MOVE LF@%return");
+    ADD_INSTR_INT(index);
+    ADD_INSTR_PART(" nil@nil");
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates creation of a frame before passing parameters to a function
+ */
+static void generate_func_createframe() {
+    ADD_INSTR("CREATEFRAME");
+}
+
+/*
+ * @brief Generates function call.
+ */
+static void generate_func_call(char *func_name) {
+    ADD_INSTR_PART("CALL $");
+    ADD_INSTR_PART(func_name);
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates start of main scope.
+ */
+static void generate_main_start() {
+    INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
+    ADD_INSTR("\n# main scope");
+    ADD_INSTR("LABEL $$MAIN");
+    ADD_INSTR("CREATEFRAME");
+    ADD_INSTR("PUSHFRAME");
+}
+
+/*
+ * @brief Generates end of main scope.
+ */
+static void generate_main_end() {
+    ADD_INSTR("LABEL $$MAIN$end");
+    ADD_INSTR("CLEARS");
 }
 
 /*
@@ -704,9 +1083,7 @@ static void generate_prog_start() {
               "LABEL $$ERROR_DIV_BY_ZERO \n"
               "EXIT int@9");
 
-
     INSTR_CHANGE_ACTIVE_LIST(instructions.instrListFunctions);
-    // TODO: add built-in functions every time or when needed?
     generate_func_ord();
     generate_func_chr();
     generate_func_substr();
@@ -715,241 +1092,10 @@ static void generate_prog_start() {
     generate_func_readn();
     generate_func_write();
     generate_func_tointeger();
+    nil_check_func();
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
     generate_main_start();
-
-
-}
-
-void generate_division_check(bool integer) {
-    ADD_INSTR("# zero division check");
-    ADD_INSTR("POPS GF@%expr_result");
-    if (integer) {
-        ADD_INSTR("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF@%expr_result int@0");
-    } else {
-        ADD_INSTR("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF@%expr_result float@0x0p+0");
-    }
-    ADD_INSTR("PUSHS GF@%expr_result");
-}
-
-static void generate_nil_check(token_t token) {
-    ADD_INSTR("# nil check");
-    ADD_INSTR_PART("JUMPIFEQ $$ERROR_NIL ");
-    generate_var_value(token);
-    ADD_INSTR_PART(" nil@nil");
-    ADD_INSTR_TMP();
-}
-
-static void retype_first_or_both(expr_semantics_t *expr) {
-    ADD_INSTR("# retype_first_or_both");
-    ADD_INSTR("POPS GF@%expr_result2 \n"
-              "POPS GF@%expr_result \n"
-              "INT2FLOAT GF@%expr_result GF@%expr_result");
-    if (expr->conv_type == CONVERT_BOTH) {
-        ADD_INSTR("INT2FLOAT GF@%expr_result2 GF@%expr_result2");
-    }
-    ADD_INSTR("PUSHS GF@%expr_result \n"
-              "PUSHS GF@%expr_result2");
-}
-
-static void retype_second() {
-    ADD_INSTR("# retype_second");
-    ADD_INSTR("POPS GF@%expr_result \n"
-              "INT2FLOAT GF@%expr_result GF@%expr_result \n"
-              "PUSHS GF@%expr_result");
-}
-
-static void generate_expression_pop() {
-    ADD_INSTR("POPS GF@%expr_result");
-}
-
-static void retype_and_push(expr_semantics_t *expr) {
-    // retype if needed and push operands
-    if (expr->conv_type == CONVERT_FIRST || expr->conv_type == CONVERT_BOTH) {
-        retype_first_or_both(expr);
-    }
-    if (expr->conv_type == CONVERT_SECOND) {
-        retype_second();
-    }
-}
-
-/*
- * get id
- * check nil
- * push
- */
-static void generate_expression_operand(expr_semantics_t *expr) {
-    // is it okay to check only TOKEN_ID?
-    if (expr->first_operand.type == TOKEN_ID) {
-        generate_nil_check(expr->first_operand);
-    }
-
-    ADD_INSTR_PART("PUSHS ");
-    generate_var_value(expr->first_operand);
-    ADD_INSTR_TMP();
-}
-
-static void generate_expression(expr_semantics_t *expr) {
-    soft_assert(expr, ERROR_INTERNAL);
-
-    if (expr->sem_state == SEMANTIC_OPERAND) {
-        generate_expression_operand(expr);
-        return;
-    }
-
-    retype_and_push(expr);
-    // generate operation
-    switch (expr->op) {
-        case OP_ADD:
-            ADD_INSTR("ADDS");
-            break;
-        case OP_SUB:
-            ADD_INSTR("SUBS");
-            break;
-        case OP_MUL:
-            ADD_INSTR("MULS");
-            break;
-        case OP_DIV_I:
-            generate_division_check(true); // true means int division check
-            ADD_INSTR("IDIVS");
-            break;
-        case OP_DIV_F:
-            generate_division_check(false); // false means float division check
-            ADD_INSTR("DIVS");
-            break;
-        case OP_LT:
-            ADD_INSTR("LTS");
-            break;
-        case OP_LE:
-            ADD_INSTR("POPS GF@%expr_result2 \n"
-                      "POPS GF@%expr_result \n"
-                      "LT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
-                      "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
-                      "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
-                      "PUSHS GF@%expr_result");
-            break;
-        case OP_GT:
-            ADD_INSTR("GTS");
-            break;
-        case OP_GE:
-            ADD_INSTR("POPS GF@%expr_result2 \n"
-                      "POPS GF@%expr_result \n"
-                      "GT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
-                      "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
-                      "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
-                      "PUSHS GF@%expr_result");
-            break;
-        case OP_EQ:
-            ADD_INSTR("EQS");
-            break;
-        case OP_NE:
-            ADD_INSTR("EQS \n"
-                      "NOTS");
-            break;
-        case OP_NOT:
-            ADD_INSTR("NOTS");
-            break;
-        case OP_AND:
-            ADD_INSTR("ANDS");
-            break;
-        case OP_OR:
-            ADD_INSTR("ORS");
-            break;
-        case OP_HASH:
-            ADD_INSTR("POPS GF@%expr_result2 \n"
-                      "STRLEN GF@%expr_result GF@%expr_result2 \n"
-                      "PUSHS GF@%expr_result");
-            break;
-        case OP_STRCAT:
-            ADD_INSTR("POPS GF@%expr_result2 \n"
-                      "POPS GF@%expr_result \n"
-                      "CONCAT GF@%expr_result GF@%expr_result GF@%expr_result2 \n"
-                      "PUSHS GF@%expr_result");
-            break;
-        default:
-            ADD_INSTR("# Another instruction :(");
-    }
-}
-
-/*
- * @brief Initialises the code generator.
- */
-static void initialise_generator() {
-    debug_msg("\n");
-    // initialise tmp_instr to empty dynstring
-    tmp_instr = Dynstring.ctor("");
-
-    // initialise the instructions structure
-    instructions.startList = List.ctor();
-    instructions.instrListFunctions = List.ctor();
-    instructions.mainList = List.ctor();
-    instructions.in_loop = false;
-    instructions.outer_loop_id = 0;
-    instructions.before_loop_start = NULL;
-    instructions.outer_cond_id = 0;
-    instructions.cond_cnt = 1;
-    instructions.label_cnt = 0;
-    instructions.cond_info = Dynstring.ctor("");
-    // sets active instructions list
-    instrList = instructions.startList;
-}
-
-static void dtor() {
-    debug_msg("\n");
-    List.dtor(instructions.startList, (void (*)(void *)) (Dynstring.dtor)); // use Dynstring.dtor or free?
-    List.dtor(instructions.instrListFunctions, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
-    List.dtor(instructions.mainList, (void (*)(void *)) Dynstring.dtor); // use Dynstring.dtor or free?
-    Dynstring.dtor(instructions.cond_info);
-    Dynstring.dtor(tmp_instr);
-}
-
-static void Print_instr_list(instr_list_t instr_list_type) {
-    switch (instr_list_type) {
-        case LIST_INSTR_START:
-            List.print_list(instructions.startList, (char *(*)(void *)) Dynstring.c_str);
-            break;
-        case LIST_INSTR_FUNC:
-            List.print_list(instructions.instrListFunctions, (char *(*)(void *)) Dynstring.c_str);
-            break;
-        case LIST_INSTR_MAIN:
-            List.print_list(instructions.mainList, (char *(*)(void *)) Dynstring.c_str);
-            break;
-        default:
-            printf("Undefined instruction list.\n");
-            break;
-    }
-}
-
-/*
- * @brief Saves info about current cond scope into dynstring instructions.cond_info
- */
-static void push_cond_info() {
-    Dynstring.append(instructions.cond_info, instructions.cond_cnt);
-    char cond_id_str[6] = "\0";
-    sprintf(cond_id_str, "%.5lu", instructions.outer_cond_id);
-    dynstring_t *new_id_str = Dynstring.ctor(cond_id_str);
-    Dynstring.cat(instructions.cond_info, new_id_str);
-    Dynstring.dtor(new_id_str);
-}
-
-/*
- * @brief Gets info about current cond scope from dynstring instructions.cond_info
- *        - saves it to outer_cond_id and cond_cnt
- */
-static void pop_cond_info() {
-    long unsigned num = strtoul(&Dynstring.c_str(instructions.cond_info)[Dynstring.len(instructions.cond_info) - 5], NULL, 10);
-    instructions.outer_cond_id = num;
-    instructions.cond_cnt = Dynstring.c_str(instructions.cond_info)[Dynstring.len(instructions.cond_info) - 6];
-    Dynstring.trunc_to_len(instructions.cond_info, Dynstring.len(instructions.cond_info) - 6);
-}
-
-static void generate_break() {
-    ADD_INSTR("# break");
-    ADD_INSTR_PART("JUMP $end$");
-    ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
-    ADD_INSTR_TMP();
-    ADD_INSTR("");
 }
 
 /**
@@ -957,36 +1103,39 @@ static void generate_break() {
  * Functions are in struct so we can use them in different files.
  */
 const struct code_generator_interface_t Generator = {
-        .prog_start = generate_prog_start,
-        .func_start = generate_func_start,
-        .func_end = generate_func_end,
-        .func_start_param = generate_func_start_param,
-        .func_return_value = generate_func_return_value,
-        .func_pass_param = generate_func_pass_param,
-        .func_createframe = generate_func_createframe,
-        .main_end = generate_main_end,
-        .func_call = generate_func_call,
+        .initialise = initialise_generator,
+        .dtor = dtor,
+        .print_instr_list = Print_instr_list,
         .var_declaration = generate_var_declaration,
         .var_definition = generate_var_definition,
+        .tmp_var_definition = generate_tmp_var_definition,
+        .var_assignment = generate_var_assignment,
+        .retype_expr_result = retype_expr_result,
+        .expression = generate_expression,
+        .expression_pop = generate_expression_pop,
+        .push_cond_info = push_cond_info,
+        .pop_cond_info = pop_cond_info,
         .cond_if = generate_cond_if,
         .cond_elseif = generate_cond_elseif,
         .cond_else = generate_cond_else,
         .cond_end = generate_cond_end,
+        .instr_break = generate_break,
         .while_header = generate_while_header,
         .while_cond = generate_while_cond,
         .while_end = generate_while_end,
-        .end = generate_end,
         .repeat_until_header = generate_repeat_until_header,
         .repeat_until_cond = generate_repeat_until_cond,
-        .for_header = generate_for_header,
+        .for_default_step = generate_for_default_step,
         .for_cond = generate_for_cond,
-        .initialise = initialise_generator,
-        .expression = generate_expression,
-        .expression_pop = generate_expression_pop,
-        .dtor = dtor,
-        .print_instr_list = Print_instr_list,
-        .var_assignment = generate_var_assignment,
-        .pop_cond_info = pop_cond_info,
-        .push_cond_info = push_cond_info,
-        .instr_break = generate_break,
+        .for_end = generate_for_end,
+        .func_start = generate_func_start,
+        .func_end = generate_func_end,
+        .func_start_param = generate_func_start_param,
+        .func_pass_param = generate_func_pass_param,
+        .func_pass_return = generate_func_pass_return,
+        .func_return_value = generate_func_return_value,
+        .func_createframe = generate_func_createframe,
+        .func_call = generate_func_call,
+        .main_end = generate_main_end,
+        .prog_start = generate_prog_start,
 };

@@ -1,9 +1,7 @@
 /**
  * @file stack.c
  *
- * @brief The file contains ...
- *
- * @author Lucie Svobodova <xplagiat01@vutbr.cz
+ * @author Lucie Svobodova
  */
 #include "stack.h"
 

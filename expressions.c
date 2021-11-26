@@ -1,33 +1,18 @@
 /**
  * @file expressions.c
  *
- * @brief
+ * @brief Parser of expressions.
  *
- * @author Evgeny Torbin
+ * @author Evgeny Torbin <xtorbi00@vutbr.cz>
  */
 
+#include "progfile.h"
+#include "dynstring.h"
 #include "expressions.h"
-#include "scanner.h"
+#include "parser.h"
+#include "symtable.h"
 #include "stack.h"
-#include "errors.h"
-#include "stdbool.h"
 #include "code_generator.h"
-#include "semantics.h"
-
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmacro-redefined"
-//undef debug macros
-//#define debug_err(...)
-//#define debug_msg(...)
-//#define debug_msg_stdout(...)
-//#define debug_msg_stderr(...)
-//#define debug_todo(...)
-//#define debug_assert(cond)
-//#define debug_msg_s(...)
-//#define DEBUG_SEP
-#pragma GCC diagnostic pop
-
 
 static pfile_t *pfile;
 #define IF_STACK_HEAD_IS(_item, _stack, _type)  \
@@ -36,6 +21,14 @@ static pfile_t *pfile;
         return false;                           \
     }                                           \
     if ((_item)->type == (_type)) {
+
+#define CHECK_STACK_TOP(_item, _stack)  \
+    do {                                \
+        (_item) = Stack.peek(_stack);   \
+        if (!(_item)) {                 \
+            return false;               \
+        }                               \
+    } while(0)
 
 /**
  * Precedence function table.
@@ -235,7 +228,7 @@ static stack_item_t *stack_item_ctor(item_type_t type, token_t *token) {
     if (type == ITEM_TYPE_TOKEN || type == ITEM_TYPE_EXPR) {
         new_item->token = (token) ? *token : Scanner.get_curr_token();
         if (new_item->token.type == TOKEN_ID) {
-            new_item->token.attribute.id = Dynstring.ctor(Dynstring.c_str(new_item->token.attribute.id));
+            new_item->token.attribute.id = Dynstring.dup(new_item->token.attribute.id);
         }
     }
 
@@ -256,6 +249,9 @@ static stack_item_t *stack_item_copy(stack_item_t *item) {
 
     if (new_item->type == ITEM_TYPE_TOKEN || new_item->type == ITEM_TYPE_EXPR) {
         new_item->token = item->token;
+        if (new_item->token.type == TOKEN_ID) {
+            new_item->token.attribute.id = Dynstring.dup(new_item->token.attribute.id);
+        }
     }
 
     debug_msg("Copied: \"%s\"\n", to_str(item));
@@ -269,6 +265,13 @@ static stack_item_t *stack_item_copy(stack_item_t *item) {
  */
 static void stack_item_dtor(void *item) {
     debug_msg("Deleted: \"%s\"\n", to_str(item));
+
+    stack_item_t *s_item = (stack_item_t *) item;
+    if (s_item->type == ITEM_TYPE_TOKEN || s_item->type == ITEM_TYPE_EXPR) {
+        if (s_item->token.type == TOKEN_ID) {
+            Dynstring.dtor(s_item->token.attribute.id);
+        }
+    }
 
     free(item);
 }
@@ -334,8 +337,9 @@ static bool expression(sstack_t *r_stack, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: expr\n");
 
     stack_item_t *item;
+    CHECK_STACK_TOP(item, r_stack);
 
-    IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_EXPR)
+    if (item->type == ITEM_TYPE_EXPR) {
         Semantics.add_operand(expr_sem, item->token);
         Stack.pop(r_stack, stack_item_dtor);
         return true;
@@ -354,8 +358,9 @@ static bool expression_f(sstack_t *r_stack, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: expr\n");
 
     stack_item_t *item;
+    CHECK_STACK_TOP(item, r_stack);
 
-    IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_EXPR)
+    if (item->type == ITEM_TYPE_EXPR) {
         Semantics.add_operand(expr_sem, item->token);
         Stack.pop(r_stack, stack_item_dtor);
         return true;
@@ -375,8 +380,9 @@ static bool single_op(sstack_t *r_stack, op_list_t exp_op) {
     debug_msg("EXPECTED: %s\n", op_to_string(exp_op));
 
     stack_item_t *item;
+    CHECK_STACK_TOP(item, r_stack);
 
-    IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_TOKEN)
+    if (item->type == ITEM_TYPE_TOKEN) {
         if (get_op(item->token) == exp_op) {
             Stack.pop(r_stack, stack_item_dtor);
             return true;
@@ -399,8 +405,9 @@ static bool operator(sstack_t *r_stack, expr_semantics_t *expr_sem) {
     debug_msg("EXPECTED: binary operator\n");
 
     stack_item_t *item;
+    CHECK_STACK_TOP(item, r_stack);
 
-    IF_STACK_HEAD_IS(item, r_stack, ITEM_TYPE_TOKEN)
+    if (item->type == ITEM_TYPE_TOKEN) {
         op_list_t op = get_op(item->token);
         switch (op) {
             case OP_ADD:
@@ -517,12 +524,12 @@ static bool check_rule(sstack_t *r_stack, int *func_entries, expr_semantics_t *e
                 Semantics.add_operator(expr_sem, op);
                 Stack.pop(r_stack, stack_item_dtor);
                 return expression(r_stack, expr_sem);
-            // ( expr )
+                // ( expr )
             case OP_LPAREN:
                 expr_sem->sem_state = SEMANTIC_PARENTS;
                 Stack.pop(r_stack, stack_item_dtor);
                 return expression(r_stack, expr_sem) && single_op(r_stack, OP_RPAREN);
-            // id | id ( <arguments>
+                // id | id ( <arguments>
             case OP_ID:
                 Semantics.add_operand(expr_sem, item->token);
                 Stack.pop(r_stack, stack_item_dtor);
@@ -725,15 +732,19 @@ static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_
 /**
  * @brief Expression parsing.
  *
- * @param pfile program file to pass in to scanner.
  * @param stack stack to compare precedence and analyze an expression.
  * @param expr_type type of expression to parse.
+ * @param vector_expr_types result expression type/s.
  * @return bool.
  */
 static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_expr_types) {
     bool hard_reduce = false;
     bool is_func = false;
+    bool is_write = false;
+    bool inside_func = false;
+    dynstring_t *func_name = NULL;
     int func_entries = -1;
+    int params_cnt = 0;
     int cmp;
 
     while (Scanner.get_curr_token().type != TOKEN_DEAD) {
@@ -752,55 +763,87 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
         op_list_t first_op = (top->type == ITEM_TYPE_DOLLAR) ? OP_DOLLAR : get_op(top->token);
         op_list_t second_op = get_op(curr_tok);
 
-//        debug_msg("First op: \"%s\"\n", op_to_string(first_op));
-//        debug_msg("Second op: \"%s\"\n", op_to_string(second_op));
         // Check on expression end
         if (!hard_reduce && is_expr_end(first_op, second_op, func_entries)) {
-//            debug_msg("SET HARD REDUCE\n");
             hard_reduce = true;
         }
 
         // Check if success
         if (is_parse_success(first_op, second_op, hard_reduce) || is_function_end(expr_type, func_entries)) {
             if (expr) {
-                Generator.expression_pop();
+                if (expr_type != EXPR_GLOBAL && expr_type != EXPR_FUNC) {
+                    Generator.expression_pop();
+                }
                 stack_item_dtor(expr);
             } else if (expr_type == EXPR_DEFAULT) {
                 Errors.set_error(ERROR_SYNTAX);
                 return false;
+            } else if (expr_type == EXPR_RETURN) {
+                return true;
             }
-            // expr_type = {integer, number, nil, boolean, string}
+
+            // id =
             if (vector_expr_types != NULL) {
                 Dynstring.append(vector_expr_types, Semantics.of_id_type(Semantics.token_to_id_type(expr->token.type)));
             }
+
             debug_msg("Successful parsing!\n");
             return true;
         }
 
         if (is_func) {
             debug_msg("UNSET IS FUNC\n");
-            // TODO move this
             if (second_op == OP_LPAREN) {
                 if (func_entries == -1) {
                     func_entries = 0;
                 }
-
                 func_entries++;
             }
             first_op = OP_FUNC;
             is_func = false;
+            inside_func = true;
+            debug_msg("func starts here\n");
+            Generator.func_createframe();
         }
 
         // Check if identifier is a function
         if (curr_tok.type == TOKEN_ID && !hard_reduce) {
             symbol_t *symbol;
-
             if (Symtable.get_symbol(global_table, curr_tok.attribute.id, &symbol)) {
                 if (symbol->type == ID_TYPE_func_decl || symbol->type == ID_TYPE_func_def) {
                     debug_msg("SET IS FUNC\n");
                     second_op = OP_FUNC;
                     is_func = true;
+                    func_name = Dynstring.dup(curr_tok.attribute.id);
+
+                    dynstring_t *str_cmp = Dynstring.ctor("write");
+                    if (Dynstring.cmp(curr_tok.attribute.id, str_cmp) == 0) {
+                        is_write = true;
+                    }
+                    Dynstring.dtor(str_cmp);
                 }
+            }
+        }
+
+        if (first_op == OP_RPAREN && inside_func) {
+            if (is_write) {
+                is_write = false;
+            } else {
+                Generator.func_call(Dynstring.c_str(func_name));
+            }
+            params_cnt = 0;
+            inside_func = false;
+            Dynstring.dtor(func_name);
+            debug_msg("function ends here\n");
+        }
+
+        if (top->type == ITEM_TYPE_TOKEN && expr &&
+            (top->token.type == TOKEN_COMMA || top->token.type == TOKEN_LPAREN)) {
+            Generator.expression_pop();
+            if (!is_write) {
+                Generator.func_pass_param(params_cnt++);
+            } else {
+                Generator.func_call("write");
             }
         }
 
@@ -833,9 +876,8 @@ static bool parse(sstack_t *stack, expr_type_t expr_type, dynstring_t *vector_ex
 /**
  * @brief Expression parsing initialization.
  *
- * @param pfile program file to pass in to scanner.
  * @param expr_type type of expression to parse.
- * @param prev_token previous token.
+ * @param vector_expr_types result expression type/s.
  * @return bool.
  */
 static bool parse_init(expr_type_t expr_type, dynstring_t *vector_expr_type) {
@@ -858,35 +900,74 @@ static bool parse_init(expr_type_t expr_type, dynstring_t *vector_expr_type) {
  *
  * !rule <other_expr> -> , expr <other_expr>
  *
- * @param pfile program file to pass in to scanner.
+ * @param vector_expr_types result expression type/s.
  * @return bool.
  */
-static bool other_expr(dynstring_t *vector_expr_types) {
-    debug_msg("EXPECTED: , expr <other_expr>\n");
+static bool other_expr(expr_type_t expr_type, dynstring_t *vector_expr_types, list_t *ids_list, int ret_cnt) {
+    debug_msg("<other_expr> ->\n");
 
-    // DEAD TOKEN
-    if (Scanner.get_curr_token().type == TOKEN_DEAD) {
-        Errors.set_error(ERROR_LEXICAL);
-        return false;
-    }
+    CHECK_DEAD_TOKEN();
 
     // ,
     if (Scanner.get_curr_token().type == TOKEN_COMMA) {
         Scanner.get_next_token(pfile);
 
-        if (Scanner.get_curr_token().type == TOKEN_COMMA) {
-            // Empty expression
-            Errors.set_error(ERROR_SYNTAX);
-            return false;
+        // check var
+        symbol_t * symbol;
+        dynstring_t *received_rets = Dynstring.ctor("");
+        dynstring_t *id_name;
+        bool ignore_expr = false;
+        if (ids_list != NULL) {
+            id_name = List.get_head(ids_list);
+            if (id_name == NULL) {
+                ignore_expr = true;
+            } else if (!Symstack.get_local_symbol(symstack, id_name, &symbol)) {
+                Errors.set_error(ERROR_DEFINITION);
+                return false;
+            }
         }
 
         // expr
-        if (parse_init(EXPR_DEFAULT, vector_expr_types)) {
-            // <other_expr>
-            return other_expr(vector_expr_types);
-        } else {
+        if (!parse_init(EXPR_DEFAULT, (ids_list) ? received_rets : vector_expr_types)) {
+            Dynstring.dtor(received_rets);
             return false;
         }
+
+        if (expr_type == EXPR_RETURN) {
+            Generator.func_pass_return(ret_cnt++);
+        }
+
+        // semantics of assignment
+        if (ids_list != NULL && !ignore_expr) {
+            dynstring_t *req_rets = Dynstring.ctor("");
+            Dynstring.append(req_rets, Semantics.of_id_type(symbol->type));
+            debug_msg("requested - %s, received - %s\n", Dynstring.c_str(req_rets), Dynstring.c_str(received_rets));
+            if (Dynstring.cmp(req_rets, received_rets) != 0) {
+                if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
+                    strcmp(Dynstring.c_str(received_rets), "i") == 0) {
+                    // converts expressions result int -> float
+                    Generator.retype_expr_result();
+                } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
+                    Errors.set_error(ERROR_TYPE_MISSMATCH);
+                    Dynstring.dtor(req_rets);
+                    Dynstring.dtor(received_rets);
+                    return false;
+                }
+            }
+            Generator.var_assignment(id_name);
+            List.delete_first(ids_list, (void (*)(void *)) Dynstring.dtor);
+            Dynstring.dtor(req_rets);
+        }
+        Dynstring.dtor(received_rets);
+        // semantics of assignment end
+
+        // <other_expr>
+        return other_expr(expr_type, vector_expr_types, ids_list, ret_cnt);
+    }
+
+    if (ids_list != NULL && List.get_head(ids_list) != NULL) {
+        Errors.set_error(ERROR_SEMANTICS_OTHER);
+        return false;
     }
 
     // Otherwise
@@ -898,69 +979,104 @@ static bool other_expr(dynstring_t *vector_expr_types) {
  *
  * !rule <expr_list> -> expr <other_expr>
  *
- * @param pfile program file to pass in to scanner.
+ * @param pfile_ program file to pass in to scanner.
+ * @param expr_type type of expression.
+ * @param vector_expr_types result expression type/s.
  * @return bool.
  */
-static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vector_expr_types) {
-    debug_msg("EXPECTED: expr <other_expr>\n");
+static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vector_expr_types, list_t *ids_list) {
+    debug_msg("<expr_list> ->\n");
     pfile = pfile_;
 
-    // DEAD TOKEN
-    if (Scanner.get_curr_token().type == TOKEN_DEAD) {
-        Errors.set_error(ERROR_LEXICAL);
-        return false;
-    }
+    CHECK_DEAD_TOKEN();
 
-    // ,
-    if (Scanner.get_curr_token().type == TOKEN_COMMA) {
-        // Empty expression
-        Errors.set_error(ERROR_SYNTAX);
-        return false;
+    // check var
+    symbol_t * symbol;
+    dynstring_t *received_rets = Dynstring.ctor("");
+    dynstring_t *id_name;
+    bool ignore_expr = false;
+    if (ids_list != NULL) {
+        id_name = List.get_head(ids_list);
+        if (id_name == NULL) {
+            ignore_expr = true;
+        } else if (!Symstack.get_local_symbol(symstack, id_name, &symbol)) {
+            Errors.set_error(ERROR_DEFINITION);
+            return false;
+        }
     }
 
     // expr
-    if (!parse_init(expr_type, vector_expr_types)) {
+    if (!parse_init(expr_type, (ids_list) ? received_rets : vector_expr_types)) {
+        Dynstring.dtor(received_rets);
         return false;
     }
 
+    int ret_cnt = 0;
+    if (expr_type == EXPR_RETURN) {
+        Generator.func_pass_return(ret_cnt++);
+    }
+
+    // semantics of assignment
+    if (ids_list != NULL && !ignore_expr) {
+        dynstring_t *req_rets = Dynstring.ctor("");
+        Dynstring.append(req_rets, Semantics.of_id_type(symbol->type));
+        debug_msg("requested - %s, received - %s\n", Dynstring.c_str(req_rets), Dynstring.c_str(received_rets));
+        if (Dynstring.cmp(req_rets, received_rets) != 0) {
+            if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
+                strcmp(Dynstring.c_str(received_rets), "i") == 0) {
+                // converts expressions result int -> float
+                Generator.retype_expr_result();
+            } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
+                Errors.set_error(ERROR_TYPE_MISSMATCH);
+                Dynstring.dtor(req_rets);
+                Dynstring.dtor(received_rets);
+                return false;
+            }
+        }
+        Generator.var_assignment(id_name);
+        List.delete_first(ids_list, (void (*)(void *)) Dynstring.dtor);
+        Dynstring.dtor(req_rets);
+    }
+    Dynstring.dtor(received_rets);
+    // semantics of assignment end
+
     // <other_expr>
-    return other_expr(vector_expr_types);
+    return other_expr(expr_type, vector_expr_types, ids_list, ret_cnt);
 }
 
 /**
  * @brief
  *
- * !rule <id_list> -> , id <id_list> | = <expr_list>
+ * !rule <other_id> -> , id <other_id> | = <expr_list>
  *
- * @param pfile program file to pass in to scanner.
+ * @param expr_type type of expression.
  * @return bool.
  */
-static bool id_list(pfile_t *pfile) {
-    debug_msg("EXPECTED: , id <id_list> | = <expr_list>\n");
+static bool other_id(list_t *ids_list) {
+    debug_msg("<other_id> ->\n");
+    debug_msg("TOKEN - %s\n", Scanner.to_string(Scanner.get_curr_token().type));
 
-    // DEAD TOKEN
-    if (Scanner.get_curr_token().type == TOKEN_DEAD) {
-        Errors.set_error(ERROR_LEXICAL);
-        return false;
+    CHECK_DEAD_TOKEN();
+
+    if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
+        Scanner.get_next_token(pfile);
+        return Expr_list(pfile, EXPR_DEFAULT, NULL, ids_list);
     }
 
     // ,
     if (Scanner.get_curr_token().type == TOKEN_COMMA) {
         Scanner.get_next_token(pfile);
-        // id
+
+        CHECK_DEAD_TOKEN();
+
         if (Scanner.get_curr_token().type == TOKEN_ID) {
+            List.append(ids_list, Dynstring.dup(Scanner.get_curr_token().attribute.id));
+            // <other_id>
             Scanner.get_next_token(pfile);
-            return id_list(pfile);
+            return other_id(ids_list);
         }
     }
 
-    // =
-    if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
-        Scanner.get_next_token(pfile);
-        return Expr_list(pfile, EXPR_DEFAULT, NULL);
-    }
-
-    // Otherwise
     Errors.set_error(ERROR_SYNTAX);
     return false;
 }
@@ -968,41 +1084,86 @@ static bool id_list(pfile_t *pfile) {
 /**
  * @brief
  *
- * !rule <expr_stmt_next> -> = expr | <id_list>
+ * !rule <id_list> -> id <other_id> | = expr
  *
- * @param pfile program file to pass in to scanner.
- * @param prev_token previous token.
+ * @param expr_type type of expression.
  * @return bool.
  */
-static bool expr_stmt_next(dynstring_t *vector_expr_types) {
-    debug_msg("EXPECTED: = expr | <id_list>\n");
+static bool id_list() {
+    debug_msg("<id_list> ->\n");
+    debug_msg("TOKEN - %s\n", Scanner.to_string(Scanner.get_curr_token().type));
 
-    // DEAD TOKEN
-    if (Scanner.get_curr_token().type == TOKEN_DEAD) {
-        Errors.set_error(ERROR_LEXICAL);
-        return false;
-    }
+    dynstring_t *id_name = NULL;
+    GET_ID_SAFE(id_name);
+
+    // expr_stmt was processed an ID which is not function,
+    // so it is not necessary to check current token on ID here
+    Scanner.get_next_token(pfile);
 
     // =
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
-        Scanner.get_next_token(pfile);
-        return parse_init(EXPR_DEFAULT, vector_expr_types);
-    }
+        // check var
+        symbol_t * symbol;
+        if (!Symstack.get_local_symbol(symstack, id_name, &symbol)) {
+            Errors.set_error(ERROR_DEFINITION);
+            return false;
+        }
 
-    // <id_list>
-    return id_list(pfile);
+        Scanner.get_next_token(pfile);
+        dynstring_t *received_rets = Dynstring.ctor("");
+
+        if (!parse_init(EXPR_DEFAULT, received_rets)) {
+            goto err;
+        }
+
+        // semantics of assignment
+        dynstring_t *req_rets = Dynstring.ctor("");
+        Dynstring.append(req_rets, Semantics.of_id_type(symbol->type));
+        debug_msg("requested - %s, received - %s\n", Dynstring.c_str(req_rets), Dynstring.c_str(received_rets));
+        if (Dynstring.cmp(req_rets, received_rets) != 0) {
+            if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
+                strcmp(Dynstring.c_str(received_rets), "i") == 0) {
+                // convert int -> float
+                Generator.retype_expr_result();
+            } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
+                Dynstring.dtor(req_rets);
+                Errors.set_error(ERROR_TYPE_MISSMATCH);
+                Dynstring.dtor(req_rets);
+                Dynstring.dtor(received_rets);
+                return false;
+            }
+        }
+        Dynstring.dtor(req_rets);
+        Dynstring.dtor(received_rets);
+        // semantics of assignment end
+
+        Generator.var_assignment(id_name);
+        Dynstring.dtor(id_name);
+        return true;
+    }
+    list_t *ids_list = List.ctor();
+    List.append(ids_list, Dynstring.dup(id_name));
+    Dynstring.dtor(id_name);
+    // <other_id>
+    bool res = other_id(ids_list);
+    List.dtor(ids_list, (void (*)(void *)) Dynstring.dtor);
+    return res;
+
+    err:
+    Dynstring.dtor(id_name);
+    return false;
 }
 
 /**
  * @brief
  *
- * !rule <expr_stmt> -> id ( expr ) | <expr_stmt_next>
+ * !rule <expr_stmt> -> id ( expr ) | <id_list>
  *
- * @param pfile program file to pass in to scanner.
+ * @param expr_type type of expression.
  * @return bool.
  */
-static bool expr_stmt(expr_type_t expr_type, dynstring_t *vector_expr_types) {
-    debug_msg("rule: id <expr_stmt_next>\n");
+static bool expr_stmt(expr_type_t expr_type) {
+    debug_msg("<expr_stmt> ->\n");
 
     // DEAD TOKEN
     if (Scanner.get_curr_token().type == TOKEN_DEAD) {
@@ -1010,16 +1171,17 @@ static bool expr_stmt(expr_type_t expr_type, dynstring_t *vector_expr_types) {
         return false;
     }
 
-    // id or name of a builtin function
+    // ID or name of a builtin function
     if (Scanner.get_curr_token().type != TOKEN_ID) {
         Errors.set_error(ERROR_SYNTAX);
         return false;
     }
 
+    // Parse expression if ID is a function
     symbol_t *symbol;
     if (Symtable.get_symbol(global_table, Scanner.get_curr_token().attribute.id, &symbol)) {
         if (symbol->type == ID_TYPE_func_decl || symbol->type == ID_TYPE_func_def) {
-            return parse_init(expr_type, vector_expr_types);
+            return parse_init(expr_type, NULL);
         }
     }
 
@@ -1029,23 +1191,22 @@ static bool expr_stmt(expr_type_t expr_type, dynstring_t *vector_expr_types) {
         return false;
     }
 
-    // <expr_stmt_next>
-    Scanner.get_next_token(pfile);
-    return expr_stmt_next(vector_expr_types);
+    // <id_list>
+    return id_list();
 }
 
 /**
  * @brief Expression parsing driven by a precedence table.
  *
- *
- * @param pfile program file to pass in to scanner.
- * @param inside_stmt true when the function is called from parser.
+ * @param pfile_ program file to pass in to scanner.
+ * @param expr_type type of expression.
+ * @param vector_expr_types result expression type/s.
  * @return bool.
  */
 static bool Parse_expression(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vector_expr_types) {
     pfile = pfile_;
     if (expr_type == EXPR_FUNC || expr_type == EXPR_GLOBAL) {
-        return expr_stmt(expr_type, vector_expr_types);
+        return expr_stmt(expr_type);
     } else {
         return parse_init(expr_type, vector_expr_types);
     }
