@@ -196,6 +196,11 @@ struct code_generator_interface_t {
     void (*func_pass_param)(size_t);
 
     /*
+     * @brief Generates passing return value.
+     */
+    void (*func_pass_return)(size_t);
+
+    /*
      * @brief Generates return value of return parameter with index.
      */
     void (*func_return_value)(size_t);

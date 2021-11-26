@@ -250,6 +250,20 @@ static void generate_func_substr() {
 }
 
 /*
+ * @brief Generates nil check function.
+ */
+static void nil_check_func() {
+    ADD_INSTR("LABEL $$nil_check \n"
+              "POPS GF@%expr_result2 \n"
+              "POPS GF@%expr_result \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+              "PUSHS GF@%expr_result \n"
+              "PUSHS GF@%expr_result2 \n"
+              "RETURN");
+}
+
+/*
  * @brief Initialises the code generator.
  */
 static void initialise_generator() {
@@ -468,12 +482,9 @@ static void generate_division_check(bool is_integer) {
 /*
  * @brief Generates nil check.
  */
-static void generate_nil_check(token_t token) {
+static void generate_nil_check() {
     ADD_INSTR("# nil check");
-    ADD_INSTR_PART("JUMPIFEQ $$ERROR_NIL ");
-    generate_var_value(token);
-    ADD_INSTR_PART(" nil@nil");
-    ADD_INSTR_TMP();
+    ADD_INSTR("CALL $$nil_check");
 }
 
 /*
@@ -523,10 +534,6 @@ static void retype_and_push(expr_semantics_t *expr) {
  * @param expr stores info about the expr to be pushed.
  */
 static void generate_expression_operand(expr_semantics_t *expr) {
-    if (expr->first_operand.type == TOKEN_ID) {
-        generate_nil_check(expr->first_operand);
-    }
-
     ADD_INSTR_PART("PUSHS ");
     generate_var_value(expr->first_operand);
     ADD_INSTR_TMP();
@@ -551,39 +558,50 @@ static void generate_expression(expr_semantics_t *expr) {
     // generate operation
     switch (expr->op) {
         case OP_ADD:    // '+'
+            generate_nil_check();
             ADD_INSTR("ADDS");
             break;
         case OP_SUB:    // '-'
+            generate_nil_check();
             ADD_INSTR("SUBS");
             break;
         case OP_MUL:    // '*'
+            generate_nil_check();
             ADD_INSTR("MULS");
             break;
         case OP_DIV_I:  // '/'
+            generate_nil_check();
             generate_division_check(true); // true == int div check
             ADD_INSTR("IDIVS");
             break;
         case OP_DIV_F:  // '//'
+            generate_nil_check();
             generate_division_check(false); // false == float div check
             ADD_INSTR("DIVS");
             break;
         case OP_LT:     // '<'
+            generate_nil_check();
             ADD_INSTR("LTS");
             break;
         case OP_LE:     // '<='
             ADD_INSTR("POPS GF@%expr_result2 \n"
                       "POPS GF@%expr_result \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
                       "LT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
                       "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
                       "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
                       "PUSHS GF@%expr_result");
             break;
         case OP_GT:     // '>'
+            generate_nil_check();
             ADD_INSTR("GTS");
             break;
         case OP_GE:     // '>='
             ADD_INSTR("POPS GF@%expr_result2 \n"
                       "POPS GF@%expr_result \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
                       "GT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
                       "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
                       "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
@@ -597,22 +615,30 @@ static void generate_expression(expr_semantics_t *expr) {
                       "NOTS");
             break;
         case OP_NOT:    // 'not'
+            ADD_INSTR("POPS GF@%expr_result2 \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+                      "PUSHS GF@%expr_result2");
             ADD_INSTR("NOTS");
             break;
         case OP_AND:    // 'and'
+            generate_nil_check();
             ADD_INSTR("ANDS");
             break;
         case OP_OR:     // 'or'
+            generate_nil_check();
             ADD_INSTR("ORS");
             break;
         case OP_HASH:   // '#'
             ADD_INSTR("POPS GF@%expr_result2 \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
                       "STRLEN GF@%expr_result GF@%expr_result2 \n"
                       "PUSHS GF@%expr_result");
             break;
         case OP_STRCAT: // '..'
             ADD_INSTR("POPS GF@%expr_result2 \n"
                       "POPS GF@%expr_result \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
                       "CONCAT GF@%expr_result GF@%expr_result GF@%expr_result2 \n"
                       "PUSHS GF@%expr_result");
             break;
@@ -975,6 +1001,18 @@ static void generate_func_pass_param(size_t param_index) {
 }
 
 /*
+ * @brief Generates passing return value.
+ * generates sth like:
+ *          MOVE LF@%return0 GF@%expr_type
+ */
+static void generate_func_pass_return(size_t index) {
+    ADD_INSTR_PART("MOVE LF@%return");
+    ADD_INSTR_INT(index);
+    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_TMP();
+}
+
+/*
  * @brief Generates return value of return parameter with index.
  * generates sth like:
  *      DEFVAR LF@%return0
@@ -1054,6 +1092,7 @@ static void generate_prog_start() {
     generate_func_readn();
     generate_func_write();
     generate_func_tointeger();
+    nil_check_func();
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
     generate_main_start();
@@ -1093,6 +1132,7 @@ const struct code_generator_interface_t Generator = {
         .func_end = generate_func_end,
         .func_start_param = generate_func_start_param,
         .func_pass_param = generate_func_pass_param,
+        .func_pass_return = generate_func_pass_return,
         .func_return_value = generate_func_return_value,
         .func_createframe = generate_func_createframe,
         .func_call = generate_func_call,
