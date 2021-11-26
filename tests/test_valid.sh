@@ -81,7 +81,7 @@ do
 	if [ "a$ret_val" != "a$expected_err" ];  then
 		err_files=$((err_files+1))
 		printf "$all_files: ${RED}FAILED${NC} $file\n"
-		printf "$all_files: ${RED}FAILED${NC} $file your = $ret_val, expected $expected_err\n" >> ERRORS
+		printf "$all_files: ${RED}FAILED${NC} $file \nyour: $ret_val, \nexpected: $expected_err\n" >> ERRORS
 	else
 		if [ -z "$ret_val" ] && [ -z "$ret_val"]; then
 			continue 

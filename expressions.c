@@ -1039,6 +1039,7 @@ static bool id_list() {
                 // convert int -> float
                 Generator.retype_expr_result();
             } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
+                Dynstring.dtor(req_rets);
                 Errors.set_error(ERROR_TYPE_MISSMATCH);
                 return false;
             }
