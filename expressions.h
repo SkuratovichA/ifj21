@@ -10,6 +10,7 @@
 
 #include "progfile.h"
 #include "scanner.h"
+#include "list.h"
 
 /**
  * List of operators from the precedence table.
@@ -73,7 +74,7 @@ typedef struct stack_item {
 
 struct expr_interface_t {
     bool (*parse)(pfile_t *, expr_type_t, dynstring_t *);
-    bool (*parse_expr_list)(pfile_t *, expr_type_t, dynstring_t *);
+    bool (*parse_expr_list)(pfile_t *, expr_type_t, dynstring_t *, list_t *);
 };
 
 extern const struct expr_interface_t Expr;

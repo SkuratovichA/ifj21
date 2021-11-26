@@ -157,13 +157,13 @@ static void print_error_unexpected_token(const char *a, const char *b) {
         }                                                             \
     } while(0)
 
-#define PARSE_EXPR_LIST(expr_type, received_signature)                      \
-    do {                                                                   \
-        if (!Expr.parse_expr_list(pfile, expr_type, received_signature)) {  \
-            debug_msg("\n");                                               \
-            debug_msg_s("\t\t[error] Expression parsing failed.\n");       \
-            goto err;                                                      \
-        }                                                                  \
+#define PARSE_EXPR_LIST(expr_type, received_signature, ids_list)                        \
+    do {                                                                                \
+        if (!Expr.parse_expr_list(pfile, expr_type, received_signature, ids_list)) {    \
+            debug_msg("\n");                                                            \
+            debug_msg_s("\t\t[error] Expression parsing failed.\n");                    \
+            goto err;                                                                   \
+        }                                                                               \
     } while(0)
 
 
@@ -678,7 +678,7 @@ static bool return_stmt() {
     // create expected returns vector from returns
     expected_rets = Dynstring.dup(Symstack.get_parent_func(symstack)->function_semantics->definition.returns);
     // return expr
-    PARSE_EXPR_LIST(EXPR_RETURN, received_rets);
+    PARSE_EXPR_LIST(EXPR_RETURN, received_rets, NULL);
     // check signatures
     CHECK_EXPR_SIGNATURES(expected_rets, received_rets, ERROR_FUNCTION_SEMANTICS);
 

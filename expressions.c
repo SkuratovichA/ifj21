@@ -911,7 +911,7 @@ static bool parse_init(expr_type_t expr_type, dynstring_t *vector_expr_type) {
  * @param vector_expr_types result expression type/s.
  * @return bool.
  */
-static bool other_expr(dynstring_t *vector_expr_types) {
+static bool other_expr(dynstring_t *vector_expr_types, list_t *ids_list) {
     debug_msg("<other_expr> ->\n");
 
     CHECK_DEAD_TOKEN();
@@ -920,12 +920,54 @@ static bool other_expr(dynstring_t *vector_expr_types) {
     if (Scanner.get_curr_token().type == TOKEN_COMMA) {
         Scanner.get_next_token(pfile);
 
-        // expr
-        if (parse_init(EXPR_DEFAULT, vector_expr_types)) {
-            // <other_expr>
-            return other_expr(vector_expr_types);
+        // check var
+        symbol_t * symbol;
+        dynstring_t *received_rets = Dynstring.ctor("");
+        bool ignore_expr = false;
+        if (ids_list != NULL) {
+            dynstring_t *id_name = List.get_head(ids_list);
+            if (id_name == NULL) {
+                ignore_expr = true;
+            } else if (!Symstack.get_local_symbol(symstack, id_name, &symbol)) {
+                Errors.set_error(ERROR_DEFINITION);
+                return false;
+            }
         }
 
+        // expr
+        if (!parse_init(EXPR_DEFAULT, (ids_list) ? received_rets : vector_expr_types)) {
+            Dynstring.dtor(received_rets);
+            return false;
+        }
+
+        // semantics of assignment
+        if (ids_list != NULL && !ignore_expr) {
+            dynstring_t *req_rets = Dynstring.ctor("");
+            Dynstring.append(req_rets, Semantics.of_id_type(symbol->type));
+            debug_msg("requested - %s, received - %s\n", Dynstring.c_str(req_rets), Dynstring.c_str(received_rets));
+            if (Dynstring.cmp(req_rets, received_rets) != 0) {
+                if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
+                    strcmp(Dynstring.c_str(received_rets), "i") == 0) {
+                    // TODO: v tomto pripade je nutne pretypovat vysledek
+                } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
+                    Errors.set_error(ERROR_TYPE_MISSMATCH);
+                    Dynstring.dtor(req_rets);
+                    Dynstring.dtor(received_rets);
+                    return false;
+                }
+            }
+            List.delete_first(ids_list, (void (*)(void *)) Dynstring.dtor);
+            Dynstring.dtor(req_rets);
+        }
+        Dynstring.dtor(received_rets);
+        // semantics of assignment end
+
+        // <other_expr>
+        return other_expr(vector_expr_types, ids_list);;
+    }
+
+    if (List.get_head(ids_list) != NULL) {
+        Errors.set_error(ERROR_SEMANTICS_OTHER);
         return false;
     }
 
@@ -943,19 +985,56 @@ static bool other_expr(dynstring_t *vector_expr_types) {
  * @param vector_expr_types result expression type/s.
  * @return bool.
  */
-static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vector_expr_types) {
+static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vector_expr_types, list_t *ids_list) {
     debug_msg("<expr_list> ->\n");
     pfile = pfile_;
 
     CHECK_DEAD_TOKEN();
 
+    // check var
+    symbol_t * symbol;
+    dynstring_t *received_rets = Dynstring.ctor("");
+    bool ignore_expr = false;
+    if (ids_list != NULL) {
+        dynstring_t *id_name = List.get_head(ids_list);
+        if (id_name == NULL) {
+            ignore_expr = true;
+        } else if (!Symstack.get_local_symbol(symstack, id_name, &symbol)) {
+            Errors.set_error(ERROR_DEFINITION);
+            return false;
+        }
+    }
+
     // expr
-    if (!parse_init(expr_type, vector_expr_types)) {
+    if (!parse_init(expr_type, (ids_list) ? received_rets : vector_expr_types)) {
+        Dynstring.dtor(received_rets);
         return false;
     }
 
+    // semantics of assignment
+    if (ids_list != NULL && !ignore_expr) {
+        dynstring_t *req_rets = Dynstring.ctor("");
+        Dynstring.append(req_rets, Semantics.of_id_type(symbol->type));
+        debug_msg("requested - %s, received - %s\n", Dynstring.c_str(req_rets), Dynstring.c_str(received_rets));
+        if (Dynstring.cmp(req_rets, received_rets) != 0) {
+            if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
+                strcmp(Dynstring.c_str(received_rets), "i") == 0) {
+                // TODO: v tomto pripade je nutne pretypovat vysledek
+            } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
+                Errors.set_error(ERROR_TYPE_MISSMATCH);
+                Dynstring.dtor(req_rets);
+                Dynstring.dtor(received_rets);
+                return false;
+            }
+        }
+        List.delete_first(ids_list, (void (*)(void *)) Dynstring.dtor);
+        Dynstring.dtor(req_rets);
+    }
+    Dynstring.dtor(received_rets);
+    // semantics of assignment end
+
     // <other_expr>
-    return other_expr(vector_expr_types);
+    return other_expr(vector_expr_types, ids_list);
 }
 
 /**
@@ -966,7 +1045,7 @@ static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vecto
  * @param expr_type type of expression.
  * @return bool.
  */
-static bool other_id() {
+static bool other_id(list_t *ids_list) {
     debug_msg("<other_id> ->\n");
     debug_msg("TOKEN - %s\n", Scanner.to_string(Scanner.get_curr_token().type));
 
@@ -974,7 +1053,7 @@ static bool other_id() {
 
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
         Scanner.get_next_token(pfile);
-        return Expr_list(pfile, EXPR_DEFAULT, NULL);
+        return Expr_list(pfile, EXPR_DEFAULT, NULL, ids_list);
     }
 
     // ,
@@ -984,9 +1063,10 @@ static bool other_id() {
         CHECK_DEAD_TOKEN();
 
         if (Scanner.get_curr_token().type == TOKEN_ID) {
+            List.append(ids_list, Dynstring.dup(Scanner.get_curr_token().attribute.id));
             // <other_id>
             Scanner.get_next_token(pfile);
-            return other_id();
+            return other_id(ids_list);
         }
     }
 
@@ -1039,6 +1119,8 @@ static bool id_list() {
                 // TODO: v tomto pripade je nutne pretypovat vysledek
             } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
                 Errors.set_error(ERROR_TYPE_MISSMATCH);
+                Dynstring.dtor(req_rets);
+                Dynstring.dtor(received_rets);
                 return false;
             }
         }
@@ -1050,12 +1132,12 @@ static bool id_list() {
         Dynstring.dtor(id_name);
         return true;
     }
-    //list_t *ids_list = List.ctor();
-    //List.append(ids_list, Dynstring.dup(id_name));
+    list_t *ids_list = List.ctor();
+    List.append(ids_list, Dynstring.dup(id_name));
     Dynstring.dtor(id_name);
     // <other_id>
-    bool res = other_id();
-    //List.dtor(ids_list, (void (*)(void *)) Dynstring.dtor);
+    bool res = other_id(ids_list);
+    List.dtor(ids_list, (void (*)(void *)) Dynstring.dtor);
     return res;
 
     err:
