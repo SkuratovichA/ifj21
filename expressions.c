@@ -911,7 +911,7 @@ static bool parse_init(expr_type_t expr_type, dynstring_t *vector_expr_type) {
  * @param vector_expr_types result expression type/s.
  * @return bool.
  */
-static bool other_expr(dynstring_t *vector_expr_types, list_t *ids_list) {
+static bool other_expr(expr_type_t expr_type, dynstring_t *vector_expr_types, list_t *ids_list, int ret_cnt) {
     debug_msg("<other_expr> ->\n");
 
     CHECK_DEAD_TOKEN();
@@ -923,9 +923,10 @@ static bool other_expr(dynstring_t *vector_expr_types, list_t *ids_list) {
         // check var
         symbol_t * symbol;
         dynstring_t *received_rets = Dynstring.ctor("");
+        dynstring_t *id_name;
         bool ignore_expr = false;
         if (ids_list != NULL) {
-            dynstring_t *id_name = List.get_head(ids_list);
+            id_name = List.get_head(ids_list);
             if (id_name == NULL) {
                 ignore_expr = true;
             } else if (!Symstack.get_local_symbol(symstack, id_name, &symbol)) {
@@ -938,6 +939,11 @@ static bool other_expr(dynstring_t *vector_expr_types, list_t *ids_list) {
         if (!parse_init(EXPR_DEFAULT, (ids_list) ? received_rets : vector_expr_types)) {
             Dynstring.dtor(received_rets);
             return false;
+        }
+
+        int ret_cnt = 0;
+        if (expr_type == EXPR_RETURN) {
+            Generator.func_pass_return(ret_cnt++);
         }
 
         // semantics of assignment
@@ -956,6 +962,7 @@ static bool other_expr(dynstring_t *vector_expr_types, list_t *ids_list) {
                     return false;
                 }
             }
+            Generator.var_assignment(id_name);
             List.delete_first(ids_list, (void (*)(void *)) Dynstring.dtor);
             Dynstring.dtor(req_rets);
         }
@@ -966,7 +973,7 @@ static bool other_expr(dynstring_t *vector_expr_types, list_t *ids_list) {
         return other_expr(vector_expr_types, ids_list);;
     }
 
-    if (List.get_head(ids_list) != NULL) {
+    if (ids_list != NULL && List.get_head(ids_list) != NULL) {
         Errors.set_error(ERROR_SEMANTICS_OTHER);
         return false;
     }
@@ -994,9 +1001,10 @@ static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vecto
     // check var
     symbol_t * symbol;
     dynstring_t *received_rets = Dynstring.ctor("");
+    dynstring_t *id_name;
     bool ignore_expr = false;
     if (ids_list != NULL) {
-        dynstring_t *id_name = List.get_head(ids_list);
+        id_name = List.get_head(ids_list);
         if (id_name == NULL) {
             ignore_expr = true;
         } else if (!Symstack.get_local_symbol(symstack, id_name, &symbol)) {
@@ -1009,6 +1017,11 @@ static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vecto
     if (!parse_init(expr_type, (ids_list) ? received_rets : vector_expr_types)) {
         Dynstring.dtor(received_rets);
         return false;
+    }
+
+    int ret_cnt = 0;
+    if (expr_type == EXPR_RETURN) {
+        Generator.func_pass_return(ret_cnt++);
     }
 
     // semantics of assignment
@@ -1027,6 +1040,7 @@ static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vecto
                 return false;
             }
         }
+        Generator.var_assignment(id_name);
         List.delete_first(ids_list, (void (*)(void *)) Dynstring.dtor);
         Dynstring.dtor(req_rets);
     }
@@ -1034,7 +1048,7 @@ static bool Expr_list(pfile_t *pfile_, expr_type_t expr_type, dynstring_t *vecto
     // semantics of assignment end
 
     // <other_expr>
-    return other_expr(vector_expr_types, ids_list);
+    return other_expr(expr_type, vector_expr_types, ids_list, ret_cnt);
 }
 
 /**
