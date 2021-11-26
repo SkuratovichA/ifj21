@@ -80,6 +80,11 @@ struct code_generator_interface_t {
     void (*var_assignment)(dynstring_t *);
 
     /*
+     * @brief Converts GF@%expr_result int -> float
+     */
+    void (*retype_expr_result)(void);
+
+    /*
      * @brief Generates expressions reduce.
      * @param expr stores info about the expr to be processed.
      */

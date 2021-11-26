@@ -1116,8 +1116,10 @@ static bool id_list() {
         if (Dynstring.cmp(req_rets, received_rets) != 0) {
             if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
                 strcmp(Dynstring.c_str(received_rets), "i") == 0) {
-                // TODO: v tomto pripade je nutne pretypovat vysledek
+                // convert int -> float
+                Generator.retype_expr_result();
             } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
+                Dynstring.dtor(req_rets);
                 Errors.set_error(ERROR_TYPE_MISSMATCH);
                 Dynstring.dtor(req_rets);
                 Dynstring.dtor(received_rets);

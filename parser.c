@@ -411,7 +411,8 @@ static bool assignment(dynstring_t *var_name, int var_type) {
     if (Dynstring.cmp(req_rets, received_rets) != 0) {
         if (strcmp(Dynstring.c_str(req_rets), "f") == 0 &&
             strcmp(Dynstring.c_str(received_rets), "i") == 0) {
-            // TODO: v tomto pripade je nutne pretypovat vysledek
+            // converts expressions result int -> float
+            Generator.retype_expr_result();
         } else if (strcmp(Dynstring.c_str(received_rets), "n") != 0) {
             Errors.set_error(ERROR_TYPE_MISSMATCH);
             return false;
