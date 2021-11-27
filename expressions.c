@@ -95,9 +95,12 @@ static void stack_item_dtor(void *item) {
 /**
  * @brief Expression parsing.
  *
+ * @param stack stack for precedence analyse.
+ * @param received_signature is an initialized empty vector.
+ * @param is_func_param true if expression is a parameter of function.
  * @return bool.
  */
-static bool parse(sstack_t *stack, bool is_func_param) {
+static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func_param) {
     // If true, reduce without PA
     bool hard_reduce = false;
 
@@ -146,7 +149,8 @@ static bool parse_init(dynstring_t *received_signature, bool is_func_param) {
     // Push $ on stack
     Stack.push(stack, stack_item_ctor(ITEM_TYPE_DOLLAR, NULL));
 
-    // PARSE EXPRESSION
+    // Parse expression
+    parse_result = parse(stack, received_signature, is_func_param);
 
     // Delete $ from stack
     Stack.dtor(stack, stack_item_dtor);
