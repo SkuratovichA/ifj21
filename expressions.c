@@ -99,10 +99,8 @@ static bool func_call(dynstring_t *id_name) {
 
     // FUNCTION CALL END
 
-    Dynstring.dtor(id_name);
     return true;
     err:
-    Dynstring.dtor(id_name);
     return false;
 }
 
@@ -231,6 +229,10 @@ static bool a_other_id(list_t *ids_list) {
 
     // | = <a_expr>
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
+        // =
+        EXPECTED(TOKEN_ASSIGN);
+
+        // <a_expr>
         if (!a_expr(ids_list)) {
             goto err;
         } else {
@@ -245,7 +247,7 @@ static bool a_other_id(list_t *ids_list) {
     EXPECTED(TOKEN_ID);
 
     // Append next identifier
-    List.append(ids_list, id_name);
+    List.append(ids_list, Dynstring.dup(id_name));
 
     // <a_other_id>
     if (!a_other_id(ids_list)) {
@@ -253,8 +255,10 @@ static bool a_other_id(list_t *ids_list) {
     }
 
     noerr:
+    Dynstring.dtor(id_name);
     return true;
     err:
+    Dynstring.dtor(id_name);
     return false;
 }
 
@@ -270,7 +274,7 @@ static bool assign_id(dynstring_t *id_name) {
 
     // Create a list of identifiers and append first
     list_t *ids_list = List.ctor();
-    List.append(ids_list, id_name);
+    List.append(ids_list, Dynstring.dup(id_name));
 
     // <a_other_id>
     if (!a_other_id(ids_list)) {
@@ -297,11 +301,7 @@ static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature)
 
     pfile = pfile_;
 
-    if (!r_expr(received_signature)) {
-        return false;
-    }
-
-    return true;
+    return r_expr(received_signature);
 }
 
 /**
@@ -344,8 +344,10 @@ static bool Global_expression(pfile_t *pfile_) {
         goto err;
     }
 
+    Dynstring.dtor(id_name);
     return true;
     err:
+    Dynstring.dtor(id_name);
     return false;
 }
 
@@ -377,8 +379,10 @@ static bool Function_expression(pfile_t *pfile_) {
 //        goto err;
 //    }
 
+    Dynstring.dtor(id_name);
     return true;
     err:
+    Dynstring.dtor(id_name);
     return false;
 }
 
