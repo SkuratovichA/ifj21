@@ -178,24 +178,24 @@ struct semantics_interface_t {
      *
      * @param self expression semantics struct.
      */
-    void (*dtor_expr)(expr_semantics_t *);
+//    void (*dtor_expr)(expr_semantics_t *);
 
     /** Expression semantics constructor.
      *
      * @return new expressions semantics.
      */
-    expr_semantics_t *(*ctor_expr)();
+//    expr_semantics_t *(*ctor_expr)();
 
     /** Expression semantics add operand.
      *
      * @param self expression semantics struct.
      * @param tok operand.
      */
-    void (*add_operand)(expr_semantics_t *, token_t);
+//    void (*add_operand)(expr_semantics_t *, token_t);
 
-    void (*add_operator)(expr_semantics_t *, op_list_t);
+//    void (*add_operator)(expr_semantics_t *, op_list_t);
 
-    bool (*check_expression)(expr_semantics_t *);
+//    bool (*check_expression)(expr_semantics_t *);
 
     bool (*check_signatures_compatibility)(dynstring_t *, dynstring_t *, int);
 
