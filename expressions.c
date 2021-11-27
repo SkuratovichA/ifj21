@@ -17,6 +17,17 @@
 static pfile_t *pfile;
 
 /**
+ * @brief Checks if identifier is a function.
+ *
+ * @param id_name identifier name.
+ * @return bool.
+ */
+static inline bool check_function(dynstring_t *id_name) {
+    symbol_t *sym;
+    return Symtable.get_symbol(global_table, id_name, &sym);
+}
+
+/**
  * @brief Set token for new created/copied item.
  *
  * @param item
@@ -94,6 +105,8 @@ static bool parse(sstack_t *stack, bool is_func_param) {
     int cmp;
 
     while (Scanner.get_curr_token().type != TOKEN_DEAD) {
+        // CHECK ON FUNCTION CALL
+
         // Peek item from the stack
         stack_item_t *top = (stack_item_t *) Stack.peek(stack);
 
@@ -449,6 +462,7 @@ static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature)
 
     pfile = pfile_;
 
+    // <r_expr>
     return r_expr(received_signature);
 }
 
@@ -465,6 +479,7 @@ static bool Default_expression(pfile_t *pfile_, dynstring_t *received_signature)
 
     pfile = pfile_;
 
+    // expr
     return parse_init(received_signature, false);
 }
 
@@ -484,8 +499,11 @@ static bool Global_expression(pfile_t *pfile_) {
     // id
     EXPECTED(TOKEN_ID);
 
-    // CHECK IF ID IS A FUNCTION
+    if (!check_function(id_name)) {
+        goto err;
+    }
 
+    // <func_call>
     if (!func_call(id_name)) {
         goto err;
     }
@@ -513,17 +531,17 @@ static bool Function_expression(pfile_t *pfile_) {
     // id
     EXPECTED(TOKEN_ID);
 
-    // CHECK IF ID IS A FUNCTION
-
-    // IF ID IS A FUNCTION
-//    if (!func_call(id_name)) {
-//        goto err;
-//    }
-
-    // IF ID IS NOT A FUNCTION
-//    if (!assign_id(id_name)) {
-//        goto err;
-//    }
+    if (check_function(id_name)) {
+        // <func_call>
+        if (!func_call(id_name)) {
+            goto err;
+        }
+    } else {
+        // <assign_id>
+        if (!assign_id(id_name)) {
+            goto err;
+        }
+    }
 
     Dynstring.dtor(id_name);
     return true;
