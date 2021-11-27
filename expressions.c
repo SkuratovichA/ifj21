@@ -82,6 +82,44 @@ static void stack_item_dtor(void *item) {
 }
 
 /**
+ * @brief Expression parsing.
+ *
+ * @return bool.
+ */
+static bool parse(sstack_t *stack, bool is_func_param) {
+    // If true, reduce without PA
+    bool hard_reduce = false;
+
+    // Precedence comparison value
+    int cmp;
+
+    while (Scanner.get_curr_token().type != TOKEN_DEAD) {
+        // Peek item from the stack
+        stack_item_t *top = (stack_item_t *) Stack.peek(stack);
+
+        // Pop expression if we have it on the top of the stack
+        // POP EXPRESSION
+
+        op_list_t first_op;
+        op_list_t second_op;
+
+        // CHECK ON EXPRESSION END
+        // CHECK IF SUCCESS
+
+        // PRECEDENCE COMPARISON
+
+        if (!hard_reduce && cmp <= 0) {
+            // SHIFT
+        } else {
+            // REDUCE
+        }
+    }
+
+    // DEAD TOKEN
+    return false;
+}
+
+/**
  * @brief Expression parsing initialization.
  *
  * @param received_signature is an initialized empty vector.
