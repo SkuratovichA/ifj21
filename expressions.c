@@ -98,41 +98,36 @@ static void stack_item_dtor(void *item) {
  * @param stack stack for precedence analyse.
  * @param received_signature is an initialized empty vector.
  * @param is_func_param true if expression is a parameter of function.
+ * @param hard_reduce reduce without precedence analyse.
  * @return bool.
  */
-static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func_param) {
-    // If true, reduce without PA
-    bool hard_reduce = false;
-
+static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func_param, bool hard_reduce) {
     // Precedence comparison value
     int cmp;
 
-    while (Scanner.get_curr_token().type != TOKEN_DEAD) {
-        // CHECK ON FUNCTION CALL
+    // CHECK ON FUNCTION CALL
 
-        // Peek item from the stack
-        stack_item_t *top = (stack_item_t *) Stack.peek(stack);
+    // Peek item from the stack
+    stack_item_t *top = (stack_item_t *) Stack.peek(stack);
 
-        // Pop expression if we have it on the top of the stack
-        // POP EXPRESSION
+    // Pop expression if we have it on the top of the stack
+    // POP EXPRESSION
 
-        op_list_t first_op;
-        op_list_t second_op;
+    op_list_t first_op;
+    op_list_t second_op;
 
-        // CHECK ON EXPRESSION END
-        // CHECK IF SUCCESS
+    // CHECK ON EXPRESSION END
+    // CHECK IF SUCCESS
 
-        // PRECEDENCE COMPARISON
+    // PRECEDENCE COMPARISON
 
-        if (!hard_reduce && cmp <= 0) {
-            // SHIFT
-        } else {
-            // REDUCE
-        }
+    if (!hard_reduce && cmp <= 0) {
+        // SHIFT
+    } else {
+        // REDUCE
     }
 
-    // DEAD TOKEN
-    return false;
+    return parse(stack, received_signature, is_func_param, hard_reduce);
 }
 
 /**
@@ -150,7 +145,7 @@ static bool parse_init(dynstring_t *received_signature, bool is_func_param) {
     Stack.push(stack, stack_item_ctor(ITEM_TYPE_DOLLAR, NULL));
 
     // Parse expression
-    parse_result = parse(stack, received_signature, is_func_param);
+    parse_result = parse(stack, received_signature, is_func_param, false);
 
     // Delete $ from stack
     Stack.dtor(stack, stack_item_dtor);
