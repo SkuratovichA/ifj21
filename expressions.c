@@ -16,14 +16,101 @@
 
 static pfile_t *pfile;
 
+/**
+ * @brief Set token for new created/copied item.
+ *
+ * @param item
+ * @param tok token to set (can be NULL).
+ */
+static void stack_item_set_token(stack_item_t *item, token_t *tok) {
+    if (tok != NULL && (item->type == ITEM_TYPE_TOKEN || item->type == ITEM_TYPE_EXPR)) {
+        item->token = *tok;
+        if (tok->type == TOKEN_ID) {
+            item->token.attribute.id = Dynstring.dup(tok->attribute.id);
+        }
+    }
+}
+
+/**
+ * @brief Create stack item.
+ *
+ * @param type stack item type.
+ * @param tok token to set (can be NULL).
+ * @return new stack item.
+ */
+static stack_item_t *stack_item_ctor(item_type_t type, token_t *tok) {
+    stack_item_t *new_item = calloc(1, sizeof(stack_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    new_item->type = type;
+    stack_item_set_token(new_item, tok);
+
+    return new_item;
+}
+
+/**
+ * @brief Copy stack item.
+ *
+ * @param item
+ * @return new stack item.
+ */
+static stack_item_t *stack_item_copy(stack_item_t *item) {
+    stack_item_t *new_item = calloc(1, sizeof(stack_item_t));
+    soft_assert(new_item, ERROR_INTERNAL);
+
+    new_item->type = item->type;
+    stack_item_set_token(new_item, &(item->token));
+
+    return new_item;
+}
+
+/**
+ * @brief Delete stack item.
+ *
+ * @param item
+ */
+static void stack_item_dtor(void *item) {
+    stack_item_t *s_item = (stack_item_t *) item;
+
+    if (s_item->type == ITEM_TYPE_EXPR || s_item->type == ITEM_TYPE_TOKEN) {
+        if (s_item->token.type == TOKEN_ID) {
+            Dynstring.dtor(s_item->token.attribute.id);
+        }
+    }
+
+    free(s_item);
+}
+
+/**
+ * @brief Expression parsing initialization.
+ *
+ * @param received_signature is an initialized empty vector.
+ * @param is_func_param true if expression is a parameter of function.
+ * @return bool.
+ */
+static bool parse_init(dynstring_t *received_signature, bool is_func_param) {
+    sstack_t *stack = Stack.ctor();
+    bool parse_result;
+
+    // Push $ on stack
+    Stack.push(stack, stack_item_ctor(ITEM_TYPE_DOLLAR, NULL));
+
+    // PARSE EXPRESSION
+
+    // Delete $ from stack
+    Stack.dtor(stack, stack_item_dtor);
+    return parse_result;
+}
+
 /** Function call other expressions.
  *
  * !rule <fc_other_expr> -> , expr <fc_other_expr> | )
  *
+ * @param received_signature is an initialized empty vector.
  * @param params_cnt counter of function parameters.
  * @return bool.
  */
-static bool fc_other_expr(int params_cnt) {
+static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
     debug_msg("<fc_other_expr> ->\n");
 
     // | )
@@ -32,12 +119,14 @@ static bool fc_other_expr(int params_cnt) {
     EXPECTED(TOKEN_COMMA);
 
     // expr
-    // PARSE EXPRESSION
+    if (!parse_init(received_signature, true)) {
+        goto err;
+    }
 
     params_cnt++;
 
     // <fc_other_expr>
-    if (!fc_other_expr(params_cnt)) {
+    if (!fc_other_expr(received_signature, params_cnt)) {
         goto err;
     }
 
@@ -51,9 +140,10 @@ static bool fc_other_expr(int params_cnt) {
  *
  * !rule <fc_expr> -> expr <fc_other_expr> | )
  *
+ * @param received_signature is an initialized empty vector.
  * @return bool.
  */
-static bool fc_expr() {
+static bool fc_expr(dynstring_t *received_signature) {
     debug_msg("<fc_expr> ->\n");
 
     int params_cnt = 0;
@@ -62,12 +152,14 @@ static bool fc_expr() {
     EXPECTED_OPT(TOKEN_RPAREN);
 
     // expr
-    // PARSE EXPRESSION
+    if (!parse_init(received_signature, true)) {
+        goto err;
+    }
 
     params_cnt++;
 
     // <fc_other_expr>
-    if (!fc_other_expr(params_cnt)) {
+    if (!fc_other_expr(received_signature, params_cnt)) {
         goto err;
     }
 
@@ -87,20 +179,24 @@ static bool fc_expr() {
 static bool func_call(dynstring_t *id_name) {
     debug_msg("<func_call> ->\n");
 
+    dynstring_t *received_signature = Dynstring.ctor("");
+
     // FUNCTION CALL START
 
     // (
     EXPECTED(TOKEN_LPAREN);
 
     // <fc_expr>
-    if (!fc_expr()) {
+    if (!fc_expr(received_signature)) {
         goto err;
     }
 
     // FUNCTION CALL END
 
+    Dynstring.dtor(received_signature);
     return true;
     err:
+    Dynstring.dtor(received_signature);
     return false;
 }
 
@@ -123,7 +219,9 @@ static bool r_other_expr(dynstring_t *received_signature) {
     EXPECTED(TOKEN_COMMA);
 
     // expr
-    // PARSE EXPRESSION
+    if (!parse_init(received_signature, false)) {
+        goto err;
+    }
 
     // <r_other_expr>
     if (!r_other_expr(received_signature)) {
@@ -147,18 +245,18 @@ static bool r_expr(dynstring_t *received_signature) {
     debug_msg("<r_expr> ->\n");
 
     // expr
-    // PARSE EXPRESSION
+    if (!parse_init(received_signature, false)) {
+        return false;
+    }
 
     // TODO: | e (check received signature on empty)
 
     // <r_other_expr>
     if (!r_other_expr(received_signature)) {
-        goto err;
+        return false;
     }
 
     return true;
-    err:
-    return false;
 }
 
 /** Assignment other expressions.
@@ -171,6 +269,8 @@ static bool r_expr(dynstring_t *received_signature) {
 static bool a_other_expr(list_t *ids_list) {
     debug_msg("<a_other_expr> ->\n");
 
+    dynstring_t *received_signature = Dynstring.ctor("");
+
     // | e
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
         return true;
@@ -180,15 +280,19 @@ static bool a_other_expr(list_t *ids_list) {
     EXPECTED(TOKEN_COMMA);
 
     // expr
-    // PARSE EXPRESSION
+    if (!parse_init(received_signature, false)) {
+        goto err;
+    }
 
     // <a_other_expr>
     if (!a_other_expr(ids_list)) {
         goto err;
     }
 
+    Dynstring.dtor(received_signature);
     return true;
     err:
+    Dynstring.dtor(received_signature);
     return false;
 }
 
@@ -202,16 +306,22 @@ static bool a_other_expr(list_t *ids_list) {
 static bool a_expr(list_t *ids_list) {
     debug_msg("<a_expr> ->\n");
 
+    dynstring_t *received_signature = Dynstring.ctor("");
+
     // expr
-    // PARSE EXPRESSION
+    if (!parse_init(received_signature, false)) {
+        goto err;
+    }
 
     // <a_other_expr>
     if (!a_other_expr(ids_list)) {
         goto err;
     }
 
+    Dynstring.dtor(received_signature);
     return true;
     err:
+    Dynstring.dtor(received_signature);
     return false;
 }
 
@@ -317,9 +427,7 @@ static bool Default_expression(pfile_t *pfile_, dynstring_t *received_signature)
 
     pfile = pfile_;
 
-    // PARSE EXPRESSION
-
-    return true;
+    return parse_init(received_signature, false);
 }
 
 /**

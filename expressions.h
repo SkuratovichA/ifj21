@@ -39,6 +39,25 @@ typedef enum op_list {
     OP_UNDEFINED
 } op_list_t;
 
+/**
+ * List of stack item types.
+ */
+typedef enum item_type {
+    ITEM_TYPE_GT,
+    ITEM_TYPE_LT,
+    ITEM_TYPE_DOLLAR,
+    ITEM_TYPE_EXPR,
+    ITEM_TYPE_TOKEN,
+} item_type_t;
+
+/**
+ * Item of precedence analyse stack
+ */
+typedef struct stack_item {
+    item_type_t type;
+    token_t token;
+} stack_item_t;
+
 struct expr_interface_t {
     bool (*return_expressions)(pfile_t *, dynstring_t *);
 
