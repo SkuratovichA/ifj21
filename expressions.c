@@ -16,107 +16,273 @@
 
 static pfile_t *pfile;
 
+/** Function call other expressions.
+ *
+ * !rule <fc_other_expr> -> , expr <fc_other_expr> | )
+ *
+ * @param params_cnt counter of function parameters.
+ * @return bool.
+ */
+static bool fc_other_expr(int params_cnt) {
+    debug_msg("<fc_other_expr> ->\n");
 
-// TODO: reimplement
-// how to implement a function:
-//      1: Scanner.get_next_token() ONLY IN THE MACRO `EXPECTED()`
+    // | )
+    EXPECTED_OPT(TOKEN_RPAREN);
+    // ,
+    EXPECTED(TOKEN_COMMA);
 
-//      2: Scanner.get_curr_token() ONLY IF THERE IS A DECISION, e.g.
-//          switch(Scanner.get_curr_token().type) {
-//              case TOKEN_COMMA:
-//                  ...
-//                  break;
-//
-//              case TOKEN_GE: ...
-//                  ...
-//                  break;
-//              ...
-//              default:
-//                  break;
+    // expr
+    // PARSE EXPRESSION
 
-//      3: If there's AT LEAST ONE HEAP allocation in the function:
-//
-//      static bool function() {
-//          DECLARATIONS OF POINTERS AT THE TOP OF THE FUNCTION
-//          dynstring_t *one = NULL; // = NULL is necessary!!!
-//          dynstring_t *twy = NULL;
-//          dynstring_t *three = NULL;
-//
-//          if (!cond) {
-//              goto err:
-//          }
-//          if (cond_we_want_to_return_true_after) {
-//              goto noerr:
-//          }
-//          ...
-//          DONT return rule(...);
-//          DO if (!rule()) {
-//              goto err;
-//          }
-//      noerr:
-//          Dynstring.dtor(one);
-//          Dynstring.dtor(two);
-//          Dynstring.dtor(three);
-//          return true;
-//      err:
-//          Dynstring.dtor(one);
-//          Dynstring.dtor(two);
-//          Dynstring.dtor(three);
-//          return false;
-//     }
+    params_cnt++;
 
-//      4:  DONT!
-//              some_pointer_t *pointer;
-//              ...
-//              if (pointer) ...
-//          DO:
-//              some_pointer_t *pointer;
-//              ...
-//              if (pointer != NULL) ...
+    // <fc_other_expr>
+    if (!fc_other_expr(params_cnt)) {
+        goto err;
+    }
 
-//      5: All declarations of variables are at the beginning of the function if there's a possibility to.
+    noerr:
+    return true;
+    err:
+    return false;
+}
 
-//     6: DONT WRITE LONG FUNCTIONS, try to separate them into smaller ones.
+/** Function call expression.
+ *
+ * !rule <fc_expr> -> expr <fc_other_expr> | )
+ *
+ * @return bool.
+ */
+static bool fc_expr() {
+    debug_msg("<fc_expr> ->\n");
 
-//     7: AT MOST 3 LEVELS OF NESTING. Also, see 8 for more details;
-//          DONT:
-//          if (a) {
-//              .. code
-//              if (b) {
-//                  .. code
-//                  if (c) {
-//                      .. code
-//                  }
-//              }
-//          }
-//          DO:
-//          if (a) {
-//              .. code
-//              if (!func()) {
-//                  goto err;
-//              }
-//              or
-//              func();
-//          }
+    int params_cnt = 0;
 
-//      8: DONT!
-//          if (cond) {
-//              ... many lines
-//              return some;
-//          }
-//          return false|true;
-//         DO!
-//          if (!cond) {
-//              return false|true;
-//          }
-//          ... many lines
-//          return some;
+    // | )
+    EXPECTED_OPT(TOKEN_RPAREN);
 
+    // expr
+    // PARSE EXPRESSION
 
+    params_cnt++;
 
+    // <fc_other_expr>
+    if (!fc_other_expr(params_cnt)) {
+        goto err;
+    }
 
-// APIs:
+    noerr:
+    return true;
+    err:
+    return false;
+}
 
+/** Function call.
+ *
+ * !rule <func_call> -> ( <fc_expr>
+ *
+ * @param id_name function identifier name.
+ * @return bool.
+ */
+static bool func_call(dynstring_t *id_name) {
+    debug_msg("<func_call> ->\n");
+
+    // FUNCTION CALL START
+
+    // (
+    EXPECTED(TOKEN_LPAREN);
+
+    // <fc_expr>
+    if (!fc_expr()) {
+        goto err;
+    }
+
+    // FUNCTION CALL END
+
+    Dynstring.dtor(id_name);
+    return true;
+    err:
+    Dynstring.dtor(id_name);
+    return false;
+}
+
+/** Return other expressions.
+ *
+ * !rule <r_other_expr> -> , expr <r_other_expr> | e
+ *
+ * @param received_signature is an initialized empty vector.
+ * @return bool.
+ */
+static bool r_other_expr(dynstring_t *received_signature) {
+    debug_msg("<r_other_expr> ->\n");
+
+    // | e
+    if (Scanner.get_curr_token().type != TOKEN_COMMA) {
+        return true;
+    }
+
+    // ,
+    EXPECTED(TOKEN_COMMA);
+
+    // expr
+    // PARSE EXPRESSION
+
+    // <r_other_expr>
+    if (!r_other_expr(received_signature)) {
+        goto err;
+    }
+
+    return true;
+    err:
+    return false;
+}
+
+/**
+ * Return expression.
+ *
+ * !rule <r_expr> -> expr <r_other_expr> | e
+ *
+ * @param received_signature is an initialized empty vector.
+ * @return bool.
+ */
+static bool r_expr(dynstring_t *received_signature) {
+    debug_msg("<r_expr> ->\n");
+
+    // expr
+    // PARSE EXPRESSION
+
+    // TODO: | e (check received signature on empty)
+
+    // <r_other_expr>
+    if (!r_other_expr(received_signature)) {
+        goto err;
+    }
+
+    return true;
+    err:
+    return false;
+}
+
+/** Assignment other expressions.
+ *
+ * !rule <a_other_expr> -> , expr <a_other_expr> | e
+ *
+ * @param ids_list list of identifiers.
+ * @return bool.
+ */
+static bool a_other_expr(list_t *ids_list) {
+    debug_msg("<a_other_expr> ->\n");
+
+    // | e
+    if (Scanner.get_curr_token().type != TOKEN_COMMA) {
+        return true;
+    }
+
+    // ,
+    EXPECTED(TOKEN_COMMA);
+
+    // expr
+    // PARSE EXPRESSION
+
+    // <a_other_expr>
+    if (!a_other_expr(ids_list)) {
+        goto err;
+    }
+
+    return true;
+    err:
+    return false;
+}
+
+/** Assignment expression.
+ *
+ * !rule <a_expr> -> expr <a_other_expr>
+ *
+ * @param ids_list list of identifiers.
+ * @return bool.
+ */
+static bool a_expr(list_t *ids_list) {
+    debug_msg("<a_expr> ->\n");
+
+    // expr
+    // PARSE EXPRESSION
+
+    // <a_other_expr>
+    if (!a_other_expr(ids_list)) {
+        goto err;
+    }
+
+    return true;
+    err:
+    return false;
+}
+
+/** Assignment other identifiers.
+ *
+ * !rule <a_other_id> -> , id <a_other_id> | = <a_expr>
+ *
+ * @param ids_list list of identifiers.
+ * @return bool.
+ */
+static bool a_other_id(list_t *ids_list) {
+    debug_msg("<a_other_id> ->\n");
+
+    dynstring_t *id_name = NULL;
+
+    // | = <a_expr>
+    if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
+        if (!a_expr(ids_list)) {
+            goto err;
+        } else {
+            goto noerr;
+        }
+    }
+
+    // ,
+    EXPECTED(TOKEN_COMMA);
+    GET_ID_SAFE(id_name);
+    // id
+    EXPECTED(TOKEN_ID);
+
+    // Append next identifier
+    List.append(ids_list, id_name);
+
+    // <a_other_id>
+    if (!a_other_id(ids_list)) {
+        goto err;
+    }
+
+    noerr:
+    return true;
+    err:
+    return false;
+}
+
+/** Assignment identifier.
+ *
+ * !rule <assign_id> -> <a_other_id>
+ *
+ * @param id_name identifier name.
+ * @return bool.
+ */
+static bool assign_id(dynstring_t *id_name) {
+    debug_msg("<assign_id> ->\n");
+
+    // Create a list of identifiers and append first
+    list_t *ids_list = List.ctor();
+    List.append(ids_list, id_name);
+
+    // <a_other_id>
+    if (!a_other_id(ids_list)) {
+        goto err;
+    }
+
+    List.dtor(ids_list, (void (*)(void *)) Dynstring.dtor);
+    return true;
+    err:
+    List.dtor(ids_list, (void (*)(void *)) Dynstring.dtor);
+    return false;
+}
 
 /**
  * @brief Expression in the return statement.
@@ -127,8 +293,15 @@ static pfile_t *pfile;
  * @return true if successive parsing performed.
  */
 static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature) {
+    debug_msg("Return_expression\n");
+
     pfile = pfile_;
-    assert(false);
+
+    if (!r_expr(received_signature)) {
+        return false;
+    }
+
+    return true;
 }
 
 /**
@@ -140,8 +313,13 @@ static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature)
  * @return true if successive parsing performed.
  */
 static bool Default_expression(pfile_t *pfile_, dynstring_t *received_signature) {
+    debug_msg("Default_expression\n");
+
     pfile = pfile_;
-    assert(false);
+
+    // PARSE EXPRESSION
+
+    return true;
 }
 
 /**
@@ -151,8 +329,24 @@ static bool Default_expression(pfile_t *pfile_, dynstring_t *received_signature)
  * @return true if successive parsing and semantic analysis of expressions performed.
  */
 static bool Global_expression(pfile_t *pfile_) {
+    debug_msg("Global_expression\n");
+
     pfile = pfile_;
-    assert(false);
+    dynstring_t *id_name = NULL;
+
+    GET_ID_SAFE(id_name);
+    // id
+    EXPECTED(TOKEN_ID);
+
+    // CHECK IF ID IS A FUNCTION
+
+    if (!func_call(id_name)) {
+        goto err;
+    }
+
+    return true;
+    err:
+    return false;
 }
 
 /**
@@ -162,8 +356,30 @@ static bool Global_expression(pfile_t *pfile_) {
  * @return true if successive parsing and semantic analysis of expressions performed.
  */
 static bool Function_expression(pfile_t *pfile_) {
+    debug_msg("Function_expression\n");
+
     pfile = pfile_;
-    assert(false);
+    dynstring_t *id_name = NULL;
+
+    GET_ID_SAFE(id_name);
+    // id
+    EXPECTED(TOKEN_ID);
+
+    // CHECK IF ID IS A FUNCTION
+
+    // IF ID IS A FUNCTION
+//    if (!func_call(id_name)) {
+//        goto err;
+//    }
+
+    // IF ID IS NOT A FUNCTION
+//    if (!assign_id(id_name)) {
+//        goto err;
+//    }
+
+    return true;
+    err:
+    return false;
 }
 
 /**
