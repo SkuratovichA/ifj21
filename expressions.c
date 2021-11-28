@@ -197,7 +197,7 @@ static void stack_item_set_token(stack_item_t *item, token_t *tok) {
 
     item->token = *tok;
 
-    if (item->type != ITEM_TYPE_EXPR && item->type != ITEM_TYPE_TOKEN) {
+    if (item->type != ITEM_TYPE_TOKEN) {
         goto noerr;
     }
 
@@ -257,7 +257,7 @@ static void stack_item_dtor(void *item) {
 
     stack_item_t *s_item = (stack_item_t *) item;
 
-    if (s_item->type != ITEM_TYPE_EXPR && s_item->type != ITEM_TYPE_TOKEN) {
+    if (s_item->type != ITEM_TYPE_TOKEN) {
         goto noerr;
     }
 
@@ -352,7 +352,7 @@ static bool precedence_cmp(op_list_t first_op, op_list_t second_op, int *cmp) {
  * @return bool.
  */
 static bool shift(sstack_t *stack, stack_item_t *expr, int const cmp) {
-    debug_msg("SHIFT -> \n");
+    debug_msg("SHIFT ->\n");
 
     token_t tok;
 
@@ -363,12 +363,12 @@ static bool shift(sstack_t *stack, stack_item_t *expr, int const cmp) {
 
     // Push expression if exists
     if (expr != NULL) {
-        Stack.push(stack, expr);
+        Stack.push(stack, stack_item_copy(expr));
     }
 
     // Push token from the input
     tok = Scanner.get_curr_token();
-    Stack.push(stack, (stack_item_t *) stack_item_ctor(ITEM_TYPE_TOKEN, &tok));
+    Stack.push(stack, stack_item_ctor(ITEM_TYPE_TOKEN, &tok));
 
     // Get next token
     EXPECTED(tok.type);
@@ -376,6 +376,49 @@ static bool shift(sstack_t *stack, stack_item_t *expr, int const cmp) {
     return true;
     err:
     return false;
+}
+
+/**
+ * @brief Reduce expression.
+ *
+ * @param stack stack to compare precedence and analyze an expression.
+ * @param expr expression on top of the stack.
+ * @return bool.
+ */
+static bool reduce(sstack_t *stack, stack_item_t *expr) {
+    debug_msg("REDUCE ->\n");
+
+    stack_item_t *top;
+    sstack_t *r_stack;
+
+    // Push expression if exists
+    if (expr != NULL) {
+        Stack.push(stack, stack_item_copy(expr));
+    }
+
+    // Peek item from top of the stack
+    top = Stack.peek(stack);
+
+    // Reduce rule
+    r_stack = Stack.ctor();
+    while (top->type != ITEM_TYPE_LT && top->type != ITEM_TYPE_DOLLAR) {
+        Stack.push(r_stack, stack_item_copy(top));
+        Stack.pop(stack, stack_item_dtor);
+        top = Stack.peek(stack);
+    }
+
+    // CHECK RULE
+
+    // Delete less than symbol
+    if (top->type == ITEM_TYPE_LT) {
+        Stack.pop(stack, stack_item_dtor);
+    }
+
+    // Push an expression
+    Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR, NULL));
+
+    Stack.dtor(r_stack, stack_item_dtor);
+    return true;
 }
 
 /**
@@ -429,10 +472,10 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
     op_list_t first_op = (top->type == ITEM_TYPE_DOLLAR) ? OP_DOLLAR : get_op(top->token.type);
     op_list_t second_op = get_op(Scanner.get_curr_token().type);
 
-    debug_msg("TOP: { %s } NEXT: { %s } EXPR: { %s }\n",
-              op_to_string(top->token.type),
+    debug_msg("Top: { %s } Next: { %s } Expr: { %s }\n",
+              op_to_string(first_op),
               Scanner.to_string(Scanner.get_curr_token().type),
-              (expr != NULL) ? Scanner.to_string(expr->token.type) : "null");
+              (expr != NULL) ? "yes" : "no");
 
     // Check an expression end
     if (!hard_reduce) {
@@ -449,21 +492,27 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
             // TODO: set return types
         }
 
+        debug_msg("Successful parsing\n");
         goto noerr;
     }
 
     // Precedence comparison
     if (!precedence_cmp(first_op, second_op, &cmp)) {
+        debug_msg("Precedence error\n");
         goto err;
     }
 
+    debug_msg("\n");
     if (!hard_reduce && cmp <= 0) {
         if (!shift(stack, expr, cmp)) {
             goto err;
         }
     } else {
-        // REDUCE
+        if (!reduce(stack, expr)) {
+            goto err;
+        }
     }
+    debug_msg("\n");
 
     if (!parse(stack, received_signature, is_func_param, hard_reduce)) {
         goto err;
@@ -673,7 +722,7 @@ static bool a_other_expr(list_t *ids_list) {
 
     // | e
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
-        return true;
+        goto noerr;
     }
 
     // ,
@@ -689,6 +738,7 @@ static bool a_other_expr(list_t *ids_list) {
         goto err;
     }
 
+    noerr:
     Dynstring.dtor(received_signature);
     return true;
     err:
