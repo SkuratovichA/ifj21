@@ -86,7 +86,10 @@ static void Insert_after(list_item_t *item, void *data) {
  * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
-    soft_assert(list, ERROR_INTERNAL);
+    if (list == NULL) {
+        return;
+    }
+    soft_assert(clear_fun != NULL, ERROR_INTERNAL);
 
     list_item_t *tmp = list->head;
     if (tmp == NULL) {
@@ -99,7 +102,10 @@ static void Delete_first(list_t *list, void (*clear_fun)(void *)) {
 }
 
 static void Print_list(list_t *list, char *(*pp_fun)(void *)) {
-    soft_assert(list != NULL, ERROR_INTERNAL);
+    if (list == NULL) {
+        return;
+    }
+    soft_assert(pp_fun != NULL, ERROR_INTERNAL);
 
     list_item_t *iter = list->head;
 
@@ -116,7 +122,10 @@ static void Print_list(list_t *list, char *(*pp_fun)(void *)) {
  * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Clear(list_t *list, void (*clear_fun)(void *)) {
-    soft_assert(list != NULL, ERROR_INTERNAL);
+    if (list == NULL) {
+        return;
+    }
+    soft_assert(clear_fun != NULL, ERROR_INTERNAL);
 
     while (list->head) {
         Delete_first(list, clear_fun);
@@ -130,6 +139,11 @@ static void Clear(list_t *list, void (*clear_fun)(void *)) {
  * @param clear_fun pointer to a function, which will free the list data.
  */
 static void Dtor(list_t *list, void (*clear_fun)(void *)) {
+    if (list == NULL) {
+        return;
+    }
+    soft_assert(clear_fun != NULL, ERROR_INTERNAL);
+    
     Clear(list, clear_fun);
     free(list);
 }
