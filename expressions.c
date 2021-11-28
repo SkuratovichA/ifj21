@@ -486,6 +486,7 @@ static bool parse_init(dynstring_t *received_signature, bool is_func_param) {
     }
 
     Stack.dtor(stack, stack_item_dtor);
+    return true;
     err:
     Stack.dtor(stack, stack_item_dtor);
     return false;
