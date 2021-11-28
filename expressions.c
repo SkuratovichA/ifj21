@@ -378,7 +378,7 @@ static bool shift(sstack_t *stack, stack_item_t *expr, int const cmp) {
  * @param is_func_param true if expression is a parameter of function.
  * @return bool.
  */
-static bool is_expr_end(op_list_t first_op, op_list_t second_op, bool is_func_param) {
+static bool expression_end(op_list_t first_op, op_list_t second_op, bool is_func_param) {
     return  (first_op == OP_ID && Scanner.get_curr_token().type == TOKEN_ID) ||
             (first_op == OP_RPAREN && Scanner.get_curr_token().type == TOKEN_ID) ||
             (second_op == OP_RPAREN && is_func_param);
@@ -392,7 +392,7 @@ static bool is_expr_end(op_list_t first_op, op_list_t second_op, bool is_func_pa
  * @param hard_reduce reduce without precedence analyse.
  * @return bool.
  */
-static bool is_parse_success(op_list_t first_op, op_list_t second_op, bool hard_reduce) {
+static bool parse_success(op_list_t first_op, op_list_t second_op, bool hard_reduce) {
     return  (first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
             (first_op == OP_DOLLAR && hard_reduce);
 }
@@ -428,11 +428,11 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
 
     // Check on expression end
     if (!hard_reduce) {
-        hard_reduce = is_expr_end(first_op, second_op, is_func_param);
+        hard_reduce = expression_end(first_op, second_op, is_func_param);
     }
 
     // Check on success parsing
-    if (is_parse_success(first_op, second_op, hard_reduce)) {
+    if (parse_success(first_op, second_op, hard_reduce)) {
         if (expr == NULL) {
             goto err;
         }
