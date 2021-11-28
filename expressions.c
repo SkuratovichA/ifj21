@@ -327,12 +327,12 @@ static bool precedence_check(op_list_t first_op, op_list_t second_op) {
  * @return bool.
  */
 static bool precedence_cmp(op_list_t first_op, op_list_t second_op, int *cmp) {
-    if (precedence_check(first_op, second_op)) {
-        *cmp = f[first_op] - g[second_op];
-        return true;
+    if (!precedence_check(first_op, second_op)) {
+        return false;
     }
 
-    return false;
+    *cmp = f[first_op] - g[second_op];
+    return true;
 }
 
 /**
