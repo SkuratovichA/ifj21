@@ -509,8 +509,8 @@ static bool check_rule(sstack_t *r_stack) {
     // expr binary_op expr
     if (item->type == ITEM_TYPE_EXPR) {
         Stack.pop(r_stack, stack_item_dtor);
-        if (!binary_op(r_stack) || !expr(r_stack)) {
-            goto err;
+        if (binary_op(r_stack) && expr(r_stack)) {
+            goto noerr;
         }
 
         goto noerr;
@@ -521,18 +521,18 @@ static bool check_rule(sstack_t *r_stack) {
         case OP_HASH:
         case OP_NOT:
             Stack.pop(r_stack, stack_item_dtor);
-            if (!expr(r_stack)) {
-                goto err;
+            if (expr(r_stack)) {
+                goto noerr;
             }
-            break;
+            goto err;
 
         // ( expr )
         case OP_LPAREN:
             Stack.pop(r_stack, stack_item_dtor);
-            if (!expr(r_stack) || !single_op(r_stack, OP_RPAREN)) {
-                goto err;
+            if (expr(r_stack) && single_op(r_stack, OP_RPAREN)) {
+                goto noerr;
             }
-            break;
+            goto err;
 
         // id
         case OP_ID:
@@ -579,10 +579,12 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
     }
 
     // Check rule
-    if (!check_rule(r_stack) || !Stack.is_empty(r_stack)) {
-        debug_msg("Reduction error!\n");
-        Errors.set_error(ERROR_SYNTAX);
-        goto err;
+    if (!check_rule(r_stack)) {
+        if (!Stack.is_empty(r_stack)) {
+            debug_msg("Reduction error!\n");
+            Errors.set_error(ERROR_SYNTAX);
+            goto err;
+        }
     }
 
     // Delete less than symbol
@@ -609,8 +611,9 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
  * @return bool.
  */
 static bool expression_end(op_list_t first_op, op_list_t second_op, bool is_func_param) {
-    return  (first_op == OP_ID && Scanner.get_curr_token().type == TOKEN_ID) ||
-            (first_op == OP_RPAREN && Scanner.get_curr_token().type == TOKEN_ID) ||
+    bool is_token_id = (Scanner.get_curr_token().type == TOKEN_ID);
+    return  (first_op == OP_ID && is_token_id) ||
+            (first_op == OP_RPAREN && is_token_id) ||
             (second_op == OP_RPAREN && is_func_param);
 }
 
@@ -623,8 +626,10 @@ static bool expression_end(op_list_t first_op, op_list_t second_op, bool is_func
  * @return bool.
  */
 static bool parse_success(op_list_t first_op, op_list_t second_op, bool hard_reduce) {
-    return  (first_op == OP_DOLLAR && second_op == OP_DOLLAR) ||
-            (first_op == OP_DOLLAR && hard_reduce);
+    bool is_first_dollar = (first_op == OP_DOLLAR);
+    bool is_second_dollar = (second_op == OP_DOLLAR);
+    return  (is_first_dollar && is_second_dollar) ||
+            (is_first_dollar && hard_reduce);
 }
 
 /** Function call declaration for parse_function.
@@ -700,10 +705,9 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
     op_list_t first_op = (top->type == ITEM_TYPE_DOLLAR) ? OP_DOLLAR : get_op(top->token.type);
     op_list_t second_op = get_op(Scanner.get_curr_token().type);
 
-    debug_msg("Top: { %s } Next: { %s } Expr: { %s }\n",
+    debug_msg("Top: { %s } Next: { %s }\n",
               op_to_string(first_op),
-              Scanner.to_string(Scanner.get_curr_token().type),
-              (expr != NULL) ? "yes" : "no");
+              Scanner.to_string(Scanner.get_curr_token().type));
 
     // Check an expression end
     if (!hard_reduce) {
