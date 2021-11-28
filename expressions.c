@@ -17,6 +17,16 @@
 static pfile_t *pfile;
 
 /**
+ * @brief Checks if identifier is defined.
+ *
+ * @param id_name identifier name.
+ * @return bool.
+ */
+static inline bool is_defined(dynstring_t *id_name) {
+    return Symstack.get_local_symbol(symstack, id_name, NULL);
+}
+
+/**
  * @brief Checks if identifier is a function.
  *
  * @param id_name identifier name.
@@ -544,6 +554,7 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
 
     // Precedence comparison
     if (!hard_reduce && !precedence_cmp(first_op, second_op, &cmp)) {
+        Errors.set_error(ERROR_SYNTAX);
         debug_msg("Precedence error\n");
         goto err;
     }
@@ -852,6 +863,11 @@ static bool a_other_id(list_t *ids_list) {
     // id
     EXPECTED(TOKEN_ID);
 
+    if (!is_defined(id_name)) {
+        Errors.set_error(ERROR_DEFINITION);
+        goto err;
+    }
+
     // Append next identifier
     List.append(ids_list, Dynstring.dup(id_name));
 
@@ -878,8 +894,15 @@ static bool a_other_id(list_t *ids_list) {
 static bool assign_id(dynstring_t *id_name) {
     debug_msg("<assign_id> ->\n");
 
-    // Create a list of identifiers and append first
+    // Create a list of identifiers
     list_t *ids_list = List.ctor();
+
+    if (!is_defined(id_name)) {
+        Errors.set_error(ERROR_DEFINITION);
+        goto err;
+    }
+
+    // Append first identifier
     List.append(ids_list, Dynstring.dup(id_name));
 
     // <a_other_id>
@@ -945,6 +968,7 @@ static bool Global_expression(pfile_t *pfile_) {
     EXPECTED(TOKEN_ID);
 
     if (!is_a_function(id_name)) {
+        Errors.set_error(ERROR_DEFINITION);
         goto err;
     }
 
