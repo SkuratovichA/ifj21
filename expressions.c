@@ -23,8 +23,7 @@ static pfile_t *pfile;
  * @return bool.
  */
 static inline bool check_function(dynstring_t *id_name) {
-    symbol_t *sym;
-    return Symtable.get_symbol(global_table, id_name, &sym);
+    return Symtable.get_symbol(global_table, id_name, NULL);
 }
 
 /**
