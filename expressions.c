@@ -513,7 +513,7 @@ static bool check_rule(sstack_t *r_stack) {
             goto noerr;
         }
 
-        goto noerr;
+        goto err;
     }
 
     switch (get_op(item->token.type)) {
