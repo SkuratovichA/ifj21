@@ -448,6 +448,49 @@ static bool parse_success(op_list_t first_op, op_list_t second_op, bool hard_red
             (first_op == OP_DOLLAR && hard_reduce);
 }
 
+/** Function call declaration for parse_function.
+ *
+ * @param id_name function identifier name.
+ * @return bool.
+ */
+static bool func_call(dynstring_t *);
+
+/**
+ * @brief Parse function if identifier is in global scope.
+ *
+ * @param stack stack for precedence analyse.
+ * @return
+ */
+static bool parse_function(sstack_t *stack) {
+    dynstring_t *id_name = NULL;
+
+    GET_ID_SAFE(id_name);
+
+    if (Scanner.get_curr_token().type != TOKEN_ID) {
+        goto noerr;
+    }
+
+    if (check_function(id_name)) {
+        // id
+        EXPECTED(TOKEN_ID);
+
+        // <func_call>
+        if (!func_call(id_name)) {
+            goto err;
+        }
+    }
+
+    // Push an expression
+    Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR, NULL));
+
+    noerr:
+    Dynstring.dtor(id_name);
+    return true;
+    err:
+    Dynstring.dtor(id_name);
+    return false;
+}
+
 /**
  * @brief Expression parsing.
  *
@@ -461,7 +504,8 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
     int cmp;
     stack_item_t *expr = NULL;
 
-    // CHECK A FUNCTION CALL
+    // Try parse a function
+    parse_function(stack);
 
     // Peek item from the stack
     stack_item_t *top = (stack_item_t *) Stack.peek(stack);
