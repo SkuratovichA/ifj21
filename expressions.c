@@ -427,8 +427,8 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
               (expr != NULL) ? Scanner.to_string(expr->token.type) : "null");
 
     // Check on expression end
-    if (!hard_reduce && is_expr_end(first_op, second_op, is_func_param)) {
-        hard_reduce = true;
+    if (!hard_reduce) {
+        hard_reduce = is_expr_end(first_op, second_op, is_func_param);
     }
 
     // Check on success parsing
