@@ -17,14 +17,47 @@
 static pfile_t *pfile;
 
 /**
+ * @brief Safely peek item from top of the stack.
+ *
+ * @param stack
+ * @param item
+ */
+#define STACK_ITEM_PEEK(stack, item)        \
+    do {                                    \
+        (item) = Stack.peek((stack));       \
+        if ((item) == NULL) {               \
+            goto err;                       \
+        }                                   \
+    } while (0)
+
+/**
+ * @brief Peek expression if it is in top of the stack.
+ *
+ * @param stack
+ * @param item
+ */
+#define STACK_ITEM_PEEK_EXPR(stack, item)               \
+    do {                                                \
+        stack_item_t *tmp;                              \
+        STACK_ITEM_PEEK((stack), tmp);                  \
+        if (tmp->type == ITEM_TYPE_EXPR) {              \
+            (item) = stack_item_copy(tmp);              \
+            Stack.pop((stack), stack_item_dtor);        \
+        }                                               \
+    } while (0)
+
+/**
  * @brief Checks if identifier is defined.
  *
  * @param id_name identifier name.
- * @return bool.
  */
-static inline bool is_defined(dynstring_t *id_name) {
-    return Symstack.get_local_symbol(symstack, id_name, NULL);
-}
+#define IS_DEFINED(id_name)                                             \
+    do {                                                                \
+        if (!Symstack.get_local_symbol(symstack, (id_name), NULL)) {    \
+            Errors.set_error(ERROR_DEFINITION);                         \
+            goto err;                                                   \
+        }                                                               \
+    } while (0)
 
 /**
  * @brief Checks if identifier is a function.
@@ -280,30 +313,6 @@ static void stack_item_dtor(void *item) {
 }
 
 /**
- * @brief Pop and return expression if it is on top of the stack.
- * Otherwise return NULL.
- *
- * @param stack stack to compare precedence and analyze an expression.
- * @param top pointer to pointer to item on top of the stack (double pointer for rewriting).
- * @return stack_item_t *
- */
-static stack_item_t *pop_expression(sstack_t *stack, stack_item_t **top) {
-    stack_item_t *expr = NULL;
-    stack_item_t *tmp;
-
-    if ((*top)->type == ITEM_TYPE_EXPR) {
-        // We need to pop the expression, because we don't want to compare non-terminals
-        tmp = (stack_item_t *) Stack.peek(stack);
-        expr = stack_item_copy(tmp);
-        Stack.pop(stack, stack_item_dtor);
-        // Update top
-        *top = (stack_item_t *) Stack.peek(stack);
-    }
-
-    return expr;
-}
-
-/**
  * @brief Precedence functions error handling.
  * Check existence of relation between two operators.
  *
@@ -389,6 +398,158 @@ static bool shift(sstack_t *stack, stack_item_t *expr, int const cmp) {
 }
 
 /**
+ * @brief Check binary operator.
+ *
+ * @param r_stack stack with handle (rule).
+ * @return bool.
+ */
+static bool binary_op(sstack_t *r_stack) {
+    debug_msg("binary_op ->\n");
+
+    stack_item_t *item;
+    STACK_ITEM_PEEK(r_stack, item);
+
+    if (item->type != ITEM_TYPE_TOKEN) {
+        goto err;
+    }
+
+    switch (get_op(item->token.type)) {
+        case OP_ADD:
+        case OP_SUB:
+        case OP_MUL:
+        case OP_DIV_I:
+        case OP_DIV_F:
+        case OP_STRCAT:
+        case OP_AND:
+        case OP_OR:
+        case OP_LT:
+        case OP_LE:
+        case OP_GT:
+        case OP_GE:
+        case OP_EQ:
+        case OP_NE:
+            goto noerr;
+        default:
+            goto err;
+    }
+
+    noerr:
+    Stack.pop(r_stack, stack_item_dtor);
+    return true;
+    err:
+    return false;
+}
+
+/**
+ * @brief Check expression.
+ *
+ * @param r_stack stack with handle (rule).
+ * @return bool.
+ */
+static bool expr(sstack_t *r_stack) {
+    debug_msg("expr ->\n");
+
+    stack_item_t *item;
+    STACK_ITEM_PEEK(r_stack, item);
+
+    if (item->type != ITEM_TYPE_EXPR) {
+        goto err;
+    }
+
+    Stack.pop(r_stack, stack_item_dtor);
+    return true;
+    err:
+    return false;
+}
+
+/**
+ * @bief Check single operator.
+ *
+ * @param r_stack stack with handle (rule).
+ * @param op
+ * @return bool.
+ */
+static bool single_op(sstack_t *r_stack, op_list_t op) {
+    debug_msg("single_op ->\n");
+
+    stack_item_t *item;
+    STACK_ITEM_PEEK(r_stack, item);
+
+    if (item->type != ITEM_TYPE_TOKEN) {
+        goto err;
+    }
+
+    if (get_op(item->token.type) != op) {
+        goto err;
+    }
+
+    Stack.pop(r_stack, stack_item_dtor);
+    return true;
+    err:
+    return false;
+}
+
+/**
+ * @brief Check reduced rule.
+ *
+ * !rule expr -> expr binary_op expr
+ * !rule expr -> unary_op expr
+ * !rule expr -> ( expr )
+ * !rule expr -> id
+ *
+ * @param r_stack stack with handle (rule).
+ * @return bool.
+ */
+static bool check_rule(sstack_t *r_stack) {
+    debug_msg("check_rule ->\n");
+
+    stack_item_t *item;
+    STACK_ITEM_PEEK(r_stack, item);
+
+    // expr binary_op expr
+    if (item->type == ITEM_TYPE_EXPR) {
+        Stack.pop(r_stack, stack_item_dtor);
+        if (!binary_op(r_stack) || !expr(r_stack)) {
+            goto err;
+        }
+
+        goto noerr;
+    }
+
+    switch (get_op(item->token.type)) {
+        // unary_op expr
+        case OP_HASH:
+        case OP_NOT:
+            Stack.pop(r_stack, stack_item_dtor);
+            if (!expr(r_stack)) {
+                goto err;
+            }
+            break;
+
+        // ( expr )
+        case OP_LPAREN:
+            Stack.pop(r_stack, stack_item_dtor);
+            if (!expr(r_stack) || !single_op(r_stack, OP_RPAREN)) {
+                goto err;
+            }
+            break;
+
+        // id
+        case OP_ID:
+            Stack.pop(r_stack, stack_item_dtor);
+            goto noerr;
+
+        default:
+            goto err;
+    }
+
+    noerr:
+    return true;
+    err:
+    return false;
+}
+
+/**
  * @brief Reduce expression.
  *
  * @param stack stack to compare precedence and analyze an expression.
@@ -407,17 +568,22 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
     }
 
     // Peek item from top of the stack
-    top = Stack.peek(stack);
+    STACK_ITEM_PEEK(stack, top);
 
     // Reduce rule
     r_stack = Stack.ctor();
     while (top->type != ITEM_TYPE_LT && top->type != ITEM_TYPE_DOLLAR) {
         Stack.push(r_stack, stack_item_copy(top));
         Stack.pop(stack, stack_item_dtor);
-        top = Stack.peek(stack);
+        STACK_ITEM_PEEK(stack, top);
     }
 
-    // CHECK RULE
+    // Check rule
+    if (!check_rule(r_stack) || !Stack.is_empty(r_stack)) {
+        debug_msg("Reduction error!\n");
+        Errors.set_error(ERROR_SYNTAX);
+        goto err;
+    }
 
     // Delete less than symbol
     if (top->type == ITEM_TYPE_LT) {
@@ -429,6 +595,9 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
 
     Stack.dtor(r_stack, stack_item_dtor);
     return true;
+    err:
+    Stack.dtor(r_stack, stack_item_dtor);
+    return false;
 }
 
 /**
@@ -513,17 +682,20 @@ static bool parse_function(sstack_t *stack) {
  * @return bool.
  */
 static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func_param, bool hard_reduce) {
+    debug_msg("parse ->\n");
+
     int cmp;
     stack_item_t *expr = NULL;
+    stack_item_t *top = NULL;
 
     // Try parse a function
     parse_function(stack);
 
-    // Peek item from the stack
-    stack_item_t *top = (stack_item_t *) Stack.peek(stack);
-
     // Pop expression if we have it on the top of the stack
-    expr = pop_expression(stack, &top);
+    STACK_ITEM_PEEK_EXPR(stack, expr);
+
+    // Peek top item from the stack
+    STACK_ITEM_PEEK(stack, top);
 
     op_list_t first_op = (top->type == ITEM_TYPE_DOLLAR) ? OP_DOLLAR : get_op(top->token.type);
     op_list_t second_op = get_op(Scanner.get_curr_token().type);
@@ -554,8 +726,8 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
 
     // Precedence comparison
     if (!hard_reduce && !precedence_cmp(first_op, second_op, &cmp)) {
-        Errors.set_error(ERROR_SYNTAX);
         debug_msg("Precedence error\n");
+        Errors.set_error(ERROR_SYNTAX);
         goto err;
     }
 
@@ -591,6 +763,8 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
  * @return bool.
  */
 static bool parse_init(dynstring_t *received_signature, bool is_func_param) {
+    debug_msg("parse_init ->\n");
+
     sstack_t *stack = Stack.ctor();
 
     // Push $ on stack
@@ -863,10 +1037,7 @@ static bool a_other_id(list_t *ids_list) {
     // id
     EXPECTED(TOKEN_ID);
 
-    if (!is_defined(id_name)) {
-        Errors.set_error(ERROR_DEFINITION);
-        goto err;
-    }
+    IS_DEFINED(id_name);
 
     // Append next identifier
     List.append(ids_list, Dynstring.dup(id_name));
@@ -897,10 +1068,7 @@ static bool assign_id(dynstring_t *id_name) {
     // Create a list of identifiers
     list_t *ids_list = List.ctor();
 
-    if (!is_defined(id_name)) {
-        Errors.set_error(ERROR_DEFINITION);
-        goto err;
-    }
+    IS_DEFINED(id_name);
 
     // Append first identifier
     List.append(ids_list, Dynstring.dup(id_name));
