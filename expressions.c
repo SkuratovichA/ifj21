@@ -191,7 +191,7 @@ static char *stack_item_to_string(item_type_t item_type) {
  * @param tok token to set (can be NULL).
  */
 static void stack_item_set_token(stack_item_t *item, token_t *tok) {
-    if (tok == NULL) {
+    if (tok == NULL || item == NULL) {
         goto noerr;
     }
 
@@ -205,8 +205,7 @@ static void stack_item_set_token(stack_item_t *item, token_t *tok) {
         item->token.attribute.id = Dynstring.dup(tok->attribute.id);
     }
 
-    noerr:
-    return;
+    noerr:;
 }
 
 /**
@@ -233,6 +232,10 @@ static stack_item_t *stack_item_ctor(item_type_t type, token_t *tok) {
  * @return new stack item.
  */
 static stack_item_t *stack_item_copy(stack_item_t *item) {
+    if (item == NULL) {
+        return NULL;
+    }
+
     stack_item_t *new_item = calloc(1, sizeof(stack_item_t));
     soft_assert(new_item, ERROR_INTERNAL);
 
