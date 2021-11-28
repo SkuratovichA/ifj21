@@ -497,7 +497,7 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
     }
 
     // Precedence comparison
-    if (!precedence_cmp(first_op, second_op, &cmp)) {
+    if (!hard_reduce && !precedence_cmp(first_op, second_op, &cmp)) {
         debug_msg("Precedence error\n");
         goto err;
     }
