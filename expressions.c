@@ -560,7 +560,7 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
     debug_msg("REDUCE ->\n");
 
     stack_item_t *top;
-    sstack_t *r_stack;
+    sstack_t *r_stack = NULL;
 
     // Push expression if exists
     if (expr != NULL) {
