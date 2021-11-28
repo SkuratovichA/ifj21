@@ -12,7 +12,9 @@
 #include "scanner.h"
 #include "list.h"
 
-// Added for compile
+/**
+ * List of the operators of the precedence table.
+ */
 typedef enum op_list {
     OP_ID,
     OP_LPAREN,
@@ -33,17 +35,14 @@ typedef enum op_list {
     OP_STRCAT,
     OP_AND,
     OP_OR,
-    OP_FUNC,
-    OP_COMMA,
     OP_DOLLAR,
-    OP_UNDEFINED
+    OP_UNDEFINED,
 } op_list_t;
 
 /**
  * List of stack item types.
  */
 typedef enum item_type {
-    ITEM_TYPE_GT,
     ITEM_TYPE_LT,
     ITEM_TYPE_DOLLAR,
     ITEM_TYPE_EXPR,
