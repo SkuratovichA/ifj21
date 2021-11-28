@@ -371,7 +371,7 @@ static bool shift(sstack_t *stack, stack_item_t *expr, int const cmp) {
 }
 
 /**
- * @brief Check on expression end.
+ * @brief Check an expression end.
  *
  * @param first_op first operator.
  * @param second_op second operator.
@@ -385,7 +385,7 @@ static bool expression_end(op_list_t first_op, op_list_t second_op, bool is_func
 }
 
 /**
- * @brief Check on success parsing of the expression.
+ * @brief Check a success parsing of the expression.
  *
  * @param first_op first operator.
  * @param second_op second operator.
@@ -410,7 +410,7 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
     int cmp;
     stack_item_t *expr = NULL;
 
-    // CHECK ON FUNCTION CALL
+    // CHECK A FUNCTION CALL
 
     // Peek item from the stack
     stack_item_t *top = (stack_item_t *) Stack.peek(stack);
@@ -426,12 +426,12 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
               Scanner.to_string(Scanner.get_curr_token().type),
               (expr != NULL) ? Scanner.to_string(expr->token.type) : "null");
 
-    // Check on expression end
+    // Check an expression end
     if (!hard_reduce) {
         hard_reduce = expression_end(first_op, second_op, is_func_param);
     }
 
-    // Check on success parsing
+    // Check a success parsing
     if (parse_success(first_op, second_op, hard_reduce)) {
         if (expr == NULL) {
             goto err;
@@ -641,7 +641,7 @@ static bool r_expr(dynstring_t *received_signature) {
         return false;
     }
 
-    // TODO: | e (check received signature on empty)
+    // TODO: | e (check if received signature is empty)
 
     // <r_other_expr>
     if (!r_other_expr(received_signature)) {
