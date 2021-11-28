@@ -22,7 +22,7 @@ static pfile_t *pfile;
  * @param id_name identifier name.
  * @return bool.
  */
-static inline bool check_function(dynstring_t *id_name) {
+static inline bool is_a_function(dynstring_t *id_name) {
     return Symtable.get_symbol(global_table, id_name, NULL);
 }
 
@@ -464,20 +464,22 @@ static bool func_call(dynstring_t *);
 static bool parse_function(sstack_t *stack) {
     dynstring_t *id_name = NULL;
 
-    GET_ID_SAFE(id_name);
-
     if (Scanner.get_curr_token().type != TOKEN_ID) {
         goto noerr;
     }
 
-    if (check_function(id_name)) {
-        // id
-        EXPECTED(TOKEN_ID);
+    GET_ID_SAFE(id_name);
 
-        // <func_call>
-        if (!func_call(id_name)) {
-            goto err;
-        }
+    if (!is_a_function(id_name)) {
+        goto noerr;
+    }
+
+    // id
+    EXPECTED(TOKEN_ID);
+
+    // <func_call>
+    if (!func_call(id_name)) {
+        goto err;
     }
 
     // Push an expression
@@ -942,7 +944,7 @@ static bool Global_expression(pfile_t *pfile_) {
     // id
     EXPECTED(TOKEN_ID);
 
-    if (!check_function(id_name)) {
+    if (!is_a_function(id_name)) {
         goto err;
     }
 
@@ -974,7 +976,7 @@ static bool Function_expression(pfile_t *pfile_) {
     // id
     EXPECTED(TOKEN_ID);
 
-    if (check_function(id_name)) {
+    if (is_a_function(id_name)) {
         // <func_call>
         if (!func_call(id_name)) {
             goto err;
