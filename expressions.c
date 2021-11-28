@@ -51,7 +51,7 @@ static pfile_t *pfile;
  *
  * @param id_name identifier name.
  */
-#define IS_DEFINED(id_name)                                             \
+#define CHECK_DEFINITION(id_name)                                             \
     do {                                                                \
         if (!Symstack.get_local_symbol(symstack, (id_name), NULL)) {    \
             Errors.set_error(ERROR_DEFINITION);                         \
@@ -1037,7 +1037,7 @@ static bool a_other_id(list_t *ids_list) {
     // id
     EXPECTED(TOKEN_ID);
 
-    IS_DEFINED(id_name);
+    CHECK_DEFINITION(id_name);
 
     // Append next identifier
     List.append(ids_list, Dynstring.dup(id_name));
@@ -1068,7 +1068,7 @@ static bool assign_id(dynstring_t *id_name) {
     // Create a list of identifiers
     list_t *ids_list = List.ctor();
 
-    IS_DEFINED(id_name);
+    CHECK_DEFINITION(id_name);
 
     // Append first identifier
     List.append(ids_list, Dynstring.dup(id_name));
