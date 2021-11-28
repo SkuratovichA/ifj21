@@ -302,14 +302,22 @@ static stack_item_t *pop_expression(sstack_t *stack, stack_item_t **top) {
  * @return bool.
  */
 static bool precedence_check(op_list_t first_op, op_list_t second_op) {
-    if (first_op == OP_ID || first_op == OP_RPAREN) {
-        if (second_op == OP_ID || second_op == OP_LPAREN) {
-            return false;
-        }
-    } else if (first_op == OP_LPAREN && second_op == OP_DOLLAR) {
-        return false;
-    } else if (first_op == OP_DOLLAR && second_op == OP_RPAREN) {
-        return false;
+    switch (first_op) {
+        // id id
+        // id (
+        // ) id
+        // ) (
+        case OP_ID:
+        case OP_RPAREN:
+            return second_op != OP_ID && second_op != OP_LPAREN;
+        // ( $
+        case OP_LPAREN:
+            return second_op != OP_DOLLAR;
+        // $ )
+        case OP_DOLLAR:
+            return second_op != OP_RPAREN;
+        default:
+            break;
     }
 
     return true;
