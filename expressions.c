@@ -608,11 +608,13 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
  * @param first_op first operator.
  * @param second_op second operator.
  * @param is_func_param true if expression is a parameter of function.
+ * @param function_parsed true if function was parsed.
  * @return bool.
  */
-static bool expression_end(op_list_t first_op, op_list_t second_op, bool is_func_param) {
+static bool expression_end(op_list_t first_op, op_list_t second_op, bool is_func_param, bool function_parsed) {
     bool is_token_id = (Scanner.get_curr_token().type == TOKEN_ID);
     return  (first_op == OP_ID && is_token_id) ||
+            (function_parsed && is_token_id) ||
             (first_op == OP_RPAREN && is_token_id) ||
             (second_op == OP_RPAREN && is_func_param);
 }
@@ -643,9 +645,10 @@ static bool func_call(dynstring_t *);
  * @brief Parse function if identifier is in global scope.
  *
  * @param stack stack for precedence analyse.
- * @return
+ * @param function_parsed true if function was parsed.
+ * @return int.
  */
-static bool parse_function(sstack_t *stack) {
+static bool parse_function(sstack_t *stack, bool *function_parsed) {
     dynstring_t *id_name = NULL;
 
     if (Scanner.get_curr_token().type != TOKEN_ID) {
@@ -665,6 +668,8 @@ static bool parse_function(sstack_t *stack) {
     if (!func_call(id_name)) {
         goto err;
     }
+
+    *function_parsed = true;
 
     // Push an expression
     Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR, NULL));
@@ -692,9 +697,12 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
     int cmp;
     stack_item_t *expr = NULL;
     stack_item_t *top = NULL;
+    bool function_parsed = false;
 
     // Try parse a function
-    parse_function(stack);
+    if (!parse_function(stack, &function_parsed)) {
+        goto err;
+    }
 
     // Pop expression if we have it on the top of the stack
     STACK_ITEM_PEEK_EXPR(stack, expr);
@@ -711,7 +719,7 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
 
     // Check an expression end
     if (!hard_reduce) {
-        hard_reduce = expression_end(first_op, second_op, is_func_param);
+        hard_reduce = expression_end(first_op, second_op, is_func_param, function_parsed);
     }
 
     // Check a success parsing

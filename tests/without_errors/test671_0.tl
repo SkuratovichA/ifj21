@@ -1,5 +1,6 @@
 require "ifj21"
 
+global chuj : function() : string, integer
 
 function main ()
     local id : integer 
