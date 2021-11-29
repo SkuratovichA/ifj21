@@ -884,6 +884,7 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info, size_
 
     noerr:
     Dynstring.dtor(id_name);
+    return true;
     err:
     Dynstring.dtor(id_name);
     return false;
@@ -926,7 +927,6 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
     if (!other_funparams(pfile, function_def_info, param_index)) {
         goto err;
     }
-
 
     noerr:
     Dynstring.dtor(id_name);
