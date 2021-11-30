@@ -670,7 +670,7 @@ static bool parse_function(sstack_t *stack, bool *function_parsed) {
     // id
     EXPECTED(TOKEN_ID);
 
-    // <func_call>
+    // [func_call]
     if (!func_call(id_name)) {
         goto err;
     }
@@ -803,14 +803,14 @@ static bool parse_init(dynstring_t *received_signature, bool is_func_param) {
 
 /** Function call other expressions.
  *
- * !rule <fc_other_expr> -> , expr <fc_other_expr> | )
+ * !rule [fc_other_expr] -> , expr [fc_other_expr] | )
  *
  * @param received_signature is an initialized empty vector.
  * @param params_cnt counter of function parameters.
  * @return bool.
  */
 static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
-    debug_msg("<fc_other_expr> ->\n");
+    debug_msg("[fc_other_expr] ->\n");
 
     // | )
     EXPECTED_OPT(TOKEN_RPAREN);
@@ -825,7 +825,7 @@ static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
     params_cnt++;
     // TODO: generate code for a function parameter
 
-    // <fc_other_expr>
+    // [fc_other_expr]
     if (!fc_other_expr(received_signature, params_cnt)) {
         goto err;
     }
@@ -838,13 +838,13 @@ static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
 
 /** Function call expression.
  *
- * !rule <fc_expr> -> expr <fc_other_expr> | )
+ * !rule [fc_expr] -> expr [fc_other_expr] | )
  *
  * @param received_signature is an initialized empty vector.
  * @return bool.
  */
 static bool fc_expr(dynstring_t *received_signature) {
-    debug_msg("<fc_expr> ->\n");
+    debug_msg("[fc_expr] ->\n");
 
     int params_cnt = 0;
 
@@ -859,7 +859,7 @@ static bool fc_expr(dynstring_t *received_signature) {
     params_cnt++;
     // TODO: generate code for a function parameter
 
-    // <fc_other_expr>
+    // [fc_other_expr]
     if (!fc_other_expr(received_signature, params_cnt)) {
         goto err;
     }
@@ -872,13 +872,13 @@ static bool fc_expr(dynstring_t *received_signature) {
 
 /** Function call.
  *
- * !rule <func_call> -> ( <fc_expr>
+ * !rule [func_call] -> ( [fc_expr]
  *
  * @param id_name function identifier name.
  * @return bool.
  */
 static bool func_call(dynstring_t *id_name) {
-    debug_msg("<func_call> ->\n");
+    debug_msg("[func_call] ->\n");
 
     dynstring_t *received_signature = Dynstring.ctor("");
 
@@ -887,7 +887,7 @@ static bool func_call(dynstring_t *id_name) {
     // (
     EXPECTED(TOKEN_LPAREN);
 
-    // <fc_expr>
+    // [fc_expr]
     if (!fc_expr(received_signature)) {
         goto err;
     }
@@ -904,13 +904,13 @@ static bool func_call(dynstring_t *id_name) {
 
 /** Return other expressions.
  *
- * !rule <r_other_expr> -> , expr <r_other_expr> | e
+ * !rule [r_other_expr] -> , expr [r_other_expr] | e
  *
  * @param received_signature is an initialized empty vector.
  * @return bool.
  */
 static bool r_other_expr(dynstring_t *received_signature, size_t *return_cnt) {
-    debug_msg("<r_other_expr> ->\n");
+    debug_msg("[r_other_expr] ->\n");
 
     // | e
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
@@ -928,7 +928,7 @@ static bool r_other_expr(dynstring_t *received_signature, size_t *return_cnt) {
 
     // TODO: check if expression was not empty
 
-    // <r_other_expr>
+    // [r_other_expr]
     if (!r_other_expr(received_signature, return_cnt)) {
         goto err;
     }
@@ -941,13 +941,13 @@ static bool r_other_expr(dynstring_t *received_signature, size_t *return_cnt) {
 /**
  * Return expression.
  *
- * !rule <r_expr> -> expr <r_other_expr> | e
+ * !rule [r_expr] -> expr [r_other_expr] | e
  *
  * @param received_signature is an initialized empty vector.
  * @return bool.
  */
 static bool r_expr(dynstring_t *received_signature, size_t return_cnt) {
-    debug_msg("<r_expr> ->\n");
+    debug_msg("[r_expr] ->\n");
 
     // expr
     if (!parse_init(received_signature, false)) {
@@ -957,7 +957,7 @@ static bool r_expr(dynstring_t *received_signature, size_t return_cnt) {
 
     // TODO: check if expression was empty
 
-    // <r_other_expr>
+    // [r_other_expr]
     if (!r_other_expr(received_signature, &return_cnt)) {
         return false;
     }
@@ -971,13 +971,13 @@ static bool r_expr(dynstring_t *received_signature, size_t return_cnt) {
 
 /** Assignment other expressions.
  *
- * !rule <a_other_expr> -> , expr <a_other_expr> | e
+ * !rule [a_other_expr] -> , expr [a_other_expr] | e
  *
  * @param ids_list list of identifiers.
  * @return bool.
  */
 static bool a_other_expr(list_t *ids_list) {
-    debug_msg("<a_other_expr> ->\n");
+    debug_msg("[a_other_expr] ->\n");
 
     dynstring_t *received_signature = Dynstring.ctor("");
 
@@ -999,7 +999,7 @@ static bool a_other_expr(list_t *ids_list) {
     // TODO: check types compatability of id and expression
     // TODO: generate code for assignment
 
-    // <a_other_expr>
+    // [a_other_expr]
     if (!a_other_expr(ids_list)) {
         goto err;
     }
@@ -1014,13 +1014,13 @@ static bool a_other_expr(list_t *ids_list) {
 
 /** Assignment expression.
  *
- * !rule <a_expr> -> expr <a_other_expr>
+ * !rule [a_expr] -> expr [a_other_expr]
  *
  * @param ids_list list of identifiers.
  * @return bool.
  */
 static bool a_expr(list_t *ids_list) {
-    debug_msg("<a_expr> ->\n");
+    debug_msg("[a_expr] ->\n");
 
     dynstring_t *received_signature = Dynstring.ctor("");
 
@@ -1033,7 +1033,7 @@ static bool a_expr(list_t *ids_list) {
     // TODO: check types compatability of id and expression
     // TODO: generate code for assignment
 
-    // <a_other_expr>
+    // [a_other_expr]
     if (!a_other_expr(ids_list)) {
         goto err;
     }
@@ -1047,22 +1047,22 @@ static bool a_expr(list_t *ids_list) {
 
 /** Assignment other identifiers.
  *
- * !rule <a_other_id> -> , id <a_other_id> | = <a_expr>
+ * !rule [a_other_id] -> , id [a_other_id] | = [a_expr]
  *
  * @param ids_list list of identifiers.
  * @return bool.
  */
 static bool a_other_id(list_t *ids_list) {
-    debug_msg("<a_other_id> ->\n");
+    debug_msg("[a_other_id] ->\n");
 
     dynstring_t *id_name = NULL;
 
-    // | = <a_expr>
+    // | = [a_expr]
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
         // =
         EXPECTED(TOKEN_ASSIGN);
 
-        // <a_expr>
+        // [a_expr]
         if (!a_expr(ids_list)) {
             goto err;
         } else {
@@ -1081,7 +1081,7 @@ static bool a_other_id(list_t *ids_list) {
     // Append next identifier
     List.append(ids_list, Dynstring.dup(id_name));
 
-    // <a_other_id>
+    // [a_other_id]
     if (!a_other_id(ids_list)) {
         goto err;
     }
@@ -1096,13 +1096,13 @@ static bool a_other_id(list_t *ids_list) {
 
 /** Assignment identifier.
  *
- * !rule <assign_id> -> <a_other_id>
+ * !rule [assign_id] -> [a_other_id]
  *
  * @param id_name identifier name.
  * @return bool.
  */
 static bool assign_id(dynstring_t *id_name) {
-    debug_msg("<assign_id> ->\n");
+    debug_msg("[assign_id] ->\n");
 
     // Create a list of identifiers
     list_t *ids_list = List.ctor();
@@ -1112,7 +1112,7 @@ static bool assign_id(dynstring_t *id_name) {
     // Append first identifier
     List.append(ids_list, Dynstring.dup(id_name));
 
-    // <a_other_id>
+    // [a_other_id]
     if (!a_other_id(ids_list)) {
         goto err;
     }
@@ -1137,7 +1137,7 @@ static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature,
 
     pfile = pfile_;
 
-    // <r_expr>
+    // [r_expr]
     return r_expr(received_signature, ret_cnt);
 }
 
@@ -1194,7 +1194,7 @@ static bool Default_expression(pfile_t *pfile_,
 
 /**
  * @brief Function calling in the global scope. `id( ...`
- *
+ * !rule [global_expression] -> id [func_call]
  * @param pfile_
  * @return true if successive parsing and semantic analysis of expressions performed.
  */
@@ -1213,7 +1213,7 @@ static bool Global_expression(pfile_t *pfile_) {
         goto err;
     }
 
-    // <func_call>
+    // [func_call]
     if (!func_call(id_name)) {
         goto err;
     }
@@ -1227,7 +1227,7 @@ static bool Global_expression(pfile_t *pfile_) {
 
 /**
  * @brief Function calling or assignments in the local scope.
- *
+ * !rule [function_expression] -> id FUCK ME IN THE BRAIN I CAN STAND THIS PROJECT ANYMORE I WANNA DIE
  * @param pfile_
  * @return true if successive parsing and semantic analysis of expressions performed.
  */
@@ -1242,12 +1242,12 @@ static bool Function_expression(pfile_t *pfile_) {
     EXPECTED(TOKEN_ID);
 
     if (is_a_function(id_name)) {
-        // <func_call>
+        // [func_call]
         if (!func_call(id_name)) {
             goto err;
         }
     } else {
-        // <assign_id>
+        // [assign_id]
         if (!assign_id(id_name)) {
             goto err;
         }

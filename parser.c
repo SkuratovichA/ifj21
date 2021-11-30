@@ -276,7 +276,7 @@ static bool cond_body() {
 /** Conditional(if or elseif statement). Contains an expression and body.
  * Symtable is created right before calling this function.
  *
- * !rule <cond_stmt> -> `expr` then <cond_body>
+ * !rule <cond_stmt> -> [default_expression] then <cond_body>
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -373,9 +373,9 @@ static bool repeat_body() {
 
 /** Optional assignment after a local variable declaration.
  *
- * Here, an assign token is processed(if it is), and expression
+ * Here, an assign token is processed(if it is, of course), and expression
  * parsing begins.
- * !rule <assignment> -> e | = `expr`
+ * !rule <assignment> -> e | = [default_expression]
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -419,13 +419,13 @@ static bool assignment(dynstring_t *id_name, int id_type) {
 
 /** For assignment.
  *
- * !rule <for_assignment> -> do | , `expr` do
+ * !rule <for_increment> -> do | , [default_expression] do
  *
  * @param pfile pfile
  * @return bool.
  */
-static bool for_assignment() {
-    debug_msg("<for_assignment> ->\n");
+static bool for_increment() {
+    debug_msg("<for_increment> ->\n");
     dynstring_t *expected_signature = Dynstring.ctor("f");
     dynstring_t *received_signature = Dynstring.ctor("");
 
@@ -457,7 +457,7 @@ static bool for_assignment() {
 }
 
 /** For cycle.
- * !rule <for_cycle> -> for id = `expr` , `expr` <for_assignment> <fun_body>
+ * !rule <for_cycle> -> for id = [default_expression] , [default_expression] <for_increment> <fun_body>
  *
  * @param pfile a program.
  * @return bool.
@@ -513,7 +513,7 @@ static bool for_cycle() {
     Generator.tmp_var_definition("terminating_cond");
 
     // do | , `expr` do
-    if (!for_assignment()) {
+    if (!for_increment()) {
         goto err;
     }
 
@@ -601,7 +601,7 @@ static bool var_definition() {
 
 /** While cycle.
  *
- * !rule <while_cycle> -> while `expr` do <fun_body>
+ * !rule <while_cycle> -> while [default_expression] do <fun_body>
  *
  * @param pflile
  * @return
@@ -653,7 +653,7 @@ static bool while_cycle() {
 
 /** Return statement.
  *
- * !rule <return_stmt> -> return <return_expr_list>
+ * !rule <return_stmt> -> return [return_expressions]
  * @param pfile
  * @return
  */
@@ -740,8 +740,8 @@ static bool repeat_until_cycle() {
  * !rule <fun_stmt> -> <while_cycle>
  * !rule <fun_stmt> -> <var_definition>
  * !rule <fun_stmt> -> <for_cycle>
- * !rule <fun_stmt> -> `expr`
- * !rule <fun_stmt> -> <break>
+ * !rule <fun_stmt> -> [function_expression]
+ * !rule <fun_stmt> -> break
  *
  *
  * @param pfile input file for Scanner.get_next_token().
@@ -751,7 +751,7 @@ static bool fun_stmt() {
     debug_msg("<fun_stmt> ->\n");
 
     switch (Scanner.get_curr_token().type) {
-        // for <for_def>, `expr` <for_assignment> <fun_body>
+        // for <for_def>, `expr` <for_increment> <fun_body>
         case KEYWORD_for:
             return for_cycle();
 
@@ -842,8 +842,7 @@ static bool fun_body(char *id_name) {
             break;
 
         default:
-            debug_msg("Shouldn't be here.\n");
-            assert(0);
+            debug_assert(!"Shouldn't be here.\n");
             break;
     }
 
@@ -1172,8 +1171,8 @@ static bool function_definition() {
 /** Statement(global statement) rule.
  *
  * function declaration: !rule <stmt> -> <function_declaration>
- * function definition: !rule <stmt> -> <function_definintion>
- * function call: !rule <stmt> -> `expr`
+ * function definition: !rule <stmt> -> <function_definition>
+ * function call: !rule <stmt> -> [global_expression]
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
