@@ -113,13 +113,13 @@ void print_error_unexpected_token(const char *a, const char *b) {
         }                                                                    \
     } while(0)
 
-#define PARSE_RETURN_EXPRESSIONS(received_signature)                   \
-    do {                                                              \
-        if (!Expr.return_expressions(pfile, received_signature)) {     \
-            debug_msg("\n");                                          \
-            debug_msg_s("\t\t[error] return expression failed.\n");   \
-            goto err;                                                 \
-        }                                                             \
+#define PARSE_RETURN_EXPRESSIONS(received_signature, return_count)                \
+    do {                                                                         \
+        if (!Expr.return_expressions(pfile, received_signature, return_count)) {  \
+            debug_msg("\n");                                                     \
+            debug_msg_s("\t\t[error] return expression failed.\n");              \
+            goto err;                                                            \
+        }                                                                        \
     } while(0)
 
 #define PARSE_FUNCTION_EXPRESSION()                                    \
@@ -663,12 +663,16 @@ static bool return_stmt() {
     // create expected returns vector from returns
     dynstring_t *expected_rets = Dynstring.dup(
             Symstack.get_parent_func(symstack)->function_semantics->definition.returns);
+    debug_assert(expected_rets != NULL && "string created with Dynstring.dup must not be NULL");
 
     EXPECTED(KEYWORD_return);
     // return expr
-    PARSE_RETURN_EXPRESSIONS(received_rets);
+    PARSE_RETURN_EXPRESSIONS(received_rets, Dynstring.len(expected_rets));
     // check signatures
     CHECK_EXPR_SIGNATURES(expected_rets, received_rets, ERROR_FUNCTION_SEMANTICS);
+
+    // TODO: generate return values.
+
 
     Dynstring.dtor(expected_rets);
     Dynstring.dtor(received_rets);

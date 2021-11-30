@@ -909,7 +909,7 @@ static bool func_call(dynstring_t *id_name) {
  * @param received_signature is an initialized empty vector.
  * @return bool.
  */
-static bool r_other_expr(dynstring_t *received_signature) {
+static bool r_other_expr(dynstring_t *received_signature, size_t *return_cnt) {
     debug_msg("<r_other_expr> ->\n");
 
     // | e
@@ -924,11 +924,12 @@ static bool r_other_expr(dynstring_t *received_signature) {
     if (!parse_init(received_signature, false)) {
         goto err;
     }
+    (*return_cnt)--;
 
     // TODO: check if expression was not empty
 
     // <r_other_expr>
-    if (!r_other_expr(received_signature)) {
+    if (!r_other_expr(received_signature, return_cnt)) {
         goto err;
     }
 
@@ -945,21 +946,26 @@ static bool r_other_expr(dynstring_t *received_signature) {
  * @param received_signature is an initialized empty vector.
  * @return bool.
  */
-static bool r_expr(dynstring_t *received_signature) {
+static bool r_expr(dynstring_t *received_signature, size_t return_cnt) {
     debug_msg("<r_expr> ->\n");
 
     // expr
     if (!parse_init(received_signature, false)) {
         return false;
     }
+    return_cnt--;
 
     // TODO: check if expression was empty
 
     // <r_other_expr>
-    if (!r_other_expr(received_signature)) {
+    if (!r_other_expr(received_signature, &return_cnt)) {
         return false;
     }
 
+    if (return_cnt != 0) {
+        // generate return nil
+        // TODO generator.
+    }
     return true;
 }
 
@@ -1126,13 +1132,13 @@ static bool assign_id(dynstring_t *id_name) {
  * @param received_signature is an initialized empty vector.
  * @return true if successive parsing performed.
  */
-static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature) {
+static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature, size_t ret_cnt) {
     debug_msg("Return_expression\n");
 
     pfile = pfile_;
 
     // <r_expr>
-    return r_expr(received_signature);
+    return r_expr(received_signature, ret_cnt);
 }
 
 /**
