@@ -1,10 +1,7 @@
 
 #include <stdio.h>
 
-#include "../errors.h"
-#include "../parser.h"
 #include "../progfile.h"
-#include "../list.h"
 
 
 #define NL "\n"
@@ -668,7 +665,7 @@ int main() {
     int retcode39 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf39 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
+            "function three(): number return 3 end        "NL
             "function foo( a : number, b : number )       "NL
             "    write(a)                                 "NL
             "    write(b)                                 "NL
@@ -680,7 +677,7 @@ int main() {
     int retcode40 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf40 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
+            "function three(): number return 3 end        "NL
             "function foo( a : number, b : number )       "NL
             "    write(a)                                 "NL
             "    write(b)                                 "NL
@@ -692,7 +689,7 @@ int main() {
     int retcode41 = ERROR_SYNTAX;
     pfile_t *pf41 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
+            "function three(): number return 3 end        "NL
             "function foo( a : number, b : number )       "NL
             "    write(a)                                 "NL
             "    write(b)                                 "NL
@@ -1515,7 +1512,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : integer)"NL
             "   while (counter) > 0 do                "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    counter = counter - 1                "NL
             "    end                                  "NL
             "end                                      "NL
@@ -1527,7 +1524,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : integer)   "NL
             "   while (((((counter)))) > 0) do           "NL
-            "        write(((((counter)))), \"\n\")      "NL
+            "        write(((((counter)))), \"\\n\")      "NL
             "    counter = (((((counter) - 1) + 2)) - 1) "NL
             "    end                                     "NL
             "end                                         "NL
@@ -1541,7 +1538,7 @@ int main() {
             "                                                                                             "NL
             "function write_numbers(counter : integer)                                                    "NL
             "    while (counter) > 0 do                                                                   "NL
-            "        write(counter, \"\n\")                                                               "NL
+            "        write(counter, \"\\n\")                                                               "NL
             "        counter = counter - 1                                                                "NL
             "    end                                                                                      "NL
             "end                                                                                          "NL
@@ -1551,7 +1548,7 @@ int main() {
             "    if counter == 0 then                                                                     "NL
             "        write(\"Error\", \" enter\",                                                         "NL
             "              \" another\", \" number\",                                                     "NL
-            "              \", because \", 0, \" is wrong\",\"\n\")                                       "NL
+            "              \", because \", 0, \" is wrong\",\"\\n\")                                       "NL
             "        return                                                                               "NL
             "    else                                                                                     "NL
             "        write_numbers(counter)                                                               "NL
@@ -1566,7 +1563,7 @@ int main() {
             "    if counter == 0 then                                                                     "NL
             "        write(\"Error\", \" enter\",                                                         "NL
             "              \" another\", \" number\",                                                     "NL
-            "              \", because \", 0, \" is wrong\",\"\n\")                                       "NL
+            "              \", because \", 0, \" is wrong\",\"\\n\")                                       "NL
             "        return                                                                               "NL
             "    else                                                                                     "NL
             "        write_numbers(counter)                                                               "NL
@@ -1599,7 +1596,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : string)"NL
             "   while counter do                "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1611,7 +1608,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : string) "NL
             "   while #counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1622,7 +1619,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : nil)    "NL
             "   while counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1633,7 +1630,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : nil)    "NL
             "   while #counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1655,6 +1652,92 @@ int main() {
             "end                                                 "NL
             "yours()                                             "NL
     );
+
+    char *description100 = "type errors in expressions.";
+    int retcode100 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf100 = Pfile.ctor(
+            PROLOG
+            "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"NL
+            "    write(\"I'm about 2bee printed only once!\")    "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function yours()                                    "NL
+            "   local a : string = \"arst\"                      "NL
+            "   repeat                                           "NL
+            "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()  "NL
+            "       a = false                                    "NL
+            "   until (a + 10)                                   "NL
+            "end                                                 "NL
+            "yours()                                             "NL
+    );
+
+    char *description101 = "type errors in expressions.";
+    int retcode101 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf101 = Pfile.ctor(
+            PROLOG
+            "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"NL
+            "    write(\"I'm about 2bee printed only once!\")    "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function yours()                                    "NL
+            "   local a : string = \"arst\"  + 10                "NL
+            "   repeat                                           "NL
+            "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()  "NL
+            "       a = false                                    "NL
+            "   until a                                          "NL
+            "end                                                 "NL
+            "yours()                                             "NL
+    );
+
+    char *description102 = "no error";
+    int retcode102 = ERROR_NOERROR;
+    pfile_t *pf102 = Pfile.ctor(
+            PROLOG
+            "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()                                  "NL
+            "    write(\"I'm about 2bee printed only once!\")                                      "NL
+            "end                                                                                   "NL
+            "                                                                                      "NL
+            "function yours()                                                                      "NL
+            "   local a : number = #(\"arst\" + \"arsoi\" + \"arsot\" + (\"arst\")) + 10           "NL
+            "   repeat                                                                             "NL
+            "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()                                    "NL
+            "       a = false                                                                      "NL
+            "   until a                                                                            "NL
+            "end                                                                                   "NL
+            "yours()                                                                               "NL
+    );
+
+    char *description103 = " no type errors in expressions.";
+    int retcode103 = ERROR_NOERROR;
+    pfile_t *pf103 = Pfile.ctor(
+            PROLOG
+            "function one(a : integer) : string                  "NL
+            "end                                                 "NL
+            "function two() : string                             "NL
+            "end                                                 "NL
+            "function three() : string                           "NL
+            "end                                                 "NL
+            "function four() : string                            "NL
+            "end                                                 "NL
+            "one(#(((two) + three) + four))                                             "NL
+    );
+
+
+    char *description104 = "type errors in expressions.";
+    int retcode104 = ERROR_NOERROR;
+    pfile_t *pf104 = Pfile.ctor(
+            PROLOG
+            "function one(a : integer) : string                  "NL
+            "end                                                 "NL
+            "function two() : string                             "NL
+            "end                                                 "NL
+            "function three() : string                           "NL
+            "end                                                 "NL
+            "function four() : string                            "NL
+            "end                                                 "NL
+            "one((((two) + three) + four))                                             "NL
+    );
+
 
     TEST_CASE(1);
     TEST_CASE(2);
@@ -1764,5 +1847,11 @@ int main() {
     TEST_CASE(97);
     TEST_CASE(98);
     TEST_CASE(99);
+
+    TEST_CASE(100);
+    TEST_CASE(101);
+    TEST_CASE(102);
+    TEST_CASE(103);
+    TEST_CASE(104);
     return 0;
 }

@@ -49,18 +49,24 @@ typedef enum item_type {
     ITEM_TYPE_TOKEN,
 } item_type_t;
 
+typedef enum type_expr_statement {
+    TYPE_EXPR_CONDITIONAL,
+    TYPE_EXPR_DEFAULT,
+} type_expr_statement_t;
+
 /**
  * Item of precedence analyse stack
  */
 typedef struct stack_item {
     item_type_t type;
     token_t token;
+    dynstring_t *expression_type;
 } stack_item_t;
 
 struct expr_interface_t {
-    bool (*return_expressions)(pfile_t *, dynstring_t *);
+    bool (*return_expressions)(pfile_t *, dynstring_t *, size_t);
 
-    bool (*default_expression)(pfile_t *, dynstring_t *);
+    bool (*default_expression)(pfile_t *, dynstring_t *, type_expr_statement_t);
 
     bool (*function_expression)(pfile_t *);
 
