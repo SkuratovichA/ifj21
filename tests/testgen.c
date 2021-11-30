@@ -665,7 +665,7 @@ int main() {
     int retcode39 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf39 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
+            "function three(): number return 3 end        "NL
             "function foo( a : number, b : number )       "NL
             "    write(a)                                 "NL
             "    write(b)                                 "NL
@@ -677,7 +677,7 @@ int main() {
     int retcode40 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf40 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
+            "function three(): number return 3 end        "NL
             "function foo( a : number, b : number )       "NL
             "    write(a)                                 "NL
             "    write(b)                                 "NL
@@ -689,7 +689,7 @@ int main() {
     int retcode41 = ERROR_SYNTAX;
     pfile_t *pf41 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
+            "function three(): number return 3 end        "NL
             "function foo( a : number, b : number )       "NL
             "    write(a)                                 "NL
             "    write(b)                                 "NL
