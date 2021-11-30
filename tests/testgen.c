@@ -1512,7 +1512,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : integer)"NL
             "   while (counter) > 0 do                "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    counter = counter - 1                "NL
             "    end                                  "NL
             "end                                      "NL
@@ -1524,7 +1524,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : integer)   "NL
             "   while (((((counter)))) > 0) do           "NL
-            "        write(((((counter)))), \"\n\")      "NL
+            "        write(((((counter)))), \"\\n\")      "NL
             "    counter = (((((counter) - 1) + 2)) - 1) "NL
             "    end                                     "NL
             "end                                         "NL
@@ -1538,7 +1538,7 @@ int main() {
             "                                                                                             "NL
             "function write_numbers(counter : integer)                                                    "NL
             "    while (counter) > 0 do                                                                   "NL
-            "        write(counter, \"\n\")                                                               "NL
+            "        write(counter, \"\\n\")                                                               "NL
             "        counter = counter - 1                                                                "NL
             "    end                                                                                      "NL
             "end                                                                                          "NL
@@ -1548,7 +1548,7 @@ int main() {
             "    if counter == 0 then                                                                     "NL
             "        write(\"Error\", \" enter\",                                                         "NL
             "              \" another\", \" number\",                                                     "NL
-            "              \", because \", 0, \" is wrong\",\"\n\")                                       "NL
+            "              \", because \", 0, \" is wrong\",\"\\n\")                                       "NL
             "        return                                                                               "NL
             "    else                                                                                     "NL
             "        write_numbers(counter)                                                               "NL
@@ -1563,7 +1563,7 @@ int main() {
             "    if counter == 0 then                                                                     "NL
             "        write(\"Error\", \" enter\",                                                         "NL
             "              \" another\", \" number\",                                                     "NL
-            "              \", because \", 0, \" is wrong\",\"\n\")                                       "NL
+            "              \", because \", 0, \" is wrong\",\"\\n\")                                       "NL
             "        return                                                                               "NL
             "    else                                                                                     "NL
             "        write_numbers(counter)                                                               "NL
@@ -1596,7 +1596,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : string)"NL
             "   while counter do                "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1608,7 +1608,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : string) "NL
             "   while #counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1619,7 +1619,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : nil)    "NL
             "   while counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1630,7 +1630,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : nil)    "NL
             "   while #counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
