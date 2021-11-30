@@ -824,6 +824,7 @@ static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
 
     params_cnt++;
     // TODO: generate code for a function parameter
+    Generator.func_pass_param(params_cnt);
 
     // <fc_other_expr>
     if (!fc_other_expr(received_signature, params_cnt)) {
@@ -858,6 +859,7 @@ static bool fc_expr(dynstring_t *received_signature) {
 
     params_cnt++;
     // TODO: generate code for a function parameter
+    Generator.func_pass_param(params_cnt);
 
     // <fc_other_expr>
     if (!fc_other_expr(received_signature, params_cnt)) {
@@ -883,6 +885,7 @@ static bool func_call(dynstring_t *id_name) {
     dynstring_t *received_signature = Dynstring.ctor("");
 
     // TODO: generate code for function call start
+    Generator.func_createframe();
 
     // (
     EXPECTED(TOKEN_LPAREN);
@@ -894,6 +897,8 @@ static bool func_call(dynstring_t *id_name) {
 
     // TODO: check function parameters signature
     // TODO: generate code for function call end
+    Generator.func_call(Dynstring.c_str(id_name));
+    // TODO: generate get retval?
 
     Dynstring.dtor(received_signature);
     return true;
@@ -1026,6 +1031,7 @@ static bool a_expr(list_t *ids_list) {
     // TODO: check if expression was not empty
     // TODO: check types compatability of id and expression
     // TODO: generate code for assignment
+    Generator.var_assignment(ids_list->head->data);
 
     // <a_other_expr>
     if (!a_other_expr(ids_list)) {
