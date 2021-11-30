@@ -6,8 +6,6 @@
 
 #include "code_generator.h"
 
-size_t __ADDRESS_OF_START_LIST;
-
 /*
  * Global variables used for code generator.
  */
@@ -163,11 +161,11 @@ static void generate_func_chr() {
               "MOVE LF@p0 LF@%0 \n"
               "DEFVAR LF@check \n"
               "LT LF@check LF@p0 int@0 \n"
-              "JUMPIFEQ $CHR$end LF@check bool@true \n"
+              "JUMPIFEQ $chr$end LF@check bool@true \n"
               "GT LF@check LF@p0 int@255 \n"
-              "JUMPIFEQ $CHR$end LF@check bool@true \n"
+              "JUMPIFEQ $chr$end LF@check bool@true \n"
               "INT2CHAR LF@%res LF@p0 \n"
-              "LABEL $CHR$end \n"
+              "LABEL $chr$end \n"
               "POPFRAME \n"
               "RETURN \n");
 }
@@ -191,12 +189,12 @@ static void generate_func_ord() {
               "STRLEN LF@str_len LF@p0 \n"
               "DEFVAR LF@check \n"
               "LT LF@check LF@p1 int@1 \n"
-              "JUMPIFEQ $ORD$end LF@check bool@true \n"
+              "JUMPIFEQ $ord$end LF@check bool@true \n"
               "GT LF@check LF@p1 LF@str_len \n"
-              "JUMPIFEQ $ORD$end LF@check bool@true \n"
+              "JUMPIFEQ $ord$end LF@check bool@true \n"
               "SUB LF@p1 LF@p1 int@1 \n"
               "STRI2INT LF@%res LF@p0 LF@p1 \n"
-              "LABEL $ORD$end \n"
+              "LABEL $ord$end \n"
               "POPFRAME \n"
               "RETURN \n");
 }
@@ -222,17 +220,17 @@ static void generate_func_substr() {
               "# check params \n"
               "DEFVAR LF@check \n"
               "LT LF@check LF@p1 int@1 \n"
-              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "JUMPIFEQ $substr$end LF@check bool@true \n"
               "LT LF@check LF@p2 int@1 \n"
-              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "JUMPIFEQ $substr$end LF@check bool@true \n"
               "DEFVAR LF@str_len \n"
               "STRLEN LF@str_len LF@p0 \n"
               "GT LF@check LF@p1 LF@str_len \n"
-              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "JUMPIFEQ $substr$end LF@check bool@true \n"
               "GT LF@check LF@p2 LF@str_len \n"
-              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "JUMPIFEQ $substr$end LF@check bool@true \n"
               "LT LF@check LF@p2 LF@p1 \n"
-              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "JUMPIFEQ $substr$end LF@check bool@true \n"
               "# for (i = i; i < j; i++) \n"
               "SUB LF@p1 LF@p1 int@1 \n"
               "DEFVAR LF@tmp_char \n"
@@ -244,7 +242,7 @@ static void generate_func_substr() {
               "# if (i < j) goto LOOP \n"
               "LT LF@check LF@p1 LF@p2 \n"
               "JUMPIFEQ LOOP LF@check bool@true \n"
-              "LABEL $SUBSTR$end \n"
+              "LABEL $substr$end \n"
               "POPFRAME \n"
               "RETURN \n");
 }
@@ -829,7 +827,7 @@ static void generate_repeat_until_header() {
  *                     LABEL $end$id
  */
 static void generate_repeat_until_cond() {
-    ADD_INSTR_PART("JUMPIFEQ $repeat$");
+    ADD_INSTR_PART("JUMPIFNEQ $repeat$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
