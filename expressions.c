@@ -511,6 +511,8 @@ static bool check_rule(sstack_t *r_stack) {
         Stack.pop(r_stack, stack_item_dtor);
         if (binary_op(r_stack) && expr(r_stack)) {
             goto noerr;
+            // TODO: semantic check
+            // TODO: generate code for binary operation
         }
 
         goto err;
@@ -523,6 +525,8 @@ static bool check_rule(sstack_t *r_stack) {
             Stack.pop(r_stack, stack_item_dtor);
             if (expr(r_stack)) {
                 goto noerr;
+                // TODO: semantic check
+                // TODO: generate code for unary operation
             }
             goto err;
 
@@ -537,6 +541,8 @@ static bool check_rule(sstack_t *r_stack) {
         // id
         case OP_ID:
             Stack.pop(r_stack, stack_item_dtor);
+            // TODO: semantic check
+            // TODO: generate code for an operand
             goto noerr;
 
         default:
@@ -724,9 +730,10 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
 
     // Check a success parsing
     if (parse_success(first_op, second_op, hard_reduce)) {
-        if (expr == NULL) {
-            goto err;
-        }
+        // Check if expression is empty
+//        if (expr == NULL) {
+//            goto err;
+//        }
 
         if (received_signature != NULL) {
             // TODO: set return types
@@ -816,6 +823,7 @@ static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
     }
 
     params_cnt++;
+    // TODO: generate code for a function parameter
 
     // <fc_other_expr>
     if (!fc_other_expr(received_signature, params_cnt)) {
@@ -849,6 +857,7 @@ static bool fc_expr(dynstring_t *received_signature) {
     }
 
     params_cnt++;
+    // TODO: generate code for a function parameter
 
     // <fc_other_expr>
     if (!fc_other_expr(received_signature, params_cnt)) {
@@ -873,7 +882,7 @@ static bool func_call(dynstring_t *id_name) {
 
     dynstring_t *received_signature = Dynstring.ctor("");
 
-    // FUNCTION CALL START
+    // TODO: generate code for function call start
 
     // (
     EXPECTED(TOKEN_LPAREN);
@@ -883,7 +892,8 @@ static bool func_call(dynstring_t *id_name) {
         goto err;
     }
 
-    // FUNCTION CALL END
+    // TODO: check function parameters signature
+    // TODO: generate code for function call end
 
     Dynstring.dtor(received_signature);
     return true;
@@ -915,6 +925,8 @@ static bool r_other_expr(dynstring_t *received_signature) {
         goto err;
     }
 
+    // TODO: check if expression was not empty
+
     // <r_other_expr>
     if (!r_other_expr(received_signature)) {
         goto err;
@@ -941,7 +953,7 @@ static bool r_expr(dynstring_t *received_signature) {
         return false;
     }
 
-    // TODO: | e (check if received signature is empty)
+    // TODO: check if expression was empty
 
     // <r_other_expr>
     if (!r_other_expr(received_signature)) {
@@ -976,6 +988,11 @@ static bool a_other_expr(list_t *ids_list) {
         goto err;
     }
 
+    // TODO: check if expression was not empty
+    // TODO: check if id is exist for an expression
+    // TODO: check types compatability of id and expression
+    // TODO: generate code for assignment
+
     // <a_other_expr>
     if (!a_other_expr(ids_list)) {
         goto err;
@@ -1005,6 +1022,10 @@ static bool a_expr(list_t *ids_list) {
     if (!parse_init(received_signature, false)) {
         goto err;
     }
+
+    // TODO: check if expression was not empty
+    // TODO: check types compatability of id and expression
+    // TODO: generate code for assignment
 
     // <a_other_expr>
     if (!a_other_expr(ids_list)) {
@@ -1128,7 +1149,14 @@ static bool Default_expression(pfile_t *pfile_, dynstring_t *received_signature)
     pfile = pfile_;
 
     // expr
-    return parse_init(received_signature, false);
+    if (!parse_init(received_signature, false)) {
+        return false;
+    }
+
+    // TODO: check if expression was not empty
+    // TODO: type cast if conditional statement
+    // TODO: generate code for assignment or conditional statement
+    return true;
 }
 
 /**
