@@ -46,6 +46,7 @@ typedef struct token {
     X(STR_ESC)                \
     X(STR_HEX_1)              \
     X(STR_HEX_2)              \
+    X(STR_HEX_3)              \
     X(STR_DEC_1_0)            \
     X(STR_DEC_1_1)            \
     X(STR_DEC_1_2)            \

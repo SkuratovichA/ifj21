@@ -217,11 +217,24 @@ static token_t lex_string(pfile_t *pfile) {
             case STATE_STR_HEX_1:
                 if (!is_hexnumber(ch)) {
                     accepted = true;
+                } else if (ch == '0') {
+                    state = STATE_STR_HEX_3;
+                } else {
+                    state = STATE_STR_HEX_2;
                 }
                 escaped_char = hex2dec(ch) << 4;
-                state = STATE_STR_HEX_2;
                 break;
 
+                // \x0
+            case STATE_STR_HEX_3:
+                if (!is_hexnumber(ch) || ch == '0') {
+                    accepted = true;
+                }
+                escaped_char |= hex2dec(ch);
+                state = STATE_STR_INIT;
+                break;
+
+                // \x^[0]
             case STATE_STR_HEX_2:
                 if (!is_hexnumber(ch)) {
                     accepted = true;
