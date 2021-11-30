@@ -104,13 +104,13 @@ void print_error_unexpected_token(const char *a, const char *b) {
         Symstack.put_symbol(symstack, _name, type);                     \
     } while (0)
 
-#define PARSE_DEFAULT_EXPRESSION(received_signature)                 \
-    do {                                                               \
-        if (!Expr.default_expression(pfile, received_signature)) {   \
-            debug_msg("\n");                                           \
-            debug_msg_s("\t\t[error] assignment expression failed.\n");\
-            goto err;                                                  \
-        }                                                              \
+#define PARSE_DEFAULT_EXPRESSION(received_signature, expr_type)               \
+    do {                                                                     \
+        if (!Expr.default_expression(pfile, received_signature, expr_type)) { \
+            debug_msg("\n");                                                 \
+            debug_msg_s("\t\t[error] assignment expression failed.\n");      \
+            goto err;                                                        \
+        }                                                                    \
     } while(0)
 
 #define PARSE_RETURN_EXPRESSIONS(received_signature)                   \
@@ -287,9 +287,12 @@ static bool cond_stmt() {
     dynstring_t *expected_signature = Dynstring.ctor("b");
 
     // expr
-    PARSE_DEFAULT_EXPRESSION(received_signature);
-    // semantic check
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_CONDITIONAL);
+    // semantic check, to be more precise, it will check expression for emptiness.
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
+
+    // TODO: generate code for a conditional statement
+
     // then
     EXPECTED(KEYWORD_then);
     // generate condition evaluation (JUMPIFNEQ ...)
@@ -394,7 +397,9 @@ static bool assignment(dynstring_t *id_name, int id_type) {
     // =
     EXPECTED(TOKEN_ASSIGN);
     // <expr>
-    PARSE_DEFAULT_EXPRESSION(received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_DEFAULT);
+
+    // local int : integer
 
     // todo: add type recasting in the case of "i" and "f" in the assignment
     // probably add flag for recasting i -> f
@@ -434,7 +439,7 @@ static bool for_assignment() {
     // ,
     EXPECTED(TOKEN_COMMA);
     // expr
-    PARSE_DEFAULT_EXPRESSION(received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_DEFAULT);
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // generate step
     Generator.tmp_var_definition("step");
@@ -487,7 +492,7 @@ static bool for_cycle() {
     // =
     EXPECTED(TOKEN_ASSIGN);
     // expr
-    PARSE_DEFAULT_EXPRESSION(received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_DEFAULT);
     // check signatures
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // for reusing
@@ -500,7 +505,7 @@ static bool for_cycle() {
     EXPECTED(TOKEN_COMMA);
 
     // terminating `expr` in for cycle.
-    PARSE_DEFAULT_EXPRESSION(received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_DEFAULT);
     // check signatures for an assignment.
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
 
@@ -621,7 +626,7 @@ static bool while_cycle() {
     }
     Generator.while_header();
     // parse expressions
-    PARSE_DEFAULT_EXPRESSION(received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_CONDITIONAL);
     // check operation semantics
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // expression result in LF@%result
@@ -705,7 +710,7 @@ static bool repeat_until_cycle() {
         goto err;
     }
     // expr
-    PARSE_DEFAULT_EXPRESSION(received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_CONDITIONAL);
     // check type compatibility in 'until' condition.
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // expression result in LF@%result

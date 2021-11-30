@@ -1141,9 +1141,13 @@ static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature)
  *        semantic controls are performed inside parser.c
  *
  * @param received_signature is an initialized empty vector.
+ * @param type_expr_statement TYPE_EXPR_DEFAULT will not be casted to boolean.
+ *                            TYPE_EXPR_CONDITIONAL will be casted to boolean.
  * @return true if successive parsing performed.
  */
-static bool Default_expression(pfile_t *pfile_, dynstring_t *received_signature) {
+static bool Default_expression(pfile_t *pfile_,
+                               dynstring_t *received_signature,
+                               type_expr_statement_t type_expr_statement) {
     debug_msg("Default_expression\n");
 
     pfile = pfile_;
@@ -1153,9 +1157,32 @@ static bool Default_expression(pfile_t *pfile_, dynstring_t *received_signature)
         return false;
     }
 
-    // TODO: check if expression was not empty
-    // TODO: type cast if conditional statement
-    // TODO: generate code for assignment or conditional statement
+    if (type_expr_statement == TYPE_EXPR_DEFAULT) {
+        goto ret;
+    }
+
+    // don't need to recast an empty expression,
+    // error will be handled in parser
+    if (Dynstring.cmp_c_str(received_signature, "") == 0) {
+        goto ret;
+    }
+
+    // recast type of an expression to boolean, if it is not empty.
+    // TODO: type cast in Generator.
+    // expression will be on the stack.
+    // local int : integer = nil for example, so type doesn't necessary have to be nil
+    // if expr == nil result is false, and it must be checked at the runtime
+    // so if statement in the ifjcode21 must be generated
+    // else result is true
+    // received_signature is always allocated, but can be empty and it be handled in
+    // the parser.
+    // Generator.recast_expression(received_signature);
+    // clear Dynstring and append a new type means expression was typecasted.
+    Dynstring.clear(received_signature);
+    Dynstring.append(received_signature, 'b');
+    assert(false);
+
+    ret:
     return true;
 }
 
