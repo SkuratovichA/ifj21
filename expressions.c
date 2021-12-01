@@ -305,41 +305,6 @@ static void stack_item_dtor(void *item) {
 }
 
 /**
- * @brief Precedence functions error handling.
- * Check existence of relation between two operators.
- *
- * @param first_op first operator.
- * @param second_op second operator.
- * @return bool.
- */
-static bool precedence_check(op_list_t first_op, op_list_t second_op) {
-    if (first_op == OP_ID) {
-        return second_op != OP_ID;
-    }
-
-    return true;
-//    switch (first_op) {
-//        // id id
-//        // id (
-//        // ) id
-//        // ) (
-//        case OP_ID:
-//        case OP_RPAREN:
-//            return second_op != OP_ID && second_op != OP_LPAREN;
-//        // ( $
-//        case OP_LPAREN:
-//            return second_op != OP_DOLLAR;
-//        // $ )
-//        case OP_DOLLAR:
-//            return second_op != OP_RPAREN;
-//        default:
-//            break;
-//    }
-//
-//    return true;
-}
-
-/**
  * @brief Compare two operators using precedence functions.
  *
  * @param first_op first operator.
@@ -530,14 +495,6 @@ static bool check_rule(sstack_t *r_stack) {
             }
             goto err;
 
-        // ( expr )
-//        case OP_LPAREN:
-//            Stack.pop(r_stack, stack_item_dtor);
-//            if (expr(r_stack) && single_op(r_stack, OP_RPAREN)) {
-//                goto noerr;
-//            }
-//            goto err;
-
         // id
         case OP_ID:
             Stack.pop(r_stack, stack_item_dtor);
@@ -718,6 +675,13 @@ static bool parse_function(sstack_t *stack, bool *function_parsed, bool parents_
  */
 static bool parse_init(dynstring_t *);
 
+/**
+ * @brief Parse parents.
+ *
+ * @param stack for precedence analyse.
+ * @param parents_parsed true if parents were parsed.
+ * @return
+ */
 static bool parse_parents(sstack_t *stack, bool *parents_parsed) {
     debug_msg("parse_parents \n");
 
