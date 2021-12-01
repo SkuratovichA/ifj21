@@ -6,8 +6,6 @@
 
 #include "code_generator.h"
 
-size_t __ADDRESS_OF_START_LIST;
-
 /*
  * Global variables used for code generator.
  */
@@ -163,11 +161,11 @@ static void generate_func_chr() {
               "MOVE LF@p0 LF@%0 \n"
               "DEFVAR LF@check \n"
               "LT LF@check LF@p0 int@0 \n"
-              "JUMPIFEQ $CHR$end LF@check bool@true \n"
+              "JUMPIFEQ $chr$end LF@check bool@true \n"
               "GT LF@check LF@p0 int@255 \n"
-              "JUMPIFEQ $CHR$end LF@check bool@true \n"
+              "JUMPIFEQ $chr$end LF@check bool@true \n"
               "INT2CHAR LF@%res LF@p0 \n"
-              "LABEL $CHR$end \n"
+              "LABEL $chr$end \n"
               "POPFRAME \n"
               "RETURN \n");
 }
@@ -191,12 +189,12 @@ static void generate_func_ord() {
               "STRLEN LF@str_len LF@p0 \n"
               "DEFVAR LF@check \n"
               "LT LF@check LF@p1 int@1 \n"
-              "JUMPIFEQ $ORD$end LF@check bool@true \n"
+              "JUMPIFEQ $ord$end LF@check bool@true \n"
               "GT LF@check LF@p1 LF@str_len \n"
-              "JUMPIFEQ $ORD$end LF@check bool@true \n"
+              "JUMPIFEQ $ord$end LF@check bool@true \n"
               "SUB LF@p1 LF@p1 int@1 \n"
               "STRI2INT LF@%res LF@p0 LF@p1 \n"
-              "LABEL $ORD$end \n"
+              "LABEL $ord$end \n"
               "POPFRAME \n"
               "RETURN \n");
 }
@@ -222,17 +220,17 @@ static void generate_func_substr() {
               "# check params \n"
               "DEFVAR LF@check \n"
               "LT LF@check LF@p1 int@1 \n"
-              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "JUMPIFEQ $substr$end LF@check bool@true \n"
               "LT LF@check LF@p2 int@1 \n"
-              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "JUMPIFEQ $substr$end LF@check bool@true \n"
               "DEFVAR LF@str_len \n"
               "STRLEN LF@str_len LF@p0 \n"
               "GT LF@check LF@p1 LF@str_len \n"
-              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "JUMPIFEQ $substr$end LF@check bool@true \n"
               "GT LF@check LF@p2 LF@str_len \n"
-              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "JUMPIFEQ $substr$end LF@check bool@true \n"
               "LT LF@check LF@p2 LF@p1 \n"
-              "JUMPIFEQ $SUBSTR$end LF@check bool@true \n"
+              "JUMPIFEQ $substr$end LF@check bool@true \n"
               "# for (i = i; i < j; i++) \n"
               "SUB LF@p1 LF@p1 int@1 \n"
               "DEFVAR LF@tmp_char \n"
@@ -244,7 +242,7 @@ static void generate_func_substr() {
               "# if (i < j) goto LOOP \n"
               "LT LF@check LF@p1 LF@p2 \n"
               "JUMPIFEQ LOOP LF@check bool@true \n"
-              "LABEL $SUBSTR$end \n"
+              "LABEL $substr$end \n"
               "POPFRAME \n"
               "RETURN \n");
 }
@@ -260,7 +258,22 @@ static void nil_check_func() {
               "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
               "PUSHS GF@%expr_result \n"
               "PUSHS GF@%expr_result2 \n"
-              "RETURN");
+              "RETURN \n");
+}
+
+/*
+ * @brief Generates to_bool type casting function.
+ */
+static void recast_to_bool_func() {
+    ADD_INSTR("LABEL $$recast_to_bool \n"
+              "POPS GF@%expr_result \n"
+              "JUMPIFNEQ $$recast_to_bool$not_nil GF@%expr_result nil@nil \n"
+              "PUSHS bool@false \n"
+              "JUMP $$recast_to_bool$end \n"
+              "LABEL $$recast_to_bool$not_nil \n"
+              "PUSHS bool@true \n"
+              "LABEL $$recast_to_bool$end \n"
+              "RETURN \n");
 }
 
 /*
@@ -458,9 +471,8 @@ static void generate_var_assignment(dynstring_t *var_name) {
 /*
  * @brief Converts GF@%expr_result int -> float
  */
-static void retype_expr_result(void) {
-    ADD_INSTR("# retype GF@%expr_result");
-    ADD_INSTR("INT2FLOAT GF@%expr_result GF@%expr_result");
+static void recast_expression_to_bool(void) {
+    ADD_INSTR("CALL $$recast_to_bool");
 }
 
 /*
@@ -531,12 +543,36 @@ static void retype_and_push(expr_semantics_t *expr) {
 
 /*
  * @brief Generates code for pushing operand on the stack (with nil check).
- * @param expr stores info about the expr to be pushed.
  */
-static void generate_expression_operand(expr_semantics_t *expr) {
-    ADD_INSTR_PART("PUSHS ");
-    generate_var_value(expr->first_operand);
-    ADD_INSTR_TMP();
+static void generate_expression_operand() {
+    ADD_INSTR("# expr - operand");
+
+    // FIXME
+    ADD_INSTR("MOVE GF@%expr_result int@3");
+    //ADD_INSTR_PART("PUSHS ");
+    //generate_var_value(expr->first_operand);
+    //ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates binary operation.
+ */
+static void generate_expression_binary() {
+    ADD_INSTR("# expr - binary operation");
+
+    // FIXME
+    ADD_INSTR("MOVE GF@%expr_result int@2");
+}
+
+/*
+ * @brief Generates unary operation.
+ */
+static void generate_expression_unary() {
+    ADD_INSTR("# expr - unary operation");
+
+    // FIXME
+    ADD_INSTR("MOVE GF@%expr_result int@1");
+
 }
 
 /*
@@ -829,7 +865,7 @@ static void generate_repeat_until_header() {
  *                     LABEL $end$id
  */
 static void generate_repeat_until_cond() {
-    ADD_INSTR_PART("JUMPIFEQ $repeat$");
+    ADD_INSTR_PART("JUMPIFNEQ $repeat$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_PART(" GF@%expr_result bool@true");
     ADD_INSTR_TMP();
@@ -847,7 +883,7 @@ static void generate_for_default_step() {
 
     ADD_INSTR_PART("MOVE LF@%");
     generate_var_name(var_name, true);
-    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_PART(" int@1");
     ADD_INSTR_TMP();
 }
 
@@ -984,23 +1020,6 @@ static void generate_func_start_param(dynstring_t *param_name, size_t index) {
 }
 
 /*
- * @brief Generates parameter pass to a function.
- * generates sth like:
- *          DEFVAR TF@%0
- *          MOVE TF@%0 int@42
- */
-static void generate_func_pass_param(size_t param_index) {
-    ADD_INSTR_PART("DEFVAR TF@%");
-    ADD_INSTR_INT(param_index);
-    ADD_INSTR_TMP();
-
-    ADD_INSTR_PART("MOVE TF@%");
-    ADD_INSTR_INT(param_index);
-    ADD_INSTR_PART(" GF@%expr_result");
-    ADD_INSTR_TMP();
-}
-
-/*
  * @brief Generates passing return value.
  * generates sth like:
  *          MOVE LF@%return0 GF@%expr_type
@@ -1038,11 +1057,38 @@ static void generate_func_createframe() {
 }
 
 /*
+ * @brief Generates parameter pass to a function.
+ * generates sth like:
+ *          DEFVAR TF@%0
+ *          MOVE TF@%0 GF@%expr_result
+ */
+static void generate_func_call_pass_param(size_t param_index) {
+    ADD_INSTR_PART("DEFVAR TF@%");
+    ADD_INSTR_INT(param_index);
+    ADD_INSTR_TMP();
+
+    ADD_INSTR_PART("MOVE TF@%");
+    ADD_INSTR_INT(param_index);
+    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_TMP();
+}
+
+/*
  * @brief Generates function call.
  */
 static void generate_func_call(char *func_name) {
     ADD_INSTR_PART("CALL $");
     ADD_INSTR_PART(func_name);
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates getting return value after function call.
+ * generates sth like:  MOVE LF%id%res TF@%return0
+ */
+static void generate_func_call_return_value(dynstring_t *id_name, size_t index) {
+    ADD_INSTR_PART("MOVE GF@%expr_result TF@%return");
+    ADD_INSTR_INT(index);
     ADD_INSTR_TMP();
 }
 
@@ -1093,9 +1139,19 @@ static void generate_prog_start() {
     generate_func_write();
     generate_func_tointeger();
     nil_check_func();
+    recast_to_bool_func();
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
     generate_main_start();
+}
+
+/*
+ * @brief Generates comment.
+ */
+static void generate_comment(char *comment) {
+    ADD_INSTR_PART("# ");
+    ADD_INSTR_PART(comment);
+    ADD_INSTR_TMP();
 }
 
 /**
@@ -1110,8 +1166,10 @@ const struct code_generator_interface_t Generator = {
         .var_definition = generate_var_definition,
         .tmp_var_definition = generate_tmp_var_definition,
         .var_assignment = generate_var_assignment,
-        .retype_expr_result = retype_expr_result,
-        .expression = generate_expression,
+        .recast_expression_to_bool = recast_expression_to_bool,
+        .expression_operand = generate_expression_operand,
+        .expression_unary = generate_expression_unary,
+        .expression_binary = generate_expression_binary,
         .expression_pop = generate_expression_pop,
         .push_cond_info = push_cond_info,
         .pop_cond_info = pop_cond_info,
@@ -1131,11 +1189,13 @@ const struct code_generator_interface_t Generator = {
         .func_start = generate_func_start,
         .func_end = generate_func_end,
         .func_start_param = generate_func_start_param,
-        .func_pass_param = generate_func_pass_param,
         .func_pass_return = generate_func_pass_return,
         .func_return_value = generate_func_return_value,
         .func_createframe = generate_func_createframe,
+        .func_call_pass_param = generate_func_call_pass_param,
         .func_call = generate_func_call,
+        .func_call_return_value = generate_func_call_return_value,
         .main_end = generate_main_end,
         .prog_start = generate_prog_start,
+        .comment = generate_comment,
 };

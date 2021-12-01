@@ -178,6 +178,7 @@ static bool break_() {
         goto err;
     }
 
+    // generate break
     Generator.instr_break();
 
     return true;
@@ -262,6 +263,7 @@ static bool cond_body() {
             // generate start of end block
             Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
             Generator.pop_cond_info();
+
             return true;
 
         default:
@@ -432,6 +434,7 @@ static bool for_increment() {
     // do. No explicit step given.
     if (Scanner.get_curr_token().type == KEYWORD_do) {
         // generate step = 1
+        Generator.comment("for loop - default step = 1");
         Generator.for_default_step();
         goto noerr;
     }
@@ -499,6 +502,7 @@ static bool for_cycle() {
     Dynstring.clear(received_signature);
 
     // generate for assignment
+    Generator.comment("for loop - var definition");
     Generator.var_definition(id_name);
 
     // ,
@@ -510,6 +514,7 @@ static bool for_cycle() {
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
 
     // generate terminating `expr`
+    Generator.comment("for loop - terminating expr definition");
     Generator.tmp_var_definition("terminating_cond");
 
     // do | , `expr` do
@@ -641,7 +646,6 @@ static bool while_cycle() {
     SYMSTACK_POP();
     decrease_nesting();
 
-
     Dynstring.dtor(expected_signature);
     Dynstring.dtor(received_signature);
     return true;
@@ -672,7 +676,6 @@ static bool return_stmt() {
     CHECK_EXPR_SIGNATURES(expected_rets, received_rets, ERROR_FUNCTION_SEMANTICS);
 
     // TODO: generate return values.
-
 
     Dynstring.dtor(expected_rets);
     Dynstring.dtor(received_rets);
@@ -719,6 +722,13 @@ static bool repeat_until_cycle() {
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // expression result in LF@%result
     Generator.repeat_until_cond();
+    Generator.comment("repeat-until end");
+    if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
+        Generator.comment("outer repeat-until loop end");
+        instructions.in_loop = false;
+        instructions.outer_loop_id = 0;
+        instructions.before_loop_start = NULL;
+    }
 
     // pop a symstack
     SYMSTACK_POP();
@@ -816,7 +826,9 @@ static bool fun_body(char *id_name) {
     switch (Symstack.get_scope_info(symstack).scope_type) {
         case SCOPE_TYPE_while_cycle:
             Generator.while_end();
+            Generator.comment("while end");
             if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
+                Generator.comment("outer while loop end");
                 instructions.in_loop = false;
                 instructions.outer_loop_id = 0;
                 instructions.before_loop_start = NULL;
@@ -830,6 +842,14 @@ static bool fun_body(char *id_name) {
         case SCOPE_TYPE_for_cycle:;
             dynstring_t *var_name = Dynstring.ctor(id_name);
             Generator.for_end(var_name);
+            Generator.comment("for end");
+            if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
+                Generator.comment("outer for loop end");
+                instructions.in_loop = false;
+                instructions.outer_loop_id = 0;
+                instructions.before_loop_start = NULL;
+            }
+
             Dynstring.dtor(var_name);
             break;
 
