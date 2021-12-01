@@ -2,68 +2,69 @@
 #include <stdio.h>
 
 #include "../progfile.h"
+#include <assert.h>
 
 
 #define NL "\n"
 #define PROLOG "require \"ifj21\" \n"
 
 #define TEST_CASE(number)                                                    \
-  do {                                                                      \
+  do {                                                                       \
       char *_filname;                                                        \
       switch (retcode##number) {                                             \
           case    ERROR_DEFINITION:                                          \
           case    ERROR_TYPE_MISSMATCH:                                      \
           case    ERROR_FUNCTION_SEMANTICS:                                  \
-          case    ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY:                         \
+          case    ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY:                    \
           case    ERROR_SEMANTICS_OTHER:                                     \
-              _filname = "../tests/semantic_errors/sasha" #number "_";        \
+              _filname = "../tests/semantic_errors/sasha" #number "_";       \
               break;                                                         \
           case ERROR_NOERROR:                                                \
-              _filname = "../tests/without_errors/sasha" #number "_";         \
+              _filname = "../tests/without_errors/sasha" #number "_";        \
               break;                                                         \
           case ERROR_SYNTAX:                                                 \
-              _filname = "../tests/syntax_errors/sasha" #number "_";          \
+              _filname = "../tests/syntax_errors/sasha" #number "_";         \
               break;                                                         \
           case ERROR_LEXICAL:                                                \
-              _filname = "../tests/lexical_errors/sasha" #number "_";         \
+              _filname = "../tests/lexical_errors/sasha" #number "_";        \
               break;                                                         \
           default:                                                           \
-              debug_msg_s("Undefined error code: %d\n", retcode##number);     \
-              _filname = "sasha";                                             \
+              debug_msg_s("Undefined error code: %d\n", retcode##number);    \
+              _filname = "sasha";                                            \
       }                                                                      \
-      dynstring_t *filnam = Dynstring.ctor(_filname);                          \
-      Dynstring.append(filnam, retcode ## number + '0');                      \
-      Dynstring.cat(filnam, Dynstring.ctor(".tl"));                           \
-      FILE *fil = fopen(Dynstring.c_str(filnam), "w");                         \
-      assert(fil);                                                            \
-      fprintf(fil, "-- test case %d.\n"                                       \
+      dynstring_t *filnam = Dynstring.ctor(_filname);                        \
+      Dynstring.append(filnam, retcode ## number + '0');                     \
+      Dynstring.cat(filnam, Dynstring.ctor(".tl"));                          \
+      FILE *fil = fopen(Dynstring.c_str(filnam), "w");                       \
+      assert(fil);                                                           \
+      fprintf(fil, "-- test case %d.\n"                                      \
                   "-- Description : %s\n\n"                                  \
                   "-- Expected : '%d'\n",                                    \
                       number, description ## number, retcode ## number);     \
-          fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                  \
-          fclose(fil);                                                        \
-      Pfile.dtor(pf ## number);                                               \
-      debug_msg_s("file created: "                                            \
+          fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                \
+          fclose(fil);                                                       \
+      Pfile.dtor(pf ## number);                                              \
+      debug_msg_s("file created: "                                           \
           "%s %s%c.tl\n",                                                    \
-          Dynstring.c_str(filnam),                                            \
-          _filname, retcode##number + '0');                                   \
-      Dynstring.dtor(filnam);                                                 \
+          Dynstring.c_str(filnam),                                           \
+          _filname, retcode##number + '0');                                  \
+      Dynstring.dtor(filnam);                                                \
   } while (0)
 
-#define STRING_NOERROR(_num, _string)                             \
+#define STRING_NOERROR(_num, _string)                            \
         char *description##_num = "good string";                 \
         int retcode##_num = ERROR_NOERROR;                       \
-        pfile_t *pf##_num = Pfile.ctor(                            \
+        pfile_t *pf##_num = Pfile.ctor(                          \
             PROLOG                                               \
             "function one()                             "NL      \
             "    local s : string =  \"\\x" _string "\" "NL      \
             "end                                        "NL      \
         );                                                       \
 
-#define STRING_ERROR(_num, _string)                             \
+#define STRING_ERROR(_num, _string)                            \
         char *description##_num = "badstring";                 \
         int retcode##_num = ERROR_LEXICAL;                     \
-        pfile_t *pf##_num = Pfile.ctor(                          \
+        pfile_t *pf##_num = Pfile.ctor(                        \
             PROLOG                                             \
             "function one()                             "NL    \
             "    local s : string =      " _string "     "NL   \
@@ -100,6 +101,13 @@
 #define GLOBAL_EXPRESSION_NOERROR(_num, _expr) GLOBAL_EXPRESSION(_num, _expr, ERROR_NOERROR)
 
 int main() {
+
+    system("rm -rf ../tests/*errors/ && echo \"Directories deleted.\"");
+    system("mkdir ../tests/lexical_errors");
+    system("mkdir ../tests/syntax_errors");
+    system("mkdir ../tests/semantic_errors");
+    system("mkdir ../tests/without_errors");
+
     char *description1 = "prolog string";
     int retcode1 = ERROR_NOERROR;
     pfile_t *pf1 = Pfile.ctor(PROLOG);
