@@ -258,7 +258,22 @@ static void nil_check_func() {
               "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
               "PUSHS GF@%expr_result \n"
               "PUSHS GF@%expr_result2 \n"
-              "RETURN");
+              "RETURN \n");
+}
+
+/*
+ * @brief Generates to_bool type casting function.
+ */
+static void to_bool_casting_func() {
+    ADD_INSTR("LABEL $$to_bool_casting \n"
+              "POPS GF@%expr_result \n"
+              "JUMPIFNEQ $$to_bool_casting$not_nil GF@%expr_result nil@nil \n"
+              "PUSHS bool@false \n"
+              "JUMP $$to_bool_casting$end \n"
+              "LABEL $$to_bool_casting$not_nil \n"
+              "PUSHS bool@true \n"
+              "LABEL $$to_bool_casting$end \n"
+              "RETURN \n");
 }
 
 /*
@@ -1125,6 +1140,7 @@ static void generate_prog_start() {
     generate_func_write();
     generate_func_tointeger();
     nil_check_func();
+    to_bool_casting_func();
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
     generate_main_start();
