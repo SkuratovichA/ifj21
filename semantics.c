@@ -424,6 +424,7 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
             break;
     }
 
+    Errors.set_error(ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
     return false;
 
     ret:
@@ -468,6 +469,7 @@ static bool Check_unary_compatability(dynstring_t *type,
             break;
     }
 
+    Errors.set_error(ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
     return false;
 
     ret:
@@ -498,6 +500,7 @@ static bool Check_operand(token_t operand, dynstring_t *expression_type) {
         goto ret;
     }
 
+    Errors.set_error(ERROR_DEFINITION);
     return false;
 
     ret:
