@@ -102,7 +102,7 @@
 
 int main() {
 
-    system("rm -rf ../tests/*errors/ && echo \"Directories deleted.\"");
+    system("rm -rf ../tests/*errors && echo \"Directories deleted.\"");
     system("mkdir ../tests/lexical_errors");
     system("mkdir ../tests/syntax_errors");
     system("mkdir ../tests/semantic_errors");
