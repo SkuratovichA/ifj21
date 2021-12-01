@@ -513,6 +513,7 @@ static bool check_rule(sstack_t *r_stack) {
             goto noerr;
             // TODO: semantic check
             // TODO: generate code for binary operation
+            Generator.expression_binary();
         }
 
         goto err;
@@ -527,6 +528,7 @@ static bool check_rule(sstack_t *r_stack) {
                 goto noerr;
                 // TODO: semantic check
                 // TODO: generate code for unary operation
+                Generator.expression_unary();
             }
             goto err;
 
@@ -543,6 +545,7 @@ static bool check_rule(sstack_t *r_stack) {
             Stack.pop(r_stack, stack_item_dtor);
             // TODO: semantic check
             // TODO: generate code for an operand
+            Generator.expression_operand();
             goto noerr;
 
         default:
@@ -824,7 +827,7 @@ static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
 
     params_cnt++;
     // TODO: generate code for a function parameter
-    Generator.func_pass_param(params_cnt);
+    Generator.func_call_pass_param(params_cnt);
 
     // <fc_other_expr>
     if (!fc_other_expr(received_signature, params_cnt)) {
@@ -859,7 +862,7 @@ static bool fc_expr(dynstring_t *received_signature) {
 
     params_cnt++;
     // TODO: generate code for a function parameter
-    Generator.func_pass_param(params_cnt);
+    Generator.func_call_pass_param(params_cnt);
 
     // <fc_other_expr>
     if (!fc_other_expr(received_signature, params_cnt)) {
@@ -884,7 +887,7 @@ static bool func_call(dynstring_t *id_name) {
 
     dynstring_t *received_signature = Dynstring.ctor("");
 
-    // TODO: generate code for function call start
+    // generate code for function call start
     Generator.func_createframe();
 
     // (
@@ -896,9 +899,10 @@ static bool func_call(dynstring_t *id_name) {
     }
 
     // TODO: check function parameters signature
-    // TODO: generate code for function call end
+
+    // generate code for function call
     Generator.func_call(Dynstring.c_str(id_name));
-    // TODO: generate get retval?
+    // TODO: generate get return values assigment
 
     Dynstring.dtor(received_signature);
     return true;
@@ -1188,7 +1192,9 @@ static bool Default_expression(pfile_t *pfile_,
     // else result is true
     // received_signature is always allocated, but can be empty and it be handled in
     // the parser.
-    // Generator.recast_expression(received_signature);
+    Generator.comment("recast expression to bool");
+    Generator.recast_expression_to_bool();
+
     // clear Dynstring and append a new type means expression was typecasted.
     Dynstring.clear(received_signature);
     Dynstring.append(received_signature, 'b');
