@@ -1673,7 +1673,7 @@ int main() {
     );
 
     char *description98 = "condition with wrong syntax. nil cannot have length";
-    int retcode98 = ERROR_SYNTAX;
+    int retcode98 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
     pfile_t *pf98 = Pfile.ctor(
             PROLOG
             "function write_numbers(counter : nil)    "NL
@@ -1767,7 +1767,7 @@ int main() {
             "end                                                 "NL
             "function four() : string                            "NL
             "end                                                 "NL
-            "one(#(((two) + three) + four))                                             "NL
+            "one(#(((two()) + three()) + four()))                                             "NL
     );
 
 
@@ -1775,7 +1775,7 @@ int main() {
     int retcode104 = ERROR_NOERROR;
     pfile_t *pf104 = Pfile.ctor(
             PROLOG
-            "function one(a : integer) : string                  "NL
+            "function one(a : string) : string                  "NL
             "end                                                 "NL
             "function two() : string                             "NL
             "end                                                 "NL
@@ -1783,7 +1783,7 @@ int main() {
             "end                                                 "NL
             "function four() : string                            "NL
             "end                                                 "NL
-            "one((((two) + three) + four))                                             "NL
+            "one((((two()) + three()) + four()))                                             "NL
     );
 
     char *description105 = "bad string.";
