@@ -78,20 +78,20 @@ static inline bool is_a_function(dynstring_t *id_name) {
  * C = {<, <=, >, >=, ==, ~=}
  * D = {#, not}
  *
- *  |   |  id |   ( |   ) |   A |   B |   C |   D |  .. | and |  or |   $ |
- *  | f |  12 |   0 |  12 |  10 |   8 |   6 |  12 |   6 |   4 |   2 |   0 |
- *  | g |  13 |  13 |   0 |   9 |   7 |   5 |  11 |   7 |   3 |   1 |   0 |
+ *  |   |  id |   A |   B |   C |   D |  .. | and |  or |   $ |
+ *  | f |  12 |  10 |   8 |   6 |  12 |   6 |   4 |   2 |   0 |
+ *  | g |  13 |   9 |   7 |   5 |  11 |   7 |   3 |   1 |   0 |
  */
 
 /**
  * f - represents rows of the precedence table.
  */
-static const int f[20] = {12, 0, 12, 10, 10, 10, 8, 8, 6, 6, 6, 6, 6, 6, 12, 12, 6, 4, 2, 0};
+static const int f[18] = {12, 10, 10, 10, 8, 8, 6, 6, 6, 6, 6, 6, 12, 12, 6, 4, 2, 0};
 
 /**
  * g - represents columns.
  */
-static const int g[20] = {13, 13, 0, 9, 9, 9, 7, 7, 5, 5, 5, 5, 5, 5, 11, 11, 7, 3, 1, 0};
+static const int g[18] = {13, 9, 9, 9, 7, 7, 5, 5, 5, 5, 5, 5, 11, 11, 7, 3, 1, 0};
 
 /**
  * @brief
@@ -112,10 +112,6 @@ static op_list_t get_op(int tok_type) {
         case KEYWORD_1:
         case TOKEN_ID:
             return OP_ID;
-        case TOKEN_LPAREN:
-            return OP_LPAREN;
-        case TOKEN_RPAREN:
-            return OP_RPAREN;
         case TOKEN_HASH:
             return OP_HASH;
         case KEYWORD_not:
@@ -163,10 +159,6 @@ static char *op_to_string(op_list_t op) {
     switch (op) {
         case OP_ID:
             return "id";
-        case OP_LPAREN:
-            return "(";
-        case OP_RPAREN:
-            return ")";
         case OP_HASH:
             return "#";
         case OP_NOT:
@@ -321,25 +313,30 @@ static void stack_item_dtor(void *item) {
  * @return bool.
  */
 static bool precedence_check(op_list_t first_op, op_list_t second_op) {
-    switch (first_op) {
-        // id id
-        // id (
-        // ) id
-        // ) (
-        case OP_ID:
-        case OP_RPAREN:
-            return second_op != OP_ID && second_op != OP_LPAREN;
-        // ( $
-        case OP_LPAREN:
-            return second_op != OP_DOLLAR;
-        // $ )
-        case OP_DOLLAR:
-            return second_op != OP_RPAREN;
-        default:
-            break;
+    if (first_op == OP_ID) {
+        return second_op != OP_ID;
     }
 
     return true;
+//    switch (first_op) {
+//        // id id
+//        // id (
+//        // ) id
+//        // ) (
+//        case OP_ID:
+//        case OP_RPAREN:
+//            return second_op != OP_ID && second_op != OP_LPAREN;
+//        // ( $
+//        case OP_LPAREN:
+//            return second_op != OP_DOLLAR;
+//        // $ )
+//        case OP_DOLLAR:
+//            return second_op != OP_RPAREN;
+//        default:
+//            break;
+//    }
+//
+//    return true;
 }
 
 /**
@@ -354,7 +351,8 @@ static bool precedence_check(op_list_t first_op, op_list_t second_op) {
  * @return bool.
  */
 static bool precedence_cmp(op_list_t first_op, op_list_t second_op, int *cmp) {
-    if (!precedence_check(first_op, second_op)) {
+    // id id
+    if (first_op == OP_ID && second_op == OP_ID) {
         return false;
     }
 
@@ -531,12 +529,12 @@ static bool check_rule(sstack_t *r_stack) {
             goto err;
 
         // ( expr )
-        case OP_LPAREN:
-            Stack.pop(r_stack, stack_item_dtor);
-            if (expr(r_stack) && single_op(r_stack, OP_RPAREN)) {
-                goto noerr;
-            }
-            goto err;
+//        case OP_LPAREN:
+//            Stack.pop(r_stack, stack_item_dtor);
+//            if (expr(r_stack) && single_op(r_stack, OP_RPAREN)) {
+//                goto noerr;
+//            }
+//            goto err;
 
         // id
         case OP_ID:
@@ -570,6 +568,7 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
 
     // Push expression if exists
     if (expr != NULL) {
+        debug_msg("push expression\n");
         Stack.push(stack, stack_item_copy(expr));
     }
 
@@ -584,13 +583,17 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
         STACK_ITEM_PEEK(stack, top);
     }
 
-    // Check rule
-    if (!check_rule(r_stack)) {
-        if (!Stack.is_empty(r_stack)) {
-            debug_msg("Reduction error!\n");
-            Errors.set_error(ERROR_SYNTAX);
-            goto err;
-        }
+    /**
+     * | check_rule | stack     | state  |
+     * | true       | empty     | ok     |
+     * | true       | not empty | not ok |
+     * | false      | empty     | not ok |
+     * | false      | not empty | not ok |
+     */
+    if (!check_rule(r_stack) || !Stack.is_empty(r_stack)) {
+        debug_msg("Reduction error!\n");
+        Errors.set_error(ERROR_SYNTAX);
+        goto err;
     }
 
     // Delete less than symbol
@@ -613,16 +616,18 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
  *
  * @param first_op first operator.
  * @param second_op second operator.
- * @param is_func_param true if expression is a parameter of function.
  * @param function_parsed true if function was parsed.
+ * @param parents_parsed true if parents were parsed.
  * @return bool.
  */
-static bool expression_end(op_list_t first_op, op_list_t second_op, bool is_func_param, bool function_parsed) {
+static bool expression_end(op_list_t first_op,
+                           op_list_t second_op,
+                           bool function_parsed,
+                           bool parents_parsed) {
     bool is_token_id = (Scanner.get_curr_token().type == TOKEN_ID);
     return  (first_op == OP_ID && is_token_id) ||
             (function_parsed && is_token_id) ||
-            (first_op == OP_RPAREN && is_token_id) ||
-            (second_op == OP_RPAREN && is_func_param);
+            (parents_parsed && is_token_id);
 }
 
 /**
@@ -652,12 +657,27 @@ static bool func_call(dynstring_t *);
  *
  * @param stack stack for precedence analyse.
  * @param function_parsed true if function was parsed.
+ * @param parents_parsed true if parents were parsed.
  * @return int.
  */
-static bool parse_function(sstack_t *stack, bool *function_parsed) {
+static bool parse_function(sstack_t *stack, bool *function_parsed, bool parents_parsed) {
+    debug_msg("parse_function\n");
+
     dynstring_t *id_name = NULL;
+    stack_item_t *top = NULL;
+
+    // If parents were parsed, continue expression parsing
+    if (parents_parsed) {
+        goto noerr;
+    }
 
     if (Scanner.get_curr_token().type != TOKEN_ID) {
+        goto noerr;
+    }
+
+    // If first operand is id/string/number/integer, continue expression parsing
+    STACK_ITEM_PEEK(stack, top);
+    if (top->type == ITEM_TYPE_TOKEN && get_op(top->token.type) == OP_ID) {
         goto noerr;
     }
 
@@ -688,25 +708,72 @@ static bool parse_function(sstack_t *stack, bool *function_parsed) {
     return false;
 }
 
+/** Parse initialize declaration for parse_parents.
+ *
+ * @param received_signature is an initialized empty vector.
+ * @return bool.
+ */
+static bool parse_init(dynstring_t *);
+
+static bool parse_parents(sstack_t *stack, bool *parents_parsed) {
+    debug_msg("parse_parents \n");
+
+    dynstring_t *received_signature = Dynstring.ctor("");
+
+    // (
+    if (Scanner.get_curr_token().type != TOKEN_LPAREN) {
+        goto noerr;
+    }
+
+    EXPECTED(TOKEN_LPAREN);
+
+    // expr
+    if (!parse_init(received_signature)) {
+        goto err;
+    }
+
+    debug_msg("rparen\n");
+
+    // )
+    EXPECTED(TOKEN_RPAREN);
+
+    *parents_parsed = true;
+
+    // Push an expression
+    Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR, NULL));
+
+    noerr:
+    Dynstring.dtor(received_signature);
+    return true;
+    err:
+    Dynstring.dtor(received_signature);
+    return false;
+}
+
 /**
  * @brief Expression parsing.
  *
  * @param stack stack for precedence analyse.
  * @param received_signature is an initialized empty vector.
- * @param is_func_param true if expression is a parameter of function.
  * @param hard_reduce reduce without precedence analyse.
  * @return bool.
  */
-static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func_param, bool hard_reduce) {
+static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_reduce) {
     debug_msg("parse ->\n");
 
     int cmp;
     stack_item_t *expr = NULL;
     stack_item_t *top = NULL;
     bool function_parsed = false;
+    bool parents_parsed = false;
+
+    // Try parse parents
+    if (!parse_parents(stack, &parents_parsed)) {
+        goto err;
+    }
 
     // Try parse a function
-    if (!parse_function(stack, &function_parsed)) {
+    if (!parse_function(stack, &function_parsed, parents_parsed)) {
         goto err;
     }
 
@@ -725,7 +792,7 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
 
     // Check an expression end
     if (!hard_reduce) {
-        hard_reduce = expression_end(first_op, second_op, is_func_param, function_parsed);
+        hard_reduce = expression_end(first_op, second_op, function_parsed, parents_parsed);
     }
 
     // Check a success parsing
@@ -762,7 +829,7 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
     }
     debug_msg("\n");
 
-    if (!parse(stack, received_signature, is_func_param, hard_reduce)) {
+    if (!parse(stack, received_signature, hard_reduce)) {
         goto err;
     }
 
@@ -778,10 +845,9 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool is_func
  * @brief Expression parsing initialization.
  *
  * @param received_signature is an initialized empty vector.
- * @param is_func_param true if expression is a parameter of function.
  * @return bool.
  */
-static bool parse_init(dynstring_t *received_signature, bool is_func_param) {
+static bool parse_init(dynstring_t *received_signature) {
     debug_msg("parse_init ->\n");
 
     sstack_t *stack = Stack.ctor();
@@ -790,7 +856,7 @@ static bool parse_init(dynstring_t *received_signature, bool is_func_param) {
     Stack.push(stack, stack_item_ctor(ITEM_TYPE_DOLLAR, NULL));
 
     // Parse expression
-    if (!parse(stack, received_signature, is_func_param, false)) {
+    if (!parse(stack, received_signature, false)) {
         goto err;
     }
 
@@ -818,7 +884,7 @@ static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
     EXPECTED(TOKEN_COMMA);
 
     // expr
-    if (!parse_init(received_signature, true)) {
+    if (!parse_init(received_signature)) {
         goto err;
     }
 
@@ -852,7 +918,7 @@ static bool fc_expr(dynstring_t *received_signature) {
     EXPECTED_OPT(TOKEN_RPAREN);
 
     // expr
-    if (!parse_init(received_signature, true)) {
+    if (!parse_init(received_signature)) {
         goto err;
     }
 
@@ -921,7 +987,7 @@ static bool r_other_expr(dynstring_t *received_signature, size_t *return_cnt) {
     EXPECTED(TOKEN_COMMA);
 
     // expr
-    if (!parse_init(received_signature, false)) {
+    if (!parse_init(received_signature)) {
         goto err;
     }
     (*return_cnt)--;
@@ -950,7 +1016,7 @@ static bool r_expr(dynstring_t *received_signature, size_t return_cnt) {
     debug_msg("<r_expr> ->\n");
 
     // expr
-    if (!parse_init(received_signature, false)) {
+    if (!parse_init(received_signature)) {
         return false;
     }
     return_cnt--;
@@ -990,7 +1056,7 @@ static bool a_other_expr(list_t *ids_list) {
     EXPECTED(TOKEN_COMMA);
 
     // expr
-    if (!parse_init(received_signature, false)) {
+    if (!parse_init(received_signature)) {
         goto err;
     }
 
@@ -1025,7 +1091,7 @@ static bool a_expr(list_t *ids_list) {
     dynstring_t *received_signature = Dynstring.ctor("");
 
     // expr
-    if (!parse_init(received_signature, false)) {
+    if (!parse_init(received_signature)) {
         goto err;
     }
 
@@ -1159,7 +1225,7 @@ static bool Default_expression(pfile_t *pfile_,
     pfile = pfile_;
 
     // expr
-    if (!parse_init(received_signature, false)) {
+    if (!parse_init(received_signature)) {
         return false;
     }
 

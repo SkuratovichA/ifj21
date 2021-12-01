@@ -17,8 +17,6 @@
  */
 typedef enum op_list {
     OP_ID,
-    OP_LPAREN,
-    OP_RPAREN,
     OP_MUL,
     OP_DIV_F,
     OP_DIV_I,
