@@ -264,15 +264,15 @@ static void nil_check_func() {
 /*
  * @brief Generates to_bool type casting function.
  */
-static void to_bool_casting_func() {
-    ADD_INSTR("LABEL $$to_bool_casting \n"
+static void recast_to_bool_func() {
+    ADD_INSTR("LABEL $$recast_to_bool \n"
               "POPS GF@%expr_result \n"
-              "JUMPIFNEQ $$to_bool_casting$not_nil GF@%expr_result nil@nil \n"
+              "JUMPIFNEQ $$recast_to_bool$not_nil GF@%expr_result nil@nil \n"
               "PUSHS bool@false \n"
-              "JUMP $$to_bool_casting$end \n"
-              "LABEL $$to_bool_casting$not_nil \n"
+              "JUMP $$recast_to_bool$end \n"
+              "LABEL $$recast_to_bool$not_nil \n"
               "PUSHS bool@true \n"
-              "LABEL $$to_bool_casting$end \n"
+              "LABEL $$recast_to_bool$end \n"
               "RETURN \n");
 }
 
@@ -471,9 +471,8 @@ static void generate_var_assignment(dynstring_t *var_name) {
 /*
  * @brief Converts GF@%expr_result int -> float
  */
-static void retype_expr_result(void) {
-    ADD_INSTR("# retype GF@%expr_result");
-    ADD_INSTR("INT2FLOAT GF@%expr_result GF@%expr_result");
+static void recast_expression_to_bool(void) {
+    ADD_INSTR("CALL $$recast_to_bool");
 }
 
 /*
@@ -1140,7 +1139,7 @@ static void generate_prog_start() {
     generate_func_write();
     generate_func_tointeger();
     nil_check_func();
-    to_bool_casting_func();
+    recast_to_bool_func();
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
     generate_main_start();
@@ -1167,7 +1166,7 @@ const struct code_generator_interface_t Generator = {
         .var_definition = generate_var_definition,
         .tmp_var_definition = generate_tmp_var_definition,
         .var_assignment = generate_var_assignment,
-        .retype_expr_result = retype_expr_result,
+        .recast_expression_to_bool = recast_expression_to_bool,
         .expression_operand = generate_expression_operand,
         .expression_unary = generate_expression_unary,
         .expression_binary = generate_expression_binary,

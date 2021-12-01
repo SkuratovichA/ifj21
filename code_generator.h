@@ -82,7 +82,7 @@ struct code_generator_interface_t {
     /*
      * @brief Converts GF@%expr_result int -> float
      */
-    void (*retype_expr_result)(void);
+    void (*recast_expression_to_bool)(void);
 
     /*
      * @brief Generates expressions reduce.
