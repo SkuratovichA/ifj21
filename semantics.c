@@ -543,40 +543,41 @@ static void Dtor_expr(expr_semantics_t *self) {
 //}
 
 static bool Check_signatures_compatibility(dynstring_t *signature_expected,
-                                           dynstring_t *return_received,
+                                           dynstring_t *signature_received,
                                            int error) {
     debug_msg("\n");
-    if (signature_expected == NULL || return_received == NULL) {
+    if (signature_expected == NULL || signature_received == NULL) {
         debug_msg_s("\t%s is NULL!\n", signature_expected == NULL ? "expected signature" : "received signature");
         Errors.set_error(ERROR_INTERNAL);
         return false;
     }
-    // return more than we can.
-    if (Dynstring.len(return_received) > Dynstring.len(signature_expected)) {
+
+    // more than we can.
+    if (Dynstring.len(signature_received) > Dynstring.len(signature_expected)) {
         debug_msg_s("\t#received_signature(%zu) > #expected_signature(%zu)\n",
-                    Dynstring.len(return_received), Dynstring.len(signature_expected));
+                    Dynstring.len(signature_received), Dynstring.len(signature_expected));
         Errors.set_error(error);
         return false;
     }
 
-    // truncate to the length of the shortest string.
-    if (Dynstring.len(return_received) < Dynstring.len(signature_expected)) {
-        Dynstring.trunc_to_len(signature_expected, Dynstring.len(return_received));
+    // truncate to the length of the received vector if received is shorted.
+    if (Dynstring.len(signature_received) < Dynstring.len(signature_expected)) {
+        Dynstring.trunc_to_len(signature_expected, Dynstring.len(signature_received));
     }
 
     // check datatypes.
     // take in mind:
     //               1. number is a superset of integer.
-    //               2. nil in signature_expected -> nil in return_received.
-    //               3. everything in signature_expected -> nil in return_received. received[i] = 'n'
+    //               2. nil in signature_expected -> nil in signature_received.
+    //               3. everything in signature_expected -> nil in signature_received. received[i] = 'n'
     char *expected = Dynstring.c_str(signature_expected);
-    char *received = Dynstring.c_str(return_received);
+    char *received = Dynstring.c_str(signature_received);
     for (size_t i = 0; i < Dynstring.len(signature_expected); i++) {
         if (expected[i] != received[i]) {
             bool err = !((expected[i] == 'f' && received[i] == 'i') || received[i] == 'n');
             if (err) {
                 debug_msg_s("\tmismatched signatures: exp(%s) x res(%s)\n",
-                            Dynstring.c_str(signature_expected), Dynstring.c_str(return_received));
+                            Dynstring.c_str(signature_expected), Dynstring.c_str(signature_received));
                 Errors.set_error(error);
                 return false;
             }

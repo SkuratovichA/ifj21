@@ -197,7 +197,9 @@ static void Trunc_to_len(dynstring_t *self, size_t new_len) {
  * @return pointer to the new dynstring_t object.
  */
 static dynstring_t *Str_dup(dynstring_t *s) {
-    soft_assert(s != NULL, ERROR_INTERNAL);
+    if (s == NULL) {
+        return Str_ctor("");
+    }
     soft_assert(s->str != NULL, ERROR_INTERNAL);
 
     return Str_ctor(s->str);

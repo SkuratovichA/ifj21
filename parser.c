@@ -104,22 +104,22 @@ void print_error_unexpected_token(const char *a, const char *b) {
         Symstack.put_symbol(symstack, _name, type);                     \
     } while (0)
 
-#define PARSE_DEFAULT_EXPRESSION(received_signature)                 \
-    do {                                                               \
-        if (!Expr.default_expression(pfile, received_signature)) {   \
-            debug_msg("\n");                                           \
-            debug_msg_s("\t\t[error] assignment expression failed.\n");\
-            goto err;                                                  \
-        }                                                              \
+#define PARSE_DEFAULT_EXPRESSION(received_signature, expr_type)               \
+    do {                                                                     \
+        if (!Expr.default_expression(pfile, received_signature, expr_type)) { \
+            debug_msg("\n");                                                 \
+            debug_msg_s("\t\t[error] assignment expression failed.\n");      \
+            goto err;                                                        \
+        }                                                                    \
     } while(0)
 
-#define PARSE_RETURN_EXPRESSIONS(received_signature)                   \
-    do {                                                              \
-        if (!Expr.return_expressions(pfile, received_signature)) {     \
-            debug_msg("\n");                                          \
-            debug_msg_s("\t\t[error] return expression failed.\n");   \
-            goto err;                                                 \
-        }                                                             \
+#define PARSE_RETURN_EXPRESSIONS(received_signature, return_count)                \
+    do {                                                                         \
+        if (!Expr.return_expressions(pfile, received_signature, return_count)) {  \
+            debug_msg("\n");                                                     \
+            debug_msg_s("\t\t[error] return expression failed.\n");              \
+            goto err;                                                            \
+        }                                                                        \
     } while(0)
 
 #define PARSE_FUNCTION_EXPRESSION()                                    \
@@ -178,6 +178,7 @@ static bool break_() {
         goto err;
     }
 
+    // generate break
     Generator.instr_break();
 
     return true;
@@ -262,6 +263,7 @@ static bool cond_body() {
             // generate start of end block
             Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
             Generator.pop_cond_info();
+
             return true;
 
         default:
@@ -276,7 +278,7 @@ static bool cond_body() {
 /** Conditional(if or elseif statement). Contains an expression and body.
  * Symtable is created right before calling this function.
  *
- * !rule <cond_stmt> -> `expr` then <cond_body>
+ * !rule <cond_stmt> -> [default_expression] then <cond_body>
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -287,9 +289,12 @@ static bool cond_stmt() {
     dynstring_t *expected_signature = Dynstring.ctor("b");
 
     // expr
-    PARSE_DEFAULT_EXPRESSION(received_signature);
-    // semantic check
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_CONDITIONAL);
+    // semantic check, to be more precise, it will check expression for emptiness.
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
+
+    // TODO: generate code for a conditional statement
+
     // then
     EXPECTED(KEYWORD_then);
     // generate condition evaluation (JUMPIFNEQ ...)
@@ -370,9 +375,9 @@ static bool repeat_body() {
 
 /** Optional assignment after a local variable declaration.
  *
- * Here, an assign token is processed(if it is), and expression
+ * Here, an assign token is processed(if it is, of course), and expression
  * parsing begins.
- * !rule <assignment> -> e | = `expr`
+ * !rule <assignment> -> e | = [default_expression]
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -394,7 +399,9 @@ static bool assignment(dynstring_t *id_name, int id_type) {
     // =
     EXPECTED(TOKEN_ASSIGN);
     // <expr>
-    PARSE_DEFAULT_EXPRESSION(received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_DEFAULT);
+
+    // local int : integer
 
     // todo: add type recasting in the case of "i" and "f" in the assignment
     // probably add flag for recasting i -> f
@@ -414,19 +421,20 @@ static bool assignment(dynstring_t *id_name, int id_type) {
 
 /** For assignment.
  *
- * !rule <for_assignment> -> do | , `expr` do
+ * !rule <for_increment> -> do | , [default_expression] do
  *
  * @param pfile pfile
  * @return bool.
  */
-static bool for_assignment() {
-    debug_msg("<for_assignment> ->\n");
+static bool for_increment() {
+    debug_msg("<for_increment> ->\n");
     dynstring_t *expected_signature = Dynstring.ctor("f");
     dynstring_t *received_signature = Dynstring.ctor("");
 
     // do. No explicit step given.
     if (Scanner.get_curr_token().type == KEYWORD_do) {
         // generate step = 1
+        Generator.comment("for loop - default step = 1");
         Generator.for_default_step();
         goto noerr;
     }
@@ -434,7 +442,7 @@ static bool for_assignment() {
     // ,
     EXPECTED(TOKEN_COMMA);
     // expr
-    PARSE_DEFAULT_EXPRESSION(received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_DEFAULT);
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // generate step
     Generator.tmp_var_definition("step");
@@ -452,7 +460,7 @@ static bool for_assignment() {
 }
 
 /** For cycle.
- * !rule <for_cycle> -> for id = `expr` , `expr` <for_assignment> <fun_body>
+ * !rule <for_cycle> -> for id = [default_expression] , [default_expression] <for_increment> <fun_body>
  *
  * @param pfile a program.
  * @return bool.
@@ -487,28 +495,30 @@ static bool for_cycle() {
     // =
     EXPECTED(TOKEN_ASSIGN);
     // expr
-    PARSE_DEFAULT_EXPRESSION(received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_DEFAULT);
     // check signatures
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // for reusing
     Dynstring.clear(received_signature);
 
     // generate for assignment
+    Generator.comment("for loop - var definition");
     Generator.var_definition(id_name);
 
     // ,
     EXPECTED(TOKEN_COMMA);
 
     // terminating `expr` in for cycle.
-    PARSE_DEFAULT_EXPRESSION(received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_DEFAULT);
     // check signatures for an assignment.
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
 
     // generate terminating `expr`
+    Generator.comment("for loop - terminating expr definition");
     Generator.tmp_var_definition("terminating_cond");
 
     // do | , `expr` do
-    if (!for_assignment()) {
+    if (!for_increment()) {
         goto err;
     }
 
@@ -596,7 +606,7 @@ static bool var_definition() {
 
 /** While cycle.
  *
- * !rule <while_cycle> -> while `expr` do <fun_body>
+ * !rule <while_cycle> -> while [default_expression] do <fun_body>
  *
  * @param pflile
  * @return
@@ -621,7 +631,7 @@ static bool while_cycle() {
     }
     Generator.while_header();
     // parse expressions
-    PARSE_DEFAULT_EXPRESSION(received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_CONDITIONAL);
     // check operation semantics
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // expression result in LF@%result
@@ -636,7 +646,6 @@ static bool while_cycle() {
     SYMSTACK_POP();
     decrease_nesting();
 
-
     Dynstring.dtor(expected_signature);
     Dynstring.dtor(received_signature);
     return true;
@@ -648,7 +657,7 @@ static bool while_cycle() {
 
 /** Return statement.
  *
- * !rule <return_stmt> -> return <return_expr_list>
+ * !rule <return_stmt> -> return [return_expressions]
  * @param pfile
  * @return
  */
@@ -658,12 +667,15 @@ static bool return_stmt() {
     // create expected returns vector from returns
     dynstring_t *expected_rets = Dynstring.dup(
             Symstack.get_parent_func(symstack)->function_semantics->definition.returns);
+    debug_assert(expected_rets != NULL && "string created with Dynstring.dup must not be NULL");
 
     EXPECTED(KEYWORD_return);
     // return expr
-    PARSE_RETURN_EXPRESSIONS(received_rets);
+    PARSE_RETURN_EXPRESSIONS(received_rets, Dynstring.len(expected_rets));
     // check signatures
     CHECK_EXPR_SIGNATURES(expected_rets, received_rets, ERROR_FUNCTION_SEMANTICS);
+
+    // TODO: generate return values.
 
     Dynstring.dtor(expected_rets);
     Dynstring.dtor(received_rets);
@@ -705,11 +717,18 @@ static bool repeat_until_cycle() {
         goto err;
     }
     // expr
-    PARSE_DEFAULT_EXPRESSION(received_signature);
+    PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_CONDITIONAL);
     // check type compatibility in 'until' condition.
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // expression result in LF@%result
     Generator.repeat_until_cond();
+    Generator.comment("repeat-until end");
+    if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
+        Generator.comment("outer repeat-until loop end");
+        instructions.in_loop = false;
+        instructions.outer_loop_id = 0;
+        instructions.before_loop_start = NULL;
+    }
 
     // pop a symstack
     SYMSTACK_POP();
@@ -731,8 +750,8 @@ static bool repeat_until_cycle() {
  * !rule <fun_stmt> -> <while_cycle>
  * !rule <fun_stmt> -> <var_definition>
  * !rule <fun_stmt> -> <for_cycle>
- * !rule <fun_stmt> -> `expr`
- * !rule <fun_stmt> -> <break>
+ * !rule <fun_stmt> -> [function_expression]
+ * !rule <fun_stmt> -> break
  *
  *
  * @param pfile input file for Scanner.get_next_token().
@@ -742,7 +761,7 @@ static bool fun_stmt() {
     debug_msg("<fun_stmt> ->\n");
 
     switch (Scanner.get_curr_token().type) {
-        // for <for_def>, `expr` <for_assignment> <fun_body>
+        // for <for_def>, `expr` <for_increment> <fun_body>
         case KEYWORD_for:
             return for_cycle();
 
@@ -807,7 +826,9 @@ static bool fun_body(char *id_name) {
     switch (Symstack.get_scope_info(symstack).scope_type) {
         case SCOPE_TYPE_while_cycle:
             Generator.while_end();
+            Generator.comment("while end");
             if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
+                Generator.comment("outer while loop end");
                 instructions.in_loop = false;
                 instructions.outer_loop_id = 0;
                 instructions.before_loop_start = NULL;
@@ -821,6 +842,14 @@ static bool fun_body(char *id_name) {
         case SCOPE_TYPE_for_cycle:;
             dynstring_t *var_name = Dynstring.ctor(id_name);
             Generator.for_end(var_name);
+            Generator.comment("for end");
+            if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
+                Generator.comment("outer for loop end");
+                instructions.in_loop = false;
+                instructions.outer_loop_id = 0;
+                instructions.before_loop_start = NULL;
+            }
+
             Dynstring.dtor(var_name);
             break;
 
@@ -833,8 +862,7 @@ static bool fun_body(char *id_name) {
             break;
 
         default:
-            debug_msg("Shouldn't be here.\n");
-            assert(0);
+            debug_assert(!"Shouldn't be here.\n");
             break;
     }
 
@@ -884,6 +912,7 @@ static bool other_funparams(pfile_t *pfile, func_info_t function_def_info, size_
 
     noerr:
     Dynstring.dtor(id_name);
+    return true;
     err:
     Dynstring.dtor(id_name);
     return false;
@@ -926,7 +955,6 @@ static bool funparam_def_list(pfile_t *pfile, func_info_t function_def_info) {
     if (!other_funparams(pfile, function_def_info, param_index)) {
         goto err;
     }
-
 
     noerr:
     Dynstring.dtor(id_name);
@@ -1163,8 +1191,8 @@ static bool function_definition() {
 /** Statement(global statement) rule.
  *
  * function declaration: !rule <stmt> -> <function_declaration>
- * function definition: !rule <stmt> -> <function_definintion>
- * function call: !rule <stmt> -> `expr`
+ * function definition: !rule <stmt> -> <function_definition>
+ * function call: !rule <stmt> -> [global_expression]
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.

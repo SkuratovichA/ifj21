@@ -64,7 +64,7 @@ void print_error_unexpected_token(const char *, const char *);
         }                                                                   \
     } while (0)
 
-#define EXPECTED_OPT(_tok)                                      \
+#define EXPECTED_OPT(_tok)                                       \
     do {                                                        \
         if (Scanner.get_curr_token().type == (_tok)) {          \
             EXPECTED(_tok);                                     \

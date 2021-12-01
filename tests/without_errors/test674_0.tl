@@ -2,7 +2,7 @@ require "ifj21"
 
 function chuj(n : integer, s : string) : integer
     local a : integer = 0
-    if string == "chch" then
+    if s == "chch" then
 	    while a < (n*n) do
 		a = n + a * a 
 	    end
