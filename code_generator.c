@@ -529,12 +529,36 @@ static void retype_and_push(expr_semantics_t *expr) {
 
 /*
  * @brief Generates code for pushing operand on the stack (with nil check).
- * @param expr stores info about the expr to be pushed.
  */
-static void generate_expression_operand(expr_semantics_t *expr) {
-    ADD_INSTR_PART("PUSHS ");
-    generate_var_value(expr->first_operand);
-    ADD_INSTR_TMP();
+static void generate_expression_operand() {
+    ADD_INSTR("# expr - operand");
+
+    // FIXME
+    ADD_INSTR("MOVE GF@%expr_result int@3");
+    //ADD_INSTR_PART("PUSHS ");
+    //generate_var_value(expr->first_operand);
+    //ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates binary operation.
+ */
+static void generate_expression_binary() {
+    ADD_INSTR("# expr - binary operation");
+
+    // FIXME
+    ADD_INSTR("MOVE GF@%expr_result int@2");
+}
+
+/*
+ * @brief Generates unary operation.
+ */
+static void generate_expression_unary() {
+    ADD_INSTR("# expr - unary operation");
+
+    // FIXME
+    ADD_INSTR("MOVE GF@%expr_result int@1");
+
 }
 
 /*
@@ -845,7 +869,7 @@ static void generate_for_default_step() {
 
     ADD_INSTR_PART("MOVE LF@%");
     generate_var_name(var_name, true);
-    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_PART(" int@1");
     ADD_INSTR_TMP();
 }
 
@@ -982,23 +1006,6 @@ static void generate_func_start_param(dynstring_t *param_name, size_t index) {
 }
 
 /*
- * @brief Generates parameter pass to a function.
- * generates sth like:
- *          DEFVAR TF@%0
- *          MOVE TF@%0 int@42
- */
-static void generate_func_pass_param(size_t param_index) {
-    ADD_INSTR_PART("DEFVAR TF@%");
-    ADD_INSTR_INT(param_index);
-    ADD_INSTR_TMP();
-
-    ADD_INSTR_PART("MOVE TF@%");
-    ADD_INSTR_INT(param_index);
-    ADD_INSTR_PART(" GF@%expr_result");
-    ADD_INSTR_TMP();
-}
-
-/*
  * @brief Generates passing return value.
  * generates sth like:
  *          MOVE LF@%return0 GF@%expr_type
@@ -1036,11 +1043,38 @@ static void generate_func_createframe() {
 }
 
 /*
+ * @brief Generates parameter pass to a function.
+ * generates sth like:
+ *          DEFVAR TF@%0
+ *          MOVE TF@%0 GF@%expr_result
+ */
+static void generate_func_call_pass_param(size_t param_index) {
+    ADD_INSTR_PART("DEFVAR TF@%");
+    ADD_INSTR_INT(param_index);
+    ADD_INSTR_TMP();
+
+    ADD_INSTR_PART("MOVE TF@%");
+    ADD_INSTR_INT(param_index);
+    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_TMP();
+}
+
+/*
  * @brief Generates function call.
  */
 static void generate_func_call(char *func_name) {
     ADD_INSTR_PART("CALL $");
     ADD_INSTR_PART(func_name);
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates getting return value after function call.
+ * generates sth like:  MOVE LF%id%res TF@%return0
+ */
+static void generate_func_call_return_value(dynstring_t *id_name, size_t index) {
+    ADD_INSTR_PART("MOVE GF@%expr_result TF@%return");
+    ADD_INSTR_INT(index);
     ADD_INSTR_TMP();
 }
 
@@ -1096,6 +1130,15 @@ static void generate_prog_start() {
     generate_main_start();
 }
 
+/*
+ * @brief Generates comment.
+ */
+static void generate_comment(char *comment) {
+    ADD_INSTR_PART("# ");
+    ADD_INSTR_PART(comment);
+    ADD_INSTR_TMP();
+}
+
 /**
  * Interface to use when dealing with code generator.
  * Functions are in struct so we can use them in different files.
@@ -1109,7 +1152,9 @@ const struct code_generator_interface_t Generator = {
         .tmp_var_definition = generate_tmp_var_definition,
         .var_assignment = generate_var_assignment,
         .retype_expr_result = retype_expr_result,
-        .expression = generate_expression,
+        .expression_operand = generate_expression_operand,
+        .expression_unary = generate_expression_unary,
+        .expression_binary = generate_expression_binary,
         .expression_pop = generate_expression_pop,
         .push_cond_info = push_cond_info,
         .pop_cond_info = pop_cond_info,
@@ -1129,11 +1174,13 @@ const struct code_generator_interface_t Generator = {
         .func_start = generate_func_start,
         .func_end = generate_func_end,
         .func_start_param = generate_func_start_param,
-        .func_pass_param = generate_func_pass_param,
         .func_pass_return = generate_func_pass_return,
         .func_return_value = generate_func_return_value,
         .func_createframe = generate_func_createframe,
+        .func_call_pass_param = generate_func_call_pass_param,
         .func_call = generate_func_call,
+        .func_call_return_value = generate_func_call_return_value,
         .main_end = generate_main_end,
         .prog_start = generate_prog_start,
+        .comment = generate_comment,
 };

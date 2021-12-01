@@ -88,7 +88,19 @@ struct code_generator_interface_t {
      * @brief Generates expressions reduce.
      * @param expr stores info about the expr to be processed.
      */
-    void (*expression)(expr_semantics_t *);
+    void (*expression_operand)(void);
+
+    /*
+     * @brief Generates expressions reduce.
+     * @param expr stores info about the expr to be processed.
+     */
+    void (*expression_unary)(void);
+
+    /*
+     * @brief Generates expressions reduce.
+     * @param expr stores info about the expr to be processed.
+     */
+    void (*expression_binary)(void);
 
     /*
      * @brief Generates pop from the stack to GF@%expr_result.
@@ -191,11 +203,6 @@ struct code_generator_interface_t {
     void (*func_start_param)(dynstring_t*, size_t);
 
     /*
-     * @brief Generates parameter pass to a function.
-     */
-    void (*func_pass_param)(size_t);
-
-    /*
      * @brief Generates passing return value.
      */
     void (*func_pass_return)(size_t);
@@ -211,9 +218,19 @@ struct code_generator_interface_t {
     void (*func_createframe)(void);
 
     /*
+     * @brief Generates parameter pass to a function.
+     */
+    void (*func_call_pass_param)(size_t);
+
+    /*
      * @brief Generates function call.
      */
     void (*func_call)(char *);
+
+    /*
+     * @brief Generates getting return value after function call.
+     */
+    void (*func_call_return_value)(dynstring_t *, size_t);
 
     /*
      * @brief Generates end of main scope.
@@ -224,6 +241,11 @@ struct code_generator_interface_t {
      * @brief Generates program start (adds header, define built-in functions).
      */
     void (*prog_start)(void);
+
+    /*
+     * @brief Generates comment.
+     */
+    void (*comment)(char *);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.
