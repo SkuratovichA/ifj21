@@ -50,6 +50,54 @@
       Dynstring.dtor(filnam);                                                 \
   } while (0)
 
+#define STRING_NOERROR(_num, _string)                             \
+        char *description##_num = "good string";                 \
+        int retcode##_num = ERROR_NOERROR;                       \
+        pfile_t *pf##_num = Pfile.ctor(                            \
+            PROLOG                                               \
+            "function one()                             "NL      \
+            "    local s : string =  \"\\x" _string "\" "NL      \
+            "end                                        "NL      \
+        );                                                       \
+
+#define STRING_ERROR(_num, _string)                             \
+        char *description##_num = "badstring";                 \
+        int retcode##_num = ERROR_LEXICAL;                     \
+        pfile_t *pf##_num = Pfile.ctor(                          \
+            PROLOG                                             \
+            "function one()                             "NL    \
+            "    local s : string =      " _string "     "NL   \
+            "end                                        "NL    \
+        );                                                     \
+
+#define GLOBAL_EXPRESSION(_num, _expr, _errcode)                                           \
+        char *description##_num = "global expression";                                    \
+        int retcode##_num = _errcode;                                                     \
+        pfile_t *pf##_num = Pfile.ctor(                                                     \
+            PROLOG                                                                        \
+            "function a(_a : number ) return 1 end "NL                                    \
+            "function b(_a : number ) return 1 end "NL                                    \
+            "function c(_a : number ) return 1 end "NL                                    \
+            "function d(_a : number ) return 1 end "NL                                    \
+            "function e(_a : number ) return 1 end "NL                                    \
+            "function f(_a : number ) return 1 end "NL                                    \
+            "function aa(_a : number, _b : number ) return 1 end "NL                      \
+            "function bb(_a : number, _b : number ) return 1 end "NL                      \
+            "function cc(_a : number, _b : number) return 1 end "NL                       \
+            "function dd(_a : number, _b : number) return 1 end "NL                       \
+            "function ee(_a : number, _b : number) return 1 end "NL                       \
+            "function ff(_a : number, _b : number) return 1 end "NL                       \
+            "function aaa(_a : number, _b : number, _c : number ) return 1 end "NL        \
+            "function bbb(_a : number, _b : number, _c : number ) return 1 end "NL        \
+            "function ccc(_a : number, _b : number, _c : number ) return 1 end "NL        \
+            "function ddd(_a : number, _b : number, _c : number ) return 1 end "NL        \
+            "function eee(_a : number, _b : number, _c : number ) return 1 end "NL        \
+            "function fff(_a : number, _b : number, _c : number ) return 1 end "NL        \
+            _expr                                                               NL        \
+        );
+
+#define GLOBAL_EXPRESSION_ERROR(_num, _expr) GLOBAL_EXPRESSION(_num, _expr, ERROR_SYNTAX)
+#define GLOBAL_EXPRESSION_NOERROR(_num, _expr) GLOBAL_EXPRESSION(_num, _expr, ERROR_NOERROR)
 
 int main() {
     char *description1 = "prolog string";
@@ -665,7 +713,7 @@ int main() {
     int retcode39 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf39 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
+            "function three(): number return 3 end        "NL
             "function foo( a : number, b : number )       "NL
             "    write(a)                                 "NL
             "    write(b)                                 "NL
@@ -677,7 +725,7 @@ int main() {
     int retcode40 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf40 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
+            "function three(): number return 3 end        "NL
             "function foo( a : number, b : number )       "NL
             "    write(a)                                 "NL
             "    write(b)                                 "NL
@@ -689,7 +737,7 @@ int main() {
     int retcode41 = ERROR_SYNTAX;
     pfile_t *pf41 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
+            "function three(): number return 3 end        "NL
             "function foo( a : number, b : number )       "NL
             "    write(a)                                 "NL
             "    write(b)                                 "NL
@@ -1512,7 +1560,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : integer)"NL
             "   while (counter) > 0 do                "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    counter = counter - 1                "NL
             "    end                                  "NL
             "end                                      "NL
@@ -1524,7 +1572,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : integer)   "NL
             "   while (((((counter)))) > 0) do           "NL
-            "        write(((((counter)))), \"\n\")      "NL
+            "        write(((((counter)))), \"\\n\")      "NL
             "    counter = (((((counter) - 1) + 2)) - 1) "NL
             "    end                                     "NL
             "end                                         "NL
@@ -1538,7 +1586,7 @@ int main() {
             "                                                                                             "NL
             "function write_numbers(counter : integer)                                                    "NL
             "    while (counter) > 0 do                                                                   "NL
-            "        write(counter, \"\n\")                                                               "NL
+            "        write(counter, \"\\n\")                                                               "NL
             "        counter = counter - 1                                                                "NL
             "    end                                                                                      "NL
             "end                                                                                          "NL
@@ -1548,7 +1596,7 @@ int main() {
             "    if counter == 0 then                                                                     "NL
             "        write(\"Error\", \" enter\",                                                         "NL
             "              \" another\", \" number\",                                                     "NL
-            "              \", because \", 0, \" is wrong\",\"\n\")                                       "NL
+            "              \", because \", 0, \" is wrong\",\"\\n\")                                       "NL
             "        return                                                                               "NL
             "    else                                                                                     "NL
             "        write_numbers(counter)                                                               "NL
@@ -1563,7 +1611,7 @@ int main() {
             "    if counter == 0 then                                                                     "NL
             "        write(\"Error\", \" enter\",                                                         "NL
             "              \" another\", \" number\",                                                     "NL
-            "              \", because \", 0, \" is wrong\",\"\n\")                                       "NL
+            "              \", because \", 0, \" is wrong\",\"\\n\")                                       "NL
             "        return                                                                               "NL
             "    else                                                                                     "NL
             "        write_numbers(counter)                                                               "NL
@@ -1596,7 +1644,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : string)"NL
             "   while counter do                "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1608,7 +1656,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : string) "NL
             "   while #counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1619,7 +1667,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : nil)    "NL
             "   while counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1630,7 +1678,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : nil)    "NL
             "   while #counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1652,6 +1700,141 @@ int main() {
             "end                                                 "NL
             "yours()                                             "NL
     );
+
+    char *description100 = "type errors in expressions.";
+    int retcode100 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf100 = Pfile.ctor(
+            PROLOG
+            "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"NL
+            "    write(\"I'm about 2bee printed only once!\")    "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function yours()                                    "NL
+            "   local a : string = \"arst\"                      "NL
+            "   repeat                                           "NL
+            "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()  "NL
+            "       a = false                                    "NL
+            "   until (a + 10)                                   "NL
+            "end                                                 "NL
+            "yours()                                             "NL
+    );
+
+    char *description101 = "type errors in expressions.";
+    int retcode101 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf101 = Pfile.ctor(
+            PROLOG
+            "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"NL
+            "    write(\"I'm about 2bee printed only once!\")    "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function yours()                                    "NL
+            "   local a : string = \"arst\"  + 10                "NL
+            "   repeat                                           "NL
+            "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()  "NL
+            "       a = false                                    "NL
+            "   until a                                          "NL
+            "end                                                 "NL
+            "yours()                                             "NL
+    );
+
+    char *description102 = "no error";
+    int retcode102 = ERROR_NOERROR;
+    pfile_t *pf102 = Pfile.ctor(
+            PROLOG
+            "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()                                  "NL
+            "    write(\"I'm about 2bee printed only once!\")                                      "NL
+            "end                                                                                   "NL
+            "                                                                                      "NL
+            "function yours()                                                                      "NL
+            "   local a : number = #(\"arst\" + \"arsoi\" + \"arsot\" + (\"arst\")) + 10           "NL
+            "   repeat                                                                             "NL
+            "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()                                    "NL
+            "       a = false                                                                      "NL
+            "   until a                                                                            "NL
+            "end                                                                                   "NL
+            "yours()                                                                               "NL
+    );
+
+    char *description103 = " no type errors in expressions.";
+    int retcode103 = ERROR_NOERROR;
+    pfile_t *pf103 = Pfile.ctor(
+            PROLOG
+            "function one(a : integer) : string                  "NL
+            "end                                                 "NL
+            "function two() : string                             "NL
+            "end                                                 "NL
+            "function three() : string                           "NL
+            "end                                                 "NL
+            "function four() : string                            "NL
+            "end                                                 "NL
+            "one(#(((two) + three) + four))                                             "NL
+    );
+
+
+    char *description104 = "type errors in expressions.";
+    int retcode104 = ERROR_NOERROR;
+    pfile_t *pf104 = Pfile.ctor(
+            PROLOG
+            "function one(a : integer) : string                  "NL
+            "end                                                 "NL
+            "function two() : string                             "NL
+            "end                                                 "NL
+            "function three() : string                           "NL
+            "end                                                 "NL
+            "function four() : string                            "NL
+            "end                                                 "NL
+            "one((((two) + three) + four))                                             "NL
+    );
+
+    char *description105 = "bad string.";
+    int retcode105 = ERROR_LEXICAL;
+    pfile_t *pf105 = Pfile.ctor(
+            PROLOG
+            "function one(a : integer) : string                  "NL
+            "   local s : string = \"\\x00\"                     "NL
+            "end                                                 "NL
+    );
+
+    STRING_NOERROR(106, "01");
+    STRING_NOERROR(107, "02");
+    STRING_NOERROR(108, "0A");
+    STRING_NOERROR(109, "aa");
+    STRING_NOERROR(110, "bb");
+
+    STRING_NOERROR(111, "cc");
+    STRING_NOERROR(112, "Aa");
+    STRING_NOERROR(113, "Ab");
+    STRING_NOERROR(114, "ff");
+    STRING_NOERROR(115, "Ff");
+    STRING_NOERROR(116, "FF");
+    STRING_NOERROR(117, "F0");
+    STRING_NOERROR(118, "0f");
+    STRING_NOERROR(119, "0F");
+
+    STRING_NOERROR(120, "0A");
+    STRING_NOERROR(121, "A0");
+    STRING_NOERROR(122, "F0");
+    STRING_NOERROR(123, "F2");
+    STRING_NOERROR(124, "DD");
+    STRING_NOERROR(125, "FD");
+    STRING_ERROR(126, "\\x00");
+    STRING_ERROR(127, "\\0x22");
+    STRING_ERROR(128, "\\000");
+    STRING_ERROR(129, "\269");
+
+    STRING_ERROR(130, "\256");
+    STRING_ERROR(131, "\\a");
+    STRING_ERROR(132, "\\x");
+    STRING_ERROR(133, "\\f");
+    STRING_ERROR(134, "\\r");
+    STRING_ERROR(135, "\\0x");
+    STRING_ERROR(136, "\\N");
+
+    GLOBAL_EXPRESSION_ERROR(137, "aa(a(a(1)) + b(a(1)), c(a(1)) + d(a(1))");
+    GLOBAL_EXPRESSION_ERROR(138, "aa(   a(a(1)) + b(a(1)), c(a(1)) + d(,a(1))   )");
+    GLOBAL_EXPRESSION_ERROR(139, "aa(   a(a(1)) + b(a(1)), c(a(1)) + d(a(1),)   )");
+
+    GLOBAL_EXPRESSION_NOERROR(140, "aaa(    a(1) + b(2), c(c(c(c(c(2))))) + dd( 1 + 2, 3 * (4 + a((2))) )    )");
 
     TEST_CASE(1);
     TEST_CASE(2);
@@ -1761,5 +1944,50 @@ int main() {
     TEST_CASE(97);
     TEST_CASE(98);
     TEST_CASE(99);
+
+
+    TEST_CASE(101);
+    TEST_CASE(102);
+    TEST_CASE(103);
+    TEST_CASE(104);
+    TEST_CASE(105);
+    TEST_CASE(106);
+    TEST_CASE(107);
+    TEST_CASE(108);
+    TEST_CASE(109);
+
+    TEST_CASE(110);
+    TEST_CASE(111);
+    TEST_CASE(112);
+    TEST_CASE(113);
+    TEST_CASE(114);
+    TEST_CASE(115);
+    TEST_CASE(116);
+    TEST_CASE(117);
+    TEST_CASE(118);
+    TEST_CASE(119);
+
+    TEST_CASE(120);
+    TEST_CASE(121);
+    TEST_CASE(122);
+    TEST_CASE(123);
+    TEST_CASE(124);
+    TEST_CASE(125);
+    TEST_CASE(126);
+    TEST_CASE(127);
+    TEST_CASE(128);
+    TEST_CASE(129);
+
+    TEST_CASE(130);
+    TEST_CASE(131);
+    TEST_CASE(132);
+    TEST_CASE(133);
+    TEST_CASE(134);
+    TEST_CASE(135);
+    TEST_CASE(136);
+    TEST_CASE(137);
+    TEST_CASE(138);
+    TEST_CASE(139);
+    TEST_CASE(140);
     return 0;
 }

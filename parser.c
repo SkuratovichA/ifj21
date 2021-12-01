@@ -178,6 +178,7 @@ static bool break_() {
         goto err;
     }
 
+    // generate break
     Generator.instr_break();
 
     return true;
@@ -262,6 +263,7 @@ static bool cond_body() {
             // generate start of end block
             Generator.cond_end(instructions.outer_cond_id, instructions.cond_cnt);
             Generator.pop_cond_info();
+
             return true;
 
         default:
@@ -276,7 +278,7 @@ static bool cond_body() {
 /** Conditional(if or elseif statement). Contains an expression and body.
  * Symtable is created right before calling this function.
  *
- * !rule <cond_stmt> -> `expr` then <cond_body>
+ * !rule <cond_stmt> -> [default_expression] then <cond_body>
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -373,9 +375,9 @@ static bool repeat_body() {
 
 /** Optional assignment after a local variable declaration.
  *
- * Here, an assign token is processed(if it is), and expression
+ * Here, an assign token is processed(if it is, of course), and expression
  * parsing begins.
- * !rule <assignment> -> e | = `expr`
+ * !rule <assignment> -> e | = [default_expression]
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
@@ -419,19 +421,20 @@ static bool assignment(dynstring_t *id_name, int id_type) {
 
 /** For assignment.
  *
- * !rule <for_assignment> -> do | , `expr` do
+ * !rule <for_increment> -> do | , [default_expression] do
  *
  * @param pfile pfile
  * @return bool.
  */
-static bool for_assignment() {
-    debug_msg("<for_assignment> ->\n");
+static bool for_increment() {
+    debug_msg("<for_increment> ->\n");
     dynstring_t *expected_signature = Dynstring.ctor("f");
     dynstring_t *received_signature = Dynstring.ctor("");
 
     // do. No explicit step given.
     if (Scanner.get_curr_token().type == KEYWORD_do) {
         // generate step = 1
+        Generator.comment("for loop - default step = 1");
         Generator.for_default_step();
         goto noerr;
     }
@@ -457,7 +460,7 @@ static bool for_assignment() {
 }
 
 /** For cycle.
- * !rule <for_cycle> -> for id = `expr` , `expr` <for_assignment> <fun_body>
+ * !rule <for_cycle> -> for id = [default_expression] , [default_expression] <for_increment> <fun_body>
  *
  * @param pfile a program.
  * @return bool.
@@ -499,6 +502,7 @@ static bool for_cycle() {
     Dynstring.clear(received_signature);
 
     // generate for assignment
+    Generator.comment("for loop - var definition");
     Generator.var_definition(id_name);
 
     // ,
@@ -510,10 +514,11 @@ static bool for_cycle() {
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
 
     // generate terminating `expr`
+    Generator.comment("for loop - terminating expr definition");
     Generator.tmp_var_definition("terminating_cond");
 
     // do | , `expr` do
-    if (!for_assignment()) {
+    if (!for_increment()) {
         goto err;
     }
 
@@ -601,7 +606,7 @@ static bool var_definition() {
 
 /** While cycle.
  *
- * !rule <while_cycle> -> while `expr` do <fun_body>
+ * !rule <while_cycle> -> while [default_expression] do <fun_body>
  *
  * @param pflile
  * @return
@@ -641,7 +646,6 @@ static bool while_cycle() {
     SYMSTACK_POP();
     decrease_nesting();
 
-
     Dynstring.dtor(expected_signature);
     Dynstring.dtor(received_signature);
     return true;
@@ -653,7 +657,7 @@ static bool while_cycle() {
 
 /** Return statement.
  *
- * !rule <return_stmt> -> return <return_expr_list>
+ * !rule <return_stmt> -> return [return_expressions]
  * @param pfile
  * @return
  */
@@ -672,7 +676,6 @@ static bool return_stmt() {
     CHECK_EXPR_SIGNATURES(expected_rets, received_rets, ERROR_FUNCTION_SEMANTICS);
 
     // TODO: generate return values.
-
 
     Dynstring.dtor(expected_rets);
     Dynstring.dtor(received_rets);
@@ -719,6 +722,13 @@ static bool repeat_until_cycle() {
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // expression result in LF@%result
     Generator.repeat_until_cond();
+    Generator.comment("repeat-until end");
+    if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
+        Generator.comment("outer repeat-until loop end");
+        instructions.in_loop = false;
+        instructions.outer_loop_id = 0;
+        instructions.before_loop_start = NULL;
+    }
 
     // pop a symstack
     SYMSTACK_POP();
@@ -740,8 +750,8 @@ static bool repeat_until_cycle() {
  * !rule <fun_stmt> -> <while_cycle>
  * !rule <fun_stmt> -> <var_definition>
  * !rule <fun_stmt> -> <for_cycle>
- * !rule <fun_stmt> -> `expr`
- * !rule <fun_stmt> -> <break>
+ * !rule <fun_stmt> -> [function_expression]
+ * !rule <fun_stmt> -> break
  *
  *
  * @param pfile input file for Scanner.get_next_token().
@@ -751,7 +761,7 @@ static bool fun_stmt() {
     debug_msg("<fun_stmt> ->\n");
 
     switch (Scanner.get_curr_token().type) {
-        // for <for_def>, `expr` <for_assignment> <fun_body>
+        // for <for_def>, `expr` <for_increment> <fun_body>
         case KEYWORD_for:
             return for_cycle();
 
@@ -816,7 +826,9 @@ static bool fun_body(char *id_name) {
     switch (Symstack.get_scope_info(symstack).scope_type) {
         case SCOPE_TYPE_while_cycle:
             Generator.while_end();
+            Generator.comment("while end");
             if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
+                Generator.comment("outer while loop end");
                 instructions.in_loop = false;
                 instructions.outer_loop_id = 0;
                 instructions.before_loop_start = NULL;
@@ -830,6 +842,14 @@ static bool fun_body(char *id_name) {
         case SCOPE_TYPE_for_cycle:;
             dynstring_t *var_name = Dynstring.ctor(id_name);
             Generator.for_end(var_name);
+            Generator.comment("for end");
+            if (instructions.outer_loop_id == Symstack.get_scope_info(symstack).unique_id) {
+                Generator.comment("outer for loop end");
+                instructions.in_loop = false;
+                instructions.outer_loop_id = 0;
+                instructions.before_loop_start = NULL;
+            }
+
             Dynstring.dtor(var_name);
             break;
 
@@ -842,8 +862,7 @@ static bool fun_body(char *id_name) {
             break;
 
         default:
-            debug_msg("Shouldn't be here.\n");
-            assert(0);
+            debug_assert(!"Shouldn't be here.\n");
             break;
     }
 
@@ -1172,8 +1191,8 @@ static bool function_definition() {
 /** Statement(global statement) rule.
  *
  * function declaration: !rule <stmt> -> <function_declaration>
- * function definition: !rule <stmt> -> <function_definintion>
- * function call: !rule <stmt> -> `expr`
+ * function definition: !rule <stmt> -> <function_definition>
+ * function call: !rule <stmt> -> [global_expression]
  *
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
