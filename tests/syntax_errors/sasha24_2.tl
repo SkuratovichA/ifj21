@@ -19,7 +19,7 @@ function main()
                               write(not_true)                   
                          until false                            
                      until 1 < 0                                
-                 until 2 + 2 = 5                                
+                 until 2 + 2 == 5                               
              until false                                        
          until true and false                                   
                                                                 

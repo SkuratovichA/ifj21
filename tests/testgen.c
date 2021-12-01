@@ -1518,7 +1518,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : integer)"NL
             "   while (counter) > 0 do                "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    counter = counter - 1                "NL
             "    end                                  "NL
             "end                                      "NL
@@ -1530,7 +1530,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : integer)   "NL
             "   while (((((counter)))) > 0) do           "NL
-            "        write(((((counter)))), \"\n\")      "NL
+            "        write(((((counter)))), \"\\n\")      "NL
             "    counter = (((((counter) - 1) + 2)) - 1) "NL
             "    end                                     "NL
             "end                                         "NL
@@ -1544,7 +1544,7 @@ int main() {
             "                                                                                             "NL
             "function write_numbers(counter : integer)                                                    "NL
             "    while (counter) > 0 do                                                                   "NL
-            "        write(counter, \"\n\")                                                               "NL
+            "        write(counter, \"\\n\")                                                               "NL
             "        counter = counter - 1                                                                "NL
             "    end                                                                                      "NL
             "end                                                                                          "NL
@@ -1554,7 +1554,7 @@ int main() {
             "    if counter == 0 then                                                                     "NL
             "        write(\"Error\", \" enter\",                                                         "NL
             "              \" another\", \" number\",                                                     "NL
-            "              \", because \", 0, \" is wrong\",\"\n\")                                       "NL
+            "              \", because \", 0, \" is wrong\",\"\\n\")                                       "NL
             "        return                                                                               "NL
             "    else                                                                                     "NL
             "        write_numbers(counter)                                                               "NL
@@ -1625,7 +1625,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : nil)    "NL
             "   while counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")           "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1681,7 +1681,7 @@ int main() {
             "       local len_str : integer = 10  "NL
             "       id = len_str                  "NL
             "       if id == len_str then         "NL
-            "           write(\"\n\")             "NL
+            "           write(\"\\n\")             "NL
             "       else                          "NL
             "       end                           "NL
             "  else end                           "NL
@@ -1720,7 +1720,7 @@ int main() {
             "       local len_str : integer = 10        "NL
             "       id = len_str                        "NL
             "       if id == len_str then               "NL
-            "           write(len_str, \"\n\" , len_str)"NL
+            "           write(len_str, \"\\n\" , len_str)"NL
             "       else                                "NL
             "       end                                 "NL
             "   else end                                "NL
@@ -1741,7 +1741,7 @@ int main() {
             "       local len_str : integer = 10        "NL
             "       id = len_str                        "NL
             "       if id == len_str then               "NL
-            "           write(len_str, \"\n\" , len_str)"NL
+            "           write(len_str, \"\\n\" , len_str)"NL
             "       else                                "NL
             "       end                                 "NL
             "   else end                                "NL
@@ -1769,7 +1769,7 @@ int main() {
                    "        local len_str : integer = 10                       "NL
                    "        id = len_str                                       "NL
                    "	if id == len_str then                                  "NL
-                   "    	    write(\"\n\")                                  "NL
+                   "    	    write(\"\\n\")                                  "NL
                    "	else                                                   "NL
                    "        end                                                "NL
                    "    else end                                               "NL
@@ -1782,7 +1782,7 @@ int main() {
                    "           id = id + 1                                     "NL
                    "        end                                                "NL
                    "    end                                                    "NL
-                   "    write(str_var, \"\n\")                                 "NL
+                   "    write(str_var, \"\\n\")                                 "NL
                    "                                                           "NL
                    "    return                                                 "NL
                    "end                                                        "NL
@@ -1808,7 +1808,7 @@ int main() {
             "        local len_str : integer = 10              "NL
             "        id = len_str                              "NL
             "	if id == len_str then                            "NL
-            "    	    write(\"\n\")                              "NL
+            "    	    write(\"\\n\")                              "NL
            "	else                                             "NL
            "        end                                       "NL
            "    else end                                      "NL
@@ -1823,7 +1823,7 @@ int main() {
            "           id = id + 1                            "NL
            "        end                                       "NL
            "    end                                           "NL
-           "    write(str_var, aaa, \"\n\")                     "NL
+           "    write(str_var, aaa, \"\\n\")                     "NL
            "                                                  "NL
            "                                                  "NL
            "    return                                        "NL
@@ -1855,7 +1855,7 @@ int main() {
             "                                                  "NL
             "    id = chuj(id)                                 "NL
             "                                                  "NL
-            "    write(id, \"\n\")                               "NL
+            "    write(id, \"\\n\")                               "NL
             "                                                  "NL
             "                                                  "NL
             "    return                                        "NL
@@ -1873,7 +1873,7 @@ int main() {
             "                                                  "NL
             "function chuj(n : integer, s : string) : integer  "NL
             "    local a : integer = 0                         "NL
-            "    if string == \"chch\" then                      "NL
+            "    if s == \"chch\" then                      "NL
             "	    while a < (n*n) do                           "NL
             "		a = n + a * a                                   "NL
             "	    end                                          "NL
@@ -1888,7 +1888,7 @@ int main() {
             "                                                  "NL
             "    id = chuj(id, \"4\")                            "NL
             "                                                  "NL
-            "    write(id, \"\n\")                               "NL
+            "    write(id, \"\\n\")                               "NL
             "                                                  "NL
             "                                                  "NL
             "    return                                        "NL
@@ -1906,7 +1906,7 @@ int main() {
             "                                                  "NL
             "function chuj(n : integer, s : string) : integer  "NL
             "    local a : integer = 0                         "NL
-            "    if string == \"chch\" then                      "NL
+            "    if s == \"chch\" then                      "NL
             "	    while a < (n*n) do                           "NL
             "		a = n + a * a                                   "NL
             "	    end                                          "NL
@@ -1921,7 +1921,7 @@ int main() {
             "                                                  "NL
             "    id = chuj(id, \"4\")                            "NL
             "                                                  "NL
-            "    write(id, \"\n\")                               "NL
+            "    write(id, \"\\n\")                               "NL
             "                                                  "NL
             "                                                  "NL
             "    return                                        "NL
@@ -1940,19 +1940,19 @@ int main() {
             "function chuj(n : integer, s : string) : integer  "NL
             "    local a : integer = 0                         "NL
             "    while a < (n*n) do                            "NL
-            "	a = n + a * a                                    "NL
+            "	    a = n + a * a                                    "NL
             "    end                                           "NL
             "    return a                                      "NL
             "end                                               "NL
             "                                                  "NL
             "chuj(0, \"a\")                                      "NL
-            "write(chuj(0, \"a\"), \"\n\")                         "NL
-            "write(chuj(100, \"a\"), \"\n\")                       "NL
-            "write(chuj(1000000, \"a\"), \"\n\")                   "NL
-            "write(chuj(10000000000000000, \"a\"), \"\n\")         "NL
-            "write(chuj(90000000000000000000000000000000000000, \"a\"), \"\n\")            "NL
-            "write(chuj(220000000000000005665456666666666666666, \"a\"), \"\n\")             "NL
-            "                                                  "NL
+            "write(chuj(0, \"a\"), \"\\n\")                         "NL
+            "write(chuj(100, \"a\"), \"\\n\")                       "NL
+            "write(chuj(1000000, \"a\"), \"\\n\")                   "NL
+            "write(chuj(10000000000000000, \"a\"), \"\\n\")         "NL
+            "write(chuj(90000000000000000000000000000000000000, \"a\"), \"\\n\")            "NL
+            "write(chuj(220000000000000005665456666666666666666, \"a\"), \"\\n\")             "NL
+             "                                                  "NL
             "                                                  "NL
 );
 
@@ -1964,9 +1964,9 @@ int main() {
             "	return a * n + n * a                             "NL
             "end                                               "NL
             "                                                  "NL
-            "write(chuj(0.48949, 5.5645646 ), \"\n\")            "NL
-            "write(chuj(90000000000000000000000000000000000000, 4564.456), \"\n\")                 "NL
-            "write(chuj(220000000000000005665456666666666666666, 48997489.894981), \"\n\")                         "NL
+            "write(chuj(0.48949, 5.5645646 ), \"\\n\")            "NL
+            "write(chuj(90000000000000000000000000000000000000, 4564.456), \"\\n\")                 "NL
+            "write(chuj(220000000000000005665456666666666666666, 48997489.894981), \"\\n\")                         "NL
             "                                                  "NL
 );
 
@@ -1982,9 +1982,9 @@ int main() {
             "	return a * n + chuj(n, 7)                        "NL
             "end                                               "NL
             "                                                  "NL
-            "write(chuj(0.48949, 5.5645646 ), \"\n\")            "NL
-            "write(chuj(90000000000000000000000000000000000000, 4564.456), \"\n\")                 "NL
-            "write(chuj(220000000000000005665456666666666666666, 48997489.894981), \"\n\")                         "NL
+            "write(chuj(0.48949, 5.5645646 ), \"\\n\")            "NL
+            "write(chuj(90000000000000000000000000000000000000, 4564.456), \"\\n\")                 "NL
+            "write(chuj(220000000000000005665456666666666666666, 48997489.894981), \"\\n\")                         "NL
 );
 
     char *description112 = "";
@@ -2021,7 +2021,7 @@ int main() {
             "    else                                          "NL
             "      k = 5                                       "NL
             "    end                                           "NL
-            "    write(i, \"\n\")                                "NL
+            "    write(i, \"\\n\")                                "NL
             "                                                  "NL
             "end                                               "NL
             "main()                                            "NL
@@ -2053,7 +2053,7 @@ int main() {
             "        local j : integer                         "NL
             "      end                                         "NL
             "    end                                           "NL
-            "    write(i,\"\n\")                                 "NL
+            "    write(i,\"\\n\")                                 "NL
             "end                                               "NL
             "main()                                            "NL
             "                                                  "NL
@@ -2070,7 +2070,7 @@ int main() {
             "    local i : integer = 69                        "NL
             "    foo(i)                                        "NL
             "    local r : string = chr(i)                     "NL
-            "    write(r,\"\n\")                                 "NL
+            "    write(r,\"\\n\")                                 "NL
             "end                                               "NL
             "main()                                            "NL
             "                                                  "NL
@@ -2093,7 +2093,7 @@ int main() {
             "    repeat                                        "NL
             "      local i : integer                           "NL
             "    until 1 == 1                                  "NL
-            "    write(i,\"\n\")                                 "NL
+            "    write(i,\"\\n\")                                 "NL
             "end                                               "NL
             "main()                                            "NL
             "                                                  "NL
@@ -2105,22 +2105,22 @@ int main() {
             "                                                  "NL
             "function main()                                   "NL
             "    local i : integer                             "NL
-            "    write(\"69\n\")                                 "NL
+            "    write(\"69\\n\")                                 "NL
             "    while 1 == 1 do                               "NL
             "      local j : integer                           "NL
-            "      write(i,\"\n\")                               "NL
+            "      write(i,\"\\n\")                               "NL
             "      break                                       "NL
             "      while 3 == 2 do                             "NL
             "        local j : integer                         "NL
             "      break                                       "NL
             "        repeat                                    "NL
-            "    write(i,\"\n\")                                 "NL
+            "    write(i,\"\\n\")                                 "NL
             "          local j : integer                       "NL
             "          if true then                            "NL
-            "          write(i,\"\n\")                           "NL
+            "          write(i,\"\\n\")                           "NL
             "            local j : integer                     "NL
             "          elseif false then                       "NL
-            "            write(i,\"\n\")                         "NL
+            "            write(i,\"\\n\")                         "NL
             "            local j : integer                     "NL
             "          elseif true then                        "NL
             "            local j : integer                     "NL
@@ -2128,14 +2128,14 @@ int main() {
             "            local j : integer                     "NL
             "      break                                       "NL
             "          end                                     "NL
-            "          write(i,\"\n\")                           "NL
+            "          write(i,\"\\n\")                           "NL
             "      break                                       "NL
             "        until 1 == 1                              "NL
             "      break                                       "NL
             "      end                                         "NL
             "    end                                           "NL
             "    while 1 == 1 do                               "NL
-            "      write(i,\"\n\")                               "NL
+            "      write(i,\"\\n\")                               "NL
             "      while 3 == 2 do                             "NL
             "        local j : integer                         "NL
             "      break                                       "NL
@@ -2156,7 +2156,7 @@ int main() {
             "    local c : string = \"hell\"                     "NL
             "    local d : nil = nil                           "NL
             "    d = a + b + 5                                 "NL
-            "    write(d,\"\n\")                                 "NL
+            "    write(d,\"\\n\")                                 "NL
             "end                                               "NL
             "main()                                            "NL
             "                                                  "NL
@@ -2169,7 +2169,7 @@ int main() {
             "function main()                                   "NL
             "  if 1 == 1 then                                  "NL
             "    local i : integer = 1                         "NL
-            "    write(i,\"\n\")                                 "NL
+            "    write(i,\"\\n\")                                 "NL
             "  end                                             "NL
             "end                                               "NL
             "main()                                            "NL
@@ -2181,27 +2181,27 @@ int main() {
             PROLOG
             "function main ()                                  "NL
             "    while 1 == 1 do                               "NL
-            "	write(\"helo\n\")                                  "NL
+            "	write(\"helo\\n\")                                  "NL
            "    for i = 0, 10, 1 do                           "NL
-           "	write(\"helo\n\")                                  "NL
+           "	write(\"helo\\n\")                                  "NL
            "        for i = 0, 2, 2 do                        "NL
-           "	write(\"helo\n\")                                  "NL
+           "	write(\"helo\\n\")                                  "NL
            "            if 1 == 6 then                        "NL
            "                local k : integer = 1             "NL
            "            elseif 1 == 2 then                    "NL
-           "	write(\"helo\n\")                                  "NL
+           "	write(\"helo\\n\")                                  "NL
            "                local j : number                  "NL
            "            elseif 2 == 5 then                    "NL
-           "	write(\"helo\n\")                                  "NL
+           "	write(\"helo\\n\")                                  "NL
            "                local c : string = \"heyo\"         "NL
            "            else                                  "NL
-           "	write(\"helo\n\")                                  "NL
+           "	write(\"helo\\n\")                                  "NL
            "                local m : integer = 9             "NL
            "                if 1 == 1 then                    "NL
            "                    local k : integer = 3         "NL
            "                end                               "NL
            "                repeat                            "NL
-           "	write(\"helo\n\")                                  "NL
+           "	write(\"helo\\n\")                                  "NL
            "                    local z : string = \"good\"     "NL
            "                    break                         "NL
            "                until 1 == 3                      "NL
@@ -2212,7 +2212,7 @@ int main() {
            "    end                                           "NL
            "    break                                         "NL
            "    end                                           "NL
-           "	write(\"helo\n\")                                  "NL
+           "	write(\"helo\\n\")                                  "NL
            "end                                               "NL
            "                                                  "NL
            "main()                                            "NL
@@ -2226,20 +2226,20 @@ int main() {
             "function main() -- uzivatelska funkce bez parametru "NL
             "  local a : integer                               "NL
             "  local vysl : integer = 0                        "NL
-            "  write(\"Zadejte cislo pro vypocet faktorialu\n\") "NL
+            "  write(\"Zadejte cislo pro vypocet faktorialu\\n\") "NL
             "  a = readi()                                     "NL
             "  if a == nil then                                "NL
-            "    write(\"a je nil\n\") return                    "NL
+            "    write(\"a je nil\\n\") return                    "NL
             "  else                                            "NL
             "  end                                             "NL
             "  if a < 0 then                                   "NL
-            "    write(\"Faktorial nelze spocitat\n\")           "NL
+            "    write(\"Faktorial nelze spocitat\\n\")           "NL
             "  else                                            "NL
             "    vysl = 1                                      "NL
             "    while a > 0 do                                "NL
             "      vysl = vysl * a a = a - 1  -- dva prikazy   "NL
             "    end                                           "NL
-            "    write(\"Vysledek je: \", vysl, \"\n\")            "NL
+            "    write(\"Vysledek je: \", vysl, \"\\n\")            "NL
             "    end                                           "NL
             "  end                                             "NL
             "                                                  "NL
@@ -2266,46 +2266,26 @@ int main() {
             "  local a : integer = readi()                     "NL
             "  if a ~= nil then                                "NL
             "		if a < 0 then                                   "NL
-            "			write(\"Faktorial nejde spocitat!\", \"\n\")       "NL
+            "			write(\"Faktorial nejde spocitat!\", \"\\n\")       "NL
             "		else                                            "NL
             "			local vysl : integer = factorial(a)            "NL
-            "			write(\"Vysledek je \", vysl, \"\n\")              "NL
+            "			write(\"Vysledek je \", vysl, \"\\n\")              "NL
             "    end                                           "NL
             "  else                                            "NL
-            "     write(\"Chyba pri nacitani celeho cisla!\n\")  "NL
+            "     write(\"Chyba pri nacitani celeho cisla!\\n\")  "NL
             "  end                                             "NL
             "end                                               "NL
             "                                                  "NL
             "main()                                            "NL
     );
 
-    char *description124 = "";
-    int retcode124 = ERROR_NOERROR;
-    pfile_t *pf124 = Pfile.ctor(
-            PROLOG
-            "function main()                                   "NL
-            "  local s1 : string = \"Toto je nejaky text\"       "NL
-            "  local s2 : string = s1 .. \", ktery jeste trochu obohatime\"          "NL
-            "  write(s1, \"\010\", s2, \"\n\")                     "NL
-            "                                                  "NL
-            "  local s1len : integer = #s1                     "NL
-            "  local s1len4 : integer = #s1 - 3                "NL
-            "  s1 = substr(s2, s1len4, s1len)                  "NL
-            "  write(\"4 znaky od \", s1len4, \". znaku v \"\", s2, \"\\\":\", s1, \"\n\")                 "NL
-            "                                                  "NL
-            "  s1 = substr(s2, 16, 19) -- vysledny retezec v s1 bude mit 19-16+1 znaku                       "NL
-            "  s1len4 = #s1                                    "NL
-            "  write(s1len4, \" znaky od \", 16, \". znaku v \\\"\", s2, \"\\\":\", s1, \"\n\")                    "NL
-            "end                                               "NL
-            "main()                                            "NL
 
-    );
     char *description125 = "";
     int retcode125 = ERROR_NOERROR;
     pfile_t *pf125 = Pfile.ctor(
             PROLOG
             "function hlavni_program(year : integer)           "NL
-            "  write(\"Hello from IFJ\", year, \"\n\")             "NL
+            "  write(\"Hello from IFJ\", year, \"\\n\")             "NL
             "end                                               "NL
             "                                                  "NL
             "hlavni_program(21)                                "NL
@@ -2317,7 +2297,7 @@ int main() {
     pfile_t *pf126 = Pfile.ctor(
             PROLOG
             "function hlavni_program(year : integer)           "NL
-            "  write(\"Hello from IFJ\", year, \"\n\")             "NL
+            "  write(\"Hello from IFJ\", year, \"\\n\")             "NL
             "end                                               "NL
             "                                                  "NL
             "hlavni_program(21)                                "NL
@@ -2459,7 +2439,6 @@ int main() {
     TEST_CASE(120);
     TEST_CASE(121);
     TEST_CASE(123);
-    TEST_CASE(124);
     TEST_CASE(125);
     TEST_CASE(126);
 

@@ -5,7 +5,7 @@
 require "ifj21" 
 function main(iterations : number )      
     for i=0,iterations,2 do              
-        for j=0,i<iterations,2 do        
+        for j=0,iterations,2 do        
             write("hello, many times") 
         end                              
     end                                  

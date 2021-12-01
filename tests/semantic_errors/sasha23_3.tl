@@ -3,4 +3,9 @@
 
 -- Expected : '3'
 require "ifj21" 
-function me() : stringend function me() : integerend function me() : booleanend 
+function me() : string 
+end                    
+function me() : integer
+end                    
+function me() : boolean
+end                     

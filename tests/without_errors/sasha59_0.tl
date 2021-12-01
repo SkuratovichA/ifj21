@@ -4,9 +4,11 @@
 -- Expected : '0'
 require "ifj21" 
 
-global foo : function(    string,     string ) : string, number 
-function foo (a : string, b : string) :  string, number, boolean
-    return nil, nil, true                                       
-end                                                             
-foo()                                                           
+global foo : function(string,string ) :               
+                              string, number, boolean 
+function foo (a : string, b : string) :               
+                              string, number, boolean 
+    return nil, nil, true                             
+end                                                   
+foo()                                                 
 
