@@ -1034,9 +1034,18 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     }
 
     // Check function parameters signature
-    if (Dynstring.cmp(received_params, expected_params) != 0 &&
-        Dynstring.cmp_c_str(id_name, "write") != 0) {
-        goto err;
+    if (Dynstring.cmp(received_params, expected_params) != 0) {
+        // write(...)
+        if (Dynstring.cmp_c_str(id_name, "write") == 0) {
+            // TODO: generate code for write function
+            goto noerr;
+        }
+
+        // tointeger(nil)
+        if (Dynstring.cmp_c_str(id_name, "tointeger") != 0 ||
+            Dynstring.cmp_c_str(received_params, "n") != 0) {
+            goto err;
+        }
     }
 
     // generate code for function call
@@ -1044,6 +1053,7 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     // TODO: generate get return values assigment
     //Generator.func_call_return_value(0);
 
+    noerr:
     Dynstring.dtor(received_params);
     Dynstring.dtor(expected_params);
     return true;
