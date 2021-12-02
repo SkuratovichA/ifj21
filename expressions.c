@@ -635,13 +635,11 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
  * @brief Check an expression end.
  *
  * @param first_op first operator.
- * @param second_op second operator.
  * @param function_parsed true if function was parsed.
  * @param parents_parsed true if parents were parsed.
  * @return bool.
  */
 static bool expression_end(op_list_t first_op,
-                           op_list_t second_op,
                            bool function_parsed,
                            bool parents_parsed) {
     bool is_token_id = (Scanner.get_curr_token().type == TOKEN_ID);
@@ -819,7 +817,7 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
 
     // Check an expression end
     if (!hard_reduce) {
-        hard_reduce = expression_end(first_op, second_op, function_parsed, parents_parsed);
+        hard_reduce = expression_end(first_op, function_parsed, parents_parsed);
     }
 
     // Check a success parsing
