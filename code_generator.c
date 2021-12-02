@@ -277,6 +277,26 @@ static void recast_to_bool_func() {
 }
 
 /*
+ * @brief Generates function for computing the power.
+ */
+static void generate_power_func() {
+    ADD_INSTR("LABEL $$power \n"
+              "PUSHFRAME \n"
+              "DEFVAR LF@%return0 \n"
+              "MOVE LF@%return0 int@1 \n"
+              "# LF@%0 - base, LF@%1 - exp\n"
+              "# while (exp ~= 0)\n"
+              "LABEL $$power$while \n"
+              "JUMPIFEQ $$power$end LF@%1 int@0 \n"
+              "     MUL LF@%return0 LF@%return0 LF@%0 \n"
+              "     SUB LF@%1 LF@%1 int@1 \n"
+              "     JUMP $$power$while \n"
+              "LABEL $$power$end \n"
+              "POPFRAME \n"
+              "RETURN \n");
+}
+
+/*
  * @brief Initialises the code generator.
  */
 static void initialise_generator() {
@@ -1138,6 +1158,7 @@ static void generate_prog_start() {
     generate_func_readn();
     generate_func_write();
     generate_func_tointeger();
+    generate_power_func();
     nil_check_func();
     recast_to_bool_func();
 
