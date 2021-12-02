@@ -32,39 +32,12 @@ typedef struct func_semantics {
     bool is_builtin;
 } func_semantics_t;
 
-/** List of conversion types
- */
-typedef enum conv_type {
-    NO_CONVERSION,
-    CONVERT_FIRST,
-    CONVERT_SECOND,
-    CONVERT_BOTH
-} conv_type_t;
-
-/** List of semantic states
- */
-typedef enum semantic_state {
-    SEMANTIC_IDLE,
-    SEMANTIC_PARENTS,
-    SEMANTIC_OPERAND,
-    SEMANTIC_UNARY,
-    SEMANTIC_BINARY,
-    SEMANTIC_FUNCTION
-} semantic_type_t;
-
-/** Semantic information about an expression.
- */
-typedef struct expr_semantics {
-    semantic_type_t sem_state;
-    token_t first_operand;
-    token_t second_operand;
-    op_list_t op;
-    conv_type_t conv_type;
-    int result_type;
-    dynstring_t * func_types;
-    dynstring_t * func_rets;
-} expr_semantics_t;
-
+typedef enum type_recast {
+    TYPE_RECAST_FIRST,
+    TYPE_RECAST_SECOND,
+    TYPE_RECAST_BOTH,
+    NO_RECAST
+} type_recast_t;
 
 //typedef struct func_semantics func_semantics_t;
 //typedef struct func_info func_info_t;
@@ -174,34 +147,47 @@ struct semantics_interface_t {
      */
     func_semantics_t *(*ctor)(bool, bool, bool);
 
-    /** Expression semantics destructor.
-     *
-     * @param self expression semantics struct.
-     */
-//    void (*dtor_expr)(expr_semantics_t *);
-
-    /** Expression semantics constructor.
-     *
-     * @return new expressions semantics.
-     */
-//    expr_semantics_t *(*ctor_expr)();
-
-    /** Expression semantics add operand.
-     *
-     * @param self expression semantics struct.
-     * @param tok operand.
-     */
-//    void (*add_operand)(expr_semantics_t *, token_t);
-
-//    void (*add_operator)(expr_semantics_t *, op_list_t);
-
-//    bool (*check_expression)(expr_semantics_t *);
-
     bool (*check_signatures_compatibility)(dynstring_t *, dynstring_t *, int);
 
     char (*of_id_type)(int);
 
     int (*token_to_id_type)(int);
 
-    int (*keyword_to_id_type)(int);
+    /**
+     * @brief Check semantics of binary operation.
+     *
+     * @param first_type type of the first operand.
+     * @param second_type type of the second operand.
+     * @param op binary operator.
+     * @param expression_type initialized vector to store an expression type.
+     * @param r_type variable to store a type of recast.
+     * @return bool.
+     */
+    bool (*check_binary_compatibility)(dynstring_t *, dynstring_t *, op_list_t, dynstring_t *, type_recast_t*);
+
+    /**
+     * @brief Check semantics of unary operation.
+     *
+     * @param type type of the operand.
+     * @param op unary operator.
+     * @param expression_type initialized vector to store an expression type.
+     * @return bool.
+     */
+    bool (*check_unary_compatibility)(dynstring_t *, op_list_t, dynstring_t *);
+
+    /**
+     * @brief Check semantics of single operand.
+     *
+     * @param operand
+     * @param expression_type initialized vector to store an expression type.
+     * @return bool.
+     */
+    bool (*check_operand)(token_t, dynstring_t *);
+
+    /**
+     * @brief Truncate signature to one type.
+     *
+     * @param type_signature is an initialized vector with expression type/s.
+     */
+    void (*trunc_signature)(dynstring_t *);
 };

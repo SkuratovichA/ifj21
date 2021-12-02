@@ -51,13 +51,41 @@ static pfile_t *pfile;
  *
  * @param id_name identifier name.
  */
-#define CHECK_DEFINITION(id_name)                                             \
+#define CHECK_DEFINITION(id_name)                                       \
     do {                                                                \
         if (!Symstack.get_local_symbol(symstack, (id_name), NULL)) {    \
             Errors.set_error(ERROR_DEFINITION);                         \
             goto err;                                                   \
         }                                                               \
     } while (0)
+
+#define GET_FUNCTION_SIGNATURES(id_name, func_params, func_returns)                         \
+    do {                                                                                    \
+        symbol_t *sym;                                                                      \
+                                                                                            \
+        if (!Symtable.get_symbol(global_table, id_name, &sym)) {                             \
+            goto err;                                                                       \
+        }                                                                                   \
+                                                                                            \
+        if ((func_params) != NULL) {                                                        \
+            Dynstring.cat((func_params), Semantics.is_defined(sym->function_semantics) ?    \
+                                    sym->function_semantics->definition.params :            \
+                                    sym->function_semantics->declaration.params);           \
+        }                                                                                   \
+                                                                                            \
+        if ((func_returns) != NULL) {                                                       \
+            Dynstring.cat((func_returns), Semantics.is_defined(sym->function_semantics) ?   \
+                                    sym->function_semantics->definition.returns :           \
+                                    sym->function_semantics->declaration.returns);          \
+        }                                                                                   \
+    } while(0)
+
+#define CHECK_EMPTY_SIGNATURE(sgt)                      \
+    do {                                                \
+        if (Dynstring.len((sgt)) == 0) {                \
+            goto err;                                   \
+        }                                               \
+    } while(0)
 
 /**
  * @brief Checks if identifier is a function.
@@ -255,6 +283,7 @@ static stack_item_t *stack_item_ctor(item_type_t type, token_t *tok) {
     soft_assert(new_item, ERROR_INTERNAL);
 
     new_item->type = type;
+    new_item->expression_type = Dynstring.ctor("");
     stack_item_set_token(new_item, tok);
 
     return new_item;
@@ -275,6 +304,7 @@ static stack_item_t *stack_item_copy(stack_item_t *item) {
     soft_assert(new_item, ERROR_INTERNAL);
 
     new_item->type = item->type;
+    new_item->expression_type = Dynstring.dup(item->expression_type);
     stack_item_set_token(new_item, &(item->token));
 
     return new_item;
@@ -291,6 +321,8 @@ static void stack_item_dtor(void *item) {
     }
 
     stack_item_t *s_item = (stack_item_t *) item;
+
+    Dynstring.dtor(s_item->expression_type);
 
     if (s_item->type != ITEM_TYPE_TOKEN) {
         goto noerr;
@@ -364,19 +396,23 @@ static bool shift(sstack_t *stack, stack_item_t *expr, int const cmp) {
  * @brief Check binary operator.
  *
  * @param r_stack stack with handle (rule).
+ * @param result_op variable to set operator.
  * @return bool.
  */
-static bool binary_op(sstack_t *r_stack) {
+static bool binary_op(sstack_t *r_stack, op_list_t *result_op) {
     debug_msg("binary_op ->\n");
 
     stack_item_t *item;
+    op_list_t op;
+
     STACK_ITEM_PEEK(r_stack, item);
 
     if (item->type != ITEM_TYPE_TOKEN) {
         goto err;
     }
 
-    switch (get_op(item->token.type)) {
+    op = get_op(item->token.type);
+    switch (op) {
         case OP_ADD:
         case OP_SUB:
         case OP_MUL:
@@ -397,9 +433,48 @@ static bool binary_op(sstack_t *r_stack) {
     }
 
     noerr:
+    *result_op = op;
     Stack.pop(r_stack, stack_item_dtor);
     return true;
     err:
+    Errors.set_error(ERROR_SYNTAX);
+    return false;
+}
+
+/**
+ * @brief Check unary operator.
+ *
+ * @param r_stack stack with handle (rule).
+ * @param result_op variable to set operator.
+ * @return bool.
+ */
+static bool unary_op(sstack_t *r_stack, op_list_t *result_op) {
+    debug_msg("unary_op ->\n");
+
+    stack_item_t *item;
+    op_list_t op;
+
+    STACK_ITEM_PEEK(r_stack, item);
+
+    if (item->type != ITEM_TYPE_TOKEN) {
+        goto err;
+    }
+
+    op = get_op(item->token.type);
+    switch (op) {
+        case OP_HASH:
+        case OP_NOT:
+            goto noerr;
+        default:
+            goto err;
+    }
+
+    noerr:
+    *result_op = op;
+    Stack.pop(r_stack, stack_item_dtor);
+    return true;
+    err:
+    Errors.set_error(ERROR_SYNTAX);
     return false;
 }
 
@@ -407,9 +482,10 @@ static bool binary_op(sstack_t *r_stack) {
  * @brief Check expression.
  *
  * @param r_stack stack with handle (rule).
+ * @param type initialized vector to store an expression type.
  * @return bool.
  */
-static bool expr(sstack_t *r_stack) {
+static bool expr(sstack_t *r_stack, dynstring_t *type) {
     debug_msg("expr ->\n");
 
     stack_item_t *item;
@@ -419,36 +495,11 @@ static bool expr(sstack_t *r_stack) {
         goto err;
     }
 
+    Dynstring.cat(type, item->expression_type);
     Stack.pop(r_stack, stack_item_dtor);
     return true;
     err:
-    return false;
-}
-
-/**
- * @bief Check single operator.
- *
- * @param r_stack stack with handle (rule).
- * @param op
- * @return bool.
- */
-static bool single_op(sstack_t *r_stack, op_list_t op) {
-    debug_msg("single_op ->\n");
-
-    stack_item_t *item;
-    STACK_ITEM_PEEK(r_stack, item);
-
-    if (item->type != ITEM_TYPE_TOKEN) {
-        goto err;
-    }
-
-    if (get_op(item->token.type) != op) {
-        goto err;
-    }
-
-    Stack.pop(r_stack, stack_item_dtor);
-    return true;
-    err:
+    Errors.set_error(ERROR_SYNTAX);
     return false;
 }
 
@@ -457,50 +508,83 @@ static bool single_op(sstack_t *r_stack, op_list_t op) {
  *
  * !rule expr -> expr binary_op expr
  * !rule expr -> unary_op expr
- * !rule expr -> ( expr )
  * !rule expr -> id
  *
  * @param r_stack stack with handle (rule).
+ * @param expression_type initialized vector to store an expression type.
  * @return bool.
  */
-static bool check_rule(sstack_t *r_stack) {
+static bool check_rule(sstack_t *r_stack, dynstring_t *expression_type) {
     debug_msg("check_rule ->\n");
 
     stack_item_t *item;
+    dynstring_t *first_type = Dynstring.ctor("");
+    dynstring_t *second_type = Dynstring.ctor("");
+    op_list_t op;
+    type_recast_t r_type = NO_RECAST;
+
     STACK_ITEM_PEEK(r_stack, item);
 
     // expr binary_op expr
     if (item->type == ITEM_TYPE_EXPR) {
-        Stack.pop(r_stack, stack_item_dtor);
-        if (binary_op(r_stack) && expr(r_stack)) {
-            goto noerr;
-            // TODO: semantic check
-            // TODO: generate code for binary operation
-            Generator.expression_binary();
+        // expr
+        if (!expr(r_stack, first_type)) {
+            goto err;
         }
 
-        goto err;
+        // binary_op
+        if (!binary_op(r_stack, &op)) {
+            goto err;
+        }
+
+        // expr
+        if (!expr(r_stack, second_type)) {
+            goto err;
+        }
+
+        if (!Semantics.check_binary_compatibility(first_type, second_type, op, expression_type, &r_type)) {
+            goto err;
+        }
+
+        // generate code for binary operation
+        Generator.expression_binary(op);
+
+        goto noerr;
     }
 
     switch (get_op(item->token.type)) {
         // unary_op expr
         case OP_HASH:
         case OP_NOT:
-            Stack.pop(r_stack, stack_item_dtor);
-            if (expr(r_stack)) {
-                goto noerr;
-                // TODO: semantic check
-                // TODO: generate code for unary operation
-                Generator.expression_unary();
+            // unary_op
+            if (!unary_op(r_stack, &op)) {
+                goto err;
             }
-            goto err;
+
+            // expr
+            if (!expr(r_stack, first_type)) {
+                goto err;
+            }
+
+            if (!Semantics.check_unary_compatibility(first_type, op, expression_type)) {
+                goto err;
+            }
+
+            // generate code for unary operation
+            Generator.expression_unary(op);
+
+            goto noerr;
 
         // id
         case OP_ID:
+            if (!Semantics.check_operand(item->token, expression_type)) {
+                goto err;
+            }
+
+            // generate code for operand
+            Generator.expression_operand(item->token);
+
             Stack.pop(r_stack, stack_item_dtor);
-            // TODO: semantic check
-            // TODO: generate code for an operand
-            Generator.expression_operand();
             goto noerr;
 
         default:
@@ -508,8 +592,12 @@ static bool check_rule(sstack_t *r_stack) {
     }
 
     noerr:
+    Dynstring.dtor(first_type);
+    Dynstring.dtor(second_type);
     return true;
     err:
+    Dynstring.dtor(first_type);
+    Dynstring.dtor(second_type);
     return false;
 }
 
@@ -525,10 +613,10 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
 
     stack_item_t *top;
     sstack_t *r_stack = NULL;
+    stack_item_t *new_expr = stack_item_ctor(ITEM_TYPE_EXPR, NULL);
 
     // Push expression if exists
     if (expr != NULL) {
-        debug_msg("push expression\n");
         Stack.push(stack, stack_item_copy(expr));
     }
 
@@ -550,9 +638,8 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
      * | false      | empty     | not ok |
      * | false      | not empty | not ok |
      */
-    if (!check_rule(r_stack) || !Stack.is_empty(r_stack)) {
+    if (!check_rule(r_stack, new_expr->expression_type) || !Stack.is_empty(r_stack)) {
         debug_msg("Reduction error!\n");
-        Errors.set_error(ERROR_SYNTAX);
         goto err;
     }
 
@@ -562,12 +649,14 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
     }
 
     // Push an expression
-    Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR, NULL));
+    Stack.push(stack, stack_item_copy(new_expr));
 
     Stack.dtor(r_stack, stack_item_dtor);
+    stack_item_dtor(new_expr);
     return true;
     err:
     Stack.dtor(r_stack, stack_item_dtor);
+    stack_item_dtor(new_expr);
     return false;
 }
 
@@ -575,13 +664,11 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
  * @brief Check an expression end.
  *
  * @param first_op first operator.
- * @param second_op second operator.
  * @param function_parsed true if function was parsed.
  * @param parents_parsed true if parents were parsed.
  * @return bool.
  */
 static bool expression_end(op_list_t first_op,
-                           op_list_t second_op,
                            bool function_parsed,
                            bool parents_parsed) {
     bool is_token_id = (Scanner.get_curr_token().type == TOKEN_ID);
@@ -608,28 +695,24 @@ static bool parse_success(op_list_t first_op, op_list_t second_op, bool hard_red
 /** Function call declaration for parse_function.
  *
  * @param id_name function identifier name.
+ * @param function_returns is an initialized empty vector.
  * @return bool.
  */
-static bool func_call(dynstring_t *);
+static bool func_call(dynstring_t *, dynstring_t *);
 
 /**
  * @brief Parse function if identifier is in global scope.
  *
  * @param stack stack for precedence analyse.
  * @param function_parsed true if function was parsed.
- * @param parents_parsed true if parents were parsed.
  * @return int.
  */
-static bool parse_function(sstack_t *stack, bool *function_parsed, bool parents_parsed) {
+static bool parse_function(sstack_t *stack, bool *function_parsed) {
     debug_msg("parse_function\n");
 
     dynstring_t *id_name = NULL;
     stack_item_t *top = NULL;
-
-    // If parents were parsed, continue expression parsing
-    if (parents_parsed) {
-        goto noerr;
-    }
+    stack_item_t *new_expr = stack_item_ctor(ITEM_TYPE_EXPR, NULL);
 
     if (Scanner.get_curr_token().type != TOKEN_ID) {
         goto noerr;
@@ -651,20 +734,22 @@ static bool parse_function(sstack_t *stack, bool *function_parsed, bool parents_
     EXPECTED(TOKEN_ID);
 
     // [func_call]
-    if (!func_call(id_name)) {
+    if (!func_call(id_name, new_expr->expression_type)) {
         goto err;
     }
 
     *function_parsed = true;
 
     // Push an expression
-    Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR, NULL));
+    Stack.push(stack, stack_item_copy(new_expr));
 
     noerr:
     Dynstring.dtor(id_name);
+    stack_item_dtor(new_expr);
     return true;
     err:
     Dynstring.dtor(id_name);
+    stack_item_dtor(new_expr);
     return false;
 }
 
@@ -685,7 +770,7 @@ static bool parse_init(dynstring_t *);
 static bool parse_parents(sstack_t *stack, bool *parents_parsed) {
     debug_msg("parse_parents \n");
 
-    dynstring_t *received_signature = Dynstring.ctor("");
+    stack_item_t *new_expr = stack_item_ctor(ITEM_TYPE_EXPR, NULL);
 
     // (
     if (Scanner.get_curr_token().type != TOKEN_LPAREN) {
@@ -695,11 +780,9 @@ static bool parse_parents(sstack_t *stack, bool *parents_parsed) {
     EXPECTED(TOKEN_LPAREN);
 
     // expr
-    if (!parse_init(received_signature)) {
+    if (!parse_init(new_expr->expression_type)) {
         goto err;
     }
-
-    debug_msg("rparen\n");
 
     // )
     EXPECTED(TOKEN_RPAREN);
@@ -707,13 +790,13 @@ static bool parse_parents(sstack_t *stack, bool *parents_parsed) {
     *parents_parsed = true;
 
     // Push an expression
-    Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR, NULL));
+    Stack.push(stack, stack_item_copy(new_expr));
 
     noerr:
-    Dynstring.dtor(received_signature);
+    stack_item_dtor(new_expr);
     return true;
     err:
-    Dynstring.dtor(received_signature);
+    stack_item_dtor(new_expr);
     return false;
 }
 
@@ -740,8 +823,10 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
     }
 
     // Try parse a function
-    if (!parse_function(stack, &function_parsed, parents_parsed)) {
-        goto err;
+    if (!parents_parsed && !hard_reduce) {
+        if (!parse_function(stack, &function_parsed)) {
+            goto err;
+        }
     }
 
     // Pop expression if we have it on the top of the stack
@@ -759,22 +844,41 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
 
     // Check an expression end
     if (!hard_reduce) {
-        hard_reduce = expression_end(first_op, second_op, function_parsed, parents_parsed);
+        hard_reduce = expression_end(first_op, function_parsed, parents_parsed);
+
+        if (hard_reduce) {
+            debug_msg("set hard reduce\n");
+        }
     }
 
     // Check a success parsing
     if (parse_success(first_op, second_op, hard_reduce)) {
-        // Check if expression is empty
-//        if (expr == NULL) {
-//            goto err;
-//        }
+        debug_msg("Successful parsing\n");
 
-        if (received_signature != NULL) {
-            // TODO: set return types
+        if (expr == NULL) {
+            goto noerr;
         }
 
-        debug_msg("Successful parsing\n");
+        if (received_signature != NULL) {
+            // Set return types
+            Dynstring.cat(received_signature, expr->expression_type);
+        }
+
+        Generator.expression_pop();
         goto noerr;
+    }
+
+    // Truncate expression type and clear generator stack
+    // if there is expression on top of the precedence stack
+    if (expr != NULL && expr->type == ITEM_TYPE_EXPR) {
+        // Check if expression type is empty
+        if (Dynstring.len(expr->expression_type) == 0) {
+            Errors.set_error(ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
+            goto err;
+        }
+
+        Semantics.trunc_signature(expr->expression_type);
+        // TODO: clear stack in generated code
     }
 
     // Precedence comparison
@@ -838,11 +942,11 @@ static bool parse_init(dynstring_t *received_signature) {
  *
  * !rule [fc_other_expr] -> , expr [fc_other_expr] | )
  *
- * @param received_signature is an initialized empty vector.
+ * @param received_params is an initialized empty vector.
  * @param params_cnt counter of function parameters.
  * @return bool.
  */
-static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
+static bool fc_other_expr(dynstring_t *received_params, int params_cnt) {
     debug_msg("[fc_other_expr] ->\n");
 
     // | )
@@ -851,16 +955,15 @@ static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
     EXPECTED(TOKEN_COMMA);
 
     // expr
-    if (!parse_init(received_signature)) {
+    if (!parse_init(received_params)) {
         goto err;
     }
 
-    params_cnt++;
-    // TODO: generate code for a function parameter
-    Generator.func_call_pass_param(params_cnt);
+    // generate code for a function parameter
+    Generator.func_call_pass_param(params_cnt++);
 
     // [fc_other_expr]
-    if (!fc_other_expr(received_signature, params_cnt)) {
+    if (!fc_other_expr(received_params, params_cnt)) {
         goto err;
     }
 
@@ -874,10 +977,10 @@ static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
  *
  * !rule [fc_expr] -> expr [fc_other_expr] | )
  *
- * @param received_signature is an initialized empty vector.
+ * @param received_params is an initialized empty vector.
  * @return bool.
  */
-static bool fc_expr(dynstring_t *received_signature) {
+static bool fc_expr(dynstring_t *received_params) {
     debug_msg("[fc_expr] ->\n");
 
     int params_cnt = 0;
@@ -886,16 +989,15 @@ static bool fc_expr(dynstring_t *received_signature) {
     EXPECTED_OPT(TOKEN_RPAREN);
 
     // expr
-    if (!parse_init(received_signature)) {
+    if (!parse_init(received_params)) {
         goto err;
     }
 
-    params_cnt++;
-    // TODO: generate code for a function parameter
-    Generator.func_call_pass_param(params_cnt);
+    // generate code for a function parameter
+    Generator.func_call_pass_param(params_cnt++);
 
     // [fc_other_expr]
-    if (!fc_other_expr(received_signature, params_cnt)) {
+    if (!fc_other_expr(received_params, params_cnt)) {
         goto err;
     }
 
@@ -910,12 +1012,15 @@ static bool fc_expr(dynstring_t *received_signature) {
  * !rule [func_call] -> ( [fc_expr]
  *
  * @param id_name function identifier name.
+ * @param function_returns is an initialized empty vector.
  * @return bool.
  */
-static bool func_call(dynstring_t *id_name) {
+static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     debug_msg("[func_call] ->\n");
 
-    dynstring_t *received_signature = Dynstring.ctor("");
+    dynstring_t *received_params = Dynstring.ctor("");
+    dynstring_t *expected_params = Dynstring.ctor("");
+    GET_FUNCTION_SIGNATURES(id_name, expected_params, function_returns);
 
     // generate code for function call start
     Generator.func_createframe();
@@ -924,20 +1029,27 @@ static bool func_call(dynstring_t *id_name) {
     EXPECTED(TOKEN_LPAREN);
 
     // [fc_expr]
-    if (!fc_expr(received_signature)) {
+    if (!fc_expr(received_params)) {
         goto err;
     }
 
-    // TODO: check function parameters signature
+    // Check function parameters signature
+    if (Dynstring.cmp(received_params, expected_params) != 0 &&
+        Dynstring.cmp_c_str(id_name, "write") != 0) {
+        goto err;
+    }
 
     // generate code for function call
     Generator.func_call(Dynstring.c_str(id_name));
     // TODO: generate get return values assigment
+    //Generator.func_call_return_value(0);
 
-    Dynstring.dtor(received_signature);
+    Dynstring.dtor(received_params);
+    Dynstring.dtor(expected_params);
     return true;
     err:
-    Dynstring.dtor(received_signature);
+    Dynstring.dtor(received_params);
+    Dynstring.dtor(expected_params);
     return false;
 }
 
@@ -945,35 +1057,58 @@ static bool func_call(dynstring_t *id_name) {
  *
  * !rule [r_other_expr] -> , expr [r_other_expr] | e
  *
- * @param received_signature is an initialized empty vector.
+ * @param received_rets is an initialized empty vector.
+ * @param last_expression is an initialized vector for last expression type/s.
+ * @param return_cnt
+ * @param return_amount
  * @return bool.
  */
-static bool r_other_expr(dynstring_t *received_signature, size_t *return_cnt) {
+static bool r_other_expr(dynstring_t *received_rets,
+                         dynstring_t *last_expression,
+                         size_t return_cnt,
+                         size_t return_amount) {
     debug_msg("[r_other_expr] ->\n");
+
+    dynstring_t *received_signature = Dynstring.ctor("");
 
     // | e
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
-        return true;
+        Dynstring.cat(received_rets, last_expression);
+        goto noerr;
     }
 
     // ,
     EXPECTED(TOKEN_COMMA);
 
+    // Truncate signature if it has multiple return types
+    // and located not at the end of expression
+    Semantics.trunc_signature(last_expression);
+    Dynstring.cat(received_rets, last_expression);
+
     // expr
     if (!parse_init(received_signature)) {
         goto err;
     }
-    (*return_cnt)--;
 
-    // TODO: check if expression was not empty
+    CHECK_EMPTY_SIGNATURE(received_signature);
+    return_cnt++;
 
-    // [r_other_expr]
-    if (!r_other_expr(received_signature, return_cnt)) {
+    if (return_cnt == return_amount) {
         goto err;
     }
 
+    // TODO: generate code for other return expressions
+
+    // [r_other_expr]
+    if (!r_other_expr(received_rets, received_signature, return_cnt, return_amount)) {
+        goto err;
+    }
+
+    noerr:
+    Dynstring.dtor(received_signature);
     return true;
     err:
+    Dynstring.dtor(received_signature);
     return false;
 }
 
@@ -982,64 +1117,78 @@ static bool r_other_expr(dynstring_t *received_signature, size_t *return_cnt) {
  *
  * !rule [r_expr] -> expr [r_other_expr] | e
  *
- * @param received_signature is an initialized empty vector.
+ * @param received_rets is an initialized empty vector.
+ * @param return_amount
  * @return bool.
  */
-static bool r_expr(dynstring_t *received_signature, size_t return_cnt) {
+static bool r_expr(dynstring_t *received_rets, size_t return_amount) {
     debug_msg("[r_expr] ->\n");
 
-    // expr
-    if (!parse_init(received_signature)) {
-        return false;
-    }
-    return_cnt--;
-
-    // TODO: check if expression was empty
-
-    // [r_other_expr]
-    if (!r_other_expr(received_signature, &return_cnt)) {
-        return false;
-    }
-
-    if (return_cnt != 0) {
-        // generate return nil
-        // TODO generator.
-    }
-    return true;
-}
-
-/** Assignment other expressions.
- *
- * !rule [a_other_expr] -> , expr [a_other_expr] | e
- *
- * @param ids_list list of identifiers.
- * @return bool.
- */
-static bool a_other_expr(list_t *ids_list) {
-    debug_msg("[a_other_expr] ->\n");
-
+    size_t return_cnt = 0;
     dynstring_t *received_signature = Dynstring.ctor("");
-
-    // | e
-    if (Scanner.get_curr_token().type != TOKEN_COMMA) {
-        goto noerr;
-    }
-
-    // ,
-    EXPECTED(TOKEN_COMMA);
 
     // expr
     if (!parse_init(received_signature)) {
         goto err;
     }
 
-    // TODO: check if expression was not empty
-    // TODO: check if id is exist for an expression
-    // TODO: check types compatability of id and expression
-    // TODO: generate code for assignment
+    // If expression was not empty
+    if (Dynstring.len(received_signature) != 0) {
+        if (return_cnt == return_amount) {
+            goto err;
+        }
+
+        // TODO: generate code for the first result expression
+    }
+
+    // [r_other_expr]
+    if (!r_other_expr(received_rets, received_signature, return_cnt, return_amount)) {
+        goto err;
+    }
+
+    Dynstring.dtor(received_signature);
+    return true;
+    err:
+    Dynstring.dtor(received_signature);
+    return false;
+}
+
+/** Assignment other expressions.
+ *
+ * !rule [a_other_expr] -> , expr [a_other_expr] | e
+ *
+ * @param rhs_expressions is an initialized vector for rhs expression types.
+ * @param last_expression is an initialized vector for last expression type/s.
+ * @return bool.
+ */
+static bool a_other_expr(dynstring_t *rhs_expressions, dynstring_t *last_expression) {
+    debug_msg("[a_other_expr] ->\n");
+
+    dynstring_t *received_signature = Dynstring.ctor("");
+
+    // | e
+    if (Scanner.get_curr_token().type != TOKEN_COMMA) {
+        Dynstring.cat(rhs_expressions, last_expression);
+        goto noerr;
+    }
+
+    // ,
+    EXPECTED(TOKEN_COMMA);
+
+    // Truncate signature if it has multiple return types
+    // and located not at the end of expression
+    Semantics.trunc_signature(last_expression);
+    Dynstring.cat(rhs_expressions, last_expression);
+
+    // expr
+    if (!parse_init(received_signature)) {
+        goto err;
+    }
+
+    CHECK_EMPTY_SIGNATURE(received_signature);
 
     // [a_other_expr]
-    if (!a_other_expr(ids_list)) {
+    if (!a_other_expr(rhs_expressions, received_signature)) {
         goto err;
     }
 
@@ -1055,10 +1204,10 @@ static bool a_other_expr(list_t *ids_list) {
  *
  * !rule [a_expr] -> expr [a_other_expr]
  *
- * @param ids_list list of identifiers.
+ * @param rhs_expressions is an initialized vector for rhs expression types.
  * @return bool.
  */
-static bool a_expr(list_t *ids_list) {
+static bool a_expr(dynstring_t *rhs_expressions) {
     debug_msg("[a_expr] ->\n");
 
     dynstring_t *received_signature = Dynstring.ctor("");
@@ -1068,13 +1217,10 @@ static bool a_expr(list_t *ids_list) {
         goto err;
     }
 
-    // TODO: check if expression was not empty
-    // TODO: check types compatability of id and expression
-    // TODO: generate code for assignment
-    Generator.var_assignment(ids_list->head->data);
+    CHECK_EMPTY_SIGNATURE(received_signature);
 
     // [a_other_expr]
-    if (!a_other_expr(ids_list)) {
+    if (!a_other_expr(rhs_expressions, received_signature)) {
         goto err;
     }
 
@@ -1096,6 +1242,7 @@ static bool a_other_id(list_t *ids_list) {
     debug_msg("[a_other_id] ->\n");
 
     dynstring_t *id_name = NULL;
+    dynstring_t *rhs_expressions = Dynstring.ctor("");
 
     // | = [a_expr]
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
@@ -1103,11 +1250,16 @@ static bool a_other_id(list_t *ids_list) {
         EXPECTED(TOKEN_ASSIGN);
 
         // [a_expr]
-        if (!a_expr(ids_list)) {
+        if (!a_expr(rhs_expressions)) {
             goto err;
-        } else {
-            goto noerr;
         }
+
+        debug_msg("rhs_expressions = { %s }\n", Dynstring.c_str(rhs_expressions));
+        // TODO: check types compatability of id and expression
+        // TODO: generate code for assignment
+        //Generator.var_assignment(ids_list->head->data);
+
+        goto noerr;
     }
 
     // ,
@@ -1128,9 +1280,11 @@ static bool a_other_id(list_t *ids_list) {
 
     noerr:
     Dynstring.dtor(id_name);
+    Dynstring.dtor(rhs_expressions);
     return true;
     err:
     Dynstring.dtor(id_name);
+    Dynstring.dtor(rhs_expressions);
     return false;
 }
 
@@ -1214,21 +1368,12 @@ static bool Default_expression(pfile_t *pfile_,
     }
 
     // recast type of an expression to boolean, if it is not empty.
-    // TODO: type cast in Generator.
-    // expression will be on the stack.
-    // local int : integer = nil for example, so type doesn't necessary have to be nil
-    // if expr == nil result is false, and it must be checked at the runtime
-    // so if statement in the ifjcode21 must be generated
-    // else result is true
-    // received_signature is always allocated, but can be empty and it be handled in
-    // the parser.
     Generator.comment("recast expression to bool");
     Generator.recast_expression_to_bool();
 
     // clear Dynstring and append a new type means expression was typecasted.
     Dynstring.clear(received_signature);
     Dynstring.append(received_signature, 'b');
-    assert(false);
 
     ret:
     return true;
@@ -1256,7 +1401,7 @@ static bool Global_expression(pfile_t *pfile_) {
     }
 
     // [func_call]
-    if (!func_call(id_name)) {
+    if (!func_call(id_name, NULL)) {
         goto err;
     }
 
@@ -1285,7 +1430,7 @@ static bool Function_expression(pfile_t *pfile_) {
 
     if (is_a_function(id_name)) {
         // [func_call]
-        if (!func_call(id_name)) {
+        if (!func_call(id_name, NULL)) {
             goto err;
         }
     } else {

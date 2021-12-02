@@ -120,23 +120,6 @@ static char of_id_type(int type) {
     }
 }
 
-static int type_to_token (id_type_t id_type) {
-    switch (id_type) {
-        case ID_TYPE_string:
-            return TOKEN_STR;
-        case ID_TYPE_integer:
-            return TOKEN_NUM_I;
-        case ID_TYPE_number:
-            return TOKEN_NUM_F;
-        case ID_TYPE_boolean:
-            return KEYWORD_boolean;
-        case ID_TYPE_nil:
-            return KEYWORD_nil;
-        default:
-            return TOKEN_DEAD;
-    }
-}
-
 static int token_to_type(int typ) {
     switch (typ) {
         case TOKEN_STR:
@@ -145,24 +128,8 @@ static int token_to_type(int typ) {
             return ID_TYPE_integer;
         case TOKEN_NUM_F:
             return ID_TYPE_number;
-        case KEYWORD_boolean:
-            return ID_TYPE_boolean;
-        case KEYWORD_nil:
-            return ID_TYPE_nil;
-        default:
-            return ID_TYPE_UNDEF;
-    }
-}
-
-static int keyword_to_type(int typ) {
-    switch (typ) {
-        case KEYWORD_string:
-            return ID_TYPE_string;
-        case KEYWORD_number:
-            return ID_TYPE_number;
-        case KEYWORD_integer:
-            return ID_TYPE_integer;
-        case KEYWORD_boolean:
+        case KEYWORD_1:
+        case KEYWORD_0:
             return ID_TYPE_boolean;
         case KEYWORD_nil:
             return ID_TYPE_nil;
@@ -262,286 +229,6 @@ static func_semantics_t *Ctor(bool is_defined, bool is_declared, bool is_builtin
     return newbe;
 }
 
-/** Expression semantics constructor.
- *
- * @return new expressions semantics.
- */
-//static expr_semantics_t *Ctor_expr() {
-//    expr_semantics_t *expr_sem = calloc(1, sizeof(expr_semantics_t));
-//    soft_assert(expr_sem != NULL, ERROR_INTERNAL);
-//
-//    expr_sem->sem_state = SEMANTIC_IDLE;
-//    expr_sem->op = OP_UNDEFINED;
-//    expr_sem->conv_type = NO_CONVERSION;
-//    expr_sem->result_type = ID_TYPE_UNDEF;
-//    expr_sem->func_types = Dynstring.ctor("");
-//    expr_sem->func_rets = Dynstring.ctor("");
-//
-//    return expr_sem;
-//}
-
-/** Expression semantics destructor.
- *
- * @param self expression semantics struct.
- */
-static void Dtor_expr(expr_semantics_t *self) {
-    if (self == NULL) {
-        return;
-    }
-
-    if (self->sem_state == SEMANTIC_OPERAND
-        || self->sem_state == SEMANTIC_UNARY
-        || self->sem_state == SEMANTIC_PARENTS
-        || self->sem_state == SEMANTIC_FUNCTION) {
-        if (self->first_operand.type == TOKEN_ID) {
-            Dynstring.dtor(self->first_operand.attribute.id);
-        }
-    } else if (self->sem_state == SEMANTIC_BINARY) {
-        if (self->first_operand.type == TOKEN_ID) {
-            Dynstring.dtor(self->first_operand.attribute.id);
-        }
-        if (self->second_operand.type == TOKEN_ID) {
-            Dynstring.dtor(self->second_operand.attribute.id);
-        }
-    }
-
-    Dynstring.dtor(self->func_types);
-    Dynstring.dtor(self->func_rets);
-    free(self);
-}
-
-/** Expression semantics add operand.
- *
- * @param self expression semantics struct.
- * @param tok operand.
- */
-//static void Add_operand(expr_semantics_t *self, token_t tok) {
-//    if (self->sem_state == SEMANTIC_UNARY ||
-//        self->sem_state == SEMANTIC_BINARY) {
-//        return;
-//    }
-//
-//    if (self->sem_state == SEMANTIC_FUNCTION) {
-//        Dynstring.append(self->func_types, of_id_type(token_to_type(tok.type)));
-//        return;
-//    }
-//
-//    if (self->sem_state == SEMANTIC_PARENTS) {
-//        self->first_operand = tok;
-//        if (tok.type == TOKEN_ID) {
-//            self->first_operand.attribute.id = Dynstring.dup(tok.attribute.id);
-//        }
-//        return;
-//    }
-//
-//    if (self->op == OP_UNDEFINED) {
-//        self->first_operand = tok;
-//        if (tok.type == TOKEN_ID) {
-//            self->first_operand.attribute.id = Dynstring.dup(tok.attribute.id);
-//        }
-//        self->sem_state = SEMANTIC_OPERAND;
-//    } else {
-//        if (self->sem_state == SEMANTIC_IDLE) {
-//            self->first_operand = tok;
-//            if (tok.type == TOKEN_ID) {
-//                self->first_operand.attribute.id = Dynstring.dup(tok.attribute.id);
-//            }
-//            self->sem_state = SEMANTIC_UNARY;
-//        } else {
-//            self->second_operand = tok;
-//            if (tok.type == TOKEN_ID) {
-//                self->second_operand.attribute.id = Dynstring.dup(tok.attribute.id);
-//            }
-//            self->sem_state = SEMANTIC_BINARY;
-//        }
-//    }
-//}
-
-//static void Add_operator(expr_semantics_t *self, op_list_t op) {
-//    if (self->sem_state == SEMANTIC_UNARY ||
-//        self->sem_state == SEMANTIC_BINARY) {
-//        return;
-//    }
-//
-//    self->op = op;
-//}
-
-//static bool is_var_exists (token_t tok, expr_semantics_t *self) {
-//    symbol_t *symbol;
-//    bool res;
-//    res = Symstack.get_local_symbol(symstack, tok.attribute.id, &symbol);
-//    if (res) {
-//        self->result_type = type_to_token(symbol->type);
-//        return true;
-//    } else {
-//        Errors.set_error(ERROR_DEFINITION);
-//        return false;
-//    }
-//}
-
-//static bool type_compatability(expr_semantics_t *self) {
-//    if (self->sem_state == SEMANTIC_UNARY) {
-//        id_type_t f_var_type = token_to_type(self->first_operand.type);
-//
-//        // String length
-//        if (self->op == OP_HASH && f_var_type == ID_TYPE_string) {
-//            self->result_type = TOKEN_NUM_I;
-//            return true;
-//        }
-//
-//        // not
-//        else if (self->op == OP_NOT && f_var_type == ID_TYPE_boolean) {
-//            self->result_type = KEYWORD_boolean;
-//            return true;
-//        }
-//    } else {
-//        id_type_t f_var_type = token_to_type(self->first_operand.type);
-//        id_type_t s_var_type = token_to_type(self->second_operand.type);
-//
-//        // Addition, subtraction, multiplication, float division
-//        if (self->op == OP_ADD || self->op == OP_SUB || self->op == OP_MUL || self->op == OP_DIV_F) {
-//            self->result_type = TOKEN_NUM_F;
-//
-//            if (f_var_type == ID_TYPE_number && s_var_type == ID_TYPE_number) {
-//                return true;
-//            } else if (f_var_type == ID_TYPE_integer && s_var_type == ID_TYPE_integer) {
-//                self->result_type = TOKEN_NUM_I;
-//                if (self->op == OP_DIV_F) {
-//                    self->result_type = TOKEN_NUM_F;
-//                    self->conv_type = CONVERT_BOTH;
-//                }
-//                return true;
-//            } else if (f_var_type == ID_TYPE_integer && s_var_type == ID_TYPE_number) {
-//                self->conv_type = CONVERT_FIRST;
-//                return true;
-//            } else if (f_var_type == ID_TYPE_number && s_var_type == ID_TYPE_integer) {
-//                self->conv_type = CONVERT_SECOND;
-//                return true;
-//            }
-//        }
-//
-//        // Integer division
-//        else if (self->op == OP_DIV_I) {
-//            self->result_type = TOKEN_NUM_I;
-//
-//            if (f_var_type == ID_TYPE_integer && s_var_type == ID_TYPE_integer) {
-//                return true;
-//            }
-//        }
-//
-//        // String concatenation
-//        else if (self->op == OP_STRCAT) {
-//            self->result_type = TOKEN_STR;
-//
-//            if (f_var_type == ID_TYPE_string && s_var_type == ID_TYPE_string) {
-//                return true;
-//            }
-//        }
-//
-//        // Relation operators
-//        else if (self->op == OP_LT || self->op == OP_LE ||
-//                 self->op == OP_GT || self->op == OP_GE ||
-//                 self->op == OP_EQ || self->op == OP_NE) {
-//            self->result_type = KEYWORD_boolean;
-//
-//            if ((f_var_type == ID_TYPE_number && s_var_type == ID_TYPE_number) ||
-//                (f_var_type == ID_TYPE_string && s_var_type == ID_TYPE_string) ||
-//                (f_var_type == ID_TYPE_integer && s_var_type == ID_TYPE_integer)) {
-//                return true;
-//            } else if (f_var_type == ID_TYPE_integer && s_var_type == ID_TYPE_number) {
-//                self->conv_type = CONVERT_FIRST;
-//                return true;
-//            } else if (f_var_type == ID_TYPE_number && s_var_type == ID_TYPE_integer) {
-//                self->conv_type = CONVERT_SECOND;
-//                return true;
-//            }
-//
-//            // nil
-//            if (self->op == OP_EQ || self->op == OP_NE) {
-//                if ((f_var_type == ID_TYPE_boolean && s_var_type == ID_TYPE_boolean) ||
-//                    (f_var_type == ID_TYPE_nil || s_var_type == ID_TYPE_nil)) {
-//                    return true;
-//                }
-//            }
-//        }
-//
-//        // and, or
-//        else if (self->op == OP_AND || self->op == OP_OR) {
-//            self->result_type = KEYWORD_boolean;
-//
-//            if (f_var_type == ID_TYPE_boolean && s_var_type == ID_TYPE_boolean) {
-//               return true;
-//            }
-//        }
-//    }
-//
-//    Errors.set_error(ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
-//    return false;
-//}
-
-//static bool Check_expression(expr_semantics_t *self) {
-//    if (self->sem_state == SEMANTIC_IDLE) {
-//        return true;
-//    }
-//
-//    if (self->sem_state == SEMANTIC_FUNCTION) {
-//        // We know that the function was already declared/defined
-//        symbol_t *symbol;
-//
-//        dynstring_t *str_cmp = Dynstring.ctor("write");
-//        if (Dynstring.cmp(self->first_operand.attribute.id, str_cmp) == 0) {
-//            return true;
-//        }
-//        Dynstring.dtor(str_cmp);
-//
-//        Symtable.get_symbol(global_table, self->first_operand.attribute.id, &symbol);
-//
-//        debug_msg("FUNC_DECL = \"%s\", FUNC_DEF = \"%s\", PARSE_SIGNATURE = \"%s\"\n",
-//                  Dynstring.c_str(symbol->function_semantics->declaration.params),
-//                  Dynstring.c_str(symbol->function_semantics->definition.params),
-//                  Dynstring.c_str(self->func_types));
-//
-//        debug_msg("FUNC_DECL_RETS = \"%s\", FUNC_DEF_RETS = \"%s\"\n",
-//                  Dynstring.c_str(symbol->function_semantics->declaration.returns),
-//                  Dynstring.c_str(symbol->function_semantics->definition.returns));
-//
-//        if (symbol->function_semantics->is_declared) {
-//            if (Dynstring.cmp(symbol->function_semantics->declaration.params, self->func_types) != 0) {
-//                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
-//                return false;
-//            }
-//            Dynstring.cat(self->func_rets, symbol->function_semantics->declaration.returns);
-//        } else if (symbol->function_semantics->is_defined) {
-//            if (Dynstring.cmp(symbol->function_semantics->definition.params, self->func_types) != 0) {
-//                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
-//                return false;
-//            }
-//            Dynstring.cat(self->func_rets, symbol->function_semantics->definition.returns);
-//        }
-//
-//        return true;
-//    }
-//
-//    // Check if variable is exists in symtable
-//    if (self->sem_state == SEMANTIC_OPERAND || self->sem_state == SEMANTIC_PARENTS) {
-//        if (self->first_operand.type == TOKEN_ID) {
-//            return is_var_exists(self->first_operand, self);
-//        }
-//
-//        // true, false -> bool
-//        int tok_type = self->first_operand.type;
-//        if (tok_type == KEYWORD_1 || tok_type == KEYWORD_0) {
-//            tok_type = KEYWORD_boolean;
-//        }
-//
-//        self->result_type = tok_type;
-//        return true;
-//    }
-//
-//    // Check type compatability
-//    return type_compatability(self);
-//}
-
 static bool Check_signatures_compatibility(dynstring_t *signature_expected,
                                            dynstring_t *signature_received,
                                            int error) {
@@ -587,13 +274,275 @@ static bool Check_signatures_compatibility(dynstring_t *signature_expected,
     return true;
 }
 
+/**
+ * @brief Truncate signature to one type.
+ *
+ * @param type_signature is an initialized vector with expression type/s.
+ */
+static void Trunc_signature(dynstring_t *type_signature) {
+    if (Dynstring.len(type_signature) > 1) {
+        Dynstring.trunc_to_len(type_signature, 1);
+    }
+}
+
+/**
+ * @brief Check semantics of binary operation.
+ *
+ * @param first_type type of the first operand.
+ * @param second_type type of the second operand.
+ * @param op binary operator.
+ * @param expression_type initialized vector to store an expression type.
+ * @param r_type variable to store a type of recast.
+ * @return bool.
+ */
+static bool Check_binary_compatibility(dynstring_t *first_type,
+                                       dynstring_t *second_type,
+                                       op_list_t op,
+                                       dynstring_t *expression_type,
+                                       type_recast_t *r_type) {
+    char result_type;
+
+    switch (op) {
+        case OP_LT:
+        case OP_LE:
+        case OP_GT:
+        case OP_GE:
+        case OP_EQ:
+        case OP_NE:
+            result_type = 'b';
+
+            if (op == OP_EQ || op == OP_NE) {
+                // boolean -> nil == integer|number|string|nil
+                // boolean -> nil ~= integer|number|string|nil
+                if (Dynstring.cmp_c_str(first_type, "n") == 0 ) {
+                    goto ret;
+                }
+
+                // boolean -> integer|number|string == nil
+                // boolean -> integer|number|string ~= nil
+                if (Dynstring.cmp_c_str(second_type, "n") == 0) {
+                    goto ret;
+                }
+
+                // boolean -> boolean == boolean
+                // boolean -> boolean ~= boolean
+                if (Dynstring.cmp_c_str(first_type, "b") == 0 &&
+                    Dynstring.cmp_c_str(second_type, "b") == 0) {
+                    goto ret;
+                }
+
+                break;
+            }
+
+            // check nil
+            if (Dynstring.cmp_c_str(first_type, "n") == 0 ||
+                Dynstring.cmp_c_str(second_type, "n") == 0) {
+                break;
+            }
+
+            // boolean -> integer <|<=|>|>=|==|~= integer
+            // boolean -> number  <|<=|>|>=|==|~= number
+            // boolean -> string  <|<=|>|>=|==|~= string
+            if (Dynstring.cmp(first_type, second_type) == 0) {
+                goto ret;
+            }
+
+            // boolean -> integer <|<=|>|>=|==|~= number
+            if (Dynstring.cmp_c_str(first_type, "i") == 0 &&
+                Dynstring.cmp_c_str(second_type, "f") == 0) {
+                *r_type = TYPE_RECAST_FIRST;
+                goto ret;
+            }
+
+            // boolean -> number  <|<=|>|>=|==|~= integer
+            if (Dynstring.cmp_c_str(first_type, "f") == 0 &&
+                Dynstring.cmp_c_str(second_type, "i") == 0) {
+                *r_type = TYPE_RECAST_SECOND;
+                goto ret;
+            }
+
+            break;
+
+        case OP_ADD:
+        case OP_SUB:
+        case OP_MUL:
+        case OP_DIV_F:
+            result_type = 'f';
+
+            // check nil
+            if (Dynstring.cmp_c_str(first_type, "n") == 0 ||
+                Dynstring.cmp_c_str(second_type, "n") == 0) {
+                break;
+            }
+
+            // check string
+            if (Dynstring.cmp_c_str(first_type, "s") == 0 ||
+                Dynstring.cmp_c_str(second_type, "s") == 0) {
+                break;
+            }
+
+            // number -> number +-*/ number
+            if (Dynstring.cmp(first_type, second_type) == 0) {
+
+                if (Dynstring.cmp_c_str(first_type, "i") == 0 &&
+                    Dynstring.cmp_c_str(second_type, "i") == 0) {
+                    // integer -> integer +-* integer
+                    if (op != OP_DIV_F) {
+                        result_type = 'i';
+                    }
+
+                    // number -> integer / integer
+                    *r_type = TYPE_RECAST_BOTH;
+                }
+
+                goto ret;
+            }
+
+            // number -> integer +-*/ number
+            if (Dynstring.cmp_c_str(first_type, "i") == 0 &&
+                Dynstring.cmp_c_str(second_type, "f") == 0) {
+                *r_type = TYPE_RECAST_FIRST;
+                goto ret;
+            }
+
+            // number -> number +-*/ integer
+            if (Dynstring.cmp_c_str(first_type, "f") == 0 &&
+                Dynstring.cmp_c_str(second_type, "i") == 0) {
+                *r_type = TYPE_RECAST_SECOND;
+                goto ret;
+            }
+
+            break;
+
+        case OP_DIV_I:
+            result_type = 'i';
+
+            // integer -> integer // integer
+            if (Dynstring.cmp_c_str(first_type, "i") == 0 &&
+                Dynstring.cmp_c_str(second_type, "i") == 0) {
+                goto ret;
+            }
+
+            break;
+
+        case OP_STRCAT:
+            result_type = 's';
+
+            // string -> string // string
+            if (Dynstring.cmp_c_str(first_type, "s") == 0 &&
+                Dynstring.cmp_c_str(second_type, "s") == 0) {
+                goto ret;
+            }
+
+            break;
+
+        case OP_AND:
+        case OP_OR:
+            result_type = 'b';
+
+            // boolean -> boolean and|or boolean
+            if (Dynstring.cmp_c_str(first_type, "b") == 0 &&
+                Dynstring.cmp_c_str(second_type, "b") == 0) {
+                goto ret;
+            }
+
+            break;
+
+        default:
+            break;
+    }
+
+    Errors.set_error(ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
+    return false;
+
+    ret:
+    Dynstring.append(expression_type, result_type);
+    return true;
+}
+
+/**
+ * @brief Check semantics of unary operation.
+ *
+ * @param type type of the operand.
+ * @param op unary operator.
+ * @param expression_type initialized vector to store an expression type.
+ * @return bool.
+ */
+static bool Check_unary_compatability(dynstring_t *type,
+                                      op_list_t op,
+                                      dynstring_t *expression_type) {
+    char result_type;
+
+    switch (op) {
+        // integer -> # string
+        case OP_HASH:
+            result_type = 'i';
+
+            if (Dynstring.cmp_c_str(type, "s") == 0) {
+                goto ret;
+            }
+            break;
+
+        // boolean -> not boolean
+        case OP_NOT:
+            result_type = 'b';
+
+            if (Dynstring.cmp_c_str(type, "b") == 0) {
+                goto ret;
+            }
+            break;
+
+        // other
+        default:
+            break;
+    }
+
+    Errors.set_error(ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
+    return false;
+
+    ret:
+    Dynstring.append(expression_type, result_type);
+    return true;
+}
+
+/**
+ * @brief Check semantics of single operand.
+ *
+ * @param operand
+ * @param expression_type initialized vector to store an expression type.
+ * @return bool.
+ */
+static bool Check_operand(token_t operand, dynstring_t *expression_type) {
+    char result_type;
+    symbol_t *sym;
+
+    // Check if operand is identifier
+    if (operand.type != TOKEN_ID) {
+        result_type = Semantics.of_id_type(Semantics.token_to_id_type(operand.type));
+        goto ret;
+    }
+
+    // Check if identifier is in symbol table
+    if (Symstack.get_local_symbol(symstack, operand.attribute.id, &sym)) {
+        result_type = Semantics.of_id_type(sym->type);
+        goto ret;
+    }
+
+    Errors.set_error(ERROR_DEFINITION);
+    return false;
+
+    ret:
+    Dynstring.append(expression_type, result_type);
+    return true;
+}
+
+static bool Check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_expressions) {
+    return true;
+}
+
 const struct semantics_interface_t Semantics = {
-//        .ctor_expr = Ctor_expr,
         .ctor = Ctor,
-//        .dtor_expr = Dtor_expr,
         .dtor = Dtor,
-//        .add_operand = Add_operand,
-//        .add_operator = Add_operator,
         .is_declared = Is_declared,
         .is_defined = Is_defined,
         .is_builtin = Is_builtin,
@@ -606,9 +555,12 @@ const struct semantics_interface_t Semantics = {
         .set_params = Set_params,
 
         .check_signatures = Check_signatures,
-//        .check_expression = Check_expression,
         .check_signatures_compatibility = Check_signatures_compatibility,
         .of_id_type = of_id_type,
         .token_to_id_type = token_to_type,
-        .keyword_to_id_type = keyword_to_type
+
+        .check_binary_compatibility = Check_binary_compatibility,
+        .check_unary_compatibility = Check_unary_compatability,
+        .check_operand = Check_operand,
+        .trunc_signature = Trunc_signature,
 };

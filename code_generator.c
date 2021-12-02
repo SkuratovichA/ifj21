@@ -138,10 +138,8 @@ static void generate_func_write() {
 static void generate_func_tointeger() {
     ADD_INSTR("LABEL $tointeger \n"
               "PUSHFRAME \n"
-              "DEFVAR LF@%res \n"
-              "DEFVAR LF@p0 \n"
-              "MOVE LF@p0 LF@%0 \n"
-              "FLOAT2INT LF@%res LF@p0 \n"
+              "DEFVAR LF@%return0 \n"
+              "FLOAT2INT LF@%return0 LF@%0 \n"
               "POPFRAME \n"
               "RETURN \n");
 }
@@ -266,13 +264,85 @@ static void nil_check_func() {
  */
 static void recast_to_bool_func() {
     ADD_INSTR("LABEL $$recast_to_bool \n"
-              "POPS GF@%expr_result \n"
               "JUMPIFNEQ $$recast_to_bool$not_nil GF@%expr_result nil@nil \n"
-              "PUSHS bool@false \n"
+              "MOVE GF@%expr_result bool@false \n"
               "JUMP $$recast_to_bool$end \n"
               "LABEL $$recast_to_bool$not_nil \n"
-              "PUSHS bool@true \n"
+              "MOVE GF@%expr_result bool@true \n"
               "LABEL $$recast_to_bool$end \n"
+              "RETURN \n");
+}
+
+/*
+ * @brief Generates function for computing the power.
+ */
+static void generate_power_func() {
+    ADD_INSTR("LABEL $$power \n"
+              "PUSHFRAME \n"
+              "DEFVAR LF@%res \n"
+              "MOVE LF@%res float@0x1p+0 \n"
+              "DEFVAR LF@%exp \n"
+              "POPS LF@%exp \n"
+              "DEFVAR LF@%base \n"
+              "POPS LF@%base \n"
+              "# make sure exp has zero decimal part \n"
+              "FLOAT2INT LF@%exp LF@%exp \n"
+              "INT2FLOAT LF@%exp LF@%exp \n"
+              "# if exp < 0 -> \n"
+              "LT GF@%expr_result LF@%exp float@0x0p+0 \n"
+              "JUMPIFEQ $$power$while GF@%expr_result bool@false \n"
+              "# check base != 0 \n"
+              "JUMPIFEQ $$ERROR_DIV_BY_ZERO LF@%base float@0x0p+0 \n"
+              "# base = 1 / base, exp = exp * (-1) \n"
+              "DIV LF@%base float@0x1p+0 LF@%base \n"
+              "MUL LF@%exp LF@%exp float@-0x1p+0 \n"
+              "# while (exp != 0) \n"
+              "LABEL $$power$while \n"
+              "JUMPIFEQ $$power$end LF@%exp float@0x0p+0 \n"
+              "     MUL LF@%res LF@%res LF@%base \n"
+              "     SUB LF@%exp LF@%exp float@0x1p+0 \n"
+              "     JUMP $$power$while \n"
+              "LABEL $$power$end \n"
+              "PUSHS LF@%res \n"
+              "POPFRAME \n"
+              "RETURN \n");
+}
+
+/*
+ * @brief Generates function for short-circuit "or" evaluation.
+ */
+static void generate_ors_short() {
+    ADD_INSTR("LABEL $$ors_short \n"
+              "POPS GF@%expr_result \n"
+              "POPS GF@%expr_result2 \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+              "JUMPIFEQ $$ors$true GF@%expr_result2 bool@true \n"
+              "JUMPIFEQ $$ors$true GF@%expr_result bool@true \n"
+              "PUSHS bool@false \n"
+              "JUMP $$ors$end \n"
+              "LABEL $$ors$true \n"
+              "PUSHS bool@true \n"
+              "LABEL $$ors$end \n"
+              "RETURN \n");
+}
+
+/*
+ * @brief Generates function for short-circuit "and" evaluation.
+ */
+static void generate_ands_short() {
+    ADD_INSTR("LABEL $$ands_short \n"
+              "POPS GF@%expr_result \n"
+              "POPS GF@%expr_result2 \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+              "JUMPIFEQ $$ands$false GF@%expr_result2 bool@false \n"
+              "JUMPIFEQ $$ands$false GF@%expr_result bool@false \n"
+              "PUSHS bool@true \n"
+              "JUMP $$ands$end \n"
+              "LABEL $$ands$false \n"
+              "PUSHS bool@false \n"
+              "LABEL $$ands$end \n"
               "RETURN \n");
 }
 
@@ -503,18 +573,18 @@ static void generate_nil_check() {
  * @brief Converts first or both int expressions to float.
  * @param expr stores info about the expr to be converted.
  */
-static void retype_first_or_both(expr_semantics_t *expr) {
-    ADD_INSTR("# convert int -> float");
-    ADD_INSTR("POPS GF@%expr_result2 \n"
-              "POPS GF@%expr_result \n"
-              "INT2FLOAT GF@%expr_result GF@%expr_result");
-    if (expr->conv_type == CONVERT_BOTH) {
-        ADD_INSTR("# convert int -> float");
-        ADD_INSTR("INT2FLOAT GF@%expr_result2 GF@%expr_result2");
-    }
-    ADD_INSTR("PUSHS GF@%expr_result \n"
-              "PUSHS GF@%expr_result2");
-}
+//static void retype_first_or_both(expr_semantics_t *expr) {
+//    ADD_INSTR("# convert int -> float");
+//    ADD_INSTR("POPS GF@%expr_result2 \n"
+//              "POPS GF@%expr_result \n"
+//              "INT2FLOAT GF@%expr_result GF@%expr_result");
+//    if (expr->conv_type == CONVERT_BOTH) {
+//        ADD_INSTR("# convert int -> float");
+//        ADD_INSTR("INT2FLOAT GF@%expr_result2 GF@%expr_result2");
+//    }
+//    ADD_INSTR("PUSHS GF@%expr_result \n"
+//              "PUSHS GF@%expr_result2");
+//}
 
 /*
  * @brief Converts second int expression to float.
@@ -532,67 +602,29 @@ static void retype_second() {
  *        and pushes operands on the stack.
  * @param expr stores info about the expr to be converted.
  */
-static void retype_and_push(expr_semantics_t *expr) {
-    if (expr->conv_type == CONVERT_FIRST || expr->conv_type == CONVERT_BOTH) {
-        retype_first_or_both(expr);
-    }
-    if (expr->conv_type == CONVERT_SECOND) {
-        retype_second();
-    }
-}
+//static void retype_and_push(expr_semantics_t *expr) {
+//    if (expr->conv_type == CONVERT_FIRST || expr->conv_type == CONVERT_BOTH) {
+//        retype_first_or_both(expr);
+//    }
+//    if (expr->conv_type == CONVERT_SECOND) {
+//        retype_second();
+//    }
+//}
 
 /*
  * @brief Generates code for pushing operand on the stack (with nil check).
  */
-static void generate_expression_operand() {
-    ADD_INSTR("# expr - operand");
-
-    // FIXME
-    ADD_INSTR("MOVE GF@%expr_result int@3");
-    //ADD_INSTR_PART("PUSHS ");
-    //generate_var_value(expr->first_operand);
-    //ADD_INSTR_TMP();
+static void generate_expression_operand(token_t token) {
+    ADD_INSTR_PART("PUSHS ");
+    generate_var_value(token);
+    ADD_INSTR_TMP();
 }
 
 /*
  * @brief Generates binary operation.
  */
-static void generate_expression_binary() {
-    ADD_INSTR("# expr - binary operation");
-
-    // FIXME
-    ADD_INSTR("MOVE GF@%expr_result int@2");
-}
-
-/*
- * @brief Generates unary operation.
- */
-static void generate_expression_unary() {
-    ADD_INSTR("# expr - unary operation");
-
-    // FIXME
-    ADD_INSTR("MOVE GF@%expr_result int@1");
-
-}
-
-/*
- * @brief Generates expressions reduce.
- * @param expr stores info about the expr to be processed.
- */
-static void generate_expression(expr_semantics_t *expr) {
-    soft_assert(expr, ERROR_INTERNAL);
-
-    // SEMANTIC_OPERAND - push one operand on the stack
-    if (expr->sem_state == SEMANTIC_OPERAND) {
-        generate_expression_operand(expr);
-        return;
-    }
-
-    // generate type conversion if needed
-    retype_and_push(expr);
-
-    // generate operation
-    switch (expr->op) {
+static void generate_expression_binary(op_list_t op) {
+    switch (op) {
         case OP_ADD:    // '+'
             generate_nil_check();
             ADD_INSTR("ADDS");
@@ -650,25 +682,11 @@ static void generate_expression(expr_semantics_t *expr) {
             ADD_INSTR("EQS \n"
                       "NOTS");
             break;
-        case OP_NOT:    // 'not'
-            ADD_INSTR("POPS GF@%expr_result2 \n"
-                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
-                      "PUSHS GF@%expr_result2");
-            ADD_INSTR("NOTS");
-            break;
         case OP_AND:    // 'and'
-            generate_nil_check();
-            ADD_INSTR("ANDS");
+            ADD_INSTR("CALL $$ands_short");
             break;
         case OP_OR:     // 'or'
-            generate_nil_check();
-            ADD_INSTR("ORS");
-            break;
-        case OP_HASH:   // '#'
-            ADD_INSTR("POPS GF@%expr_result2 \n"
-                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
-                      "STRLEN GF@%expr_result GF@%expr_result2 \n"
-                      "PUSHS GF@%expr_result");
+            ADD_INSTR("CALL $$ors_short");
             break;
         case OP_STRCAT: // '..'
             ADD_INSTR("POPS GF@%expr_result2 \n"
@@ -679,8 +697,32 @@ static void generate_expression(expr_semantics_t *expr) {
                       "PUSHS GF@%expr_result");
             break;
         default:
-            ADD_INSTR("# unrecognized_instruction");
+            ADD_INSTR("# unrecognized_operation");
     }
+
+}
+
+/*
+ * @brief Generates unary operation.
+ */
+static void generate_expression_unary(op_list_t op) {
+    switch (op) {
+        case OP_NOT:    // 'not'
+            ADD_INSTR("POPS GF@%expr_result2 \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+                      "PUSHS GF@%expr_result2");
+            ADD_INSTR("NOTS");
+            break;
+        case OP_HASH:   // '#'
+            ADD_INSTR("POPS GF@%expr_result2 \n"
+                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+                      "STRLEN GF@%expr_result GF@%expr_result2 \n"
+                      "PUSHS GF@%expr_result");
+            break;
+        default:
+            ADD_INSTR("# unrecognized_operation");
+    }
+
 }
 
 /*
@@ -1086,8 +1128,9 @@ static void generate_func_call(char *func_name) {
  * @brief Generates getting return value after function call.
  * generates sth like:  MOVE LF%id%res TF@%return0
  */
-static void generate_func_call_return_value(dynstring_t *id_name, size_t index) {
-    ADD_INSTR_PART("MOVE GF@%expr_result TF@%return");
+static void generate_func_call_return_value(size_t index) {
+    //ADD_INSTR_PART("MOVE GF@%expr_result TF@%return");
+    ADD_INSTR_PART("PUSHS TF@%return");
     ADD_INSTR_INT(index);
     ADD_INSTR_TMP();
 }
@@ -1109,6 +1152,9 @@ static void generate_main_start() {
 static void generate_main_end() {
     ADD_INSTR("LABEL $$MAIN$end");
     ADD_INSTR("CLEARS");
+
+    // TODO remove
+    ADD_INSTR("WRITE GF@%expr_result");
 }
 
 /*
@@ -1138,8 +1184,11 @@ static void generate_prog_start() {
     generate_func_readn();
     generate_func_write();
     generate_func_tointeger();
+    generate_power_func();
     nil_check_func();
     recast_to_bool_func();
+    generate_ors_short();
+    generate_ands_short();
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
     generate_main_start();
