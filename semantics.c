@@ -302,9 +302,6 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
                                        type_recast_t *r_type) {
     char result_type;
 
-    Trunc_signature(first_type);
-    Trunc_signature(second_type);
-
     switch (op) {
         case OP_LT:
         case OP_LE:
@@ -472,8 +469,6 @@ static bool Check_unary_compatability(dynstring_t *type,
                                       dynstring_t *expression_type) {
     char result_type;
 
-    Trunc_signature(type);
-
     switch (op) {
         // integer -> # string
         case OP_HASH:
@@ -534,6 +529,10 @@ static bool Check_operand(token_t operand, dynstring_t *expression_type) {
 
     ret:
     Dynstring.append(expression_type, result_type);
+    return true;
+}
+
+static bool Check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_expressions) {
     return true;
 }
 

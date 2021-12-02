@@ -846,17 +846,32 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
 
     // Check a success parsing
     if (parse_success(first_op, second_op, hard_reduce)) {
-        if (expr != NULL && received_signature != NULL) {
+        debug_msg("Successful parsing\n");
+
+        if (expr == NULL) {
+            goto noerr;
+        }
+
+        if (received_signature != NULL) {
             // Set return types
             Dynstring.cat(received_signature, expr->expression_type);
         }
 
-        debug_msg("Successful parsing\n");
-        if (expr != NULL) {
-            Generator.comment(" ---------- expression end? --------------");
-            Generator.expression_pop();
-        }
+        Generator.expression_pop();
         goto noerr;
+    }
+
+    // Truncate expression type and clear generator stack
+    // if there is expression on top of the precedence stack
+    if (expr != NULL && expr->type == ITEM_TYPE_EXPR) {
+        // Check if expression type is empty
+        if (Dynstring.len(expr->expression_type) == 0) {
+            Errors.set_error(ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
+            goto err;
+        }
+
+        Semantics.trunc_signature(expr->expression_type);
+        // TODO: clear stack in generated code
     }
 
     // Precedence comparison
@@ -1012,7 +1027,8 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     }
 
     // Check function parameters signature
-    if(Dynstring.cmp(received_params, expected_params) != 0) {
+    if (Dynstring.cmp(received_params, expected_params) != 0 &&
+        Dynstring.cmp_c_str(id_name, "write") != 0) {
         goto err;
     }
 
