@@ -277,6 +277,48 @@ static void recast_to_bool_func() {
 }
 
 /*
+ * @brief Generates function for computing the power.
+ */
+static void generate_power_func() {
+    ADD_INSTR("LABEL $$power \n"
+              "PUSHFRAME \n"
+              "DEFVAR LF@%res \n"
+              "MOVE LF@%res float@0x1p+0 \n"
+              "\n"
+              "DEFVAR LF@%exp \n"
+              "POPS LF@%exp \n"
+              "DEFVAR LF@%base \n"
+              "POPS LF@%base \n"
+              "\n"
+              "# make sure exp has zero decimal part \n"
+              "FLOAT2INT LF@%exp LF@%exp \n"
+              "INT2FLOAT LF@%exp LF@%exp \n"
+              "\n"
+              "# if exp < 0 -> \n"
+              "LT GF@%expr_result LF@%exp float@0x0p+0 \n"
+              "JUMPIFEQ $$power$while GF@%expr_result bool@false \n"
+              "\n"
+              "# check base != 0 \n"
+              "JUMPIFEQ $$ERROR_DIV_BY_ZERO LF@%base float@0x0p+0 \n"
+              "\n"
+              "# base = 1 / base, exp = exp * (-1) \n"
+              "DIV LF@%base float@0x1p+0 LF@%base \n"
+              "MUL LF@%exp LF@%exp float@-0x1p+0 \n"
+              "\n"
+              "# while (exp != 0) \n"
+              "LABEL $$power$while \n"
+              "JUMPIFEQ $$power$end LF@%exp float@0x0p+0 \n"
+              "     MUL LF@%res LF@%res LF@%base \n"
+              "     SUB LF@%exp LF@%exp float@0x1p+0 \n"
+              "     JUMP $$power$while \n"
+              "LABEL $$power$end \n"
+              "\n"
+              "PUSHS LF@%res \n"
+              "POPFRAME \n"
+              "RETURN \n");
+}
+
+/*
  * @brief Initialises the code generator.
  */
 static void initialise_generator() {
@@ -1138,6 +1180,7 @@ static void generate_prog_start() {
     generate_func_readn();
     generate_func_write();
     generate_func_tointeger();
+    generate_power_func();
     nil_check_func();
     recast_to_bool_func();
 
