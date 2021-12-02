@@ -1034,9 +1034,18 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     }
 
     // Check function parameters signature
-    if (Dynstring.cmp(received_params, expected_params) != 0 &&
-        Dynstring.cmp_c_str(id_name, "write") != 0) {
-        goto err;
+    if (Dynstring.cmp(received_params, expected_params) != 0) {
+        // write(...)
+        if (Dynstring.cmp_c_str(id_name, "write") == 0) {
+            // TODO: generate code for write function
+            goto noerr;
+        }
+
+        // tointeger(nil)
+        if (Dynstring.cmp_c_str(id_name, "tointeger") != 0 ||
+            Dynstring.cmp_c_str(received_params, "n") != 0) {
+            goto err;
+        }
     }
 
     // generate code for function call
@@ -1044,6 +1053,7 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     // TODO: generate get return values assigment
     //Generator.func_call_return_value(0);
 
+    noerr:
     Dynstring.dtor(received_params);
     Dynstring.dtor(expected_params);
     return true;
@@ -1059,14 +1069,14 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
  *
  * @param received_rets is an initialized empty vector.
  * @param last_expression is an initialized vector for last expression type/s.
+ * @param func_rets
  * @param return_cnt
- * @param return_amount
  * @return bool.
  */
 static bool r_other_expr(dynstring_t *received_rets,
                          dynstring_t *last_expression,
-                         size_t return_cnt,
-                         size_t return_amount) {
+                         size_t func_rets,
+                         size_t return_cnt) {
     debug_msg("[r_other_expr] ->\n");
 
     dynstring_t *received_signature = Dynstring.ctor("");
@@ -1084,6 +1094,7 @@ static bool r_other_expr(dynstring_t *received_rets,
     // and located not at the end of expression
     Semantics.trunc_signature(last_expression);
     Dynstring.cat(received_rets, last_expression);
+    // TODO: clear generator stack
 
     // expr
     if (!parse_init(received_signature)) {
@@ -1093,7 +1104,7 @@ static bool r_other_expr(dynstring_t *received_rets,
     CHECK_EMPTY_SIGNATURE(received_signature);
     return_cnt++;
 
-    if (return_cnt == return_amount) {
+    if (return_cnt == func_rets) {
         goto err;
     }
 
@@ -1101,7 +1112,7 @@ static bool r_other_expr(dynstring_t *received_rets,
     Generator.func_pass_return(return_cnt);
 
     // [r_other_expr]
-    if (!r_other_expr(received_rets, received_signature, return_cnt, return_amount)) {
+    if (!r_other_expr(received_rets, received_signature, func_rets, return_cnt)) {
         goto err;
     }
 
@@ -1119,10 +1130,10 @@ static bool r_other_expr(dynstring_t *received_rets,
  * !rule [r_expr] -> expr [r_other_expr] | e
  *
  * @param received_rets is an initialized empty vector.
- * @param return_amount
+ * @param func_rets
  * @return bool.
  */
-static bool r_expr(dynstring_t *received_rets, size_t return_amount) {
+static bool r_expr(dynstring_t *received_rets, size_t func_rets) {
     debug_msg("[r_expr] ->\n");
 
     size_t return_cnt = 0;
@@ -1135,7 +1146,7 @@ static bool r_expr(dynstring_t *received_rets, size_t return_amount) {
 
     // If expression was not empty
     if (Dynstring.len(received_signature) != 0) {
-        if (return_cnt == return_amount) {
+        if (return_cnt == func_rets) {
             goto err;
         }
 
@@ -1144,7 +1155,7 @@ static bool r_expr(dynstring_t *received_rets, size_t return_amount) {
     }
 
     // [r_other_expr]
-    if (!r_other_expr(received_rets, received_signature, return_cnt, return_amount)) {
+    if (!r_other_expr(received_rets, received_signature, func_rets, return_cnt)) {
         goto err;
     }
 
@@ -1181,6 +1192,7 @@ static bool a_other_expr(dynstring_t *rhs_expressions, dynstring_t *last_express
     // and located not at the end of expression
     Semantics.trunc_signature(last_expression);
     Dynstring.cat(rhs_expressions, last_expression);
+    // TODO: clear generator stack
 
     // expr
     if (!parse_init(received_signature)) {
@@ -1256,10 +1268,7 @@ static bool a_other_id(list_t *ids_list) {
             goto err;
         }
 
-        debug_msg("rhs_expressions = { %s }\n", Dynstring.c_str(rhs_expressions));
         Semantics.check_multiple_assignment(ids_list, rhs_expressions);
-        //Generator.var_assignment(ids_list->head->data);
-
         goto noerr;
     }
 
@@ -1325,15 +1334,16 @@ static bool assign_id(dynstring_t *id_name) {
  *
  * @param pfile_
  * @param received_signature is an initialized empty vector.
+ * @param func_rets
  * @return true if successive parsing performed.
  */
-static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature, size_t ret_cnt) {
+static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature, size_t func_rets) {
     debug_msg("Return_expression\n");
 
     pfile = pfile_;
 
     // [r_expr]
-    return r_expr(received_signature, ret_cnt);
+    return r_expr(received_signature, func_rets);
 }
 
 /**
