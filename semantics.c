@@ -296,7 +296,32 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
         case OP_LE:
         case OP_GT:
         case OP_GE:
+        case OP_EQ:
+        case OP_NE:
             result_type = 'b';
+
+            if (op == OP_EQ || op == OP_NE) {
+                // boolean -> nil == integer|number|string|nil
+                // boolean -> nil ~= integer|number|string|nil
+                if (Dynstring.cmp_c_str(first_type, "n") == 0 ) {
+                    goto ret;
+                }
+
+                // boolean -> integer|number|string == nil
+                // boolean -> integer|number|string ~= nil
+                if (Dynstring.cmp_c_str(second_type, "n") == 0) {
+                    goto ret;
+                }
+
+                // boolean -> boolean == boolean
+                // boolean -> boolean ~= boolean
+                if (Dynstring.cmp_c_str(first_type, "b") == 0 &&
+                    Dynstring.cmp_c_str(second_type, "b") == 0) {
+                    goto ret;
+                }
+
+                break;
+            }
 
             // check nil
             if (Dynstring.cmp_c_str(first_type, "n") == 0 ||
@@ -304,49 +329,24 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
                 break;
             }
 
-            // boolean -> integer <|<=|>|>= integer
-            // boolean -> number  <|<=|>|>= number
-            // boolean -> string  <|<=|>|>= string
+            // boolean -> integer <|<=|>|>=|==|~= integer
+            // boolean -> number  <|<=|>|>=|==|~= number
+            // boolean -> string  <|<=|>|>=|==|~= string
             if (Dynstring.cmp(first_type, second_type) == 0) {
                 goto ret;
             }
 
-            // boolean -> integer <|<=|>|>= number
+            // boolean -> integer <|<=|>|>=|==|~= number
             if (Dynstring.cmp_c_str(first_type, "i") == 0 &&
                 Dynstring.cmp_c_str(second_type, "f") == 0) {
                 *r_type = TYPE_RECAST_FIRST;
                 goto ret;
             }
 
-            // boolean -> number  <|<=|>|>= integer
+            // boolean -> number  <|<=|>|>=|==|~= integer
             if (Dynstring.cmp_c_str(first_type, "f") == 0 &&
                 Dynstring.cmp_c_str(second_type, "i") == 0) {
                 *r_type = TYPE_RECAST_SECOND;
-                goto ret;
-            }
-
-            break;
-
-        case OP_EQ:
-        case OP_NE:
-            result_type = 'b';
-
-            // boolean -> nil == integer|number|string|nil
-            // boolean -> nil ~= integer|number|string|nil
-            if (Dynstring.cmp_c_str(first_type, "n") == 0 ) {
-                goto ret;
-            }
-
-            // boolean -> integer|number|string == nil
-            // boolean -> integer|number|string ~= nil
-            if (Dynstring.cmp_c_str(second_type, "n") == 0) {
-                goto ret;
-            }
-
-            // boolean -> boolean == boolean
-            // boolean -> boolean ~= boolean
-            if (Dynstring.cmp_c_str(first_type, "b") == 0 &&
-                Dynstring.cmp_c_str(second_type, "b") == 0) {
                 goto ret;
             }
 
@@ -416,6 +416,18 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
             // string -> string // string
             if (Dynstring.cmp_c_str(first_type, "s") == 0 &&
                 Dynstring.cmp_c_str(second_type, "s") == 0) {
+                goto ret;
+            }
+
+            break;
+
+        case OP_AND:
+        case OP_OR:
+            result_type = 'b';
+
+            // boolean -> boolean and|or boolean
+            if (Dynstring.cmp_c_str(first_type, "b") == 0 &&
+                Dynstring.cmp_c_str(second_type, "b") == 0) {
                 goto ret;
             }
 
