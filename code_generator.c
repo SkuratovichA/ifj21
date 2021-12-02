@@ -144,7 +144,13 @@ static void generate_func_tointeger() {
     ADD_INSTR("LABEL $tointeger \n"
               "PUSHFRAME \n"
               "DEFVAR LF@%return0 \n"
+              "JUMPIFNEQ $tointeger$not_nil LF@%0 nil@nil \n"
+              "MOVE LF@%return0 nil@nil \n"
+              "JUMP $tointeger$end \n"
+              "LABEL $tointeger$not_nil \n"
               "FLOAT2INT LF@%return0 LF@%0 \n"
+              "LABEL $tointeger$end \n"
+              "PUSHS LF@%return0 \n"
               "POPFRAME \n"
               "RETURN \n");
 }
