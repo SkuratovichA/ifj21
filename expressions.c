@@ -255,6 +255,7 @@ static stack_item_t *stack_item_ctor(item_type_t type, token_t *tok) {
     soft_assert(new_item, ERROR_INTERNAL);
 
     new_item->type = type;
+    new_item->expression_type = Dynstring.ctor("");
     stack_item_set_token(new_item, tok);
 
     return new_item;
@@ -275,6 +276,7 @@ static stack_item_t *stack_item_copy(stack_item_t *item) {
     soft_assert(new_item, ERROR_INTERNAL);
 
     new_item->type = item->type;
+    new_item->expression_type = Dynstring.dup(item->expression_type);
     stack_item_set_token(new_item, &(item->token));
 
     return new_item;
@@ -291,6 +293,8 @@ static void stack_item_dtor(void *item) {
     }
 
     stack_item_t *s_item = (stack_item_t *) item;
+
+    Dynstring.dtor(s_item->expression_type);
 
     if (s_item->type != ITEM_TYPE_TOKEN) {
         goto noerr;
@@ -364,19 +368,23 @@ static bool shift(sstack_t *stack, stack_item_t *expr, int const cmp) {
  * @brief Check binary operator.
  *
  * @param r_stack stack with handle (rule).
+ * @param result_op variable to set operator.
  * @return bool.
  */
-static bool binary_op(sstack_t *r_stack) {
+static bool binary_op(sstack_t *r_stack, op_list_t *result_op) {
     debug_msg("binary_op ->\n");
 
     stack_item_t *item;
+    op_list_t op;
+
     STACK_ITEM_PEEK(r_stack, item);
 
     if (item->type != ITEM_TYPE_TOKEN) {
         goto err;
     }
 
-    switch (get_op(item->token.type)) {
+    op = item->token.type;
+    switch (op) {
         case OP_ADD:
         case OP_SUB:
         case OP_MUL:
@@ -397,9 +405,48 @@ static bool binary_op(sstack_t *r_stack) {
     }
 
     noerr:
+    *result_op = op;
     Stack.pop(r_stack, stack_item_dtor);
     return true;
     err:
+    Errors.set_error(ERROR_SYNTAX);
+    return false;
+}
+
+/**
+ * @brief Check unary operator.
+ *
+ * @param r_stack stack with handle (rule).
+ * @param result_op variable to set operator.
+ * @return bool.
+ */
+static bool unary_op(sstack_t *r_stack, op_list_t *result_op) {
+    debug_msg("unary_op ->\n");
+
+    stack_item_t *item;
+    op_list_t op;
+
+    STACK_ITEM_PEEK(r_stack, item);
+
+    if (item->type != ITEM_TYPE_TOKEN) {
+        goto err;
+    }
+
+    op = item->token.type;
+    switch (op) {
+        case OP_HASH:
+        case OP_NOT:
+            goto noerr;
+        default:
+            goto err;
+    }
+
+    noerr:
+    *result_op = op;
+    Stack.pop(r_stack, stack_item_dtor);
+    return true;
+    err:
+    Errors.set_error(ERROR_SYNTAX);
     return false;
 }
 
@@ -407,9 +454,10 @@ static bool binary_op(sstack_t *r_stack) {
  * @brief Check expression.
  *
  * @param r_stack stack with handle (rule).
+ * @param type initialized vector to store an expression type.
  * @return bool.
  */
-static bool expr(sstack_t *r_stack) {
+static bool expr(sstack_t *r_stack, dynstring_t *type) {
     debug_msg("expr ->\n");
 
     stack_item_t *item;
@@ -419,36 +467,11 @@ static bool expr(sstack_t *r_stack) {
         goto err;
     }
 
+    Dynstring.cat(type, item->expression_type);
     Stack.pop(r_stack, stack_item_dtor);
     return true;
     err:
-    return false;
-}
-
-/**
- * @bief Check single operator.
- *
- * @param r_stack stack with handle (rule).
- * @param op
- * @return bool.
- */
-static bool single_op(sstack_t *r_stack, op_list_t op) {
-    debug_msg("single_op ->\n");
-
-    stack_item_t *item;
-    STACK_ITEM_PEEK(r_stack, item);
-
-    if (item->type != ITEM_TYPE_TOKEN) {
-        goto err;
-    }
-
-    if (get_op(item->token.type) != op) {
-        goto err;
-    }
-
-    Stack.pop(r_stack, stack_item_dtor);
-    return true;
-    err:
+    Errors.set_error(ERROR_SYNTAX);
     return false;
 }
 
@@ -457,50 +480,82 @@ static bool single_op(sstack_t *r_stack, op_list_t op) {
  *
  * !rule expr -> expr binary_op expr
  * !rule expr -> unary_op expr
- * !rule expr -> ( expr )
  * !rule expr -> id
  *
  * @param r_stack stack with handle (rule).
+ * @param expression_type initialized vector to store an expression type.
  * @return bool.
  */
-static bool check_rule(sstack_t *r_stack) {
+static bool check_rule(sstack_t *r_stack, dynstring_t *expression_type) {
     debug_msg("check_rule ->\n");
 
     stack_item_t *item;
+    dynstring_t *first_type = Dynstring.ctor("");
+    dynstring_t *second_type = Dynstring.ctor("");
+    op_list_t op;
+
     STACK_ITEM_PEEK(r_stack, item);
 
     // expr binary_op expr
     if (item->type == ITEM_TYPE_EXPR) {
-        Stack.pop(r_stack, stack_item_dtor);
-        if (binary_op(r_stack) && expr(r_stack)) {
-            goto noerr;
-            // TODO: semantic check
-            // TODO: generate code for binary operation
-            Generator.expression_binary();
+        // expr
+        if (!expr(r_stack, first_type)) {
+            goto err;
         }
 
-        goto err;
+        // binary_op
+        if (!binary_op(r_stack, &op)) {
+            goto err;
+        }
+
+        // expr
+        if (!expr(r_stack, second_type)) {
+            goto err;
+        }
+
+        if (!Semantics.check_binary_compatibility(first_type, second_type, op, expression_type)) {
+            goto err;
+        }
+
+        // TODO: generate code for binary operation
+        Generator.expression_binary();
+
+        goto noerr;
     }
 
     switch (get_op(item->token.type)) {
         // unary_op expr
         case OP_HASH:
         case OP_NOT:
-            Stack.pop(r_stack, stack_item_dtor);
-            if (expr(r_stack)) {
-                goto noerr;
-                // TODO: semantic check
-                // TODO: generate code for unary operation
-                Generator.expression_unary();
+            // unary_op
+            if (!unary_op(r_stack, &op)) {
+                goto err;
             }
-            goto err;
+
+            // expr
+            if (!expr(r_stack, first_type)) {
+                goto err;
+            }
+
+            if (!Semantics.check_unary_compatibility(first_type, op, expression_type)) {
+                goto err;
+            }
+
+            // TODO: generate code for unary operation
+            Generator.expression_unary();
+
+            goto noerr;
 
         // id
         case OP_ID:
-            Stack.pop(r_stack, stack_item_dtor);
-            // TODO: semantic check
-            // TODO: generate code for an operand
+            if (!Semantics.check_operand(item->token, expression_type)) {
+                goto err;
+            }
+
+            // TODO: generate code for operand
             Generator.expression_operand();
+
+            Stack.pop(r_stack, stack_item_dtor);
             goto noerr;
 
         default:
@@ -508,8 +563,12 @@ static bool check_rule(sstack_t *r_stack) {
     }
 
     noerr:
+    Dynstring.dtor(first_type);
+    Dynstring.dtor(second_type);
     return true;
     err:
+    Dynstring.dtor(first_type);
+    Dynstring.dtor(second_type);
     return false;
 }
 
@@ -525,10 +584,10 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
 
     stack_item_t *top;
     sstack_t *r_stack = NULL;
+    stack_item_t *new_expr = stack_item_ctor(ITEM_TYPE_EXPR, NULL);
 
     // Push expression if exists
     if (expr != NULL) {
-        debug_msg("push expression\n");
         Stack.push(stack, stack_item_copy(expr));
     }
 
@@ -550,9 +609,8 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
      * | false      | empty     | not ok |
      * | false      | not empty | not ok |
      */
-    if (!check_rule(r_stack) || !Stack.is_empty(r_stack)) {
+    if (!check_rule(r_stack, new_expr->expression_type) || !Stack.is_empty(r_stack)) {
         debug_msg("Reduction error!\n");
-        Errors.set_error(ERROR_SYNTAX);
         goto err;
     }
 
@@ -562,12 +620,14 @@ static bool reduce(sstack_t *stack, stack_item_t *expr) {
     }
 
     // Push an expression
-    Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR, NULL));
+    Stack.push(stack, stack_item_copy(new_expr));
 
     Stack.dtor(r_stack, stack_item_dtor);
+    stack_item_dtor(new_expr);
     return true;
     err:
     Stack.dtor(r_stack, stack_item_dtor);
+    stack_item_dtor(new_expr);
     return false;
 }
 
@@ -764,13 +824,9 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
 
     // Check a success parsing
     if (parse_success(first_op, second_op, hard_reduce)) {
-        // Check if expression is empty
-//        if (expr == NULL) {
-//            goto err;
-//        }
-
-        if (received_signature != NULL) {
-            // TODO: set return types
+        if (expr != NULL && received_signature != NULL) {
+            // Set return types
+            Dynstring.cat(received_signature, expr->expression_type);
         }
 
         debug_msg("Successful parsing\n");
