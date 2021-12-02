@@ -390,9 +390,10 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
                     if (op != OP_DIV_F) {
                         result_type = 'i';
                     }
-
                     // number -> integer / integer
-                    *r_type = TYPE_RECAST_BOTH;
+                    else {
+                        *r_type = TYPE_RECAST_BOTH;
+                    }
                 }
 
                 goto ret;
