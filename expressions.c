@@ -73,7 +73,7 @@ static pfile_t *pfile;
                                     sym->function_semantics->declaration.params);           \
         }                                                                                   \
                                                                                             \
-        if ((func_params) != NULL) {                                                        \
+        if ((func_returns) != NULL) {                                                       \
             Dynstring.cat((func_returns), Semantics.is_defined(sym->function_semantics) ?   \
                                     sym->function_semantics->definition.returns :           \
                                     sym->function_semantics->declaration.returns);          \
