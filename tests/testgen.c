@@ -3099,6 +3099,16 @@ int main() {
             "main()                                                             "NL
     );
 
+    char *description199 = "";
+    int retcode199 = ERROR_NOERROR;
+    pfile_t *pf199 = Pfile.ctor(
+            PROLOG
+            "function main()                                                    "NL
+            "    local l : integer = #(\"yes\")                                 "NL
+            "end                                                                "NL
+            "main()                                                             "NL
+    );
+
 
     STRING_NOERROR(107, "02");
     STRING_NOERROR(108, "0A");
@@ -3353,6 +3363,7 @@ int main() {
     TEST_CASE(196);
     TEST_CASE(197);
     TEST_CASE(198);
+    TEST_CASE(199);
 
     return 0;
 }

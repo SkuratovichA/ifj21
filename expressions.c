@@ -539,8 +539,8 @@ static bool check_rule(sstack_t *r_stack, dynstring_t *expression_type) {
             goto err;
         }
 
-        // TODO: generate code for binary operation
-        Generator.expression_binary();
+        // generate code for binary operation
+        Generator.expression_binary(op);
 
         goto noerr;
     }
@@ -563,8 +563,8 @@ static bool check_rule(sstack_t *r_stack, dynstring_t *expression_type) {
                 goto err;
             }
 
-            // TODO: generate code for unary operation
-            Generator.expression_unary();
+            // generate code for unary operation
+            Generator.expression_unary(op);
 
             goto noerr;
 
@@ -574,8 +574,8 @@ static bool check_rule(sstack_t *r_stack, dynstring_t *expression_type) {
                 goto err;
             }
 
-            // TODO: generate code for operand
-            Generator.expression_operand();
+            // generate code for operand
+            Generator.expression_operand(item->token);
 
             Stack.pop(r_stack, stack_item_dtor);
             goto noerr;
@@ -852,6 +852,10 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
         }
 
         debug_msg("Successful parsing\n");
+        if (expr != NULL) {
+            Generator.comment(" ---------- expression end? --------------");
+            Generator.expression_pop();
+        }
         goto noerr;
     }
 
@@ -933,9 +937,8 @@ static bool fc_other_expr(dynstring_t *received_params, int params_cnt) {
         goto err;
     }
 
-    params_cnt++;
-    // TODO: generate code for a function parameter
-    Generator.func_call_pass_param(params_cnt);
+    // generate code for a function parameter
+    Generator.func_call_pass_param(params_cnt++);
 
     // [fc_other_expr]
     if (!fc_other_expr(received_params, params_cnt)) {
@@ -968,9 +971,8 @@ static bool fc_expr(dynstring_t *received_params) {
         goto err;
     }
 
-    params_cnt++;
-    // TODO: generate code for a function parameter
-    Generator.func_call_pass_param(params_cnt);
+    // generate code for a function parameter
+    Generator.func_call_pass_param(params_cnt++);
 
     // [fc_other_expr]
     if (!fc_other_expr(received_params, params_cnt)) {
@@ -1017,6 +1019,7 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     // generate code for function call
     Generator.func_call(Dynstring.c_str(id_name));
     // TODO: generate get return values assigment
+    //Generator.func_call_return_value(0);
 
     Dynstring.dtor(received_params);
     Dynstring.dtor(expected_params);
@@ -1085,11 +1088,6 @@ static bool r_expr(dynstring_t *received_signature, size_t return_cnt) {
     // [r_other_expr]
     if (!r_other_expr(received_signature, &return_cnt)) {
         return false;
-    }
-
-    if (return_cnt != 0) {
-        // generate return nil
-        // TODO generator.
     }
     return true;
 }
@@ -1307,21 +1305,12 @@ static bool Default_expression(pfile_t *pfile_,
     }
 
     // recast type of an expression to boolean, if it is not empty.
-    // TODO: type cast in Generator.
-    // expression will be on the stack.
-    // local int : integer = nil for example, so type doesn't necessary have to be nil
-    // if expr == nil result is false, and it must be checked at the runtime
-    // so if statement in the ifjcode21 must be generated
-    // else result is true
-    // received_signature is always allocated, but can be empty and it be handled in
-    // the parser.
     Generator.comment("recast expression to bool");
     Generator.recast_expression_to_bool();
 
     // clear Dynstring and append a new type means expression was typecasted.
     Dynstring.clear(received_signature);
     Dynstring.append(received_signature, 'b');
-    assert(false);
 
     ret:
     return true;
