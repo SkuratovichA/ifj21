@@ -120,23 +120,6 @@ static char of_id_type(int type) {
     }
 }
 
-static int type_to_token (id_type_t id_type) {
-    switch (id_type) {
-        case ID_TYPE_string:
-            return TOKEN_STR;
-        case ID_TYPE_integer:
-            return TOKEN_NUM_I;
-        case ID_TYPE_number:
-            return TOKEN_NUM_F;
-        case ID_TYPE_boolean:
-            return KEYWORD_boolean;
-        case ID_TYPE_nil:
-            return KEYWORD_nil;
-        default:
-            return TOKEN_DEAD;
-    }
-}
-
 static int token_to_type(int typ) {
     switch (typ) {
         case TOKEN_STR:
