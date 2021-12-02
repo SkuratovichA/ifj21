@@ -264,12 +264,11 @@ static void nil_check_func() {
  */
 static void recast_to_bool_func() {
     ADD_INSTR("LABEL $$recast_to_bool \n"
-              "POPS GF@%expr_result \n"
               "JUMPIFNEQ $$recast_to_bool$not_nil GF@%expr_result nil@nil \n"
-              "PUSHS bool@false \n"
+              "MOVE GF@%expr_result bool@false \n"
               "JUMP $$recast_to_bool$end \n"
               "LABEL $$recast_to_bool$not_nil \n"
-              "PUSHS bool@true \n"
+              "MOVE GF@%expr_result bool@true \n"
               "LABEL $$recast_to_bool$end \n"
               "RETURN \n");
 }
@@ -316,6 +315,8 @@ static void generate_ors_short() {
     ADD_INSTR("LABEL $$ors_short \n"
               "POPS GF@%expr_result \n"
               "POPS GF@%expr_result2 \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
               "JUMPIFEQ $$ors$true GF@%expr_result2 bool@true \n"
               "JUMPIFEQ $$ors$true GF@%expr_result bool@true \n"
               "PUSHS bool@false \n"
@@ -333,6 +334,8 @@ static void generate_ands_short() {
     ADD_INSTR("LABEL $$ands_short \n"
               "POPS GF@%expr_result \n"
               "POPS GF@%expr_result2 \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
               "JUMPIFEQ $$ands$false GF@%expr_result2 bool@false \n"
               "JUMPIFEQ $$ands$false GF@%expr_result bool@false \n"
               "PUSHS bool@true \n"
@@ -680,11 +683,9 @@ static void generate_expression_binary(op_list_t op) {
                       "NOTS");
             break;
         case OP_AND:    // 'and'
-            generate_nil_check();
             ADD_INSTR("CALL $$ands_short");
             break;
         case OP_OR:     // 'or'
-            generate_nil_check();
             ADD_INSTR("CALL $$ors_short");
             break;
         case OP_STRCAT: // '..'
