@@ -493,6 +493,7 @@ static bool check_rule(sstack_t *r_stack, dynstring_t *expression_type) {
     dynstring_t *first_type = Dynstring.ctor("");
     dynstring_t *second_type = Dynstring.ctor("");
     op_list_t op;
+    type_recast_t r_type = NO_RECAST;
 
     STACK_ITEM_PEEK(r_stack, item);
 
@@ -513,7 +514,7 @@ static bool check_rule(sstack_t *r_stack, dynstring_t *expression_type) {
             goto err;
         }
 
-        if (!Semantics.check_binary_compatibility(first_type, second_type, op, expression_type)) {
+        if (!Semantics.check_binary_compatibility(first_type, second_type, op, expression_type, &r_type)) {
             goto err;
         }
 

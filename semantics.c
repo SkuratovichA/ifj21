@@ -281,12 +281,14 @@ static bool Check_signatures_compatibility(dynstring_t *signature_expected,
  * @param second_type type of the second operand.
  * @param op binary operator.
  * @param expression_type initialized vector to store an expression type.
+ * @param r_type variable to store a type of recast.
  * @return bool.
  */
 static bool Check_binary_compatibility(dynstring_t *first_type,
                                        dynstring_t *second_type,
                                        op_list_t op,
-                                       dynstring_t *expression_type) {
+                                       dynstring_t *expression_type,
+                                       type_recast_t *r_type) {
     char result_type;
 
     switch (op) {
@@ -312,12 +314,14 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
             // boolean -> integer <|<=|>|>= number
             if (Dynstring.cmp_c_str(first_type, "i") == 0 &&
                 Dynstring.cmp_c_str(second_type, "f") == 0) {
+                *r_type = TYPE_RECAST_FIRST;
                 goto ret;
             }
 
             // boolean -> number  <|<=|>|>= integer
             if (Dynstring.cmp_c_str(first_type, "f") == 0 &&
                 Dynstring.cmp_c_str(second_type, "i") == 0) {
+                *r_type = TYPE_RECAST_SECOND;
                 goto ret;
             }
 
@@ -382,12 +386,14 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
             // number -> integer +-*/ number
             if (Dynstring.cmp_c_str(first_type, "i") == 0 &&
                 Dynstring.cmp_c_str(second_type, "f") == 0) {
+                *r_type = TYPE_RECAST_FIRST;
                 goto ret;
             }
 
             // number -> number +-*/ integer
             if (Dynstring.cmp_c_str(first_type, "f") == 0 &&
                 Dynstring.cmp_c_str(second_type, "i") == 0) {
+                *r_type = TYPE_RECAST_SECOND;
                 goto ret;
             }
 

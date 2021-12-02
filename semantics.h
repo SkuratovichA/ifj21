@@ -32,6 +32,12 @@ typedef struct func_semantics {
     bool is_builtin;
 } func_semantics_t;
 
+typedef enum type_recast {
+    TYPE_RECAST_FIRST,
+    TYPE_RECAST_SECOND,
+    NO_RECAST
+} type_recast_t;
+
 //typedef struct func_semantics func_semantics_t;
 //typedef struct func_info func_info_t;
 
@@ -153,9 +159,10 @@ struct semantics_interface_t {
      * @param second_type type of the second operand.
      * @param op binary operator.
      * @param expression_type initialized vector to store an expression type.
+     * @param r_type variable to store a type of recast.
      * @return bool.
      */
-    bool (*check_binary_compatibility)(dynstring_t *, dynstring_t *, op_list_t, dynstring_t *);
+    bool (*check_binary_compatibility)(dynstring_t *, dynstring_t *, op_list_t, dynstring_t *, type_recast_t*);
 
     /**
      * @brief Check semantics of unary operation.
