@@ -3021,6 +3021,85 @@ int main() {
             "main()                                            "NL
     );
 
+    char *description195 = "";
+    int retcode195 = ERROR_NOERROR;
+    pfile_t *pf195 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    local exp : integer = 4                       "NL
+            "    local base : integer = 2                      "NL
+            "    local res : integer = 1                       "NL
+            "    while exp ~= 0 do                             "NL
+            "        res = res * base                          "NL
+            "        exp = exp - 1                             "NL
+            "    end                                           "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description196 = "";
+    int retcode196 = ERROR_NOERROR;
+    pfile_t *pf196 = Pfile.ctor(
+            PROLOG
+            "function foo(a : integer, b : string) : integer, integer, integer  "NL
+            "    return 1, 2, 3                                                 "NL
+            "end                                                                "NL
+            "                                                                   "NL
+            "function main()                                                    "NL
+            "    local i : integer;                                             "NL
+            "    local j : integer;                                             "NL
+            "    local k : integer;                                             "NL
+            "    local l : integer;                                             "NL
+            "    i, j, k, l = 0, foo()                                          "NL
+            "    write(j)                                                       "NL
+            "                                                                   "NL
+            "end                                                                "NL
+            "main()                                                             "NL
+    );
+
+    char *description197 = "";
+    int retcode197 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf197 = Pfile.ctor(
+            PROLOG
+            "function foo(a : integer, b : string) : integer, integer           "NL
+            "    return 1, 2                                                    "NL
+            "end                                                                "NL
+            "                                                                   "NL
+            "function main()                                                    "NL
+            "    local i : integer;                                             "NL
+            "    local j : integer;                                             "NL
+            "    local k : integer;                                             "NL
+            "    local l : integer;                                             "NL
+            "    i, j, k, l = 0, foo(), 3                                       "NL
+            "    write(j)                                                       "NL
+            "                                                                   "NL
+            "end                                                                "NL
+            "main()                                                             "NL
+    );
+
+    char *description198 = "";
+    int retcode198 = ERROR_NOERROR;
+    pfile_t *pf198 = Pfile.ctor(
+            PROLOG
+            "function foo(a : integer, b : string) : integer, integer           "NL
+            "    return 1, 2                                                    "NL
+            "end                                                                "NL
+            "                                                                   "NL
+            "function main()                                                    "NL
+            "    local i : integer;                                             "NL
+            "    local j : integer;                                             "NL
+            "    local k : integer;                                             "NL
+            "    local l : integer;                                             "NL
+            "    i, j, k, l = 0, 3, foo()                                       "NL
+            "    write(j)                                                       "NL
+            "                                                                   "NL
+            "end                                                                "NL
+            "main()                                                             "NL
+    );
+
+
     STRING_NOERROR(107, "02");
     STRING_NOERROR(108, "0A");
     STRING_NOERROR(109, "aa");
@@ -3270,6 +3349,10 @@ int main() {
     TEST_CASE(192);
     TEST_CASE(193);
     TEST_CASE(194);
+    TEST_CASE(195);
+    TEST_CASE(196);
+    TEST_CASE(197);
+    TEST_CASE(198);
 
     return 0;
 }
