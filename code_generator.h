@@ -88,19 +88,19 @@ struct code_generator_interface_t {
      * @brief Generates expressions reduce.
      * @param expr stores info about the expr to be processed.
      */
-    void (*expression_operand)(void);
+    void (*expression_operand)(token_t);
 
     /*
      * @brief Generates expressions reduce.
      * @param expr stores info about the expr to be processed.
      */
-    void (*expression_unary)(void);
+    void (*expression_unary)(op_list_t);
 
     /*
      * @brief Generates expressions reduce.
      * @param expr stores info about the expr to be processed.
      */
-    void (*expression_binary)(void);
+    void (*expression_binary)(op_list_t);
 
     /*
      * @brief Generates pop from the stack to GF@%expr_result.
@@ -230,7 +230,7 @@ struct code_generator_interface_t {
     /*
      * @brief Generates getting return value after function call.
      */
-    void (*func_call_return_value)(dynstring_t *, size_t);
+    void (*func_call_return_value)(size_t);
 
     /*
      * @brief Generates end of main scope.
