@@ -290,39 +290,6 @@ static void generate_power_func() {
               "DEFVAR LF@%base \n"
               "POPS LF@%base \n"
               "\n"
-              "# if exp < 0 -> \n"
-              "LT GF@%expr_result LF@%exp float@0x0p+0 \n"
-              "JUMPIFEQ $$power$while GF@%expr_result bool@false \n"
-              "\n"
-              "# check base != 0 \n"
-              "JUMPIFEQ $$ERROR_DIV_BY_ZERO LF@%base float@0x0p+0 \n"
-              "\n"
-              "# base = 1 / base, exp = exp * (-1) \n"
-              "DIV LF@%base float@0x1p+0 LF@%base \n"
-              "MUL LF@%exp LF@%exp float@-0x1p+0 \n"
-              "\n"
-              "# while (exp != 0)\n"
-              "LABEL $$power$while \n"
-              "JUMPIFEQ $$power$end LF@%exp float@0x0p+0 \n"
-              "     MUL LF@%res LF@%res LF@%base \n"
-              "     SUB LF@%exp LF@%exp float@0x1p+0 \n"
-              "     JUMP $$power$while \n"
-              "LABEL $$power$end \n"
-              "\n"
-              "PUSHS LF@%res \n"
-              "POPFRAME \n"
-              "RETURN \n");
-
-    ADD_INSTR("LABEL $$power \n"
-              "PUSHFRAME \n"
-              "DEFVAR LF@%res \n"
-              "MOVE LF@%res float@0x1p+0 \n"
-              "\n"
-              "DEFVAR LF@%exp \n"
-              "POPS LF@%exp \n"
-              "DEFVAR LF@%base \n"
-              "POPS LF@%base \n"
-              "\n"
               "# make sure exp has zero decimal part \n"
               "FLOAT2INT LF@%exp LF@%exp \n"
               "INT2FLOAT LF@%exp LF@%exp \n"
@@ -401,9 +368,6 @@ static void Print_instr_list(instr_list_t instr_list_type) {
             printf("Undefined instruction list.\n");
             break;
     }
-
-    // TODO: DELETE:
-    printf("\n\nFloat in a format: %a\n\n", 2.3);
 }
 
 /*
