@@ -125,7 +125,12 @@ static void generate_func_readn() {
  */
 static void generate_func_write() {
     ADD_INSTR("LABEL $write \n"
+              "JUMPIFNEQ $write$not_nil GF@%expr_result nil@nil\n"
+              "WRITE string@nil\n"
+              "JUMP $write$end\n"
+              "LABEL $write$not_nil\n"
               "WRITE GF@%expr_result \n"
+              "LABEL $write$end\n"
               "RETURN \n");
 }
 
