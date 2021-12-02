@@ -383,7 +383,7 @@ static bool binary_op(sstack_t *r_stack, op_list_t *result_op) {
         goto err;
     }
 
-    op = item->token.type;
+    op = get_op(item->token.type);
     switch (op) {
         case OP_ADD:
         case OP_SUB:
