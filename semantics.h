@@ -35,6 +35,7 @@ typedef struct func_semantics {
 typedef enum type_recast {
     TYPE_RECAST_FIRST,
     TYPE_RECAST_SECOND,
+    TYPE_RECAST_BOTH,
     NO_RECAST
 } type_recast_t;
 

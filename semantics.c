@@ -381,14 +381,18 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
                 break;
             }
 
-            // number -> integer / integer
             // number -> number +-*/ number
             if (Dynstring.cmp(first_type, second_type) == 0) {
-                // integer -> integer +-* integer
+
                 if (Dynstring.cmp_c_str(first_type, "i") == 0 &&
-                    Dynstring.cmp_c_str(second_type, "i") == 0 &&
-                    op != OP_DIV_F) {
-                    result_type = 'i';
+                    Dynstring.cmp_c_str(second_type, "i") == 0) {
+                    // integer -> integer +-* integer
+                    if (op != OP_DIV_F) {
+                        result_type = 'i';
+                    }
+
+                    // number -> integer / integer
+                    *r_type = TYPE_RECAST_BOTH;
                 }
 
                 goto ret;
