@@ -51,13 +51,34 @@ static pfile_t *pfile;
  *
  * @param id_name identifier name.
  */
-#define CHECK_DEFINITION(id_name)                                             \
+#define CHECK_DEFINITION(id_name)                                       \
     do {                                                                \
         if (!Symstack.get_local_symbol(symstack, (id_name), NULL)) {    \
             Errors.set_error(ERROR_DEFINITION);                         \
             goto err;                                                   \
         }                                                               \
     } while (0)
+
+#define GET_FUNCTION_SIGNATURES(id_name, func_params, func_returns)                         \
+    do {                                                                                    \
+        symbol_t *sym;                                                                      \
+                                                                                            \
+        if (!Symtable.get_symbol(global_table, id_name, &sym)) {                             \
+            goto err;                                                                       \
+        }                                                                                   \
+                                                                                            \
+        if ((func_params) != NULL) {                                                        \
+            Dynstring.cat((func_params), Semantics.is_defined(sym->function_semantics) ?    \
+                                    sym->function_semantics->definition.params :            \
+                                    sym->function_semantics->declaration.params);           \
+        }                                                                                   \
+                                                                                            \
+        if ((func_params) != NULL) {                                                        \
+            Dynstring.cat((func_returns), Semantics.is_defined(sym->function_semantics) ?   \
+                                    sym->function_semantics->definition.returns :           \
+                                    sym->function_semantics->declaration.returns);          \
+        }                                                                                   \
+    } while(0)
 
 /**
  * @brief Checks if identifier is a function.
@@ -667,9 +688,10 @@ static bool parse_success(op_list_t first_op, op_list_t second_op, bool hard_red
 /** Function call declaration for parse_function.
  *
  * @param id_name function identifier name.
+ * @param function_returns is an initialized empty vector.
  * @return bool.
  */
-static bool func_call(dynstring_t *);
+static bool func_call(dynstring_t *, dynstring_t *);
 
 /**
  * @brief Parse function if identifier is in global scope.
@@ -684,6 +706,7 @@ static bool parse_function(sstack_t *stack, bool *function_parsed, bool parents_
 
     dynstring_t *id_name = NULL;
     stack_item_t *top = NULL;
+    stack_item_t *new_expr = stack_item_ctor(ITEM_TYPE_EXPR, NULL);
 
     // If parents were parsed, continue expression parsing
     if (parents_parsed) {
@@ -710,20 +733,22 @@ static bool parse_function(sstack_t *stack, bool *function_parsed, bool parents_
     EXPECTED(TOKEN_ID);
 
     // [func_call]
-    if (!func_call(id_name)) {
+    if (!func_call(id_name, new_expr->expression_type)) {
         goto err;
     }
 
     *function_parsed = true;
 
     // Push an expression
-    Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR, NULL));
+    Stack.push(stack, stack_item_copy(new_expr));
 
     noerr:
     Dynstring.dtor(id_name);
+    stack_item_dtor(new_expr);
     return true;
     err:
     Dynstring.dtor(id_name);
+    stack_item_dtor(new_expr);
     return false;
 }
 
@@ -744,7 +769,7 @@ static bool parse_init(dynstring_t *);
 static bool parse_parents(sstack_t *stack, bool *parents_parsed) {
     debug_msg("parse_parents \n");
 
-    dynstring_t *received_signature = Dynstring.ctor("");
+    stack_item_t *new_expr = stack_item_ctor(ITEM_TYPE_EXPR, NULL);
 
     // (
     if (Scanner.get_curr_token().type != TOKEN_LPAREN) {
@@ -754,11 +779,9 @@ static bool parse_parents(sstack_t *stack, bool *parents_parsed) {
     EXPECTED(TOKEN_LPAREN);
 
     // expr
-    if (!parse_init(received_signature)) {
+    if (!parse_init(new_expr->expression_type)) {
         goto err;
     }
-
-    debug_msg("rparen\n");
 
     // )
     EXPECTED(TOKEN_RPAREN);
@@ -766,13 +789,13 @@ static bool parse_parents(sstack_t *stack, bool *parents_parsed) {
     *parents_parsed = true;
 
     // Push an expression
-    Stack.push(stack, stack_item_ctor(ITEM_TYPE_EXPR, NULL));
+    Stack.push(stack, stack_item_copy(new_expr));
 
     noerr:
-    Dynstring.dtor(received_signature);
+    stack_item_dtor(new_expr);
     return true;
     err:
-    Dynstring.dtor(received_signature);
+    stack_item_dtor(new_expr);
     return false;
 }
 
@@ -897,11 +920,11 @@ static bool parse_init(dynstring_t *received_signature) {
  *
  * !rule [fc_other_expr] -> , expr [fc_other_expr] | )
  *
- * @param received_signature is an initialized empty vector.
+ * @param received_params is an initialized empty vector.
  * @param params_cnt counter of function parameters.
  * @return bool.
  */
-static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
+static bool fc_other_expr(dynstring_t *received_params, int params_cnt) {
     debug_msg("[fc_other_expr] ->\n");
 
     // | )
@@ -910,7 +933,7 @@ static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
     EXPECTED(TOKEN_COMMA);
 
     // expr
-    if (!parse_init(received_signature)) {
+    if (!parse_init(received_params)) {
         goto err;
     }
 
@@ -918,7 +941,7 @@ static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
     Generator.func_call_pass_param(params_cnt++);
 
     // [fc_other_expr]
-    if (!fc_other_expr(received_signature, params_cnt)) {
+    if (!fc_other_expr(received_params, params_cnt)) {
         goto err;
     }
 
@@ -932,10 +955,10 @@ static bool fc_other_expr(dynstring_t *received_signature, int params_cnt) {
  *
  * !rule [fc_expr] -> expr [fc_other_expr] | )
  *
- * @param received_signature is an initialized empty vector.
+ * @param received_params is an initialized empty vector.
  * @return bool.
  */
-static bool fc_expr(dynstring_t *received_signature) {
+static bool fc_expr(dynstring_t *received_params) {
     debug_msg("[fc_expr] ->\n");
 
     int params_cnt = 0;
@@ -944,7 +967,7 @@ static bool fc_expr(dynstring_t *received_signature) {
     EXPECTED_OPT(TOKEN_RPAREN);
 
     // expr
-    if (!parse_init(received_signature)) {
+    if (!parse_init(received_params)) {
         goto err;
     }
 
@@ -952,7 +975,7 @@ static bool fc_expr(dynstring_t *received_signature) {
     Generator.func_call_pass_param(params_cnt++);
 
     // [fc_other_expr]
-    if (!fc_other_expr(received_signature, params_cnt)) {
+    if (!fc_other_expr(received_params, params_cnt)) {
         goto err;
     }
 
@@ -967,12 +990,15 @@ static bool fc_expr(dynstring_t *received_signature) {
  * !rule [func_call] -> ( [fc_expr]
  *
  * @param id_name function identifier name.
+ * @param function_returns is an initialized empty vector.
  * @return bool.
  */
-static bool func_call(dynstring_t *id_name) {
+static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     debug_msg("[func_call] ->\n");
 
-    dynstring_t *received_signature = Dynstring.ctor("");
+    dynstring_t *received_params = Dynstring.ctor("");
+    dynstring_t *expected_params = Dynstring.ctor("");
+    GET_FUNCTION_SIGNATURES(id_name, expected_params, function_returns);
 
     // generate code for function call start
     Generator.func_createframe();
@@ -981,21 +1007,26 @@ static bool func_call(dynstring_t *id_name) {
     EXPECTED(TOKEN_LPAREN);
 
     // [fc_expr]
-    if (!fc_expr(received_signature)) {
+    if (!fc_expr(received_params)) {
         goto err;
     }
 
-    // TODO: check function parameters signature
+    // Check function parameters signature
+    if(Dynstring.cmp(received_params, expected_params) != 0) {
+        goto err;
+    }
 
     // generate code for function call
     Generator.func_call(Dynstring.c_str(id_name));
     // TODO: generate get return values assigment
     //Generator.func_call_return_value(0);
 
-    Dynstring.dtor(received_signature);
+    Dynstring.dtor(received_params);
+    Dynstring.dtor(expected_params);
     return true;
     err:
-    Dynstring.dtor(received_signature);
+    Dynstring.dtor(received_params);
+    Dynstring.dtor(expected_params);
     return false;
 }
 
@@ -1300,7 +1331,7 @@ static bool Global_expression(pfile_t *pfile_) {
     }
 
     // [func_call]
-    if (!func_call(id_name)) {
+    if (!func_call(id_name, NULL)) {
         goto err;
     }
 
@@ -1329,7 +1360,7 @@ static bool Function_expression(pfile_t *pfile_) {
 
     if (is_a_function(id_name)) {
         // [func_call]
-        if (!func_call(id_name)) {
+        if (!func_call(id_name, NULL)) {
             goto err;
         }
     } else {
