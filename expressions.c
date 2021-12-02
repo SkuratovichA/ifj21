@@ -540,7 +540,7 @@ static bool check_rule(sstack_t *r_stack, dynstring_t *expression_type) {
         }
 
         // generate code for binary operation
-        Generator.expression_binary(op);
+        Generator.expression_binary(op, r_type);
 
         goto noerr;
     }

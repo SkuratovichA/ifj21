@@ -573,24 +573,24 @@ static void generate_nil_check() {
  * @brief Converts first or both int expressions to float.
  * @param expr stores info about the expr to be converted.
  */
-//static void retype_first_or_both(expr_semantics_t *expr) {
-//    ADD_INSTR("# convert int -> float");
-//    ADD_INSTR("POPS GF@%expr_result2 \n"
-//              "POPS GF@%expr_result \n"
-//              "INT2FLOAT GF@%expr_result GF@%expr_result");
-//    if (expr->conv_type == CONVERT_BOTH) {
-//        ADD_INSTR("# convert int -> float");
-//        ADD_INSTR("INT2FLOAT GF@%expr_result2 GF@%expr_result2");
-//    }
-//    ADD_INSTR("PUSHS GF@%expr_result \n"
-//              "PUSHS GF@%expr_result2");
-//}
+static void recast_first_or_both(type_recast_t recast) {
+    ADD_INSTR("# convert int -> float");
+    ADD_INSTR("POPS GF@%expr_result2 \n"
+              "POPS GF@%expr_result \n"
+              "INT2FLOAT GF@%expr_result GF@%expr_result");
+    if (recast == TYPE_RECAST_BOTH) {
+        ADD_INSTR("# convert int -> float");
+        ADD_INSTR("INT2FLOAT GF@%expr_result2 GF@%expr_result2");
+    }
+    ADD_INSTR("PUSHS GF@%expr_result \n"
+              "PUSHS GF@%expr_result2");
+}
 
 /*
  * @brief Converts second int expression to float.
  * @param expr stores info about the expr to be converted.
  */
-static void retype_second() {
+static void recast_second() {
     ADD_INSTR("# convert int -> float");
     ADD_INSTR("POPS GF@%expr_result \n"
               "INT2FLOAT GF@%expr_result GF@%expr_result \n"
@@ -602,14 +602,14 @@ static void retype_second() {
  *        and pushes operands on the stack.
  * @param expr stores info about the expr to be converted.
  */
-//static void retype_and_push(expr_semantics_t *expr) {
-//    if (expr->conv_type == CONVERT_FIRST || expr->conv_type == CONVERT_BOTH) {
-//        retype_first_or_both(expr);
-//    }
-//    if (expr->conv_type == CONVERT_SECOND) {
-//        retype_second();
-//    }
-//}
+static void recast_check(type_recast_t recast) {
+    if (recast == TYPE_RECAST_FIRST || recast == TYPE_RECAST_BOTH) {
+        recast_first_or_both(recast);
+    }
+    if (recast == TYPE_RECAST_SECOND) {
+        recast_second();
+    }
+}
 
 /*
  * @brief Generates code for pushing operand on the stack (with nil check).
@@ -623,7 +623,9 @@ static void generate_expression_operand(token_t token) {
 /*
  * @brief Generates binary operation.
  */
-static void generate_expression_binary(op_list_t op) {
+static void generate_expression_binary(op_list_t op, type_recast_t recast) {
+    recast_check(recast);
+
     switch (op) {
         case OP_ADD:    // '+'
             generate_nil_check();
@@ -1152,9 +1154,6 @@ static void generate_main_start() {
 static void generate_main_end() {
     ADD_INSTR("LABEL $$MAIN$end");
     ADD_INSTR("CLEARS");
-
-    // TODO remove
-    ADD_INSTR("WRITE GF@%expr_result");
 }
 
 /*

@@ -100,7 +100,7 @@ struct code_generator_interface_t {
      * @brief Generates expressions reduce.
      * @param expr stores info about the expr to be processed.
      */
-    void (*expression_binary)(op_list_t);
+    void (*expression_binary)(op_list_t, type_recast_t);
 
     /*
      * @brief Generates pop from the stack to GF@%expr_result.
