@@ -275,6 +275,17 @@ static bool Check_signatures_compatibility(dynstring_t *signature_expected,
 }
 
 /**
+ * @brief Truncate signature to one type.
+ *
+ * @param type_signature is an initialized vector with expression type/s.
+ */
+static void trunc_signature(dynstring_t *type_signature) {
+    if (Dynstring.len(type_signature) > 1) {
+        Dynstring.trunc_to_len(type_signature, 1);
+    }
+}
+
+/**
  * @brief Check semantics of binary operation.
  *
  * @param first_type type of the first operand.
@@ -290,6 +301,9 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
                                        dynstring_t *expression_type,
                                        type_recast_t *r_type) {
     char result_type;
+
+    trunc_signature(first_type);
+    trunc_signature(second_type);
 
     switch (op) {
         case OP_LT:
@@ -457,6 +471,8 @@ static bool Check_unary_compatability(dynstring_t *type,
                                       op_list_t op,
                                       dynstring_t *expression_type) {
     char result_type;
+
+    trunc_signature(type);
 
     switch (op) {
         // integer -> # string
