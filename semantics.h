@@ -190,4 +190,13 @@ struct semantics_interface_t {
      * @param type_signature is an initialized vector with expression type/s.
      */
     void (*trunc_signature)(dynstring_t *);
+
+    /**
+     * @brief Check semantics of multiple assignment
+     *
+     * @param ids_list list of identifiers.
+     * @param rhs_expressions is an initialized vector with expression types.
+     * @return bool.
+     */
+    bool (*check_multiple_assignment)(list_t *, dynstring_t *);
 };

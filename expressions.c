@@ -1257,8 +1257,7 @@ static bool a_other_id(list_t *ids_list) {
         }
 
         debug_msg("rhs_expressions = { %s }\n", Dynstring.c_str(rhs_expressions));
-        // TODO: check types compatability of id and expression
-        // TODO: generate code for assignment
+        Semantics.check_multiple_assignment(ids_list, rhs_expressions);
         //Generator.var_assignment(ids_list->head->data);
 
         goto noerr;
