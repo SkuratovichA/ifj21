@@ -128,7 +128,8 @@ static int token_to_type(int typ) {
             return ID_TYPE_integer;
         case TOKEN_NUM_F:
             return ID_TYPE_number;
-        case KEYWORD_boolean:
+        case KEYWORD_1:
+        case KEYWORD_0:
             return ID_TYPE_boolean;
         case KEYWORD_nil:
             return ID_TYPE_nil;
