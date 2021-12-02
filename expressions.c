@@ -1097,7 +1097,8 @@ static bool r_other_expr(dynstring_t *received_rets,
         goto err;
     }
 
-    // TODO: generate code for other return expressions
+    // generate code for other return expressions
+    Generator.func_pass_return(return_cnt);
 
     // [r_other_expr]
     if (!r_other_expr(received_rets, received_signature, return_cnt, return_amount)) {
@@ -1138,7 +1139,8 @@ static bool r_expr(dynstring_t *received_rets, size_t return_amount) {
             goto err;
         }
 
-        // TODO: generate code for the first result expression
+        // generate code for the first result expression
+        Generator.func_pass_return(return_cnt);
     }
 
     // [r_other_expr]
