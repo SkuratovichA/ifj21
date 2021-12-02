@@ -689,16 +689,18 @@ static token_t scanner(pfile_t *pfile) {
             break;
 
         case '-':
-            if (Pfile.peek_at(pfile, 0) == '-') {
-                Pfile.pgetc(pfile);
+            ch = Pfile.pgetc(pfile);
+            if (ch == '-') {
                 if (!process_comment(pfile)) {
                     token = (token_t) {.type = TOKEN_DEAD};
                     break;
                 }
                 goto next_lexeme;
-            } else if (isalnum(Pfile.peek_at(pfile, 0))) {
+            } else if (isalnum(ch)) {
                 token = lex_number(pfile); // negative number
+                token.attribute.num_i *= 1;
             } else {
+                Pfile.ungetc(pfile);
                 token.type = TOKEN_SUB;
             }
             break;
