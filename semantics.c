@@ -279,7 +279,7 @@ static bool Check_signatures_compatibility(dynstring_t *signature_expected,
  *
  * @param type_signature is an initialized vector with expression type/s.
  */
-static void trunc_signature(dynstring_t *type_signature) {
+static void Trunc_signature(dynstring_t *type_signature) {
     if (Dynstring.len(type_signature) > 1) {
         Dynstring.trunc_to_len(type_signature, 1);
     }
@@ -302,8 +302,8 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
                                        type_recast_t *r_type) {
     char result_type;
 
-    trunc_signature(first_type);
-    trunc_signature(second_type);
+    Trunc_signature(first_type);
+    Trunc_signature(second_type);
 
     switch (op) {
         case OP_LT:
@@ -472,7 +472,7 @@ static bool Check_unary_compatability(dynstring_t *type,
                                       dynstring_t *expression_type) {
     char result_type;
 
-    trunc_signature(type);
+    Trunc_signature(type);
 
     switch (op) {
         // integer -> # string
@@ -558,5 +558,6 @@ const struct semantics_interface_t Semantics = {
 
         .check_binary_compatibility = Check_binary_compatibility,
         .check_unary_compatibility = Check_unary_compatability,
-        .check_operand = Check_operand
+        .check_operand = Check_operand,
+        .trunc_signature = Trunc_signature,
 };

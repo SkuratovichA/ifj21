@@ -182,4 +182,11 @@ struct semantics_interface_t {
      * @return bool.
      */
     bool (*check_operand)(token_t, dynstring_t *);
+
+    /**
+     * @brief Truncate signature to one type.
+     *
+     * @param type_signature is an initialized vector with expression type/s.
+     */
+    void (*trunc_signature)(dynstring_t *);
 };

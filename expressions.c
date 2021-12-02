@@ -698,20 +698,14 @@ static bool func_call(dynstring_t *, dynstring_t *);
  *
  * @param stack stack for precedence analyse.
  * @param function_parsed true if function was parsed.
- * @param parents_parsed true if parents were parsed.
  * @return int.
  */
-static bool parse_function(sstack_t *stack, bool *function_parsed, bool parents_parsed) {
+static bool parse_function(sstack_t *stack, bool *function_parsed) {
     debug_msg("parse_function\n");
 
     dynstring_t *id_name = NULL;
     stack_item_t *top = NULL;
     stack_item_t *new_expr = stack_item_ctor(ITEM_TYPE_EXPR, NULL);
-
-    // If parents were parsed, continue expression parsing
-    if (parents_parsed) {
-        goto noerr;
-    }
 
     if (Scanner.get_curr_token().type != TOKEN_ID) {
         goto noerr;
@@ -822,8 +816,10 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
     }
 
     // Try parse a function
-    if (!parse_function(stack, &function_parsed, parents_parsed)) {
-        goto err;
+    if (!parents_parsed && !hard_reduce) {
+        if (!parse_function(stack, &function_parsed)) {
+            goto err;
+        }
     }
 
     // Pop expression if we have it on the top of the stack
@@ -842,6 +838,10 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
     // Check an expression end
     if (!hard_reduce) {
         hard_reduce = expression_end(first_op, function_parsed, parents_parsed);
+
+        if (hard_reduce) {
+            debug_msg("set hard reduce\n");
+        }
     }
 
     // Check a success parsing
@@ -1098,18 +1098,23 @@ static bool r_expr(dynstring_t *received_signature, size_t return_cnt) {
  *
  * !rule [a_other_expr] -> , expr [a_other_expr] | e
  *
- * @param ids_list list of identifiers.
+ * @param rhs_expressions is an initialized vector for rhs expression types.
+ * @param last_expression is an initialized vector for last expression type/s.
  * @return bool.
  */
-static bool a_other_expr(list_t *ids_list) {
+static bool a_other_expr(dynstring_t *rhs_expressions, dynstring_t *last_expression) {
     debug_msg("[a_other_expr] ->\n");
 
     dynstring_t *received_signature = Dynstring.ctor("");
 
     // | e
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
+        Dynstring.cat(rhs_expressions, last_expression);
         goto noerr;
     }
+
+    Semantics.trunc_signature(last_expression);
+    Dynstring.cat(rhs_expressions, last_expression);
 
     // ,
     EXPECTED(TOKEN_COMMA);
@@ -1120,12 +1125,9 @@ static bool a_other_expr(list_t *ids_list) {
     }
 
     // TODO: check if expression was not empty
-    // TODO: check if id is exist for an expression
-    // TODO: check types compatability of id and expression
-    // TODO: generate code for assignment
 
     // [a_other_expr]
-    if (!a_other_expr(ids_list)) {
+    if (!a_other_expr(rhs_expressions, received_signature)) {
         goto err;
     }
 
@@ -1141,10 +1143,10 @@ static bool a_other_expr(list_t *ids_list) {
  *
  * !rule [a_expr] -> expr [a_other_expr]
  *
- * @param ids_list list of identifiers.
+ * @param rhs_expressions is an initialized vector for rhs expression types.
  * @return bool.
  */
-static bool a_expr(list_t *ids_list) {
+static bool a_expr(dynstring_t *rhs_expressions) {
     debug_msg("[a_expr] ->\n");
 
     dynstring_t *received_signature = Dynstring.ctor("");
@@ -1155,12 +1157,9 @@ static bool a_expr(list_t *ids_list) {
     }
 
     // TODO: check if expression was not empty
-    // TODO: check types compatability of id and expression
-    // TODO: generate code for assignment
-    Generator.var_assignment(ids_list->head->data);
 
     // [a_other_expr]
-    if (!a_other_expr(ids_list)) {
+    if (!a_other_expr(rhs_expressions, received_signature)) {
         goto err;
     }
 
@@ -1182,6 +1181,7 @@ static bool a_other_id(list_t *ids_list) {
     debug_msg("[a_other_id] ->\n");
 
     dynstring_t *id_name = NULL;
+    dynstring_t *rhs_expressions = Dynstring.ctor("");
 
     // | = [a_expr]
     if (Scanner.get_curr_token().type == TOKEN_ASSIGN) {
@@ -1189,11 +1189,16 @@ static bool a_other_id(list_t *ids_list) {
         EXPECTED(TOKEN_ASSIGN);
 
         // [a_expr]
-        if (!a_expr(ids_list)) {
+        if (!a_expr(rhs_expressions)) {
             goto err;
-        } else {
-            goto noerr;
         }
+
+        debug_msg("rhs_expressions = { %s }\n", Dynstring.c_str(rhs_expressions));
+        // TODO: check types compatability of id and expression
+        // TODO: generate code for assignment
+        //Generator.var_assignment(ids_list->head->data);
+
+        goto noerr;
     }
 
     // ,
@@ -1214,9 +1219,11 @@ static bool a_other_id(list_t *ids_list) {
 
     noerr:
     Dynstring.dtor(id_name);
+    Dynstring.dtor(rhs_expressions);
     return true;
     err:
     Dynstring.dtor(id_name);
+    Dynstring.dtor(rhs_expressions);
     return false;
 }
 
