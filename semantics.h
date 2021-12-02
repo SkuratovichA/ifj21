@@ -155,7 +155,7 @@ struct semantics_interface_t {
      * @param expression_type initialized vector to store an expression type.
      * @return bool.
      */
-    bool (*check_binary_compatibility)(dynstring_t *, dynstring_t *, op_list_t);
+    bool (*check_binary_compatibility)(dynstring_t *, dynstring_t *, op_list_t, dynstring_t *);
 
     /**
      * @brief Check semantics of unary operation.
@@ -165,7 +165,7 @@ struct semantics_interface_t {
      * @param expression_type initialized vector to store an expression type.
      * @return bool.
      */
-    bool (*check_unary_compatibility)(dynstring_t *, op_list_t);
+    bool (*check_unary_compatibility)(dynstring_t *, op_list_t, dynstring_t *);
 
     /**
      * @brief Check semantics of single operand.
