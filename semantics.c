@@ -421,6 +421,18 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
 
             break;
 
+        case OP_AND:
+        case OP_OR:
+            result_type = 'b';
+
+            // boolean -> boolean and|or boolean
+            if (Dynstring.cmp_c_str(first_type, "b") == 0 &&
+                Dynstring.cmp_c_str(second_type, "b") == 0) {
+                goto ret;
+            }
+
+            break;
+
         default:
             break;
     }
