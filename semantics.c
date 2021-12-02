@@ -390,9 +390,10 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
                     if (op != OP_DIV_F) {
                         result_type = 'i';
                     }
-
                     // number -> integer / integer
-                    *r_type = TYPE_RECAST_BOTH;
+                    else {
+                        *r_type = TYPE_RECAST_BOTH;
+                    }
                 }
 
                 goto ret;
@@ -536,8 +537,66 @@ static bool Check_operand(token_t operand, dynstring_t *expression_type) {
     return true;
 }
 
+/**
+ * @brief Check semantics of multiple assignment
+ *
+ * @param ids_list list of identifiers.
+ * @param rhs_expressions is an initialized vector with expression types.
+ * @return bool.
+ */
 static bool Check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_expressions) {
+    list_item_t *id = ids_list->head;
+    char *rhs_expr_str = Dynstring.c_str(rhs_expressions);
+    size_t id_cnt = 0;
+    dynstring_t *id_type = Dynstring.ctor("");
+    dynstring_t *expr_type = Dynstring.ctor("");
+
+    while (id != NULL) {
+        // there is no more expressions
+        if (id_cnt >= Dynstring.len(rhs_expressions)) {
+            // TODO: assign nil to other variables
+            id_cnt++;
+            id = id->next;
+            continue;
+        }
+
+        symbol_t *sym;
+        if (!Symstack.get_local_symbol(symstack, id->data, &sym)) {
+            goto err;
+        }
+
+        Dynstring.append(id_type, Semantics.of_id_type(sym->type));
+        Dynstring.append(expr_type, rhs_expr_str[id_cnt]);
+
+        debug_msg("id_type = { %s }\n", Dynstring.c_str(id_type));
+        debug_msg("expr_type = { %s }\n", Dynstring.c_str(expr_type));
+
+        if (!Check_signatures_compatibility(id_type,
+                                            expr_type,
+                                            ERROR_TYPE_MISSMATCH)) {
+            goto err;
+        }
+
+        // TODO: generate code for assignment
+
+        Dynstring.clear(id_type);
+        Dynstring.clear(expr_type);
+        id_cnt++;
+        id = id->next;
+    }
+
+    if (id_cnt < Dynstring.len(rhs_expressions)) {
+        Errors.set_error(ERROR_TYPE_MISSMATCH);
+        goto err;
+    }
+
+    Dynstring.dtor(id_type);
+    Dynstring.dtor(expr_type);
     return true;
+    err:
+    Dynstring.dtor(id_type);
+    Dynstring.dtor(expr_type);
+    return false;
 }
 
 const struct semantics_interface_t Semantics = {
@@ -563,4 +622,5 @@ const struct semantics_interface_t Semantics = {
         .check_unary_compatibility = Check_unary_compatability,
         .check_operand = Check_operand,
         .trunc_signature = Trunc_signature,
+        .check_multiple_assignment = Check_multiple_assignment,
 };
