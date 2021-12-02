@@ -310,6 +310,40 @@ static void generate_power_func() {
 }
 
 /*
+ * @brief Generates function for short-circuit "or" evaluation.
+ */
+static void generate_ors_short() {
+    ADD_INSTR("LABEL $$ors_short \n"
+              "POPS GF@%expr_result \n"
+              "POPS GF@%expr_result2 \n"
+              "JUMPIFEQ $$ors$true GF@%expr_result2 bool@true \n"
+              "JUMPIFEQ $$ors$true GF@%expr_result bool@true \n"
+              "PUSHS bool@false \n"
+              "JUMP $$ors$end \n"
+              "LABEL $$ors$true \n"
+              "PUSHS bool@true \n"
+              "LABEL $$ors$end \n"
+              "RETURN \n");
+}
+
+/*
+ * @brief Generates function for short-circuit "and" evaluation.
+ */
+static void generate_ands_short() {
+    ADD_INSTR("LABEL $$ands_short \n"
+              "POPS GF@%expr_result \n"
+              "POPS GF@%expr_result2 \n"
+              "JUMPIFEQ $$ands$false GF@%expr_result2 bool@false \n"
+              "JUMPIFEQ $$ands$false GF@%expr_result bool@false \n"
+              "PUSHS bool@true \n"
+              "JUMP $$ands$end \n"
+              "LABEL $$ands$false \n"
+              "PUSHS bool@false \n"
+              "LABEL $$ands$end \n"
+              "RETURN \n");
+}
+
+/*
  * @brief Initialises the code generator.
  */
 static void initialise_generator() {
@@ -647,11 +681,11 @@ static void generate_expression_binary(op_list_t op) {
             break;
         case OP_AND:    // 'and'
             generate_nil_check();
-            ADD_INSTR("ANDS");
+            ADD_INSTR("CALL $$ands_short");
             break;
         case OP_OR:     // 'or'
             generate_nil_check();
-            ADD_INSTR("ORS");
+            ADD_INSTR("CALL $$ors_short");
             break;
         case OP_STRCAT: // '..'
             ADD_INSTR("POPS GF@%expr_result2 \n"
@@ -1152,6 +1186,8 @@ static void generate_prog_start() {
     generate_power_func();
     nil_check_func();
     recast_to_bool_func();
+    generate_ors_short();
+    generate_ands_short();
 
     INSTR_CHANGE_ACTIVE_LIST(instructions.mainList);
     generate_main_start();
