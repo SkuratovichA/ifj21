@@ -503,18 +503,18 @@ static void generate_nil_check() {
  * @brief Converts first or both int expressions to float.
  * @param expr stores info about the expr to be converted.
  */
-static void retype_first_or_both(expr_semantics_t *expr) {
-    ADD_INSTR("# convert int -> float");
-    ADD_INSTR("POPS GF@%expr_result2 \n"
-              "POPS GF@%expr_result \n"
-              "INT2FLOAT GF@%expr_result GF@%expr_result");
-    if (expr->conv_type == CONVERT_BOTH) {
-        ADD_INSTR("# convert int -> float");
-        ADD_INSTR("INT2FLOAT GF@%expr_result2 GF@%expr_result2");
-    }
-    ADD_INSTR("PUSHS GF@%expr_result \n"
-              "PUSHS GF@%expr_result2");
-}
+//static void retype_first_or_both(expr_semantics_t *expr) {
+//    ADD_INSTR("# convert int -> float");
+//    ADD_INSTR("POPS GF@%expr_result2 \n"
+//              "POPS GF@%expr_result \n"
+//              "INT2FLOAT GF@%expr_result GF@%expr_result");
+//    if (expr->conv_type == CONVERT_BOTH) {
+//        ADD_INSTR("# convert int -> float");
+//        ADD_INSTR("INT2FLOAT GF@%expr_result2 GF@%expr_result2");
+//    }
+//    ADD_INSTR("PUSHS GF@%expr_result \n"
+//              "PUSHS GF@%expr_result2");
+//}
 
 /*
  * @brief Converts second int expression to float.
@@ -532,14 +532,14 @@ static void retype_second() {
  *        and pushes operands on the stack.
  * @param expr stores info about the expr to be converted.
  */
-static void retype_and_push(expr_semantics_t *expr) {
-    if (expr->conv_type == CONVERT_FIRST || expr->conv_type == CONVERT_BOTH) {
-        retype_first_or_both(expr);
-    }
-    if (expr->conv_type == CONVERT_SECOND) {
-        retype_second();
-    }
-}
+//static void retype_and_push(expr_semantics_t *expr) {
+//    if (expr->conv_type == CONVERT_FIRST || expr->conv_type == CONVERT_BOTH) {
+//        retype_first_or_both(expr);
+//    }
+//    if (expr->conv_type == CONVERT_SECOND) {
+//        retype_second();
+//    }
+//}
 
 /*
  * @brief Generates code for pushing operand on the stack (with nil check).
@@ -579,109 +579,109 @@ static void generate_expression_unary() {
  * @brief Generates expressions reduce.
  * @param expr stores info about the expr to be processed.
  */
-static void generate_expression(expr_semantics_t *expr) {
-    soft_assert(expr, ERROR_INTERNAL);
-
-    // SEMANTIC_OPERAND - push one operand on the stack
-    if (expr->sem_state == SEMANTIC_OPERAND) {
-        generate_expression_operand(expr);
-        return;
-    }
-
-    // generate type conversion if needed
-    retype_and_push(expr);
-
-    // generate operation
-    switch (expr->op) {
-        case OP_ADD:    // '+'
-            generate_nil_check();
-            ADD_INSTR("ADDS");
-            break;
-        case OP_SUB:    // '-'
-            generate_nil_check();
-            ADD_INSTR("SUBS");
-            break;
-        case OP_MUL:    // '*'
-            generate_nil_check();
-            ADD_INSTR("MULS");
-            break;
-        case OP_DIV_I:  // '/'
-            generate_nil_check();
-            generate_division_check(true); // true == int div check
-            ADD_INSTR("IDIVS");
-            break;
-        case OP_DIV_F:  // '//'
-            generate_nil_check();
-            generate_division_check(false); // false == float div check
-            ADD_INSTR("DIVS");
-            break;
-        case OP_LT:     // '<'
-            generate_nil_check();
-            ADD_INSTR("LTS");
-            break;
-        case OP_LE:     // '<='
-            ADD_INSTR("POPS GF@%expr_result2 \n"
-                      "POPS GF@%expr_result \n"
-                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
-                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
-                      "LT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
-                      "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
-                      "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
-                      "PUSHS GF@%expr_result");
-            break;
-        case OP_GT:     // '>'
-            generate_nil_check();
-            ADD_INSTR("GTS");
-            break;
-        case OP_GE:     // '>='
-            ADD_INSTR("POPS GF@%expr_result2 \n"
-                      "POPS GF@%expr_result \n"
-                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
-                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
-                      "GT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
-                      "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
-                      "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
-                      "PUSHS GF@%expr_result");
-            break;
-        case OP_EQ:     // '=='
-            ADD_INSTR("EQS");
-            break;
-        case OP_NE:     // '~='
-            ADD_INSTR("EQS \n"
-                      "NOTS");
-            break;
-        case OP_NOT:    // 'not'
-            ADD_INSTR("POPS GF@%expr_result2 \n"
-                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
-                      "PUSHS GF@%expr_result2");
-            ADD_INSTR("NOTS");
-            break;
-        case OP_AND:    // 'and'
-            generate_nil_check();
-            ADD_INSTR("ANDS");
-            break;
-        case OP_OR:     // 'or'
-            generate_nil_check();
-            ADD_INSTR("ORS");
-            break;
-        case OP_HASH:   // '#'
-            ADD_INSTR("POPS GF@%expr_result2 \n"
-                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
-                      "STRLEN GF@%expr_result GF@%expr_result2 \n"
-                      "PUSHS GF@%expr_result");
-            break;
-        case OP_STRCAT: // '..'
-            ADD_INSTR("POPS GF@%expr_result2 \n"
-                      "POPS GF@%expr_result \n"
-                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
-                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
-                      "CONCAT GF@%expr_result GF@%expr_result GF@%expr_result2 \n"
-                      "PUSHS GF@%expr_result");
-            break;
-        default:
-            ADD_INSTR("# unrecognized_instruction");
-    }
-}
+//static void generate_expression(expr_semantics_t *expr) {
+//    soft_assert(expr, ERROR_INTERNAL);
+//
+//    // SEMANTIC_OPERAND - push one operand on the stack
+//    if (expr->sem_state == SEMANTIC_OPERAND) {
+//        generate_expression_operand(expr);
+//        return;
+//    }
+//
+//    // generate type conversion if needed
+//    retype_and_push(expr);
+//
+//    // generate operation
+//    switch (expr->op) {
+//        case OP_ADD:    // '+'
+//            generate_nil_check();
+//            ADD_INSTR("ADDS");
+//            break;
+//        case OP_SUB:    // '-'
+//            generate_nil_check();
+//            ADD_INSTR("SUBS");
+//            break;
+//        case OP_MUL:    // '*'
+//            generate_nil_check();
+//            ADD_INSTR("MULS");
+//            break;
+//        case OP_DIV_I:  // '/'
+//            generate_nil_check();
+//            generate_division_check(true); // true == int div check
+//            ADD_INSTR("IDIVS");
+//            break;
+//        case OP_DIV_F:  // '//'
+//            generate_nil_check();
+//            generate_division_check(false); // false == float div check
+//            ADD_INSTR("DIVS");
+//            break;
+//        case OP_LT:     // '<'
+//            generate_nil_check();
+//            ADD_INSTR("LTS");
+//            break;
+//        case OP_LE:     // '<='
+//            ADD_INSTR("POPS GF@%expr_result2 \n"
+//                      "POPS GF@%expr_result \n"
+//                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+//                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+//                      "LT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
+//                      "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
+//                      "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
+//                      "PUSHS GF@%expr_result");
+//            break;
+//        case OP_GT:     // '>'
+//            generate_nil_check();
+//            ADD_INSTR("GTS");
+//            break;
+//        case OP_GE:     // '>='
+//            ADD_INSTR("POPS GF@%expr_result2 \n"
+//                      "POPS GF@%expr_result \n"
+//                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+//                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+//                      "GT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
+//                      "EQ GF@%expr_result2 GF@%expr_result GF@%expr_result2 \n"
+//                      "OR GF@%expr_result GF@%expr_result2 GF@%expr_result3 \n"
+//                      "PUSHS GF@%expr_result");
+//            break;
+//        case OP_EQ:     // '=='
+//            ADD_INSTR("EQS");
+//            break;
+//        case OP_NE:     // '~='
+//            ADD_INSTR("EQS \n"
+//                      "NOTS");
+//            break;
+//        case OP_NOT:    // 'not'
+//            ADD_INSTR("POPS GF@%expr_result2 \n"
+//                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+//                      "PUSHS GF@%expr_result2");
+//            ADD_INSTR("NOTS");
+//            break;
+//        case OP_AND:    // 'and'
+//            generate_nil_check();
+//            ADD_INSTR("ANDS");
+//            break;
+//        case OP_OR:     // 'or'
+//            generate_nil_check();
+//            ADD_INSTR("ORS");
+//            break;
+//        case OP_HASH:   // '#'
+//            ADD_INSTR("POPS GF@%expr_result2 \n"
+//                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+//                      "STRLEN GF@%expr_result GF@%expr_result2 \n"
+//                      "PUSHS GF@%expr_result");
+//            break;
+//        case OP_STRCAT: // '..'
+//            ADD_INSTR("POPS GF@%expr_result2 \n"
+//                      "POPS GF@%expr_result \n"
+//                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+//                      "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+//                      "CONCAT GF@%expr_result GF@%expr_result GF@%expr_result2 \n"
+//                      "PUSHS GF@%expr_result");
+//            break;
+//        default:
+//            ADD_INSTR("# unrecognized_instruction");
+//    }
+//}
 
 /*
  * @brief Generates pop from the stack to GF@%expr_result.
