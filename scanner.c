@@ -689,20 +689,15 @@ static token_t scanner(pfile_t *pfile) {
             break;
 
         case '-':
-            ch = Pfile.peek_at(pfile, 0);
-            if (ch == '-') {
+            if (Pfile.peek_at(pfile, 0) == '-') {
+                Pfile.pgetc(pfile);
                 if (!process_comment(pfile)) {
                     token = (token_t) {.type = TOKEN_DEAD};
                     break;
                 }
                 goto next_lexeme;
-            } else if (isalnum(ch)) {
-                token = lex_number(pfile); // negative number
-                token.attribute.num_i *= -1;
-            } else {
-                Pfile.ungetc(pfile);
-                token.type = TOKEN_SUB;
             }
+            token.type = TOKEN_SUB;
             break;
 
         case '/':
