@@ -23,7 +23,7 @@
 
 typedef union token_attribute {
     dynstring_t *id; ///< for storing string or identifier
-    uint64_t num_i; ///< integer number representation.
+    int64_t num_i; ///< integer number representation.
     double num_f; ///< fp number representation
 } attribute_t;
 
