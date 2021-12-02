@@ -80,6 +80,13 @@ static pfile_t *pfile;
         }                                                                                   \
     } while(0)
 
+#define CHECK_EMPTY_SIGNATURE(sgt)                      \
+    do {                                                \
+        if (Dynstring.len((sgt)) == 0) {                \
+            goto err;                                   \
+        }                                               \
+    } while(0)
+
 /**
  * @brief Checks if identifier is a function.
  *
@@ -1050,35 +1057,58 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
  *
  * !rule [r_other_expr] -> , expr [r_other_expr] | e
  *
- * @param received_signature is an initialized empty vector.
+ * @param received_rets is an initialized empty vector.
+ * @param last_expression is an initialized vector for last expression type/s.
+ * @param return_cnt
+ * @param return_amount
  * @return bool.
  */
-static bool r_other_expr(dynstring_t *received_signature, size_t *return_cnt) {
+static bool r_other_expr(dynstring_t *received_rets,
+                         dynstring_t *last_expression,
+                         size_t return_cnt,
+                         size_t return_amount) {
     debug_msg("[r_other_expr] ->\n");
+
+    dynstring_t *received_signature = Dynstring.ctor("");
 
     // | e
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
-        return true;
+        Dynstring.cat(received_rets, last_expression);
+        goto noerr;
     }
 
     // ,
     EXPECTED(TOKEN_COMMA);
 
+    // Truncate signature if it has multiple return types
+    // and located not at the end of expression
+    Semantics.trunc_signature(last_expression);
+    Dynstring.cat(received_rets, last_expression);
+
     // expr
     if (!parse_init(received_signature)) {
         goto err;
     }
-    (*return_cnt)--;
 
-    // TODO: check if expression was not empty
+    CHECK_EMPTY_SIGNATURE(received_signature);
+    return_cnt++;
 
-    // [r_other_expr]
-    if (!r_other_expr(received_signature, return_cnt)) {
+    if (return_cnt == return_amount) {
         goto err;
     }
 
+    // TODO: generate code for other return expressions
+
+    // [r_other_expr]
+    if (!r_other_expr(received_rets, received_signature, return_cnt, return_amount)) {
+        goto err;
+    }
+
+    noerr:
+    Dynstring.dtor(received_signature);
     return true;
     err:
+    Dynstring.dtor(received_signature);
     return false;
 }
 
@@ -1087,25 +1117,40 @@ static bool r_other_expr(dynstring_t *received_signature, size_t *return_cnt) {
  *
  * !rule [r_expr] -> expr [r_other_expr] | e
  *
- * @param received_signature is an initialized empty vector.
+ * @param received_rets is an initialized empty vector.
+ * @param return_amount
  * @return bool.
  */
-static bool r_expr(dynstring_t *received_signature, size_t return_cnt) {
+static bool r_expr(dynstring_t *received_rets, size_t return_amount) {
     debug_msg("[r_expr] ->\n");
+
+    size_t return_cnt = 0;
+    dynstring_t *received_signature = Dynstring.ctor("");
 
     // expr
     if (!parse_init(received_signature)) {
-        return false;
+        goto err;
     }
-    return_cnt--;
 
-    // TODO: check if expression was empty
+    // If expression was not empty
+    if (Dynstring.len(received_signature) != 0) {
+        if (return_cnt == return_amount) {
+            goto err;
+        }
+
+        // TODO: generate code for the first result expression
+    }
 
     // [r_other_expr]
-    if (!r_other_expr(received_signature, &return_cnt)) {
-        return false;
+    if (!r_other_expr(received_rets, received_signature, return_cnt, return_amount)) {
+        goto err;
     }
+
+    Dynstring.dtor(received_signature);
     return true;
+    err:
+    Dynstring.dtor(received_signature);
+    return false;
 }
 
 /** Assignment other expressions.
@@ -1127,18 +1172,20 @@ static bool a_other_expr(dynstring_t *rhs_expressions, dynstring_t *last_express
         goto noerr;
     }
 
-    Semantics.trunc_signature(last_expression);
-    Dynstring.cat(rhs_expressions, last_expression);
-
     // ,
     EXPECTED(TOKEN_COMMA);
+
+    // Truncate signature if it has multiple return types
+    // and located not at the end of expression
+    Semantics.trunc_signature(last_expression);
+    Dynstring.cat(rhs_expressions, last_expression);
 
     // expr
     if (!parse_init(received_signature)) {
         goto err;
     }
 
-    // TODO: check if expression was not empty
+    CHECK_EMPTY_SIGNATURE(received_signature);
 
     // [a_other_expr]
     if (!a_other_expr(rhs_expressions, received_signature)) {
@@ -1170,7 +1217,7 @@ static bool a_expr(dynstring_t *rhs_expressions) {
         goto err;
     }
 
-    // TODO: check if expression was not empty
+    CHECK_EMPTY_SIGNATURE(received_signature);
 
     // [a_other_expr]
     if (!a_other_expr(rhs_expressions, received_signature)) {

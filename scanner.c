@@ -696,8 +696,11 @@ static token_t scanner(pfile_t *pfile) {
                     break;
                 }
                 goto next_lexeme;
+            } else if (isalnum(Pfile.peek_at(pfile, 0))) {
+                token = lex_number(pfile); // negative number
+            } else {
+                token.type = TOKEN_SUB;
             }
-            token.type = TOKEN_SUB;
             break;
 
         case '/':
