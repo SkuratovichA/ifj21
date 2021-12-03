@@ -1122,11 +1122,18 @@ static bool r_other_expr(dynstring_t *received_rets,
     Dynstring.cat(received_rets, last_expression);
 
     // TODO: clear generator stack
+    Generator.comment("--------- clearing stack in r_other_expr-----------");
+    for(size_t i = 0; i < expr_num - 1; i++) {
+        Generator.expression_pop();
+    }
 
     // expr
     if (!parse_init(received_signature)) {
         goto err;
     }
+
+    // generator: push result to the stack (it was popped in parse)
+    Generator.expression_push();
 
     CHECK_EMPTY_SIGNATURE(received_signature);
     return_cnt++;
@@ -1136,7 +1143,7 @@ static bool r_other_expr(dynstring_t *received_rets,
     }
 
     // generate code for other return expressions
-    Generator.func_pass_return(return_cnt);
+    //Generator.func_pass_return(return_cnt);
 
     // [r_other_expr]
     if (!r_other_expr(received_rets, received_signature, func_rets, return_cnt)) {
@@ -1178,7 +1185,8 @@ static bool r_expr(dynstring_t *received_rets, size_t func_rets) {
         }
 
         // generate code for the first result expression
-        Generator.func_pass_return(return_cnt);
+        // Generator.func_pass_return(return_cnt);
+        // Generator.expression_push();
     }
 
     // [r_other_expr]
@@ -1232,10 +1240,10 @@ static bool a_other_expr(dynstring_t *rhs_expressions, dynstring_t *last_express
         goto err;
     }
 
+    CHECK_EMPTY_SIGNATURE(received_signature);
+
     // generator: push result to the stack (it was popped in parse)
     Generator.expression_push();
-
-    CHECK_EMPTY_SIGNATURE(received_signature);
 
     // [a_other_expr]
     if (!a_other_expr(rhs_expressions, received_signature)) {
@@ -1267,10 +1275,10 @@ static bool a_expr(dynstring_t *rhs_expressions) {
         goto err;
     }
 
+    CHECK_EMPTY_SIGNATURE(received_signature);
+
     // generator: push result to the stack (it was popped in parse)
     Generator.expression_push();
-
-    CHECK_EMPTY_SIGNATURE(received_signature);
 
     // [a_other_expr]
     if (!a_other_expr(rhs_expressions, received_signature)) {
