@@ -884,6 +884,11 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
             goto noerr;
         }
 
+        // Append nil if expression type is empty
+        if (Dynstring.len(expr->expression_type) == 0) {
+            Dynstring.append(expr->expression_type, 'n');
+        }
+
         if (received_signature != NULL) {
             // Set return types
             Dynstring.cat(received_signature, expr->expression_type);
