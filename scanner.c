@@ -134,6 +134,10 @@ static char *To_string(const int t) {
             return ":";
         case TOKEN_HASH:
             return "#";
+        case TOKEN_PERCENT:
+            return "%";
+        case TOKEN_CARET:
+            return "^";
         case TOKEN_DEAD:
             return "DEAD TOKEN";
 
@@ -194,11 +198,11 @@ static token_t lex_string(pfile_t *pfile) {
                         state = STATE_STR_DEC_0_2;
                         break;
                     case 't':
-                        Dynstring.append(token.attribute.id, '\n');
+                        Dynstring.append(token.attribute.id, '\t');
                         state = STATE_STR_INIT;
                         break;
                     case 'n':
-                        Dynstring.append(token.attribute.id, '\t');
+                        Dynstring.append(token.attribute.id, '\n');
                         state = STATE_STR_INIT;
                         break;
                     case 'x':

@@ -59,6 +59,13 @@ static pfile_t *pfile;
         }                                                               \
     } while (0)
 
+/**
+ * @brief Get function params and returns (types).
+ *
+ * @param id_name name of the function.
+ * @param func_params is a vector for params.
+ * @param func_returns is a vector for returns.
+ */
 #define GET_FUNCTION_SIGNATURES(id_name, func_params, func_returns)                         \
     do {                                                                                    \
         symbol_t *sym;                                                                      \
@@ -80,6 +87,11 @@ static pfile_t *pfile;
         }                                                                                   \
     } while(0)
 
+/**
+ * @brief Checks if signature is empty.
+ *
+ * @param sgt
+ */
 #define CHECK_EMPTY_SIGNATURE(sgt)                      \
     do {                                                \
         if (Dynstring.len((sgt)) == 0) {                \
@@ -101,25 +113,25 @@ static inline bool is_a_function(dynstring_t *id_name) {
  * Precedence function table.
  * f, g - precedence functions.
  *
- * A = {*, /, //},
+ * A = {*, /, //, %},
  * B = {+, -},
  * C = {<, <=, >, >=, ==, ~=}
- * D = {#, not}
+ * D = {#, not, - (unary)}
  *
- *  |   |  id |   A |   B |   C |   D |  .. | and |  or |   $ |
- *  | f |  12 |  10 |   8 |   6 |  12 |   6 |   4 |   2 |   0 |
- *  | g |  13 |   9 |   7 |   5 |  11 |   7 |   3 |   1 |   0 |
+ *  |   |  id |   ^ |   A |   B |   C |   D |  .. | and |  or |   $ |
+ *  | f |  14 |  14 |  10 |   8 |   6 |  12 |   6 |   4 |   2 |   0 |
+ *  | g |  15 |  13 |   9 |   7 |   5 |  11 |   7 |   3 |   1 |   0 |
  */
 
 /**
  * f - represents rows of the precedence table.
  */
-static const int f[18] = {12, 10, 10, 10, 8, 8, 6, 6, 6, 6, 6, 6, 12, 12, 6, 4, 2, 0};
+static const int f[21] = {14, 14, 10, 10, 10, 10, 8, 8, 6, 6, 6, 6, 6, 6, 12, 12, 12, 6, 4, 2, 0};
 
 /**
  * g - represents columns.
  */
-static const int g[18] = {13, 9, 9, 9, 7, 7, 5, 5, 5, 5, 5, 5, 11, 11, 7, 3, 1, 0};
+static const int g[21] = {15, 13, 9, 9, 9, 9, 7, 7, 5, 5, 5, 5, 5, 5, 11, 11, 11, 7, 3, 1, 0};
 
 /**
  * @brief
@@ -172,6 +184,10 @@ static op_list_t get_op(int tok_type) {
             return OP_AND;
         case KEYWORD_or:
             return OP_OR;
+        case TOKEN_CARET:
+            return OP_CARET;
+        case TOKEN_PERCENT:
+            return OP_PERCENT;
         default:
             return OP_DOLLAR;
     }
@@ -219,6 +235,12 @@ static char *op_to_string(op_list_t op) {
             return "and";
         case OP_OR:
             return "or";
+        case OP_CARET:
+            return "^";
+        case OP_PERCENT:
+            return "%";
+        case OP_MINUS_UNARY:
+            return "- (unary)";
         case OP_DOLLAR:
             return "$";
         default:
@@ -427,6 +449,8 @@ static bool binary_op(sstack_t *r_stack, op_list_t *result_op) {
         case OP_GE:
         case OP_EQ:
         case OP_NE:
+        case OP_PERCENT:
+        case OP_CARET:
             goto noerr;
         default:
             goto err;
@@ -710,8 +734,8 @@ static bool func_call(dynstring_t *, dynstring_t *);
 static bool parse_function(sstack_t *stack, bool *function_parsed) {
     debug_msg("parse_function\n");
 
+    stack_item_t *top;
     dynstring_t *id_name = NULL;
-    stack_item_t *top = NULL;
     stack_item_t *new_expr = stack_item_ctor(ITEM_TYPE_EXPR, NULL);
 
     if (Scanner.get_curr_token().type != TOKEN_ID) {
@@ -742,6 +766,11 @@ static bool parse_function(sstack_t *stack, bool *function_parsed) {
 
     // Push an expression
     Stack.push(stack, stack_item_copy(new_expr));
+
+    // generate get return values assigment
+    for (size_t i = 0; i < Dynstring.len(new_expr->expression_type); i++) {
+        Generator.func_call_return_value(i);
+    }
 
     noerr:
     Dynstring.dtor(id_name);
@@ -812,8 +841,8 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
     debug_msg("parse ->\n");
 
     int cmp;
+    stack_item_t *top;
     stack_item_t *expr = NULL;
-    stack_item_t *top = NULL;
     bool function_parsed = false;
     bool parents_parsed = false;
 
@@ -845,10 +874,6 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
     // Check an expression end
     if (!hard_reduce) {
         hard_reduce = expression_end(first_op, function_parsed, parents_parsed);
-
-        if (hard_reduce) {
-            debug_msg("set hard reduce\n");
-        }
     }
 
     // Check a success parsing
@@ -857,6 +882,11 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
 
         if (expr == NULL) {
             goto noerr;
+        }
+
+        // Append nil if expression type is empty
+        if (Dynstring.len(expr->expression_type) == 0) {
+            Dynstring.append(expr->expression_type, 'n');
         }
 
         if (received_signature != NULL) {
@@ -871,10 +901,9 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
     // Truncate expression type and clear generator stack
     // if there is expression on top of the precedence stack
     if (expr != NULL && expr->type == ITEM_TYPE_EXPR) {
-        // Check if expression type is empty
+        // Append nil if expression type is empty
         if (Dynstring.len(expr->expression_type) == 0) {
-            Errors.set_error(ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
-            goto err;
+            Dynstring.append(expr->expression_type, 'n');
         }
 
         Semantics.trunc_signature(expr->expression_type);
@@ -943,10 +972,11 @@ static bool parse_init(dynstring_t *received_signature) {
  * !rule [fc_other_expr] -> , expr [fc_other_expr] | )
  *
  * @param received_params is an initialized empty vector.
+ * @param func_name
  * @param params_cnt counter of function parameters.
  * @return bool.
  */
-static bool fc_other_expr(dynstring_t *received_params, int params_cnt) {
+static bool fc_other_expr(dynstring_t *received_params, dynstring_t *func_name, int params_cnt) {
     debug_msg("[fc_other_expr] ->\n");
 
     // | )
@@ -960,10 +990,15 @@ static bool fc_other_expr(dynstring_t *received_params, int params_cnt) {
     }
 
     // generate code for a function parameter
-    Generator.func_call_pass_param(params_cnt++);
+    if (Dynstring.cmp_c_str(func_name, "write") == 0) {
+        // function write generates CALL for each parameter
+        Generator.func_call("write");
+    } else {
+        Generator.func_call_pass_param(params_cnt++);
+    }
 
     // [fc_other_expr]
-    if (!fc_other_expr(received_params, params_cnt)) {
+    if (!fc_other_expr(received_params, func_name, params_cnt)) {
         goto err;
     }
 
@@ -978,9 +1013,10 @@ static bool fc_other_expr(dynstring_t *received_params, int params_cnt) {
  * !rule [fc_expr] -> expr [fc_other_expr] | )
  *
  * @param received_params is an initialized empty vector.
+ * @param func_name
  * @return bool.
  */
-static bool fc_expr(dynstring_t *received_params) {
+static bool fc_expr(dynstring_t *received_params, dynstring_t *func_name) {
     debug_msg("[fc_expr] ->\n");
 
     int params_cnt = 0;
@@ -994,10 +1030,15 @@ static bool fc_expr(dynstring_t *received_params) {
     }
 
     // generate code for a function parameter
-    Generator.func_call_pass_param(params_cnt++);
+    if (Dynstring.cmp_c_str(func_name, "write") == 0) {
+        // function write generates CALL for each parameter
+        Generator.func_call("write");
+    } else {
+        Generator.func_call_pass_param(params_cnt++);
+    }
 
     // [fc_other_expr]
-    if (!fc_other_expr(received_params, params_cnt)) {
+    if (!fc_other_expr(received_params, func_name, params_cnt)) {
         goto err;
     }
 
@@ -1029,7 +1070,7 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     EXPECTED(TOKEN_LPAREN);
 
     // [fc_expr]
-    if (!fc_expr(received_params)) {
+    if (!fc_expr(received_params, id_name)) {
         goto err;
     }
 
@@ -1037,7 +1078,6 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     if (Dynstring.cmp(received_params, expected_params) != 0) {
         // write(...)
         if (Dynstring.cmp_c_str(id_name, "write") == 0) {
-            // TODO: generate code for write function
             goto noerr;
         }
 
@@ -1050,8 +1090,6 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
 
     // generate code for function call
     Generator.func_call(Dynstring.c_str(id_name));
-    // TODO: generate get return values assigment
-    //Generator.func_call_return_value(0);
 
     noerr:
     Dynstring.dtor(received_params);
@@ -1092,14 +1130,24 @@ static bool r_other_expr(dynstring_t *received_rets,
 
     // Truncate signature if it has multiple return types
     // and located not at the end of expression
+    size_t expr_num = Dynstring.len(last_expression);
+
     Semantics.trunc_signature(last_expression);
     Dynstring.cat(received_rets, last_expression);
+
     // TODO: clear generator stack
+    Generator.comment("--------- clearing stack in r_other_expr-----------");
+    for(size_t i = 0; i < expr_num - 1; i++) {
+        Generator.expression_pop();
+    }
 
     // expr
     if (!parse_init(received_signature)) {
         goto err;
     }
+
+    // generator: push result to the stack (it was popped in parse)
+    Generator.expression_push();
 
     CHECK_EMPTY_SIGNATURE(received_signature);
     return_cnt++;
@@ -1109,7 +1157,7 @@ static bool r_other_expr(dynstring_t *received_rets,
     }
 
     // generate code for other return expressions
-    Generator.func_pass_return(return_cnt);
+    //Generator.func_pass_return(return_cnt);
 
     // [r_other_expr]
     if (!r_other_expr(received_rets, received_signature, func_rets, return_cnt)) {
@@ -1151,7 +1199,8 @@ static bool r_expr(dynstring_t *received_rets, size_t func_rets) {
         }
 
         // generate code for the first result expression
-        Generator.func_pass_return(return_cnt);
+        // Generator.func_pass_return(return_cnt);
+        // Generator.expression_push();
     }
 
     // [r_other_expr]
@@ -1190,9 +1239,15 @@ static bool a_other_expr(dynstring_t *rhs_expressions, dynstring_t *last_express
 
     // Truncate signature if it has multiple return types
     // and located not at the end of expression
+    size_t expr_num = Dynstring.len(last_expression);
     Semantics.trunc_signature(last_expression);
     Dynstring.cat(rhs_expressions, last_expression);
-    // TODO: clear generator stack
+
+    // clear generator stack
+    for(size_t i = 0; i < expr_num - 1; i++) {
+        Generator.expression_pop();
+    }
+
 
     // expr
     if (!parse_init(received_signature)) {
@@ -1200,6 +1255,9 @@ static bool a_other_expr(dynstring_t *rhs_expressions, dynstring_t *last_express
     }
 
     CHECK_EMPTY_SIGNATURE(received_signature);
+
+    // generator: push result to the stack (it was popped in parse)
+    Generator.expression_push();
 
     // [a_other_expr]
     if (!a_other_expr(rhs_expressions, received_signature)) {
@@ -1232,6 +1290,9 @@ static bool a_expr(dynstring_t *rhs_expressions) {
     }
 
     CHECK_EMPTY_SIGNATURE(received_signature);
+
+    // generator: push result to the stack (it was popped in parse)
+    Generator.expression_push();
 
     // [a_other_expr]
     if (!a_other_expr(rhs_expressions, received_signature)) {
@@ -1269,6 +1330,9 @@ static bool a_other_id(list_t *ids_list) {
         }
 
         Semantics.check_multiple_assignment(ids_list, rhs_expressions);
+
+        Generator.assignment(ids_list, rhs_expressions);
+
         goto noerr;
     }
 
@@ -1351,6 +1415,7 @@ static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature,
  *        Or an expression in the conditional statement in cycles, conditions.
  *        semantic controls are performed inside parser.c
  *
+ * @param pfile_
  * @param received_signature is an initialized empty vector.
  * @param type_expr_statement TYPE_EXPR_DEFAULT will not be casted to boolean.
  *                            TYPE_EXPR_CONDITIONAL will be casted to boolean.
@@ -1425,7 +1490,7 @@ static bool Global_expression(pfile_t *pfile_) {
 
 /**
  * @brief Function calling or assignments in the local scope.
- * !rule [function_expression] -> id FUCK ME IN THE BRAIN I CAN STAND THIS PROJECT ANYMORE I WANNA DIE
+ * !rule [function_expression] -> id [func_call] | id [assign_id]
  * @param pfile_
  * @return true if successive parsing and semantic analysis of expressions performed.
  */

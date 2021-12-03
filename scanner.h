@@ -103,15 +103,17 @@ typedef struct token {
     X(not)      \
     X(UNDEF)
 
-#define SINGLE_CHAR_TOKENS(X) \
-    X(EOFILE)                \
-    X(LPAREN)                \
-    X(RPAREN)                \
-    X(ADD)                   \
-    X(MUL)                   \
-    X(HASH)                  \
-    X(COLON)                 \
-    X(COMMA)
+#define SINGLE_CHAR_TOKENS(X)   \
+    X(EOFILE)                   \
+    X(LPAREN)                   \
+    X(RPAREN)                   \
+    X(ADD)                      \
+    X(MUL)                      \
+    X(HASH)                     \
+    X(COLON)                    \
+    X(COMMA)                    \
+    X(PERCENT)                  \
+    X(CARET)
 
 /**
  * Tokens enum. What does each token represent.

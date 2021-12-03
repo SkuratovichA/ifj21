@@ -228,6 +228,38 @@ static bool Equal(list_t *l1, list_t *l2, int (*cmp)(void *, void *)) {
     return _equal(l1->head, l2->head, cmp);
 }
 
+/*
+ * @brief Reverses the list.
+ * @param l singly linked list to be reversed
+ */
+static void Reverse(list_t *l) {
+    list_item_t *current = l->head;
+    list_item_t *prev = NULL;
+    list_item_t *next = NULL;
+
+    while (current != NULL) {
+        next = current->next;
+        current->next = prev;
+        prev = current;
+        current = next;
+    }
+    l->head = prev;
+}
+
+/*
+ * @brief Finds the length of the list.
+ * @param l singly linked list
+ */
+static size_t Len(list_t *l) {
+    size_t len = 0;
+    list_item_t *current = l->head;
+    while (current != NULL) {
+        len++;
+        current = current->next;
+    }
+    return len;
+}
+
 /**
  * Interface to use when dealing with singly linked list.
  * Functions are in struct so we can use them in different files.
@@ -244,6 +276,8 @@ const struct list_interface_t List = {
         .ctor = Ctor,
         .dtor = Dtor,
         .equal = Equal,
+        .reverse = Reverse,
+        .len = Len,
         .insert_after = Insert_after,
         .print_list = Print_list,
 };

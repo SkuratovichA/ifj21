@@ -288,13 +288,14 @@ static void recast_to_bool_func() {
  */
 static void generate_power_func() {
     ADD_INSTR("LABEL $$power \n"
-              "PUSHFRAME \n"
-              "DEFVAR LF@%res \n"
-              "MOVE LF@%res float@0x1p+0 \n"
+              "MOVE GF@%expr_result2 float@0x1p+0 \n"
               "DEFVAR LF@%exp \n"
               "POPS LF@%exp \n"
               "DEFVAR LF@%base \n"
               "POPS LF@%base \n"
+              "# nil check\n"
+              "JUMPIFEQ $$ERROR_NIL LF@%base nil@nil \n"
+              "JUMPIFEQ $$ERROR_NIL LF@%exp nil@nil \n"
               "# make sure exp has zero decimal part \n"
               "FLOAT2INT LF@%exp LF@%exp \n"
               "INT2FLOAT LF@%exp LF@%exp \n"
@@ -309,13 +310,35 @@ static void generate_power_func() {
               "# while (exp != 0) \n"
               "LABEL $$power$while \n"
               "JUMPIFEQ $$power$end LF@%exp float@0x0p+0 \n"
-              "     MUL LF@%res LF@%res LF@%base \n"
+              "     MUL GF@%expr_result2 GF@%expr_result2 LF@%base \n"
               "     SUB LF@%exp LF@%exp float@0x1p+0 \n"
               "     JUMP $$power$while \n"
               "LABEL $$power$end \n"
-              "PUSHS LF@%res \n"
-              "POPFRAME \n"
+              "PUSHS GF@%expr_result2 \n"
               "RETURN \n");
+}
+
+/*
+ * @brief Generates function for computing modulo %.
+ */
+static void generate_modulo_func() {
+    ADD_INSTR("LABEL $$modulo \n"
+              "DEFVAR LF@%res \n"
+              "MOVE LF@%res float@0x1p+0 \n"
+              "DEFVAR LF@%divisor \n"
+              "POPS LF@%divisor \n"
+              "DEFVAR LF@%divident \n"
+              "POPS LF@%divident \n"
+              "# nil check \n"
+              "JUMPIFEQ $$ERROR_NIL LF@%divident nil@nil \n"
+              "JUMPIFEQ $$ERROR_NIL LF@%divisor nil@nil \n"
+              "# check divisor != 0 \n"
+              "JUMPIFEQ $$ERROR_DIV_BY_ZERO LF@%divisor int@0 \n"
+              "IDIV GF@%expr_result LF@%divident LF@%divisor \n"
+              "MUL GF@%expr_result GF@%expr_result LF@%divisor \n"
+              "SUB GF@%expr_result LF@%divident GF@%expr_result \n"
+              "PUSHS GF@%expr_result \n"
+              "RETURN ");
 }
 
 /*
@@ -422,7 +445,7 @@ static void generate_var_value(token_t token) {
             char *str_id = Dynstring.c_str(token.attribute.id);
             for (unsigned i = 0; i < str_len; i++) {
                 // check format (check what to do with not printable chars?)
-                if (str_id[i] == ' ' || !isprint(str_id[i]) || str_id[i] == '#' || str_id[i] == '\\') {
+                if (str_id[i] <= 32 || str_id[i] == '#' || str_id[i] == '\\'|| !isprint(str_id[i])) {
                     // print as an escape sequence
                     sprintf(str_tmp, "\\%03d", str_id[i]);
                 } else {
@@ -536,16 +559,48 @@ static void generate_tmp_var_definition(char *var_name) {
     ADD_INSTR_TMP();
     Dynstring.dtor(name);
 }
+ /*
+  * @brief Sets variable to nil.
+  */
+ static void generate_var_set_nil(dynstring_t *var_name) {
+     ADD_INSTR_PART("MOVE LF@%");
+     generate_var_name(var_name, false);    // false 00 var is already declared
+     ADD_INSTR_PART(" nil@nil");
+     ADD_INSTR_TMP();
+ }
 
 /*
  * @brief Generates assignment to a variable
  *        MOVE LF@%0%i GF@%expr_result
  */
 static void generate_var_assignment(dynstring_t *var_name) {
-    ADD_INSTR_PART("MOVE LF@%");
-    generate_var_name(var_name, false); // false == already declared var
-    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_PART("POPS LF@%");
+    generate_var_name(var_name, false); // false == var is already declared
     ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates multiple assignment.
+ */
+static void generate_assignment(list_t *ids_list, dynstring_t *rhs_expressions) {
+    // ids_list needs to be reversed because the stack is used
+    List.reverse(ids_list);
+    list_item_t *id = ids_list->head;
+    size_t id_cnt = 0;
+    size_t len = List.len(ids_list);
+
+    while (id != NULL) {
+        // there is not an expression for the variable
+        if ((len - Dynstring.len(rhs_expressions)) > id_cnt) {
+            // assign nil to other variables
+            generate_var_set_nil(id->data);
+        } else {
+            // generate code for assignment
+            generate_var_assignment(id->data);
+        }
+        id_cnt++;
+        id = id->next;
+    }
 }
 
 /*
@@ -708,6 +763,12 @@ static void generate_expression_binary(op_list_t op, type_recast_t recast) {
                       "CONCAT GF@%expr_result GF@%expr_result GF@%expr_result2 \n"
                       "PUSHS GF@%expr_result");
             break;
+        case OP_CARET:  // ^
+            ADD_INSTR("CALL $$power");
+            break;
+        case OP_PERCENT: // %
+            ADD_INSTR("CALL $$modulo");
+            break;
         default:
             ADD_INSTR("# unrecognized_operation");
     }
@@ -742,6 +803,13 @@ static void generate_expression_unary(op_list_t op) {
  */
 static void generate_expression_pop() {
     ADD_INSTR("POPS GF@%expr_result");
+}
+
+/*
+ * @brief Generates pop from the stack to GF@%expr_result.
+ */
+static void generate_expression_push() {
+    ADD_INSTR("PUSHS GF@%expr_result");
 }
 
 /*
@@ -1194,6 +1262,7 @@ static void generate_prog_start() {
     generate_func_write();
     generate_func_tointeger();
     generate_power_func();
+    generate_modulo_func();
     nil_check_func();
     recast_to_bool_func();
     generate_ors_short();
@@ -1223,12 +1292,13 @@ const struct code_generator_interface_t Generator = {
         .var_declaration = generate_var_declaration,
         .var_definition = generate_var_definition,
         .tmp_var_definition = generate_tmp_var_definition,
-        .var_assignment = generate_var_assignment,
+        .assignment = generate_assignment,
         .recast_expression_to_bool = recast_expression_to_bool,
         .expression_operand = generate_expression_operand,
         .expression_unary = generate_expression_unary,
         .expression_binary = generate_expression_binary,
         .expression_pop = generate_expression_pop,
+        .expression_push = generate_expression_push,
         .push_cond_info = push_cond_info,
         .pop_cond_info = pop_cond_info,
         .cond_if = generate_cond_if,

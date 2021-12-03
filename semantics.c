@@ -367,6 +367,7 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
         case OP_SUB:
         case OP_MUL:
         case OP_DIV_F:
+        case OP_CARET:
             result_type = 'f';
 
             // check nil
@@ -381,16 +382,16 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
                 break;
             }
 
-            // number -> number +-*/ number
+            // number -> number +|-|*|/|^ number
             if (Dynstring.cmp(first_type, second_type) == 0) {
 
                 if (Dynstring.cmp_c_str(first_type, "i") == 0 &&
                     Dynstring.cmp_c_str(second_type, "i") == 0) {
-                    // integer -> integer +-* integer
-                    if (op != OP_DIV_F) {
+                    // integer -> integer +|-|* integer
+                    if (op != OP_DIV_F && op != OP_CARET) {
                         result_type = 'i';
                     }
-                    // number -> integer / integer
+                    // number -> integer /|^ integer
                     else {
                         *r_type = TYPE_RECAST_BOTH;
                     }
@@ -399,14 +400,14 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
                 goto ret;
             }
 
-            // number -> integer +-*/ number
+            // number -> integer +|-|*|/|^ number
             if (Dynstring.cmp_c_str(first_type, "i") == 0 &&
                 Dynstring.cmp_c_str(second_type, "f") == 0) {
                 *r_type = TYPE_RECAST_FIRST;
                 goto ret;
             }
 
-            // number -> number +-*/ integer
+            // number -> number +|-|*|/|^ integer
             if (Dynstring.cmp_c_str(first_type, "f") == 0 &&
                 Dynstring.cmp_c_str(second_type, "i") == 0) {
                 *r_type = TYPE_RECAST_SECOND;
@@ -416,9 +417,10 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
             break;
 
         case OP_DIV_I:
+        case OP_PERCENT:
             result_type = 'i';
 
-            // integer -> integer // integer
+            // integer -> integer //|% integer
             if (Dynstring.cmp_c_str(first_type, "i") == 0 &&
                 Dynstring.cmp_c_str(second_type, "i") == 0) {
                 goto ret;
@@ -429,7 +431,7 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
         case OP_STRCAT:
             result_type = 's';
 
-            // string -> string // string
+            // string -> string .. string
             if (Dynstring.cmp_c_str(first_type, "s") == 0 &&
                 Dynstring.cmp_c_str(second_type, "s") == 0) {
                 goto ret;
@@ -568,16 +570,11 @@ static bool Check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
         Dynstring.append(id_type, Semantics.of_id_type(sym->type));
         Dynstring.append(expr_type, rhs_expr_str[id_cnt]);
 
-        debug_msg("id_type = { %s }\n", Dynstring.c_str(id_type));
-        debug_msg("expr_type = { %s }\n", Dynstring.c_str(expr_type));
-
         if (!Check_signatures_compatibility(id_type,
                                             expr_type,
                                             ERROR_TYPE_MISSMATCH)) {
             goto err;
         }
-
-        // TODO: generate code for assignment
 
         Dynstring.clear(id_type);
         Dynstring.clear(expr_type);
