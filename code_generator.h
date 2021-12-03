@@ -97,7 +97,7 @@ struct code_generator_interface_t {
     /*
      * @brief Generates expressions reduce.
      * @param expr stores info about the expr to be processed.
-     */
+    */
     void (*expression_unary)(op_list_t);
 
     /*
@@ -222,6 +222,18 @@ struct code_generator_interface_t {
     void (*func_return_value)(size_t);
 
     /*
+     * @brief Generates return for not_last expression. Pops unnecessary
+     *        items from the stack and returns only the last one.
+     */
+    void (*return_not_last)(size_t, size_t);
+
+    /*
+     * @brief Generates return for the last expression. Pops all items from
+     *        the stack to LF%@return...
+     */
+    void (*return_last)(size_t, size_t);
+
+    /*
      * @brief Generates creation of a frame before passing parameters to a function
      */
     void (*func_createframe)(void);
@@ -232,14 +244,15 @@ struct code_generator_interface_t {
     void (*func_call_pass_param)(size_t);
 
     /*
+     * @brief Generates getting return value after function call.
+     * generates sth like:  MOVE LF%id%res TF@%return0
+     */
+    void (*func_call_return_value)(size_t);
+
+    /*
      * @brief Generates function call.
      */
     void (*func_call)(char *);
-
-    /*
-     * @brief Generates getting return value after function call.
-     */
-    void (*func_call_return_value)(size_t);
 
     /*
      * @brief Generates end of main scope.

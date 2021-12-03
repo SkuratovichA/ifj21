@@ -1129,7 +1129,7 @@ static bool r_other_expr(dynstring_t *received_rets,
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
         Dynstring.cat(received_rets, last_expression);
 
-        // TODO: generate code for other expression/s
+        Generator.return_last(Dynstring.len(received_rets), return_cnt);
         goto noerr;
     }
 
@@ -1138,11 +1138,11 @@ static bool r_other_expr(dynstring_t *received_rets,
 
     // Truncate signature if it has multiple return types
     // and located not at the end of expression
+    size_t to_pop = Dynstring.len(last_expression);
     Semantics.trunc_signature(last_expression);
     Dynstring.cat(received_rets, last_expression);
 
-    // TODO: clear generator stack
-    // TODO: generate code for last expression
+    Generator.return_not_last(to_pop, return_cnt);
 
     return_cnt++;
 

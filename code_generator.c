@@ -580,16 +580,6 @@ static void generate_var_assignment(dynstring_t *var_name) {
 }
 
 /*
- * @brief Generates nil assignment to return variable.
- */
-static void generate_return_nil(size_t index) {
-    ADD_INSTR_PART("MOVE LF@%return");
-    ADD_INSTR_INT(index);
-    ADD_INSTR_PART(" nil@nil");
-    ADD_INSTR_TMP();
-}
-
-/*
  * @brief Generates multiple assignment.
  */
 static void generate_assignment(list_t *ids_list, dynstring_t *rhs_expressions) {
@@ -611,6 +601,30 @@ static void generate_assignment(list_t *ids_list, dynstring_t *rhs_expressions) 
         id_cnt++;
         id = id->next;
     }
+}
+
+/*
+ * @brief Generates nil assignment to return variable.
+ */
+static void generate_return_nil(size_t index) {
+    ADD_INSTR_PART("MOVE LF@%return");
+    ADD_INSTR_INT(index);
+    ADD_INSTR_PART(" nil@nil");
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates pop from the stack to GF@%expr_result.
+ */
+static void generate_expression_pop() {
+    ADD_INSTR("POPS GF@%expr_result");
+}
+
+/*
+ * @brief Generates pop from the stack to GF@%expr_result.
+ */
+static void generate_expression_push() {
+    ADD_INSTR("PUSHS GF@%expr_result");
 }
 
 /*
@@ -806,20 +820,6 @@ static void generate_expression_unary(op_list_t op) {
             ADD_INSTR("# unrecognized_operation");
     }
 
-}
-
-/*
- * @brief Generates pop from the stack to GF@%expr_result.
- */
-static void generate_expression_pop() {
-    ADD_INSTR("POPS GF@%expr_result");
-}
-
-/*
- * @brief Generates pop from the stack to GF@%expr_result.
- */
-static void generate_expression_push() {
-    ADD_INSTR("PUSHS GF@%expr_result");
 }
 
 /*
@@ -1182,6 +1182,34 @@ static void generate_func_return_value(size_t index) {
 }
 
 /*
+ * @brief Generates return for not last expression. Pops unnecessary
+ *        items from the stack and returns only the last one.
+ *        return x, x, this_one, x
+ */
+static void generate_return_not_last(size_t to_pop, size_t return_cnt) {
+    while (to_pop > 0) {
+        generate_expression_pop();
+        to_pop--;
+    }
+    generate_func_pass_return(return_cnt);
+}
+
+/*
+ * @brief Generates return for the last expression. Pops all items from
+ *        the stack to LF%@return...
+ *        return x, x, x, this_one
+ */
+static void generate_return_last(size_t expr_num, size_t return_cnt) {
+    size_t return_cnt_before = return_cnt - 1;
+    while (return_cnt < expr_num) {
+        generate_expression_pop();
+        generate_func_pass_return(expr_num - return_cnt + return_cnt_before);
+        return_cnt++;
+    }
+}
+
+
+/*
  * @brief Generates creation of a frame before passing parameters to a function
  */
 static void generate_func_createframe() {
@@ -1330,6 +1358,8 @@ const struct code_generator_interface_t Generator = {
         .func_start_param = generate_func_start_param,
         .func_pass_return = generate_func_pass_return,
         .func_return_value = generate_func_return_value,
+        .return_not_last = generate_return_not_last,
+        .return_last = generate_return_last,
         .func_createframe = generate_func_createframe,
         .func_call_pass_param = generate_func_call_pass_param,
         .func_call = generate_func_call,
