@@ -1050,6 +1050,7 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
         // write(...)
         if (Dynstring.cmp_c_str(id_name, "write") == 0) {
             // TODO: generate code for write function
+            Generator.func_call("write");
             goto noerr;
         }
 
@@ -1063,7 +1064,11 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     // generate code for function call
     Generator.func_call(Dynstring.c_str(id_name));
     // TODO: generate get return values assigment
-    //Generator.func_call_return_value(0);
+    /*
+    for (size_t i = 0; i < Dynstring.len(function_returns); i++) {
+        Generator.func_call_return_value(i);
+    }
+    */
 
     noerr:
     Dynstring.dtor(received_params);
@@ -1211,6 +1216,9 @@ static bool a_other_expr(dynstring_t *rhs_expressions, dynstring_t *last_express
         goto err;
     }
 
+    // generator: push result to the stack (it was popped in parse)
+    Generator.expression_push();
+
     CHECK_EMPTY_SIGNATURE(received_signature);
 
     // [a_other_expr]
@@ -1242,6 +1250,9 @@ static bool a_expr(dynstring_t *rhs_expressions) {
     if (!parse_init(received_signature)) {
         goto err;
     }
+
+    // generator: push result to the stack (it was popped in parse)
+    Generator.expression_push();
 
     CHECK_EMPTY_SIGNATURE(received_signature);
 
@@ -1281,6 +1292,9 @@ static bool a_other_id(list_t *ids_list) {
         }
 
         Semantics.check_multiple_assignment(ids_list, rhs_expressions);
+
+        Generator.assignment(ids_list, rhs_expressions);
+
         goto noerr;
     }
 
