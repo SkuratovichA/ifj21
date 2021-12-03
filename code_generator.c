@@ -288,13 +288,14 @@ static void recast_to_bool_func() {
  */
 static void generate_power_func() {
     ADD_INSTR("LABEL $$power \n"
-              "PUSHFRAME \n"
-              "DEFVAR LF@%res \n"
-              "MOVE LF@%res float@0x1p+0 \n"
+              "MOVE GF@%expr_result2 float@0x1p+0 \n"
               "DEFVAR LF@%exp \n"
               "POPS LF@%exp \n"
               "DEFVAR LF@%base \n"
               "POPS LF@%base \n"
+              "# nil check\n"
+              "JUMPIFEQ $$ERROR_NIL LF@%base nil@nil \n"
+              "JUMPIFEQ $$ERROR_NIL LF@%exp nil@nil \n"
               "# make sure exp has zero decimal part \n"
               "FLOAT2INT LF@%exp LF@%exp \n"
               "INT2FLOAT LF@%exp LF@%exp \n"
@@ -309,13 +310,35 @@ static void generate_power_func() {
               "# while (exp != 0) \n"
               "LABEL $$power$while \n"
               "JUMPIFEQ $$power$end LF@%exp float@0x0p+0 \n"
-              "     MUL LF@%res LF@%res LF@%base \n"
+              "     MUL GF@%expr_result2 GF@%expr_result2 LF@%base \n"
               "     SUB LF@%exp LF@%exp float@0x1p+0 \n"
               "     JUMP $$power$while \n"
               "LABEL $$power$end \n"
-              "PUSHS LF@%res \n"
-              "POPFRAME \n"
+              "PUSHS GF@%expr_result2 \n"
               "RETURN \n");
+}
+
+/*
+ * @brief Generates function for computing modulo %.
+ */
+static void generate_modulo_func() {
+    ADD_INSTR("LABEL $$modulo \n"
+              "DEFVAR LF@%res \n"
+              "MOVE LF@%res float@0x1p+0 \n"
+              "DEFVAR LF@%divisor \n"
+              "POPS LF@%divisor \n"
+              "DEFVAR LF@%divident \n"
+              "POPS LF@%divident \n"
+              "# nil check \n"
+              "JUMPIFEQ $$ERROR_NIL LF@%divident nil@nil \n"
+              "JUMPIFEQ $$ERROR_NIL LF@%divisor nil@nil \n"
+              "# check divisor != 0 \n"
+              "JUMPIFEQ $$ERROR_DIV_BY_ZERO LF@%divisor int@0 \n"
+              "IDIV GF@%expr_result LF@%divident LF@%divisor \n"
+              "MUL GF@%expr_result GF@%expr_result LF@%divisor \n"
+              "SUB GF@%expr_result LF@%divident GF@%expr_result \n"
+              "PUSHS GF@%expr_result \n"
+              "RETURN ");
 }
 
 /*
@@ -707,6 +730,12 @@ static void generate_expression_binary(op_list_t op, type_recast_t recast) {
                       "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
                       "CONCAT GF@%expr_result GF@%expr_result GF@%expr_result2 \n"
                       "PUSHS GF@%expr_result");
+            break;
+        case OP_CARET:  // ^
+            ADD_INSTR("CALL $$power");
+            break;
+        case OP_PERCENT: // %
+            ADD_INSTR("CALL $$modulo");
             break;
         default:
             ADD_INSTR("# unrecognized_operation");
@@ -1194,6 +1223,7 @@ static void generate_prog_start() {
     generate_func_write();
     generate_func_tointeger();
     generate_power_func();
+    generate_modulo_func();
     nil_check_func();
     recast_to_bool_func();
     generate_ors_short();
