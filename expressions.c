@@ -1116,8 +1116,11 @@ static bool r_other_expr(dynstring_t *received_rets,
 
     // Truncate signature if it has multiple return types
     // and located not at the end of expression
+    size_t expr_num = Dynstring.len(last_expression);
+
     Semantics.trunc_signature(last_expression);
     Dynstring.cat(received_rets, last_expression);
+
     // TODO: clear generator stack
 
     // expr
@@ -1214,9 +1217,15 @@ static bool a_other_expr(dynstring_t *rhs_expressions, dynstring_t *last_express
 
     // Truncate signature if it has multiple return types
     // and located not at the end of expression
+    size_t expr_num = Dynstring.len(last_expression);
     Semantics.trunc_signature(last_expression);
     Dynstring.cat(rhs_expressions, last_expression);
-    // TODO: clear generator stack
+
+    // clear generator stack
+    for(size_t i = 0; i < expr_num - 1; i++) {
+        Generator.expression_pop();
+    }
+
 
     // expr
     if (!parse_init(received_signature)) {
