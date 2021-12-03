@@ -311,39 +311,12 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
         case OP_NE:
             result_type = 'b';
 
-            if (op == OP_EQ || op == OP_NE) {
-                // boolean -> nil == integer|number|string|nil
-                // boolean -> nil ~= integer|number|string|nil
-                if (Dynstring.cmp_c_str(first_type, "n") == 0 ) {
-                    goto ret;
-                }
-
-                // boolean -> integer|number|string == nil
-                // boolean -> integer|number|string ~= nil
-                if (Dynstring.cmp_c_str(second_type, "n") == 0) {
-                    goto ret;
-                }
-
-                // boolean -> boolean == boolean
-                // boolean -> boolean ~= boolean
-                if (Dynstring.cmp_c_str(first_type, "b") == 0 &&
-                    Dynstring.cmp_c_str(second_type, "b") == 0) {
-                    goto ret;
-                }
-
-                break;
-            }
-
-            // check nil
-            if (Dynstring.cmp_c_str(first_type, "n") == 0 ||
-                Dynstring.cmp_c_str(second_type, "n") == 0) {
-                break;
-            }
-
             // boolean -> integer <|<=|>|>=|==|~= integer
             // boolean -> number  <|<=|>|>=|==|~= number
             // boolean -> string  <|<=|>|>=|==|~= string
-            if (Dynstring.cmp(first_type, second_type) == 0) {
+            if (Dynstring.cmp(first_type, second_type) == 0 &&
+                Dynstring.cmp_c_str(first_type, "n") != 0 &&
+                Dynstring.cmp_c_str(first_type, "b") != 0) {
                 goto ret;
             }
 
@@ -359,6 +332,27 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
                 Dynstring.cmp_c_str(second_type, "i") == 0) {
                 *r_type = TYPE_RECAST_SECOND;
                 goto ret;
+            }
+
+            if (op == OP_EQ || op == OP_NE) {
+                // boolean -> nil == integer|number|string|boolean|nil
+                // boolean -> nil ~= integer|number|string|boolean|nil
+                if (Dynstring.cmp_c_str(first_type, "n") == 0) {
+                    goto ret;
+                }
+
+                // boolean -> integer|number|string|boolean == nil
+                // boolean -> integer|number|string|boolean ~= nil
+                if (Dynstring.cmp_c_str(second_type, "n") == 0) {
+                    goto ret;
+                }
+
+                // boolean -> boolean == boolean
+                // boolean -> boolean ~= boolean
+                if (Dynstring.cmp_c_str(first_type, "b") == 0 &&
+                    Dynstring.cmp_c_str(second_type, "b") == 0) {
+                    goto ret;
+                }
             }
 
             break;
@@ -495,6 +489,21 @@ static bool Check_unary_compatability(dynstring_t *type,
             }
             break;
 
+        // integer -> - integer
+        // number -> - number
+        // number -> - integer
+        case OP_MINUS_UNARY:
+            if (Dynstring.cmp_c_str(type, "i") == 0) {
+                result_type = 'i';
+                goto ret;
+            }
+
+            if (Dynstring.cmp_c_str(type, "f") == 0) {
+                result_type = 'f';
+                goto ret;
+            }
+            break;
+
         // other
         default:
             break;
@@ -583,8 +592,8 @@ static bool Check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
     }
 
     if (id_cnt < Dynstring.len(rhs_expressions)) {
-        Errors.set_error(ERROR_TYPE_MISSMATCH);
-        goto err;
+        // TODO: clear generator stack
+        assert(false);
     }
 
     Dynstring.dtor(id_type);
