@@ -77,6 +77,12 @@ struct code_generator_interface_t {
      * @brief Generates assignment.
      */
     void (*assignment)(list_t *, dynstring_t *);
+
+    /*
+     * @brief Generates nil assignment to return variable.
+     */
+    void (*return_nil)(size_t);
+
     /*
      * @brief Converts GF@%expr_result int -> float
      */

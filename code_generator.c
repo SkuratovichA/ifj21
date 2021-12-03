@@ -580,6 +580,16 @@ static void generate_var_assignment(dynstring_t *var_name) {
 }
 
 /*
+ * @brief Generates nil assignment to return variable.
+ */
+static void generate_return_nil(size_t index) {
+    ADD_INSTR_PART("MOVE LF@%return");
+    ADD_INSTR_INT(index);
+    ADD_INSTR_PART(" nil@nil");
+    ADD_INSTR_TMP();
+}
+
+/*
  * @brief Generates multiple assignment.
  */
 static void generate_assignment(list_t *ids_list, dynstring_t *rhs_expressions) {
@@ -1293,6 +1303,7 @@ const struct code_generator_interface_t Generator = {
         .var_definition = generate_var_definition,
         .tmp_var_definition = generate_tmp_var_definition,
         .assignment = generate_assignment,
+        .return_nil = generate_return_nil,
         .recast_expression_to_bool = recast_expression_to_bool,
         .expression_operand = generate_expression_operand,
         .expression_unary = generate_expression_unary,
