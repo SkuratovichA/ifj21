@@ -3109,6 +3109,420 @@ int main() {
             "main()                                                             "NL
     );
 
+    char *description200 = "";
+    int retcode200 = ERROR_NOERROR;
+    pfile_t *pf200 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string                            "NL
+            "    local k : integer                             "NL
+            "    local m : integer                             "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+            "                                                  "NL
+    );
+
+    char *description201 = "";
+    int retcode201 = ERROR_NOERROR;
+    pfile_t *pf201 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"hey\"                  "NL
+            "    local k : integer                             "NL
+            "    local m : integer                             "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description202 = "";
+    int retcode202 = ERROR_NOERROR;
+    pfile_t *pf202 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"hey\"                  "NL
+            "    local k : integer                             "NL
+            "    local m : integer                             "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description203 = "";
+    int retcode203 = ERROR_NOERROR;
+    pfile_t *pf203 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"hey\"                  "NL
+            "    local k : integer = 3                         "NL
+            "    local m : integer = 8                         "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description204 = "";
+    int retcode204 = ERROR_NOERROR;
+    pfile_t *pf204 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"loremipsumsthidk\"     "NL
+            "    local k : integer = 3                         "NL
+            "    local m : integer = 5                         "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description205 = "";
+    int retcode205 = ERROR_NOERROR;
+    pfile_t *pf205 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"loremipsumsthidk\"     "NL
+            "    local k : integer = 3                         "NL
+            "    local m : integer = 3                         "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description206 = "";
+    int retcode206 = ERROR_NOERROR;
+    pfile_t *pf206 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"loremipsumsthidk\"     "NL
+            "    local k : integer = -3                        "NL
+            "    local m : integer = -5                        "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description207 = "";
+    int retcode207 = ERROR_NOERROR;
+    pfile_t *pf207 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"loremipsumsthidk\"     "NL
+            "    local k : integer = -3                        "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description208 = "";
+    int retcode208 = ERROR_NOERROR;
+    pfile_t *pf208 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"loremipsumsthidk\"     "NL
+            "    local k : integer = 3                         "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description209 = "";
+    int retcode209 = ERROR_NOERROR;
+    pfile_t *pf209 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"loremipsumsthidk\"     "NL
+            "    local k : integer = 354                       "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description210 = "";
+    int retcode210 = ERROR_NOERROR;
+    pfile_t *pf210 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"\"                     "NL
+            "    local k : integer = 0                         "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description211 = "";
+    int retcode211 = ERROR_NOERROR;
+    pfile_t *pf211 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string                            "NL
+            "    local k : integer                             "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description212 = "";
+    int retcode212 = ERROR_NOERROR;
+    pfile_t *pf212 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string                            "NL
+            "    local k : integer = 3                         "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description213 = "";
+    int retcode213 = ERROR_NOERROR;
+    pfile_t *pf213 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"hello\"                "NL
+            "    local k : integer                             "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description214 = "";
+    int retcode214 = ERROR_NOERROR;
+    pfile_t *pf214 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"hello\"                "NL
+            "    local k : integer = 3                         "NL
+            "    local res : number = ord(str, k)              "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description215 = "";
+    int retcode215 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf215 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"hello\"                "NL
+            "    local k : number = 3                          "NL
+            "    local res : number = ord(str, k)              "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description216 = "";
+    int retcode216 = ERROR_NOERROR;
+    pfile_t *pf216 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : number                              "NL
+            "    local res : string = chr(k)                   "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description217 = "";
+    int retcode217 = ERROR_NOERROR;
+    pfile_t *pf217 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : integer = -2                        "NL
+            "    local res : string = chr(k)                   "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description218 = "";
+    int retcode218 = ERROR_NOERROR;
+    pfile_t *pf218 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : integer = 256                       "NL
+            "    local res : string = chr(k)                   "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description219 = "";
+    int retcode219 = ERROR_NOERROR;
+    pfile_t *pf219 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : integer = 255                       "NL
+            "    local res : string = chr(k)                   "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+
+    );
+
+    char *description220 = "";
+    int retcode220 = ERROR_NOERROR;
+    pfile_t *pf220 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : integer = 69                        "NL
+            "    local res : string = chr(k)                   "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description221 = "";
+    int retcode221 = ERROR_NOERROR;
+    pfile_t *pf221 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : integer = 0                         "NL
+            "    local res : string = chr(k)                   "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description222 = "";
+    int retcode222 = ERROR_NOERROR;
+    pfile_t *pf222 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local res : integer = tointeger(3.4)          "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description223 = "";
+    int retcode223 = ERROR_NOERROR;
+    pfile_t *pf223 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : integer                             "NL
+            "    local res : integer = tointeger(k)            "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description224 = "";
+    int retcode224 = ERROR_NOERROR;
+    pfile_t *pf224 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local res : integer = tointeger(-02.28)       "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description225 = "";
+    int retcode225 = ERROR_NOERROR;
+    pfile_t *pf225 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local res : integer = readi()                 "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description226 = "";
+    int retcode226 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf226 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local res : integer = readn()                 "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description227 = "";
+    int retcode227 = ERROR_NOERROR;
+    pfile_t *pf227 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local res : number = readn()                  "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description228 = "";
+    int retcode228 = ERROR_NOERROR;
+    pfile_t *pf228 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local res : string = reads()                  "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description229 = "";
+    int retcode229 = ERROR_NOERROR;
+    pfile_t *pf229 = Pfile.ctor(
+            PROLOG
+            "function main()                                        "NL
+            "    local i : string                                   "NL
+            "    i = write(6656,6%87,\"\n\", \"escape\", \"\010\")  "NL
+            "    write(i)                                           "NL
+            "end                                                    "NL
+            "main()                                                 "NL
+    );
+
+    char *description230 = "";
+    int retcode230 = ERROR_NOERROR;
+    pfile_t *pf230 = Pfile.ctor(
+            PROLOG
+            "function modulo(a: integer, b: integer) : integer "NL
+            "  local i : integer = a - (a // b) * b            "NL
+            "  if (i == (a%b)) then                            "NL
+            "    write(\"success\n\")                          "NL
+            "  else                                            "NL
+            "    write(\"fail\n\")                             "NL
+            "  end                                             "NL
+            "  return i                                        "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main()                                   "NL
+            "  local mod : number = modulo(42, 23)             "NL
+            "  write(mod, \"\n\")                              "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description231 = "";
+    int retcode231 = ERROR_NOERROR;
+    pfile_t *pf231 = Pfile.ctor(
+            PROLOG
+            "function power(a: number, b: integer) : number    "NL
+            "  local i : number = a ^ b                        "NL
+            "  return i                                        "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main()                                   "NL
+            "  local res : \"\n\")                             "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
 
     STRING_NOERROR(107, "02");
     STRING_NOERROR(108, "0A");
@@ -3364,6 +3778,38 @@ int main() {
     TEST_CASE(197);
     TEST_CASE(198);
     TEST_CASE(199);
+    TEST_CASE(200);
+    TEST_CASE(201);
+    TEST_CASE(202);
+    TEST_CASE(203);
+    TEST_CASE(204);
+    TEST_CASE(205);
+    TEST_CASE(206);
+    TEST_CASE(207);
+    TEST_CASE(208);
+    TEST_CASE(209);
+    TEST_CASE(210);
+    TEST_CASE(211);
+    TEST_CASE(212);
+    TEST_CASE(213);
+    TEST_CASE(214);
+    TEST_CASE(215);
+    TEST_CASE(216);
+    TEST_CASE(217);
+    TEST_CASE(218);
+    TEST_CASE(219);
+    TEST_CASE(220);
+    TEST_CASE(221);
+    TEST_CASE(222);
+    TEST_CASE(223);
+    TEST_CASE(224);
+    TEST_CASE(225);
+    TEST_CASE(226);
+    TEST_CASE(227);
+    TEST_CASE(228);
+    TEST_CASE(229);
+    TEST_CASE(230);
+    TEST_CASE(231);
 
     return 0;
 }
