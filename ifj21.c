@@ -23,6 +23,8 @@ int main() {
     Generator.initialise();
 
     if (!Parser.analyse(pfile)) {
+        Generator.dtor();
+        Pfile.dtor(pfile);
         return Errors.get_error();
     }
 
@@ -45,7 +47,6 @@ int main() {
     }
 
     Generator.dtor();
-
     Pfile.dtor(pfile);
     return ret;
 }
