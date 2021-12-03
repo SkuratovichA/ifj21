@@ -755,6 +755,11 @@ static bool parse_function(sstack_t *stack, bool *function_parsed) {
     // Push an expression
     Stack.push(stack, stack_item_copy(new_expr));
 
+    // generate get return values assigment
+    for (size_t i = 0; i < Dynstring.len(new_expr->expression_type); i++) {
+        Generator.func_call_return_value(i);
+    }
+
     noerr:
     Dynstring.dtor(id_name);
     stack_item_dtor(new_expr);
@@ -973,7 +978,7 @@ static bool fc_other_expr(dynstring_t *received_params, dynstring_t *func_name, 
 
     // generate code for a function parameter
     if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-        // function write generates CALL for every parameter
+        // function write generates CALL for each parameter
         Generator.func_call("write");
     } else {
         Generator.func_call_pass_param(params_cnt++);
@@ -1012,7 +1017,7 @@ static bool fc_expr(dynstring_t *received_params, dynstring_t *func_name) {
 
     // generate code for a function parameter
     if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-        // function write generates CALL for every parameter
+        // function write generates CALL for each parameter
         Generator.func_call("write");
     } else {
         Generator.func_call_pass_param(params_cnt++);
@@ -1071,12 +1076,6 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
 
     // generate code for function call
     Generator.func_call(Dynstring.c_str(id_name));
-    // TODO: generate get return values assigment
-    /*
-    for (size_t i = 0; i < Dynstring.len(function_returns); i++) {
-        Generator.func_call_return_value(i);
-    }
-    */
 
     noerr:
     Dynstring.dtor(received_params);
