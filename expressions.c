@@ -958,7 +958,7 @@ static bool parse_init(dynstring_t *received_signature) {
  * @param params_cnt counter of function parameters.
  * @return bool.
  */
-static bool fc_other_expr(dynstring_t *received_params, int params_cnt) {
+static bool fc_other_expr(dynstring_t *received_params, dynstring_t *func_name, int params_cnt) {
     debug_msg("[fc_other_expr] ->\n");
 
     // | )
@@ -972,10 +972,15 @@ static bool fc_other_expr(dynstring_t *received_params, int params_cnt) {
     }
 
     // generate code for a function parameter
-    Generator.func_call_pass_param(params_cnt++);
+    if (Dynstring.cmp_c_str(func_name, "write") == 0) {
+        // function write generates CALL for every parameter
+        Generator.func_call("write");
+    } else {
+        Generator.func_call_pass_param(params_cnt++);
+    }
 
     // [fc_other_expr]
-    if (!fc_other_expr(received_params, params_cnt)) {
+    if (!fc_other_expr(received_params, func_name, params_cnt)) {
         goto err;
     }
 
@@ -992,7 +997,7 @@ static bool fc_other_expr(dynstring_t *received_params, int params_cnt) {
  * @param received_params is an initialized empty vector.
  * @return bool.
  */
-static bool fc_expr(dynstring_t *received_params) {
+static bool fc_expr(dynstring_t *received_params, dynstring_t *func_name) {
     debug_msg("[fc_expr] ->\n");
 
     int params_cnt = 0;
@@ -1006,10 +1011,15 @@ static bool fc_expr(dynstring_t *received_params) {
     }
 
     // generate code for a function parameter
-    Generator.func_call_pass_param(params_cnt++);
+    if (Dynstring.cmp_c_str(func_name, "write") == 0) {
+        // function write generates CALL for every parameter
+        Generator.func_call("write");
+    } else {
+        Generator.func_call_pass_param(params_cnt++);
+    }
 
     // [fc_other_expr]
-    if (!fc_other_expr(received_params, params_cnt)) {
+    if (!fc_other_expr(received_params, func_name, params_cnt)) {
         goto err;
     }
 
@@ -1041,7 +1051,7 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     EXPECTED(TOKEN_LPAREN);
 
     // [fc_expr]
-    if (!fc_expr(received_params)) {
+    if (!fc_expr(received_params, id_name)) {
         goto err;
     }
 
@@ -1049,8 +1059,6 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     if (Dynstring.cmp(received_params, expected_params) != 0) {
         // write(...)
         if (Dynstring.cmp_c_str(id_name, "write") == 0) {
-            // TODO: generate code for write function
-            Generator.func_call("write");
             goto noerr;
         }
 
