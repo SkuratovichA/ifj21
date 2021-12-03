@@ -22,12 +22,13 @@ static pfile_t *pfile;
  * @param stack
  * @param item
  */
-#define STACK_ITEM_PEEK(stack, item)        \
-    do {                                    \
-        (item) = Stack.peek((stack));       \
-        if ((item) == NULL) {               \
-            goto err;                       \
-        }                                   \
+#define STACK_ITEM_PEEK(stack, item)          \
+    do {                                      \
+        (item) = Stack.peek((stack));         \
+        if ((item) == NULL) {                 \
+            Errors.set_error(ERROR_INTERNAL); \
+            goto err;                         \
+        }                                     \
     } while (0)
 
 /**
@@ -95,6 +96,7 @@ static pfile_t *pfile;
 #define CHECK_EMPTY_SIGNATURE(sgt)                      \
     do {                                                \
         if (Dynstring.len((sgt)) == 0) {                \
+            Errors.set_error(ERROR_SYNTAX);             \
             goto err;                                   \
         }                                               \
     } while(0)
@@ -119,19 +121,19 @@ static inline bool is_a_function(dynstring_t *id_name) {
  * D = {#, not, - (unary)}
  *
  *  |   |  id |   ^ |   A |   B |   C |   D |  .. | and |  or |   $ |
- *  | f |  14 |  14 |  10 |   8 |   6 |  12 |   6 |   4 |   2 |   0 |
- *  | g |  15 |  13 |   9 |   7 |   5 |  11 |   7 |   3 |   1 |   0 |
+ *  | f |  12 |  12 |  10 |   8 |   6 |  10 |   6 |   4 |   2 |   0 |
+ *  | g |  13 |  11 |   9 |   7 |   5 |  11 |   7 |   3 |   1 |   0 |
  */
 
 /**
  * f - represents rows of the precedence table.
  */
-static const int f[21] = {14, 14, 10, 10, 10, 10, 8, 8, 6, 6, 6, 6, 6, 6, 12, 12, 12, 6, 4, 2, 0};
+static const int f[21] = {12, 12, 10, 10, 10, 10, 8, 8, 6, 6, 6, 6, 6, 6, 10, 10, 10, 6, 4, 2, 0};
 
 /**
  * g - represents columns.
  */
-static const int g[21] = {15, 13, 9, 9, 9, 9, 7, 7, 5, 5, 5, 5, 5, 5, 11, 11, 11, 7, 3, 1, 0};
+static const int g[21] = {13, 11, 9, 9, 9, 9, 7, 7, 5, 5, 5, 5, 5, 5, 11, 11, 11, 7, 3, 1, 0};
 
 /**
  * @brief
@@ -188,6 +190,8 @@ static op_list_t get_op(int tok_type) {
             return OP_CARET;
         case TOKEN_PERCENT:
             return OP_PERCENT;
+        case TOKEN_MINUS_UNARY:
+            return OP_MINUS_UNARY;
         default:
             return OP_DOLLAR;
     }
@@ -267,6 +271,32 @@ static char *stack_item_to_string(item_type_t item_type) {
         default:
             return "unrecognized stack item";
     }
+}
+
+static bool is_binary_op(op_list_t op) {
+    switch (op) {
+        case OP_ADD:
+        case OP_SUB:
+        case OP_MUL:
+        case OP_DIV_I:
+        case OP_DIV_F:
+        case OP_STRCAT:
+        case OP_AND:
+        case OP_OR:
+        case OP_LT:
+        case OP_LE:
+        case OP_GT:
+        case OP_GE:
+        case OP_EQ:
+        case OP_NE:
+        case OP_PERCENT:
+        case OP_CARET:
+            return true;
+        default:
+            break;
+    }
+
+    return false;
 }
 
 /**
@@ -434,29 +464,10 @@ static bool binary_op(sstack_t *r_stack, op_list_t *result_op) {
     }
 
     op = get_op(item->token.type);
-    switch (op) {
-        case OP_ADD:
-        case OP_SUB:
-        case OP_MUL:
-        case OP_DIV_I:
-        case OP_DIV_F:
-        case OP_STRCAT:
-        case OP_AND:
-        case OP_OR:
-        case OP_LT:
-        case OP_LE:
-        case OP_GT:
-        case OP_GE:
-        case OP_EQ:
-        case OP_NE:
-        case OP_PERCENT:
-        case OP_CARET:
-            goto noerr;
-        default:
-            goto err;
+    if (!is_binary_op(op)) {
+        goto err;
     }
 
-    noerr:
     *result_op = op;
     Stack.pop(r_stack, stack_item_dtor);
     return true;
@@ -488,6 +499,7 @@ static bool unary_op(sstack_t *r_stack, op_list_t *result_op) {
     switch (op) {
         case OP_HASH:
         case OP_NOT:
+        case OP_MINUS_UNARY:
             goto noerr;
         default:
             goto err;
@@ -580,6 +592,7 @@ static bool check_rule(sstack_t *r_stack, dynstring_t *expression_type) {
         // unary_op expr
         case OP_HASH:
         case OP_NOT:
+        case OP_MINUS_UNARY:
             // unary_op
             if (!unary_op(r_stack, &op)) {
                 goto err;
@@ -714,6 +727,27 @@ static bool parse_success(op_list_t first_op, op_list_t second_op, bool hard_red
     bool is_second_dollar = (second_op == OP_DOLLAR);
     return  (is_first_dollar && is_second_dollar) ||
             (is_first_dollar && hard_reduce);
+}
+
+static void check_unary_minus(op_list_t first_op, op_list_t *second_op, stack_item_t *expr) {
+    if (*second_op != OP_SUB || expr != NULL) {
+        return;
+    }
+
+    // $ minus_unary
+    if (first_op == OP_DOLLAR) {
+        goto ret;
+    }
+
+    // binary_op
+    // minus_unary minus_unary
+    if (first_op == OP_MINUS_UNARY || is_binary_op(first_op)) {
+        goto ret;
+    }
+
+    return;
+    ret:
+    *second_op = OP_MINUS_UNARY;
 }
 
 /** Function call declaration for parse_function.
@@ -867,9 +901,12 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
     op_list_t first_op = (top->type == ITEM_TYPE_DOLLAR) ? OP_DOLLAR : get_op(top->token.type);
     op_list_t second_op = get_op(Scanner.get_curr_token().type);
 
-    debug_msg("Top: { %s } Next: { %s }\n",
+    check_unary_minus(first_op, &second_op, expr);
+
+    debug_msg("Top: { %s } Next: { %s%s }\n",
               op_to_string(first_op),
-              Scanner.to_string(Scanner.get_curr_token().type));
+              Scanner.to_string(Scanner.get_curr_token().type),
+              (second_op == OP_MINUS_UNARY) ? " (unary)" : "");
 
     // Check an expression end
     if (!hard_reduce) {
@@ -921,6 +958,14 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
     if (!hard_reduce && cmp <= 0) {
         if (!shift(stack, expr, cmp)) {
             goto err;
+        }
+
+        // If second operand was unary minus,
+        // then change token type of top stack element
+        // from TOKEN_SUB to TOKEN_UNARY_MINUS
+        if (second_op == OP_MINUS_UNARY) {
+            STACK_ITEM_PEEK(stack, top);
+            top->token.type = TOKEN_MINUS_UNARY;
         }
     } else {
         if (!reduce(stack, expr)) {
@@ -1423,12 +1468,6 @@ static bool Default_expression(pfile_t *pfile_,
     }
 
     if (type_expr_statement == TYPE_EXPR_DEFAULT) {
-        goto ret;
-    }
-
-    // don't need to recast an empty expression,
-    // error will be handled in parser
-    if (Dynstring.cmp_c_str(received_signature, "") == 0) {
         goto ret;
     }
 
