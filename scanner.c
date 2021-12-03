@@ -198,11 +198,11 @@ static token_t lex_string(pfile_t *pfile) {
                         state = STATE_STR_DEC_0_2;
                         break;
                     case 't':
-                        Dynstring.append(token.attribute.id, '\n');
+                        Dynstring.append(token.attribute.id, '\t');
                         state = STATE_STR_INIT;
                         break;
                     case 'n':
-                        Dynstring.append(token.attribute.id, '\t');
+                        Dynstring.append(token.attribute.id, '\n');
                         state = STATE_STR_INIT;
                         break;
                     case 'x':
