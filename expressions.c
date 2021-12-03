@@ -930,8 +930,6 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
             // Set return types
             Dynstring.cat(received_signature, expr->expression_type);
         }
-
-        Generator.expression_pop();
         goto noerr;
     }
 
@@ -1037,8 +1035,12 @@ static bool fc_other_expr(dynstring_t *received_params, dynstring_t *func_name, 
     // generate code for a function parameter
     if (Dynstring.cmp_c_str(func_name, "write") == 0) {
         // function write generates CALL for each parameter
+        // TODO: other expressions on the stack
+        Generator.expression_pop();
         Generator.func_call("write");
     } else {
+        // TODO: other expressions on the stack
+        Generator.expression_pop();
         Generator.func_call_pass_param(params_cnt++);
     }
 
@@ -1077,8 +1079,12 @@ static bool fc_expr(dynstring_t *received_params, dynstring_t *func_name) {
     // generate code for a function parameter
     if (Dynstring.cmp_c_str(func_name, "write") == 0) {
         // function write generates CALL for each parameter
+        // TODO: other expressions on the stack
+        Generator.expression_pop();
         Generator.func_call("write");
     } else {
+        // TODO: other expressions on the stack
+        Generator.expression_pop();
         Generator.func_call_pass_param(params_cnt++);
     }
 
@@ -1168,7 +1174,7 @@ static bool r_other_expr(dynstring_t *received_rets,
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
         Dynstring.cat(received_rets, last_expression);
 
-        // TODO: generate code for other expression/s
+        Generator.return_last(Dynstring.len(received_rets), return_cnt);
         goto noerr;
     }
 
@@ -1177,11 +1183,11 @@ static bool r_other_expr(dynstring_t *received_rets,
 
     // Truncate signature if it has multiple return types
     // and located not at the end of expression
+    size_t to_pop = Dynstring.len(last_expression);
     Semantics.trunc_signature(last_expression);
     Dynstring.cat(received_rets, last_expression);
 
-    // TODO: clear generator stack
-    // TODO: generate code for last expression
+    Generator.return_not_last(to_pop, return_cnt);
 
     return_cnt++;
 
@@ -1284,9 +1290,6 @@ static bool a_other_expr(dynstring_t *rhs_expressions, dynstring_t *last_express
 
     CHECK_EMPTY_SIGNATURE(received_signature);
 
-    // generator: push result to the stack (it was popped in parse)
-    Generator.expression_push();
-
     // [a_other_expr]
     if (!a_other_expr(rhs_expressions, received_signature)) {
         goto err;
@@ -1318,9 +1321,6 @@ static bool a_expr(dynstring_t *rhs_expressions) {
     }
 
     CHECK_EMPTY_SIGNATURE(received_signature);
-
-    // generator: push result to the stack (it was popped in parse)
-    Generator.expression_push();
 
     // [a_other_expr]
     if (!a_other_expr(rhs_expressions, received_signature)) {
@@ -1467,13 +1467,18 @@ static bool Default_expression(pfile_t *pfile_,
         return false;
     }
 
+    Generator.expression_pop();
+    // TODO: CLEARS stack?
+
     if (type_expr_statement == TYPE_EXPR_DEFAULT) {
         goto ret;
     }
 
-    // recast type of an expression to boolean, if it is not empty.
-    Generator.comment("recast expression to bool");
-    Generator.recast_expression_to_bool();
+    if (Dynstring.cmp_c_str(received_signature, "b") != 0) {
+        // recast type of an expression to boolean, if it is not empty.
+        Generator.comment("recast expression to bool");
+        Generator.recast_expression_to_bool();
+    }
 
     // clear Dynstring and append a new type means expression was typecasted.
     Dynstring.clear(received_signature);
@@ -1509,6 +1514,8 @@ static bool Global_expression(pfile_t *pfile_) {
         goto err;
     }
 
+    // TODO: CLEARS stack?
+
     Dynstring.dtor(id_name);
     return true;
     err:
@@ -1537,11 +1544,13 @@ static bool Function_expression(pfile_t *pfile_) {
         if (!func_call(id_name, NULL)) {
             goto err;
         }
+        // TODO: CLEARS stack?
     } else {
         // [assign_id]
         if (!assign_id(id_name)) {
             goto err;
         }
+        // TODO: CLEARS stack?
     }
 
     Dynstring.dtor(id_name);
