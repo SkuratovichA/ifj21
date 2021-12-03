@@ -579,8 +579,6 @@ static bool Check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
             goto err;
         }
 
-        // TODO: generate code for assignment
-
         Dynstring.clear(id_type);
         Dynstring.clear(expr_type);
         id_cnt++;
