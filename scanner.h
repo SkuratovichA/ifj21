@@ -140,6 +140,8 @@ typedef enum token_type {
     TOKEN(SUB),     // '-'
     TOKEN(STRCAT),  // ..
 
+    // for precedence analyse
+    TOKEN(MINUS_UNARY),
 
     // to make single tokens compatible with their ascii values
     TOKEN(EOFILE) = EOF,
