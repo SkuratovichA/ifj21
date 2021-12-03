@@ -1122,6 +1122,8 @@ static bool r_other_expr(dynstring_t *received_rets,
     // | e
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
         Dynstring.cat(received_rets, last_expression);
+
+        // TODO: generate code for other expression/s
         goto noerr;
     }
 
@@ -1130,34 +1132,20 @@ static bool r_other_expr(dynstring_t *received_rets,
 
     // Truncate signature if it has multiple return types
     // and located not at the end of expression
-    size_t expr_num = Dynstring.len(last_expression);
-
     Semantics.trunc_signature(last_expression);
     Dynstring.cat(received_rets, last_expression);
 
     // TODO: clear generator stack
-    Generator.comment("--------- clearing stack in r_other_expr-----------");
-    for(size_t i = 0; i < expr_num - 1; i++) {
-        Generator.expression_pop();
-    }
+    // TODO: generate code for last expression
+
+    return_cnt++;
 
     // expr
     if (!parse_init(received_signature)) {
         goto err;
     }
 
-    // generator: push result to the stack (it was popped in parse)
-    Generator.expression_push();
-
     CHECK_EMPTY_SIGNATURE(received_signature);
-    return_cnt++;
-
-    if (return_cnt == func_rets) {
-        goto err;
-    }
-
-    // generate code for other return expressions
-    //Generator.func_pass_return(return_cnt);
 
     // [r_other_expr]
     if (!r_other_expr(received_rets, received_signature, func_rets, return_cnt)) {
@@ -1175,7 +1163,7 @@ static bool r_other_expr(dynstring_t *received_rets,
 /**
  * Return expression.
  *
- * !rule [r_expr] -> expr [r_other_expr] | e
+ * !rule [r_expr] -> expr [r_other_expr]
  *
  * @param received_rets is an initialized empty vector.
  * @param func_rets
@@ -1192,15 +1180,9 @@ static bool r_expr(dynstring_t *received_rets, size_t func_rets) {
         goto err;
     }
 
-    // If expression was not empty
-    if (Dynstring.len(received_signature) != 0) {
-        if (return_cnt == func_rets) {
-            goto err;
-        }
-
-        // generate code for the first result expression
-        // Generator.func_pass_return(return_cnt);
-        // Generator.expression_push();
+    // Check if expression was empty
+    if (Dynstring.len(received_signature) == 0) {
+        goto noerr;
     }
 
     // [r_other_expr]
@@ -1208,6 +1190,7 @@ static bool r_expr(dynstring_t *received_rets, size_t func_rets) {
         goto err;
     }
 
+    noerr:
     Dynstring.dtor(received_signature);
     return true;
     err:
@@ -1430,6 +1413,12 @@ static bool Default_expression(pfile_t *pfile_,
 
     // expr
     if (!parse_init(received_signature)) {
+        return false;
+    }
+
+    // Check if signature is empty
+    if (Dynstring.len(received_signature) == 0) {
+        Errors.set_error(ERROR_SYNTAX);
         return false;
     }
 
