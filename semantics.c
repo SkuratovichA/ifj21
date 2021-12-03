@@ -570,9 +570,6 @@ static bool Check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
         Dynstring.append(id_type, Semantics.of_id_type(sym->type));
         Dynstring.append(expr_type, rhs_expr_str[id_cnt]);
 
-        debug_msg("id_type = { %s }\n", Dynstring.c_str(id_type));
-        debug_msg("expr_type = { %s }\n", Dynstring.c_str(expr_type));
-
         if (!Check_signatures_compatibility(id_type,
                                             expr_type,
                                             ERROR_TYPE_MISSMATCH)) {
