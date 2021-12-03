@@ -116,6 +116,18 @@ struct list_interface_t {
      */
     bool (*equal)(list_t *l1, list_t *l2, int (*cmp)(void *, void *));
 
+    /*
+     * @brief Reverses the list.
+     * @param l singly linked list to be reversed
+     */
+    void (*reverse)(list_t *l);
+
+    /*
+     * @brief Finds the length of the list.
+     * @param l singly linked list
+     */
+    size_t (*len)(list_t *l);
+
     /**
      * @brief List destructor.
      *
