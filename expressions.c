@@ -59,6 +59,13 @@ static pfile_t *pfile;
         }                                                               \
     } while (0)
 
+/**
+ * @brief Get function params and returns (types).
+ *
+ * @param id_name name of the function.
+ * @param func_params is a vector for params.
+ * @param func_returns is a vector for returns.
+ */
 #define GET_FUNCTION_SIGNATURES(id_name, func_params, func_returns)                         \
     do {                                                                                    \
         symbol_t *sym;                                                                      \
@@ -80,6 +87,11 @@ static pfile_t *pfile;
         }                                                                                   \
     } while(0)
 
+/**
+ * @brief Checks if signature is empty.
+ *
+ * @param sgt
+ */
 #define CHECK_EMPTY_SIGNATURE(sgt)                      \
     do {                                                \
         if (Dynstring.len((sgt)) == 0) {                \
@@ -722,8 +734,8 @@ static bool func_call(dynstring_t *, dynstring_t *);
 static bool parse_function(sstack_t *stack, bool *function_parsed) {
     debug_msg("parse_function\n");
 
+    stack_item_t *top;
     dynstring_t *id_name = NULL;
-    stack_item_t *top = NULL;
     stack_item_t *new_expr = stack_item_ctor(ITEM_TYPE_EXPR, NULL);
 
     if (Scanner.get_curr_token().type != TOKEN_ID) {
@@ -829,8 +841,8 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
     debug_msg("parse ->\n");
 
     int cmp;
+    stack_item_t *top;
     stack_item_t *expr = NULL;
-    stack_item_t *top = NULL;
     bool function_parsed = false;
     bool parents_parsed = false;
 
@@ -862,10 +874,6 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
     // Check an expression end
     if (!hard_reduce) {
         hard_reduce = expression_end(first_op, function_parsed, parents_parsed);
-
-        if (hard_reduce) {
-            debug_msg("set hard reduce\n");
-        }
     }
 
     // Check a success parsing
@@ -888,10 +896,9 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
     // Truncate expression type and clear generator stack
     // if there is expression on top of the precedence stack
     if (expr != NULL && expr->type == ITEM_TYPE_EXPR) {
-        // Check if expression type is empty
+        // Append nil if expression type is empty
         if (Dynstring.len(expr->expression_type) == 0) {
-            Errors.set_error(ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
-            goto err;
+            Dynstring.append(expr->expression_type, 'n');
         }
 
         Semantics.trunc_signature(expr->expression_type);
@@ -960,6 +967,7 @@ static bool parse_init(dynstring_t *received_signature) {
  * !rule [fc_other_expr] -> , expr [fc_other_expr] | )
  *
  * @param received_params is an initialized empty vector.
+ * @param func_name
  * @param params_cnt counter of function parameters.
  * @return bool.
  */
@@ -1000,6 +1008,7 @@ static bool fc_other_expr(dynstring_t *received_params, dynstring_t *func_name, 
  * !rule [fc_expr] -> expr [fc_other_expr] | )
  *
  * @param received_params is an initialized empty vector.
+ * @param func_name
  * @return bool.
  */
 static bool fc_expr(dynstring_t *received_params, dynstring_t *func_name) {
@@ -1401,6 +1410,7 @@ static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature,
  *        Or an expression in the conditional statement in cycles, conditions.
  *        semantic controls are performed inside parser.c
  *
+ * @param pfile_
  * @param received_signature is an initialized empty vector.
  * @param type_expr_statement TYPE_EXPR_DEFAULT will not be casted to boolean.
  *                            TYPE_EXPR_CONDITIONAL will be casted to boolean.
@@ -1475,7 +1485,7 @@ static bool Global_expression(pfile_t *pfile_) {
 
 /**
  * @brief Function calling or assignments in the local scope.
- * !rule [function_expression] -> id FUCK ME IN THE BRAIN I CAN STAND THIS PROJECT ANYMORE I WANNA DIE
+ * !rule [function_expression] -> id [func_call] | id [assign_id]
  * @param pfile_
  * @return true if successive parsing and semantic analysis of expressions performed.
  */
