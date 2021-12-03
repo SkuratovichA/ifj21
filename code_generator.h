@@ -74,11 +74,9 @@ struct code_generator_interface_t {
     void (*tmp_var_definition)(char *);
 
     /*
-     * @brief Generates assignment to a variable
-     *        MOVE LF@%0%i GF@%expr_result
+     * @brief Generates assignment.
      */
-    void (*var_assignment)(dynstring_t *);
-
+    void (*assignment)(list_t *, dynstring_t *);
     /*
      * @brief Converts GF@%expr_result int -> float
      */
@@ -106,6 +104,11 @@ struct code_generator_interface_t {
      * @brief Generates pop from the stack to GF@%expr_result.
      */
     void (*expression_pop)(void);
+
+    /*
+     * @brief Generates pop from the stack to GF@%expr_result.
+     */
+    void (*expression_push)(void);
 
     /*
      * @brief Gets info about current cond scope from

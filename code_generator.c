@@ -559,16 +559,48 @@ static void generate_tmp_var_definition(char *var_name) {
     ADD_INSTR_TMP();
     Dynstring.dtor(name);
 }
+ /*
+  * @brief Sets variable to nil.
+  */
+ static void generate_var_set_nil(dynstring_t *var_name) {
+     ADD_INSTR_PART("MOVE LF@%");
+     generate_var_name(var_name, false);    // false 00 var is already declared
+     ADD_INSTR_PART(" nil@nil");
+     ADD_INSTR_TMP();
+ }
 
 /*
  * @brief Generates assignment to a variable
  *        MOVE LF@%0%i GF@%expr_result
  */
 static void generate_var_assignment(dynstring_t *var_name) {
-    ADD_INSTR_PART("MOVE LF@%");
-    generate_var_name(var_name, false); // false == already declared var
-    ADD_INSTR_PART(" GF@%expr_result");
+    ADD_INSTR_PART("POPS LF@%");
+    generate_var_name(var_name, false); // false == var is already declared
     ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates multiple assignment.
+ */
+static void generate_assignment(list_t *ids_list, dynstring_t *rhs_expressions) {
+    // ids_list needs to be reversed because the stack is used
+    List.reverse(ids_list);
+    list_item_t *id = ids_list->head;
+    size_t id_cnt = 0;
+    size_t len = List.len(ids_list);
+
+    while (id != NULL) {
+        // there is not an expression for the variable
+        if ((len - Dynstring.len(rhs_expressions)) > id_cnt) {
+            // assign nil to other variables
+            generate_var_set_nil(id->data);
+        } else {
+            // generate code for assignment
+            generate_var_assignment(id->data);
+        }
+        id_cnt++;
+        id = id->next;
+    }
 }
 
 /*
@@ -771,6 +803,13 @@ static void generate_expression_unary(op_list_t op) {
  */
 static void generate_expression_pop() {
     ADD_INSTR("POPS GF@%expr_result");
+}
+
+/*
+ * @brief Generates pop from the stack to GF@%expr_result.
+ */
+static void generate_expression_push() {
+    ADD_INSTR("PUSHS GF@%expr_result");
 }
 
 /*
@@ -1253,12 +1292,13 @@ const struct code_generator_interface_t Generator = {
         .var_declaration = generate_var_declaration,
         .var_definition = generate_var_definition,
         .tmp_var_definition = generate_tmp_var_definition,
-        .var_assignment = generate_var_assignment,
+        .assignment = generate_assignment,
         .recast_expression_to_bool = recast_expression_to_bool,
         .expression_operand = generate_expression_operand,
         .expression_unary = generate_expression_unary,
         .expression_binary = generate_expression_binary,
         .expression_pop = generate_expression_pop,
+        .expression_push = generate_expression_push,
         .push_cond_info = push_cond_info,
         .pop_cond_info = pop_cond_info,
         .cond_if = generate_cond_if,
