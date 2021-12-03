@@ -1753,10 +1753,10 @@ int main() {
             "end                                                                                   "NL
             "                                                                                      "NL
             "function yours()                                                                      "NL
-            "   local a : number = #(\"arst\" + \"arsoi\" + \"arsot\" + (\"arst\")) + 10           "NL
+            "   local a : number = #(\"arst\" .. \"arsoi\" .. \"arsot\" .. (\"arst\")) + 10        "NL
             "   repeat                                                                             "NL
             "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()                                    "NL
-            "       a = false                                                                      "NL
+            "       a = nil                                                                        "NL
             "   until a                                                                            "NL
             "end                                                                                   "NL
             "yours()                                                                               "NL
@@ -1774,7 +1774,7 @@ int main() {
             "end                                                 "NL
             "function four() : string                            "NL
             "end                                                 "NL
-            "one(#(((two()) + three()) + four()))                "NL
+            "one(#(((two()) .. three()) .. four()))                "NL
     );
 
 
@@ -1790,7 +1790,7 @@ int main() {
             "end                                                 "NL
             "function four() : string                            "NL
             "end                                                 "NL
-            "one((((two()) + three()) + four()))                 "NL
+            "one((((two()) .. three()) .. four()))                 "NL
     );
 
     char *description105 = "bad string.";
@@ -2131,7 +2131,7 @@ int main() {
             "    local a : integer = 1                         "NL
             "    local b : number = 3.0 + 4.2                  "NL
             "    local c : string = \"hell\"                   "NL
-            "    local d : nil = nil                           "NL
+            "    local d : number = nil                        "NL
             "    d = a + b + 5                                 "NL
             "    write(d,\"\\n\")                              "NL
             "end                                               "NL
@@ -2466,7 +2466,7 @@ int main() {
             "    local s : string = \"xd\"                     "NL
             "    local j : number                              "NL
             "                                                  "NL
-            "    i, s, j = foo(), 1.1                          "NL
+            "    i, s, j = foo(), \"hello\", 2.0               "NL
             "	write(i, s, j)                                 "NL
             "end                                               "NL
             "                                                  "NL
@@ -2494,7 +2494,7 @@ int main() {
     );
 
     char *description170 = "";
-    int retcode170 = ERROR_NOERROR;
+    int retcode170 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf170 = Pfile.ctor(
             PROLOG
             "function foo() : integer, string                  "NL
@@ -2509,7 +2509,7 @@ int main() {
     );
 
     char *description171 = "";
-    int retcode171 = ERROR_NOERROR;
+    int retcode171 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf171 = Pfile.ctor(
             PROLOG
             "function foo() : integer, string                  "NL
@@ -2653,7 +2653,7 @@ int main() {
     );
 
     char *description178 = "";
-    int retcode178 = ERROR_NOERROR;
+    int retcode178 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
     pfile_t *pf178 = Pfile.ctor(
             PROLOG
             "function main ()                                  "NL
@@ -2715,16 +2715,16 @@ int main() {
     int retcode180 = ERROR_NOERROR;
     pfile_t *pf180 = Pfile.ctor(
             PROLOG
-            "function main ()                                                                   "NL
-            "    local i : number = (162.28 * 22 - (#(\"hello\" .. \" world\") // 23.42) - 3)   "NL
-            "    if i == (162.28 * 22 - #(\"hello\" .. \" world\") // 23.42 - 3) then           "NL
-            "        write(\"success\")                                                         "NL
-            "    else                                                                           "NL
-            "        write(\"fail\")                                                            "NL
-            "    end                                                                            "NL
-            "end                                                                                "NL
-            "                                                                                   "NL
-            "main()                                                                             "NL
+            "function main ()                                                                              "NL
+            "    local i : number = (162.28 * 22 - (#(\"hello\" .. \" world\") // tointeger(23.42)) - 3)   "NL
+            "    if i == (162.28 * 22 - #(\"hello\" .. \" world\") // tointeger(23.42) - 3) then           "NL
+            "        write(\"success\")                                                                    "NL
+            "    else                                                                                      "NL
+            "        write(\"fail\")                                                                       "NL
+            "    end                                                                                       "NL
+            "end                                                                                           "NL
+            "                                                                                              "NL
+            "main()                                                                                        "NL
     );
 
     char *description181 = "";
@@ -2860,7 +2860,7 @@ int main() {
     );
 
     char *description188 = "";
-    int retcode188 = ERROR_NOERROR;
+    int retcode188 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
     pfile_t *pf188 = Pfile.ctor(
             PROLOG
             "function main ()                                  "NL
@@ -2975,7 +2975,7 @@ int main() {
             "                local i : integer = 4             "NL
             "                write(i)                          "NL
             "            end                                   "NL
-            "        local i : integer = 5 / z                 "NL
+            "        local i : number = 5 / z                  "NL
             "        write(i)                                  "NL
             "    until (false or (true or false))              "NL
             "end                                               "NL
@@ -3040,7 +3040,7 @@ int main() {
     );
 
     char *description196 = "";
-    int retcode196 = ERROR_NOERROR;
+    int retcode196 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf196 = Pfile.ctor(
             PROLOG
             "function foo(a : integer, b : string) : integer, integer, integer  "NL
@@ -3052,7 +3052,7 @@ int main() {
             "    local j : integer;                                             "NL
             "    local k : integer;                                             "NL
             "    local l : integer;                                             "NL
-            "    i, j, k, l = 0, foo()                                          "NL
+            "    i, j, k, l = 0, foo(1, \"hello\")                              "NL
             "    write(j)                                                       "NL
             "                                                                   "NL
             "end                                                                "NL
@@ -3088,11 +3088,11 @@ int main() {
             "end                                                                "NL
             "                                                                   "NL
             "function main()                                                    "NL
-            "    local i : integer;                                             "NL
-            "    local j : integer;                                             "NL
-            "    local k : integer;                                             "NL
-            "    local l : integer;                                             "NL
-            "    i, j, k, l = 0, 3, foo()                                       "NL
+            "    local i : integer                                              "NL
+            "    local j : integer                                              "NL
+            "    local k : integer                                              "NL
+            "    local l : integer                                              "NL
+            "    i, j, k, l = 0, 3, foo(1, \"hello\")                           "NL
             "    write(j)                                                       "NL
             "                                                                   "NL
             "end                                                                "NL
@@ -3480,12 +3480,12 @@ int main() {
     int retcode229 = ERROR_NOERROR;
     pfile_t *pf229 = Pfile.ctor(
             PROLOG
-            "function main()                                        "NL
-            "    local i : string                                   "NL
-            "    i = write(6656,6%87,\"\n\", \"escape\", \"\010\")  "NL
-            "    write(i)                                           "NL
-            "end                                                    "NL
-            "main()                                                 "NL
+            "function main()                                          "NL
+            "    local i : string                                     "NL
+            "    i = write(6656,6%87,\"\\n\", \"escape\", \"\\010\")  "NL
+            "    write(i)                                             "NL
+            "end                                                      "NL
+            "main()                                                   "NL
     );
 
     char *description230 = "";
@@ -3495,22 +3495,22 @@ int main() {
             "function modulo(a: integer, b: integer) : integer "NL
             "  local i : integer = a - (a // b) * b            "NL
             "  if (i == (a%b)) then                            "NL
-            "    write(\"success\n\")                          "NL
+            "    write(\"success\\n\")                         "NL
             "  else                                            "NL
-            "    write(\"fail\n\")                             "NL
+            "    write(\"fail\\n\")                            "NL
             "  end                                             "NL
             "  return i                                        "NL
             "end                                               "NL
             "                                                  "NL
             "function main()                                   "NL
             "  local mod : number = modulo(42, 23)             "NL
-            "  write(mod, \"\n\")                              "NL
+            "  write(mod, \"\\n\")                             "NL
             "end                                               "NL
             "main()                                            "NL
     );
 
     char *description231 = "";
-    int retcode231 = ERROR_NOERROR;
+    int retcode231 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf231 = Pfile.ctor(
             PROLOG
             "function power(a: number, b: integer) : number    "NL
@@ -3519,7 +3519,7 @@ int main() {
             "end                                               "NL
             "                                                  "NL
             "function main()                                   "NL
-            "  local res : \"\n\")                             "NL
+            "  local res : number = power(2.0)                 "NL
             "end                                               "NL
             "main()                                            "NL
     );
