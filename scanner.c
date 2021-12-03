@@ -134,6 +134,10 @@ static char *To_string(const int t) {
             return ":";
         case TOKEN_HASH:
             return "#";
+        case TOKEN_PERCENT:
+            return "%";
+        case TOKEN_CARET:
+            return "^";
         case TOKEN_DEAD:
             return "DEAD TOKEN";
 
