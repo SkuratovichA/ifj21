@@ -17,9 +17,11 @@
  */
 typedef enum op_list {
     OP_ID,
+    OP_CARET,
     OP_MUL,
-    OP_DIV_F,
     OP_DIV_I,
+    OP_DIV_F,
+    OP_PERCENT,
     OP_ADD,
     OP_SUB,
     OP_LT,
@@ -30,6 +32,7 @@ typedef enum op_list {
     OP_NE,
     OP_HASH,
     OP_NOT,
+    OP_MINUS_UNARY,
     OP_STRCAT,
     OP_AND,
     OP_OR,

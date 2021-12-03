@@ -101,25 +101,25 @@ static inline bool is_a_function(dynstring_t *id_name) {
  * Precedence function table.
  * f, g - precedence functions.
  *
- * A = {*, /, //},
+ * A = {*, /, //, %},
  * B = {+, -},
  * C = {<, <=, >, >=, ==, ~=}
- * D = {#, not}
+ * D = {#, not, - (unary)}
  *
- *  |   |  id |   A |   B |   C |   D |  .. | and |  or |   $ |
- *  | f |  12 |  10 |   8 |   6 |  12 |   6 |   4 |   2 |   0 |
- *  | g |  13 |   9 |   7 |   5 |  11 |   7 |   3 |   1 |   0 |
+ *  |   |  id |   ^ |   A |   B |   C |   D |  .. | and |  or |   $ |
+ *  | f |  14 |  14 |  10 |   8 |   6 |  12 |   6 |   4 |   2 |   0 |
+ *  | g |  15 |  13 |   9 |   7 |   5 |  11 |   7 |   3 |   1 |   0 |
  */
 
 /**
  * f - represents rows of the precedence table.
  */
-static const int f[18] = {12, 10, 10, 10, 8, 8, 6, 6, 6, 6, 6, 6, 12, 12, 6, 4, 2, 0};
+static const int f[21] = {14, 14, 10, 10, 10, 10, 8, 8, 6, 6, 6, 6, 6, 6, 12, 12, 12, 6, 4, 2, 0};
 
 /**
  * g - represents columns.
  */
-static const int g[18] = {13, 9, 9, 9, 7, 7, 5, 5, 5, 5, 5, 5, 11, 11, 7, 3, 1, 0};
+static const int g[21] = {15, 13, 9, 9, 9, 9, 7, 7, 5, 5, 5, 5, 5, 5, 11, 11, 11, 7, 3, 1, 0};
 
 /**
  * @brief
@@ -172,6 +172,10 @@ static op_list_t get_op(int tok_type) {
             return OP_AND;
         case KEYWORD_or:
             return OP_OR;
+        case TOKEN_CARET:
+            return OP_CARET;
+        case TOKEN_PERCENT:
+            return OP_PERCENT;
         default:
             return OP_DOLLAR;
     }
@@ -219,6 +223,12 @@ static char *op_to_string(op_list_t op) {
             return "and";
         case OP_OR:
             return "or";
+        case OP_CARET:
+            return "^";
+        case OP_PERCENT:
+            return "%";
+        case OP_MINUS_UNARY:
+            return "- (unary)";
         case OP_DOLLAR:
             return "$";
         default:
@@ -427,6 +437,8 @@ static bool binary_op(sstack_t *r_stack, op_list_t *result_op) {
         case OP_GE:
         case OP_EQ:
         case OP_NE:
+        case OP_PERCENT:
+        case OP_CARET:
             goto noerr;
         default:
             goto err;
