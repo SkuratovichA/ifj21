@@ -13,8 +13,8 @@
 
 
 int main() {
-    pfile_t *pfile;
-    int ret = 0;
+    pfile_t *pfile = NULL;
+    int ret;
 
     if (!(pfile = Pfile.getfile_stdin())) {
         return Errors.get_error();
@@ -23,7 +23,8 @@ int main() {
     Generator.initialise();
 
     if (!Parser.analyse(pfile)) {
-        return Errors.get_error();
+        ret = Errors.get_error();
+        goto ret;
     }
 
     ret = Errors.get_error();
@@ -44,8 +45,8 @@ int main() {
         Generator.print_instr_list(LIST_INSTR_MAIN);
     }
 
+    ret:
     Generator.dtor();
-
     Pfile.dtor(pfile);
     return ret;
 }

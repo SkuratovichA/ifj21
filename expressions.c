@@ -884,6 +884,11 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
             goto noerr;
         }
 
+        // Append nil if expression type is empty
+        if (Dynstring.len(expr->expression_type) == 0) {
+            Dynstring.append(expr->expression_type, 'n');
+        }
+
         if (received_signature != NULL) {
             // Set return types
             Dynstring.cat(received_signature, expr->expression_type);
@@ -1123,6 +1128,8 @@ static bool r_other_expr(dynstring_t *received_rets,
     // | e
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
         Dynstring.cat(received_rets, last_expression);
+
+        // TODO: generate code for other expression/s
         goto noerr;
     }
 
@@ -1131,15 +1138,13 @@ static bool r_other_expr(dynstring_t *received_rets,
 
     // Truncate signature if it has multiple return types
     // and located not at the end of expression
-    size_t expr_num = Dynstring.len(last_expression);
-
     Semantics.trunc_signature(last_expression);
     Dynstring.cat(received_rets, last_expression);
 
-    // clear generator stack
-    for(size_t i = 0; i < expr_num - 1; i++) {
-        Generator.expression_pop();
-    }
+    // TODO: clear generator stack
+    // TODO: generate code for last expression
+
+    return_cnt++;
 
     // expr
     if (!parse_init(received_signature)) {
@@ -1147,14 +1152,6 @@ static bool r_other_expr(dynstring_t *received_rets,
     }
 
     CHECK_EMPTY_SIGNATURE(received_signature);
-    return_cnt++;
-
-    if (return_cnt == func_rets) {
-        goto err;
-    }
-
-    // generate code for other return expressions
-    //Generator.func_pass_return(return_cnt);
 
     // [r_other_expr]
     if (!r_other_expr(received_rets, received_signature, func_rets, return_cnt)) {
@@ -1172,7 +1169,7 @@ static bool r_other_expr(dynstring_t *received_rets,
 /**
  * Return expression.
  *
- * !rule [r_expr] -> expr [r_other_expr] | e
+ * !rule [r_expr] -> expr [r_other_expr]
  *
  * @param received_rets is an initialized empty vector.
  * @param func_rets
@@ -1189,11 +1186,9 @@ static bool r_expr(dynstring_t *received_rets, size_t func_rets) {
         goto err;
     }
 
-    // If expression was not empty
-    if (Dynstring.len(received_signature) != 0) {
-        if (return_cnt == func_rets) {
-            goto err;
-        }
+    // Check if expression was empty
+    if (Dynstring.len(received_signature) == 0) {
+        goto noerr;
     }
 
     // [r_other_expr]
@@ -1201,6 +1196,7 @@ static bool r_expr(dynstring_t *received_rets, size_t func_rets) {
         goto err;
     }
 
+    noerr:
     Dynstring.dtor(received_signature);
     return true;
     err:
@@ -1417,6 +1413,12 @@ static bool Default_expression(pfile_t *pfile_,
 
     // expr
     if (!parse_init(received_signature)) {
+        return false;
+    }
+
+    // Check if signature is empty
+    if (Dynstring.len(received_signature) == 0) {
+        Errors.set_error(ERROR_SYNTAX);
         return false;
     }
 
