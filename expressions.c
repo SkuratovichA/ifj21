@@ -1317,11 +1317,6 @@ static bool check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
         id = id->next;
     }
 
-    if (id_cnt < Dynstring.len(rhs_expressions)) {
-        // TODO: clear generator stack
-        assert(false);
-    }
-
     return true;
     err:
     return false;
