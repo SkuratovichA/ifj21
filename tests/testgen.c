@@ -71,30 +71,30 @@
             "end                                        "NL    \
         );                                                     \
 
-#define GLOBAL_EXPRESSION(_num, _expr, _errcode)                                           \
-        char *description##_num = "global expression";                                    \
-        int retcode##_num = _errcode;                                                     \
-        pfile_t *pf##_num = Pfile.ctor(                                                     \
-            PROLOG                                                                        \
-            "function a(_a : number ) return 1 end "NL                                    \
-            "function b(_a : number ) return 1 end "NL                                    \
-            "function c(_a : number ) return 1 end "NL                                    \
-            "function d(_a : number ) return 1 end "NL                                    \
-            "function e(_a : number ) return 1 end "NL                                    \
-            "function f(_a : number ) return 1 end "NL                                    \
-            "function aa(_a : number, _b : number ) return 1 end "NL                      \
-            "function bb(_a : number, _b : number ) return 1 end "NL                      \
-            "function cc(_a : number, _b : number) return 1 end "NL                       \
-            "function dd(_a : number, _b : number) return 1 end "NL                       \
-            "function ee(_a : number, _b : number) return 1 end "NL                       \
-            "function ff(_a : number, _b : number) return 1 end "NL                       \
-            "function aaa(_a : number, _b : number, _c : number ) return 1 end "NL        \
-            "function bbb(_a : number, _b : number, _c : number ) return 1 end "NL        \
-            "function ccc(_a : number, _b : number, _c : number ) return 1 end "NL        \
-            "function ddd(_a : number, _b : number, _c : number ) return 1 end "NL        \
-            "function eee(_a : number, _b : number, _c : number ) return 1 end "NL        \
-            "function fff(_a : number, _b : number, _c : number ) return 1 end "NL        \
-            _expr                                                               NL        \
+#define GLOBAL_EXPRESSION(_num, _expr, _errcode)                                                    \
+        char *description##_num = "global expression";                                              \
+        int retcode##_num = _errcode;                                                               \
+        pfile_t *pf##_num = Pfile.ctor(                                                             \
+            PROLOG                                                                                  \
+            "function a(_a : number ) : integer return 1 end "NL                                    \
+            "function b(_a : number ) : integer return 1 end "NL                                    \
+            "function c(_a : number ) : integer return 1 end "NL                                    \
+            "function d(_a : number ) : integer return 1 end "NL                                    \
+            "function e(_a : number ) : integer return 1 end "NL                                    \
+            "function f(_a : number ) : integer return 1 end "NL                                    \
+            "function aa(_a : number, _b : number ) : integer return 1 end "NL                      \
+            "function bb(_a : number, _b : number ) : integer return 1 end "NL                      \
+            "function cc(_a : number, _b : number) : integer return 1 end "NL                       \
+            "function dd(_a : number, _b : number) : integer return 1 end "NL                       \
+            "function ee(_a : number, _b : number) : integer return 1 end "NL                       \
+            "function ff(_a : number, _b : number) : integer return 1 end "NL                       \
+            "function aaa(_a : number, _b : number, _c : number ) : integer return 1 end "NL        \
+            "function bbb(_a : number, _b : number, _c : number ) : integer return 1 end "NL        \
+            "function ccc(_a : number, _b : number, _c : number ) : integer return 1 end "NL        \
+            "function ddd(_a : number, _b : number, _c : number ) : integer return 1 end "NL        \
+            "function eee(_a : number, _b : number, _c : number ) : integer return 1 end "NL        \
+            "function fff(_a : number, _b : number, _c : number ) : integer return 1 end "NL        \
+            _expr                                                                         NL        \
         );
 
 #define GLOBAL_EXPRESSION_ERROR(_num, _expr) GLOBAL_EXPRESSION(_num, _expr, ERROR_SYNTAX)
@@ -628,7 +628,7 @@ int main() {
             "function main()                                                 "NL
             "   local a : string                                             "NL
             "   local b : number                                             "NL
-            "   a, b = foo()                                                 "NL
+            "   a, b = foo(\"test\", \"text\")                               "NL
             "   write(a)                                                     "NL
             "   write(b)                                                     "NL
             "end                                                             "NL
@@ -649,7 +649,7 @@ int main() {
             "global foo : function( nil, nil ) : nil"NL
             "function foo(a : nil, b : nil) : nil   "NL
             "end                                    "NL
-            "foo()                                  "NL
+            "foo(nil, nil)                          "NL
     );
 
     char *description32 = "nil as a local variable.";
@@ -717,7 +717,7 @@ int main() {
             "foo(1 + 2 + 3 + 4 * (2 + 3 + three()), 1)    "NL
     );
 
-    char *description39 = "wrong number of aparameters in function calling";
+    char *description39 = "wrong number of paarameters in function calling";
     int retcode39 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf39 = Pfile.ctor(
             PROLOG
@@ -730,7 +730,7 @@ int main() {
     );
 
     char *description40 = "no expression after comma";
-    int retcode40 = ERROR_FUNCTION_SEMANTICS;
+    int retcode40 = ERROR_SYNTAX;
     pfile_t *pf40 = Pfile.ctor(
             PROLOG
             "function three(): number return 3 end        "NL
@@ -939,8 +939,7 @@ int main() {
             "function foo (a : string, b : string) :  string, number         "NL
             "    return \"hello\", 10.5 + 1.5                                "NL
             "end                                                             "NL
-
-            "foo()                                                           "NL
+            "foo(\"test\", \"text\")                                         "NL
     );
 
     char *description54 = "return types #2 no returns.";
@@ -950,8 +949,7 @@ int main() {
             "global foo : function(    string,     string ) : string, number "NL
             "function foo (a : string, b : string) :  string, number         "NL
             "end                                                             "NL
-
-            "foo()                                                           "NL
+            "foo(\"test\", \"text\")                                         "NL
     );
 
     char *description55 = "return types #3. Typecasting";
@@ -962,8 +960,7 @@ int main() {
             "function foo (a : string, b : string) :  string, number         "NL
             "    return \"hello\", 10                                        "NL
             "end                                                             "NL
-
-            "foo()                                                           "NL
+            "foo(\"test\", \"text\")                                         "NL
     );
 
     char *description56 = "return types #4. Exceed returns";
@@ -998,8 +995,7 @@ int main() {
             "function foo (a : string, b : string) :  string, number         "NL
             "    return nil, nil                                             "NL
             "end                                                             "NL
-
-            "foo()                                                           "NL
+            "foo(\"test\", \"text\")                                         "NL
     );
 
     char *description59 = "return types #7. Typecasting nil in return.";
@@ -1012,7 +1008,7 @@ int main() {
             "                              string, number, boolean "NL
             "    return nil, nil, true                             "NL
             "end                                                   "NL
-            "foo()                                                 "NL
+            "foo(\"test\", \"text\")                               "NL
     );
 
     char *description60 = "return types #8";
@@ -1471,7 +1467,7 @@ int main() {
             "       break                             "NL
             "    end                                  "NL
             "end                                      "NL
-            "main(\"helloo\")                         "NL
+            "main(#\"helloo\")                        "NL
     );
 
     char *description87 = "break inside repuntil";
@@ -1634,6 +1630,7 @@ int main() {
     char *description94 = "wrong parameters";
     int retcode94 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf94 = Pfile.ctor(
+            PROLOG
             "global name : function (integer, number, string,                   "NL
             "                        string, number, integer, integer, nil, nil,"NL
             "                        nil, number)                               "NL
@@ -2583,7 +2580,7 @@ int main() {
             "end                                               "NL
             "                                                  "NL
             "function bar()                                    "NL
-            "    buzz(main())                                  "NL
+            "    buzz(1)                                       "NL
             "    write(main())                                 "NL
             "end                                               "NL
             "                                                  "NL
@@ -2850,7 +2847,7 @@ int main() {
     );
 
     char *description187 = "";
-    int retcode187 = ERROR_NOERROR;
+    int retcode187 = ERROR_SYNTAX;
     pfile_t *pf187 = Pfile.ctor(
             PROLOG
             "function foo()                                    "NL
@@ -2935,7 +2932,7 @@ int main() {
             "    end                                           "NL
             "end                                               "NL
             "                                                  "NL
-            "main()                                            "NL
+            "main(\"test\")                                    "NL
     );
 
     char *description191 = "";
@@ -3331,7 +3328,7 @@ int main() {
             PROLOG
             "function main()                                   "NL
             "    local k : number                              "NL
-            "    local res : string = chr(k)                   "NL
+            "    local res : string = chr(tointeger(k))        "NL
             "    write(res)                                    "NL
             "end                                               "NL
             "main()                                            "NL
@@ -3562,7 +3559,7 @@ int main() {
     GLOBAL_EXPRESSION_ERROR(138, "aa(   a(a(1)) + b(a(1)), c(a(1)) + d(,a(1))   )");
     GLOBAL_EXPRESSION_ERROR(139, "aa(   a(a(1)) + b(a(1)), c(a(1)) + d(a(1),)   )");
 
-    GLOBAL_EXPRESSION_NOERROR(140, "aaa(    a(1) + b(2), c(c(c(c(c(2))))) + dd( 1 + 2, 3 * (4 + a((2))) )    )");
+    GLOBAL_EXPRESSION_NOERROR(140, "aaa(    a(1) + b(2), c(c(c(c(c(2))))) + dd( 1 + 2, 3 * (4 + a((2))) ), 2    )");
 
     TEST_CASE(1);
     TEST_CASE(2);
