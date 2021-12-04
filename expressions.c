@@ -1014,44 +1014,88 @@ static bool parse_init(dynstring_t *received_signature) {
  *
  * !rule [fc_other_expr] -> , expr [fc_other_expr] | )
  *
- * @param received_params is an initialized empty vector.
+ * @param expected_params
+ * @param last_expression
  * @param func_name
  * @param params_cnt counter of function parameters.
  * @return bool.
  */
-static bool fc_other_expr(dynstring_t *received_params, dynstring_t *func_name, int params_cnt) {
+static bool fc_other_expr(dynstring_t *expected_params,
+                          dynstring_t *last_expression,
+                          dynstring_t *func_name,
+                          size_t params_cnt) {
     debug_msg("[fc_other_expr] ->\n");
 
+    dynstring_t *received_signature = Dynstring.ctor("");
+    dynstring_t *curr_expected_param = Dynstring.ctor("");
+    type_recast_t r_type = NO_RECAST;
+
     // | )
-    EXPECTED_OPT(TOKEN_RPAREN);
+    if (Scanner.get_curr_token().type == TOKEN_RPAREN) {
+        for (size_t i = 0; i < Dynstring.len(last_expression); i++) {
+            if (Dynstring.cmp_c_str(func_name, "write") == 0) {
+                // TODO: generate code for write
+                continue;
+            }
+
+            if (params_cnt == Dynstring.len(expected_params) ||
+                !Semantics.check_type_compatibility(Dynstring.c_str(expected_params)[params_cnt],
+                                                    Dynstring.c_str(last_expression)[i],
+                                                    &r_type)) {
+                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+                goto err;
+            }
+
+            // TODO: recast if needed and assign parameter
+
+            r_type = NO_RECAST;
+            params_cnt++;
+        }
+
+        EXPECTED(TOKEN_RPAREN);
+        goto noerr;
+    }
+
     // ,
     EXPECTED(TOKEN_COMMA);
 
+    // Truncate signature if it has multiple return types
+    // and located not at the end of statement
+    Semantics.trunc_signature(last_expression);
+
+    if (Dynstring.cmp_c_str(func_name, "write") == 0) {
+        // TODO: generate code for write
+    } else {
+        if (params_cnt == Dynstring.len(expected_params) ||
+            !Semantics.check_type_compatibility(Dynstring.c_str(expected_params)[params_cnt],
+                                                Dynstring.c_str(last_expression)[0],
+                                                &r_type)) {
+            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+            goto err;
+        }
+
+        // TODO: recast if needed and assign parameter
+    }
+
+    params_cnt++;
+
     // expr
-    if (!parse_init(received_params)) {
+    if (!parse_init(received_signature)) {
         goto err;
     }
 
-    // generate code for a function parameter
-    if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-        // function write generates CALL for each parameter
-        // TODO: other expressions on the stack
-        Generator.expression_pop();
-        Generator.func_call("write");
-    } else {
-        // TODO: other expressions on the stack
-        Generator.expression_pop();
-        Generator.func_call_pass_param(params_cnt++);
-    }
-
     // [fc_other_expr]
-    if (!fc_other_expr(received_params, func_name, params_cnt)) {
+    if (!fc_other_expr(expected_params, received_signature, func_name, params_cnt)) {
         goto err;
     }
 
     noerr:
+    Dynstring.dtor(received_signature);
+    Dynstring.dtor(curr_expected_param);
     return true;
     err:
+    Dynstring.dtor(received_signature);
+    Dynstring.dtor(curr_expected_param);
     return false;
 }
 
@@ -1059,43 +1103,43 @@ static bool fc_other_expr(dynstring_t *received_params, dynstring_t *func_name, 
  *
  * !rule [fc_expr] -> expr [fc_other_expr] | )
  *
- * @param received_params is an initialized empty vector.
+ * @param expected_params
  * @param func_name
  * @return bool.
  */
-static bool fc_expr(dynstring_t *received_params, dynstring_t *func_name) {
+static bool fc_expr(dynstring_t *expected_params, dynstring_t *func_name) {
     debug_msg("[fc_expr] ->\n");
 
-    int params_cnt = 0;
+    size_t params_cnt = 0;
+    dynstring_t *received_signature = Dynstring.ctor("");
 
     // | )
-    EXPECTED_OPT(TOKEN_RPAREN);
+    if (Scanner.get_curr_token().type == TOKEN_RPAREN) {
+        // Check if function does not have any parameters
+        if (Dynstring.len(expected_params) > 0) {
+            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+            goto err;
+        }
+
+        EXPECTED(TOKEN_RPAREN);
+        goto noerr;
+    }
 
     // expr
-    if (!parse_init(received_params)) {
+    if (!parse_init(received_signature)) {
         goto err;
     }
 
-    // generate code for a function parameter
-    if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-        // function write generates CALL for each parameter
-        // TODO: other expressions on the stack
-        Generator.expression_pop();
-        Generator.func_call("write");
-    } else {
-        // TODO: other expressions on the stack
-        Generator.expression_pop();
-        Generator.func_call_pass_param(params_cnt++);
-    }
-
     // [fc_other_expr]
-    if (!fc_other_expr(received_params, func_name, params_cnt)) {
+    if (!fc_other_expr(expected_params, received_signature, func_name, params_cnt)) {
         goto err;
     }
 
     noerr:
+    Dynstring.dtor(received_signature);
     return true;
     err:
+    Dynstring.dtor(received_signature);
     return false;
 }
 
@@ -1110,7 +1154,6 @@ static bool fc_expr(dynstring_t *received_params, dynstring_t *func_name) {
 static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     debug_msg("[func_call] ->\n");
 
-    dynstring_t *received_params = Dynstring.ctor("");
     dynstring_t *expected_params = Dynstring.ctor("");
     GET_FUNCTION_SIGNATURES(id_name, expected_params, function_returns);
 
@@ -1121,35 +1164,16 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     EXPECTED(TOKEN_LPAREN);
 
     // [fc_expr]
-    if (!fc_expr(received_params, id_name)) {
+    if (!fc_expr(expected_params, id_name)) {
         goto err;
-    }
-
-    // TODO: add number -> integer
-    // Check function parameters signature
-    if (Dynstring.cmp(received_params, expected_params) != 0) {
-        // write(...)
-        if (Dynstring.cmp_c_str(id_name, "write") == 0) {
-            goto noerr;
-        }
-
-        // tointeger(nil)
-        if (Dynstring.cmp_c_str(id_name, "tointeger") != 0 ||
-            Dynstring.cmp_c_str(received_params, "n") != 0) {
-            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
-            goto err;
-        }
     }
 
     // generate code for function call
     Generator.func_call(Dynstring.c_str(id_name));
 
-    noerr:
-    Dynstring.dtor(received_params);
     Dynstring.dtor(expected_params);
     return true;
     err:
-    Dynstring.dtor(received_params);
     Dynstring.dtor(expected_params);
     return false;
 }
@@ -1248,6 +1272,58 @@ static bool r_expr(dynstring_t *received_rets, size_t func_rets) {
     return true;
     err:
     Dynstring.dtor(received_signature);
+    return false;
+}
+
+/**
+ * @brief Check multiple assignment.
+ *
+ * @param ids_list list of identifiers.
+ * @param rhs_expressions is an initialized vector with expression types.
+ * @return bool.
+ */
+static bool check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_expressions) {
+    list_item_t *id = ids_list->head;
+    char *rhs_expr_str = Dynstring.c_str(rhs_expressions);
+    size_t id_cnt = 0;
+    type_recast_t r_type = NO_RECAST;
+
+    while (id != NULL) {
+        // there is no more expressions
+        if (id_cnt >= Dynstring.len(rhs_expressions)) {
+            // TODO: assign nil to other variables
+            id_cnt++;
+            id = id->next;
+            continue;
+        }
+
+        symbol_t *sym;
+        if (!Symstack.get_local_symbol(symstack, id->data, &sym)) {
+            Errors.set_error(ERROR_DEFINITION);
+            goto err;
+        }
+
+        if (!Semantics.check_type_compatibility(Semantics.of_id_type(sym->type),
+                                                rhs_expr_str[id_cnt],
+                                                &r_type)) {
+            Errors.set_error(ERROR_TYPE_MISSMATCH);
+            goto err;
+        }
+
+        // TODO: recast in generator
+
+        r_type = NO_RECAST;
+        id_cnt++;
+        id = id->next;
+    }
+
+    if (id_cnt < Dynstring.len(rhs_expressions)) {
+        // TODO: clear generator stack
+        assert(false);
+    }
+
+    return true;
+    err:
     return false;
 }
 
@@ -1359,10 +1435,8 @@ static bool a_other_id(list_t *ids_list) {
             goto err;
         }
 
-        Semantics.check_multiple_assignment(ids_list, rhs_expressions);
-
+        check_multiple_assignment(ids_list, rhs_expressions);
         Generator.assignment(ids_list, rhs_expressions);
-
         goto noerr;
     }
 
