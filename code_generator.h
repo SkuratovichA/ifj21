@@ -74,11 +74,6 @@ struct code_generator_interface_t {
     void (*tmp_var_definition)(char *);
 
     /*
-     * @brief Generates assignment.
-     */
-    void (*assignment)(list_t *, dynstring_t *);
-
-    /*
      * @brief Generates nil assignment to return variable.
      */
     void (*return_nil)(size_t);
@@ -272,6 +267,17 @@ struct code_generator_interface_t {
      * @brief Generates comment.
      */
     void (*comment)(char *);
+
+    /*
+     * @brief Generates assignment to a variable
+     *        MOVE LF@%0%i GF@%expr_result
+     */
+    void (*var_assignment)(dynstring_t *);
+
+    /*
+     * @brief Sets variable to nil.
+     */
+    void (*var_set_nil)(dynstring_t *);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.

@@ -606,36 +606,6 @@ static void generate_expression_push() {
 }
 
 /*
- * @brief Generates multiple assignment.
- */
-static void generate_assignment(list_t *ids_list, dynstring_t *rhs_expressions) {
-    // ids_list needs to be reversed because the stack is used
-    List.reverse(ids_list);
-    list_item_t *id = ids_list->head;
-    size_t id_cnt = 0;
-    size_t ids_len = List.len(ids_list);
-    size_t rhs_len = Dynstring.len(rhs_expressions);
-
-    while (rhs_len > ids_len) {
-        printf("\n# rhs: [%lu], ids: [%lu]\n", rhs_len, ids_len);
-        generate_expression_pop();
-        rhs_len--;
-    }
-    while (id != NULL) {
-        // there is not an expression for the variable
-        if (ids_len - rhs_len > id_cnt) {
-            // assign nil to other variables
-            generate_var_set_nil(id->data);
-        } else {
-            // generate code for assignment
-            generate_var_assignment(id->data);
-        }
-        id_cnt++;
-        id = id->next;
-    }
-}
-
-/*
  * @brief Generates nil assignment to return variable.
  */
 static void generate_return_nil(size_t index) {
@@ -1372,7 +1342,6 @@ const struct code_generator_interface_t Generator = {
         .var_declaration = generate_var_declaration,
         .var_definition = generate_var_definition,
         .tmp_var_definition = generate_tmp_var_definition,
-        .assignment = generate_assignment,
         .return_nil = generate_return_nil,
         .recast_expression_to_bool = recast_expression_to_bool,
         .recast_int_to_number = recast_second,
@@ -1410,4 +1379,6 @@ const struct code_generator_interface_t Generator = {
         .main_end = generate_main_end,
         .prog_start = generate_prog_start,
         .comment = generate_comment,
+        .var_assignment = generate_var_assignment,
+        .var_set_nil = generate_var_set_nil,
 };
