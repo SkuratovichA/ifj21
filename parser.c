@@ -1345,8 +1345,8 @@ static void Init_parser() {
     Symtable.add_builtin_function(global_table, "reads", "", "s"); // number
 
     Symtable.add_builtin_function(global_table, "tointeger", "f", "i"); // (f : number) : integer
-    Symtable.add_builtin_function(global_table, "substr", "sff",
-                                  "s"); // substr(s : string, i : number, j : number) : string
+    Symtable.add_builtin_function(global_table, "substr", "sii",
+                                  "s"); // substr(s : string, i : integer, j : integer) : string
     Symtable.add_builtin_function(global_table, "ord", "si", "i"); // (s : string, i : integer) : integer
     Symtable.add_builtin_function(global_table, "chr", "i", "s"); // (i : integer) : string
 
