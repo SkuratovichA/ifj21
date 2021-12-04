@@ -84,10 +84,14 @@ struct code_generator_interface_t {
     void (*return_nil)(size_t);
 
     /*
-     * @brief Converts GF@%expr_result int -> float
+     * @brief Converts GF@%expr_result to bool
      */
     void (*recast_expression_to_bool)(void);
 
+    /*
+     * @brief Converts GF@%expr_result int -> float
+     */
+    void (*recast_int_to_number)(void);
     /*
      * @brief Generates expressions reduce.
      * @param expr stores info about the expr to be processed.
