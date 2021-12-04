@@ -1345,8 +1345,10 @@ static bool check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
                 goto err;
             }
 
+            debug_msg("expected = %c\n", Semantics.of_id_type(sym->type));
+            debug_msg("received = %c\n", rhs_expr_str[ids_len - id_cnt - 1]);
             if (!Semantics.check_type_compatibility(Semantics.of_id_type(sym->type),
-                                                    rhs_expr_str[rhs_len - id_cnt - 1],
+                                                    rhs_expr_str[ids_len - id_cnt - 1],
                                                     &r_type)) {
                 Errors.set_error(ERROR_TYPE_MISSMATCH);
                 goto err;
