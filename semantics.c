@@ -592,11 +592,6 @@ static bool Check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
         id = id->next;
     }
 
-    if (id_cnt < Dynstring.len(rhs_expressions)) {
-        // TODO: clear generator stack
-        assert(false);
-    }
-
     Dynstring.dtor(id_type);
     Dynstring.dtor(expr_type);
     return true;

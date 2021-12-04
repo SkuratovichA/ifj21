@@ -592,6 +592,20 @@ static void generate_var_assignment(dynstring_t *var_name) {
 }
 
 /*
+ * @brief Generates pop from the stack to GF@%expr_result.
+ */
+static void generate_expression_pop() {
+    ADD_INSTR("POPS GF@%expr_result");
+}
+
+/*
+ * @brief Generates pop from the stack to GF@%expr_result.
+ */
+static void generate_expression_push() {
+    ADD_INSTR("PUSHS GF@%expr_result");
+}
+
+/*
  * @brief Generates multiple assignment.
  */
 static void generate_assignment(list_t *ids_list, dynstring_t *rhs_expressions) {
@@ -599,11 +613,17 @@ static void generate_assignment(list_t *ids_list, dynstring_t *rhs_expressions) 
     List.reverse(ids_list);
     list_item_t *id = ids_list->head;
     size_t id_cnt = 0;
-    size_t len = List.len(ids_list);
+    size_t ids_len = List.len(ids_list);
+    size_t rhs_len = Dynstring.len(rhs_expressions);
 
+    while (rhs_len > ids_len) {
+        printf("\n# rhs: [%lu], ids: [%lu]\n", rhs_len, ids_len);
+        generate_expression_pop();
+        rhs_len--;
+    }
     while (id != NULL) {
         // there is not an expression for the variable
-        if ((len - Dynstring.len(rhs_expressions)) > id_cnt) {
+        if (ids_len - rhs_len > id_cnt) {
             // assign nil to other variables
             generate_var_set_nil(id->data);
         } else {
@@ -623,20 +643,6 @@ static void generate_return_nil(size_t index) {
     ADD_INSTR_INT(index);
     ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP();
-}
-
-/*
- * @brief Generates pop from the stack to GF@%expr_result.
- */
-static void generate_expression_pop() {
-    ADD_INSTR("POPS GF@%expr_result");
-}
-
-/*
- * @brief Generates pop from the stack to GF@%expr_result.
- */
-static void generate_expression_push() {
-    ADD_INSTR("PUSHS GF@%expr_result");
 }
 
 /*
