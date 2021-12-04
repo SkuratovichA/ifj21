@@ -635,8 +635,8 @@ int main() {
             "main()                                                          "NL
     );
 
-    char *description30 = "function semantic: declaration without definiton (error)";
-    int retcode30 = ERROR_FUNCTION_SEMANTICS;
+    char *description30 = "declaration without definiton (error)";
+    int retcode30 = ERROR_DEFINITION;
     pfile_t *pf30 = Pfile.ctor(
             PROLOG
             "global foo : function( string, string ) : string, number"
@@ -1398,8 +1398,8 @@ int main() {
             "main(3)                                  "NL
     );
 
-    char *description81 = "for cycles, minus in the assignment";
-    int retcode81 = ERROR_TYPE_MISSMATCH;
+    char *description81 = "minus with string";
+    int retcode81 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
     pfile_t *pf81 = Pfile.ctor(
             PROLOG
             "function main(iterations : string )      "NL
@@ -3037,7 +3037,7 @@ int main() {
     );
 
     char *description196 = "";
-    int retcode196 = ERROR_FUNCTION_SEMANTICS;
+    int retcode196 = ERROR_NOERROR;
     pfile_t *pf196 = Pfile.ctor(
             PROLOG
             "function foo(a : integer, b : string) : integer, integer, integer  "NL
@@ -3045,10 +3045,10 @@ int main() {
             "end                                                                "NL
             "                                                                   "NL
             "function main()                                                    "NL
-            "    local i : integer;                                             "NL
-            "    local j : integer;                                             "NL
-            "    local k : integer;                                             "NL
-            "    local l : integer;                                             "NL
+            "    local i : integer                                              "NL
+            "    local j : integer                                              "NL
+            "    local k : integer                                              "NL
+            "    local l : integer                                              "NL
             "    i, j, k, l = 0, foo(1, \"hello\")                              "NL
             "    write(j)                                                       "NL
             "                                                                   "NL
@@ -3057,7 +3057,7 @@ int main() {
     );
 
     char *description197 = "";
-    int retcode197 = ERROR_TYPE_MISSMATCH;
+    int retcode197 = ERROR_NOERROR;
     pfile_t *pf197 = Pfile.ctor(
             PROLOG
             "function foo(a : integer, b : string) : integer, integer           "NL
@@ -3065,11 +3065,11 @@ int main() {
             "end                                                                "NL
             "                                                                   "NL
             "function main()                                                    "NL
-            "    local i : integer;                                             "NL
-            "    local j : integer;                                             "NL
-            "    local k : integer;                                             "NL
-            "    local l : integer;                                             "NL
-            "    i, j, k, l = 0, foo(), 3                                       "NL
+            "    local i : integer                                              "NL
+            "    local j : integer                                              "NL
+            "    local k : integer                                              "NL
+            "    local l : integer                                              "NL
+            "    i, j, k, l = 0, foo(1, \"test\"), 3                            "NL
             "    write(j)                                                       "NL
             "                                                                   "NL
             "end                                                                "NL
@@ -3441,7 +3441,7 @@ int main() {
     );
 
     char *description226 = "";
-    int retcode226 = ERROR_FUNCTION_SEMANTICS;
+    int retcode226 = ERROR_TYPE_MISSMATCH;
     pfile_t *pf226 = Pfile.ctor(
             PROLOG
             "function main()                                   "NL
