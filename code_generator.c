@@ -654,9 +654,11 @@ static void recast_first_or_both(type_recast_t recast) {
     ADD_INSTR("# convert int -> float");
     ADD_INSTR("POPS GF@%expr_result2 \n"
               "POPS GF@%expr_result \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
               "INT2FLOAT GF@%expr_result GF@%expr_result");
     if (recast == TYPE_RECAST_BOTH) {
         ADD_INSTR("# convert int -> float");
+        ADD_INSTR("JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n");
         ADD_INSTR("INT2FLOAT GF@%expr_result2 GF@%expr_result2");
     }
     ADD_INSTR("PUSHS GF@%expr_result \n"
@@ -670,6 +672,7 @@ static void recast_first_or_both(type_recast_t recast) {
 static void recast_second() {
     ADD_INSTR("# convert int -> float");
     ADD_INSTR("POPS GF@%expr_result \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
               "INT2FLOAT GF@%expr_result GF@%expr_result \n"
               "PUSHS GF@%expr_result");
 }
