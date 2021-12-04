@@ -1090,6 +1090,8 @@ static bool fc_other_expr(dynstring_t *expected_params,
         goto err;
     }
 
+    CHECK_EMPTY_SIGNATURE(received_signature);
+
     // [fc_other_expr]
     if (!fc_other_expr(expected_params, received_signature, func_name, params_cnt)) {
         goto err;
@@ -1135,6 +1137,8 @@ static bool fc_expr(dynstring_t *expected_params, dynstring_t *func_name) {
     if (!parse_init(received_signature)) {
         goto err;
     }
+
+    CHECK_EMPTY_SIGNATURE(received_signature);
 
     // [fc_other_expr]
     if (!fc_other_expr(expected_params, received_signature, func_name, params_cnt)) {
