@@ -1038,6 +1038,8 @@ static bool fc_other_expr(dynstring_t *expected_params,
 
     // | )
     if (Scanner.get_curr_token().type == TOKEN_RPAREN) {
+        size_t all_params = params_cnt + Dynstring.len(last_expression);
+
         for (size_t i = 0; i < Dynstring.len(last_expression); i++) {
             if (Dynstring.cmp_c_str(func_name, "write") == 0) {
                 // generate code for write
@@ -1046,7 +1048,7 @@ static bool fc_other_expr(dynstring_t *expected_params,
                 continue;
             }
 
-            if (params_cnt != Dynstring.len(expected_params) - 1 ||
+            if (all_params != Dynstring.len(expected_params) ||
                 !Semantics.check_type_compatibility(Dynstring.c_str(expected_params)[params_cnt],
                                                     Dynstring.c_str(last_expression)[i],
                                                     &r_type)) {
