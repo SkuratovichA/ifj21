@@ -401,9 +401,13 @@ static bool assignment(dynstring_t *id_name, int id_type) {
 
     // local int : integer
 
-    Semantics.check_type_compatibility(expected_type,
-                                       Dynstring.c_str(received_signature)[0],
-                                       &r_type);
+    if (!Semantics.check_type_compatibility(expected_type,
+                                            Dynstring.c_str(received_signature)[0],
+                                            &r_type)) {
+        Errors.set_error(ERROR_TYPE_MISSMATCH);
+        goto err;
+    }
+
     if (r_type != NO_RECAST) {
         Generator.recast_int_to_number();
     }
