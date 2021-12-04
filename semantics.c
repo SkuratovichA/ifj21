@@ -549,61 +549,33 @@ static bool Check_operand(token_t operand, dynstring_t *expression_type) {
 }
 
 /**
- * @brief Check semantics of multiple assignment
+ * @brief Check semantics of two types.
  *
- * @param ids_list list of identifiers.
- * @param rhs_expressions is an initialized vector with expression types.
+ * @param expected_type
+ * @param received_char
+ * @param r_type variable to store a type of recast.
  * @return bool.
  */
-static bool Check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_expressions) {
-    list_item_t *id = ids_list->head;
-    char *rhs_expr_str = Dynstring.c_str(rhs_expressions);
-    size_t id_cnt = 0;
-    dynstring_t *id_type = Dynstring.ctor("");
-    dynstring_t *expr_type = Dynstring.ctor("");
-
-    while (id != NULL) {
-        // there is no more expressions
-        if (id_cnt >= Dynstring.len(rhs_expressions)) {
-            // TODO: assign nil to other variables
-            id_cnt++;
-            id = id->next;
-            continue;
-        }
-
-        symbol_t *sym;
-        if (!Symstack.get_local_symbol(symstack, id->data, &sym)) {
-            Errors.set_error(ERROR_DEFINITION);
-            goto err;
-        }
-
-        Dynstring.append(id_type, Semantics.of_id_type(sym->type));
-        Dynstring.append(expr_type, rhs_expr_str[id_cnt]);
-
-        if (!Check_signatures_compatibility(id_type,
-                                            expr_type,
-                                            ERROR_TYPE_MISSMATCH)) {
-            goto err;
-        }
-
-        Dynstring.clear(id_type);
-        Dynstring.clear(expr_type);
-        id_cnt++;
-        id = id->next;
+static bool Check_type_compatibility (const char expected_type,
+                                      const char received_char,
+                                      type_recast_t *r_type) {
+    if (expected_type == received_char) {
+        goto ret;
     }
 
-    if (id_cnt < Dynstring.len(rhs_expressions)) {
-        // TODO: clear generator stack
-        assert(false);
+    if (received_char == 'n') {
+        goto ret;
     }
 
-    Dynstring.dtor(id_type);
-    Dynstring.dtor(expr_type);
-    return true;
-    err:
-    Dynstring.dtor(id_type);
-    Dynstring.dtor(expr_type);
+    if (expected_type == 'f' && received_char == 'i') {
+        *r_type = TYPE_RECAST_FIRST;
+        goto ret;
+    }
+
+
     return false;
+    ret:
+    return true;
 }
 
 const struct semantics_interface_t Semantics = {
@@ -629,5 +601,5 @@ const struct semantics_interface_t Semantics = {
         .check_unary_compatibility = Check_unary_compatability,
         .check_operand = Check_operand,
         .trunc_signature = Trunc_signature,
-        .check_multiple_assignment = Check_multiple_assignment,
+        .check_type_compatibility = Check_type_compatibility,
 };

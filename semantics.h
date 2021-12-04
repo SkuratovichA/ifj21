@@ -192,11 +192,12 @@ struct semantics_interface_t {
     void (*trunc_signature)(dynstring_t *);
 
     /**
-     * @brief Check semantics of multiple assignment
+     * @brief Check semantics of two types.
      *
-     * @param ids_list list of identifiers.
-     * @param rhs_expressions is an initialized vector with expression types.
+     * @param expected_type
+     * @param received_char
+     * @param r_type variable to store a type of recast.
      * @return bool.
      */
-    bool (*check_multiple_assignment)(list_t *, dynstring_t *);
+    bool (*check_type_compatibility)(const char, const char, type_recast_t *);
 };
