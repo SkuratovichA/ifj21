@@ -1125,6 +1125,7 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
         goto err;
     }
 
+    // TODO: add number -> integer
     // Check function parameters signature
     if (Dynstring.cmp(received_params, expected_params) != 0) {
         // write(...)
@@ -1135,6 +1136,7 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
         // tointeger(nil)
         if (Dynstring.cmp_c_str(id_name, "tointeger") != 0 ||
             Dynstring.cmp_c_str(received_params, "n") != 0) {
+            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
             goto err;
         }
     }
@@ -1458,20 +1460,16 @@ static bool Default_expression(pfile_t *pfile_,
 
     // expr
     if (!parse_init(received_signature)) {
-        return false;
+        goto err;
     }
 
-    // Check if signature is empty
-    if (Dynstring.len(received_signature) == 0) {
-        Errors.set_error(ERROR_SYNTAX);
-        return false;
-    }
+    CHECK_EMPTY_SIGNATURE(received_signature);
 
     Generator.expression_pop();
     // TODO: CLEARS stack?
 
     if (type_expr_statement == TYPE_EXPR_DEFAULT) {
-        goto ret;
+        goto noerr;
     }
 
     if (Dynstring.cmp_c_str(received_signature, "b") != 0) {
@@ -1484,8 +1482,10 @@ static bool Default_expression(pfile_t *pfile_,
     Dynstring.clear(received_signature);
     Dynstring.append(received_signature, 'b');
 
-    ret:
+    noerr:
     return true;
+    err:
+    return false;
 }
 
 /**

@@ -573,6 +573,7 @@ static bool Check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
 
         symbol_t *sym;
         if (!Symstack.get_local_symbol(symstack, id->data, &sym)) {
+            Errors.set_error(ERROR_DEFINITION);
             goto err;
         }
 
