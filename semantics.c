@@ -55,8 +55,6 @@ static bool Is_builtin(func_semantics_t *self) {
 
 /** Set is_declared.
  *
- * TODO: depricate?
- *
  * @param self semantics to change it_declared flag.
  * @return void.
  */
@@ -69,8 +67,6 @@ static void Declare(func_semantics_t *self) {
 
 /** Set is_defined.
  *
- * TODO: depricate?
- *
  * @param self semantics to change it_defined flag.
  * @return void.
  */
@@ -82,8 +78,6 @@ static void Define(func_semantics_t *self) {
 }
 
 /** Set is_builtin.
- *
- * TODO: depricate?
  *
  * @param self semantics to change it_builtin flag.
  * @return void.
