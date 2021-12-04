@@ -1046,7 +1046,7 @@ static bool fc_other_expr(dynstring_t *expected_params,
                 continue;
             }
 
-            if (params_cnt == Dynstring.len(expected_params) ||
+            if (params_cnt != Dynstring.len(expected_params) - 1 ||
                 !Semantics.check_type_compatibility(Dynstring.c_str(expected_params)[params_cnt],
                                                     Dynstring.c_str(last_expression)[i],
                                                     &r_type)) {
