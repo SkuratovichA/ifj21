@@ -1319,29 +1319,39 @@ static bool check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
     size_t id_cnt = 0;
     type_recast_t r_type = NO_RECAST;
 
+    size_t ids_len = List.len(ids_list);
+    size_t rhs_len = Dynstring.len(rhs_expressions);
+
+    while (rhs_len > ids_len) {
+        Dynstring.trunc_to_len(rhs_expressions, ids_len);
+        Generator.expression_pop();
+        rhs_len--;
+    }
+
     while (id != NULL) {
         // there is no more expressions
-        if (id_cnt >= Dynstring.len(rhs_expressions)) {
-            // TODO: assign nil to other variables
-            id_cnt++;
-            id = id->next;
-            continue;
-        }
+        if (id_cnt < ids_len - rhs_len) {
+            // assign nil to other variables
+            Generator.var_set_nil(id->data);
+        } else {
+            symbol_t *sym;
+            if (!Symstack.get_local_symbol(symstack, id->data, &sym)) {
+                Errors.set_error(ERROR_DEFINITION);
+                goto err;
+            }
 
-        symbol_t *sym;
-        if (!Symstack.get_local_symbol(symstack, id->data, &sym)) {
-            Errors.set_error(ERROR_DEFINITION);
-            goto err;
-        }
+            if (!Semantics.check_type_compatibility(Semantics.of_id_type(sym->type),
+                                                    rhs_expr_str[rhs_len - id_cnt - 1],
+                                                    &r_type)) {
+                Errors.set_error(ERROR_TYPE_MISSMATCH);
+                goto err;
+            }
 
-        if (!Semantics.check_type_compatibility(Semantics.of_id_type(sym->type),
-                                                rhs_expr_str[id_cnt],
-                                                &r_type)) {
-            Errors.set_error(ERROR_TYPE_MISSMATCH);
-            goto err;
+            if (r_type != NO_RECAST) {
+                Generator.recast_int_to_number();
+            }
+            Generator.var_assignment(id->data);
         }
-
-        // TODO: recast in generator
 
         r_type = NO_RECAST;
         id_cnt++;
@@ -1462,7 +1472,6 @@ static bool a_other_id(list_t *ids_list) {
         }
 
         check_multiple_assignment(ids_list, rhs_expressions);
-        Generator.assignment(ids_list, rhs_expressions);
         goto noerr;
     }
 
@@ -1474,8 +1483,8 @@ static bool a_other_id(list_t *ids_list) {
 
     CHECK_DEFINITION(id_name);
 
-    // Append next identifier
-    List.append(ids_list, Dynstring.dup(id_name));
+    // Prepend next identifier
+    List.prepend(ids_list, Dynstring.dup(id_name));
 
     // [a_other_id]
     if (!a_other_id(ids_list)) {
@@ -1507,8 +1516,8 @@ static bool assign_id(dynstring_t *id_name) {
 
     CHECK_DEFINITION(id_name);
 
-    // Append first identifier
-    List.append(ids_list, Dynstring.dup(id_name));
+    // Prepend first identifier
+    List.prepend(ids_list, Dynstring.dup(id_name));
 
     // [a_other_id]
     if (!a_other_id(ids_list)) {
