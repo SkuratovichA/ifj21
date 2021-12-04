@@ -1375,6 +1375,7 @@ const struct code_generator_interface_t Generator = {
         .assignment = generate_assignment,
         .return_nil = generate_return_nil,
         .recast_expression_to_bool = recast_expression_to_bool,
+        .recast_int_to_number = recast_second,
         .expression_operand = generate_expression_operand,
         .expression_unary = generate_expression_unary,
         .expression_binary = generate_expression_binary,

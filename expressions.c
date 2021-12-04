@@ -1040,7 +1040,9 @@ static bool fc_other_expr(dynstring_t *expected_params,
     if (Scanner.get_curr_token().type == TOKEN_RPAREN) {
         for (size_t i = 0; i < Dynstring.len(last_expression); i++) {
             if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-                // TODO: generate code for write
+                // generate code for write
+                Generator.expression_pop();
+                Generator.func_call("write");
                 continue;
             }
 
@@ -1052,7 +1054,12 @@ static bool fc_other_expr(dynstring_t *expected_params,
                 goto err;
             }
 
-            // TODO: recast if needed and assign parameter
+            // recast if needed and assign parameter
+            if (r_type != NO_RECAST) {
+                Generator.recast_int_to_number();
+            }
+            Generator.expression_pop();
+            Generator.func_call_pass_param(params_cnt);
 
             r_type = NO_RECAST;
             params_cnt++;
@@ -1070,7 +1077,9 @@ static bool fc_other_expr(dynstring_t *expected_params,
     Semantics.trunc_signature(last_expression);
 
     if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-        // TODO: generate code for write
+        // generate code for write
+        Generator.expression_pop();
+        Generator.func_call("write");
     } else {
         if (params_cnt == Dynstring.len(expected_params) ||
             !Semantics.check_type_compatibility(Dynstring.c_str(expected_params)[params_cnt],
@@ -1080,7 +1089,12 @@ static bool fc_other_expr(dynstring_t *expected_params,
             goto err;
         }
 
-        // TODO: recast if needed and assign parameter
+        // recast if needed and assign parameter
+        if (r_type != NO_RECAST) {
+            Generator.recast_int_to_number();
+        }
+        Generator.expression_pop();
+        Generator.func_call_pass_param(params_cnt);
     }
 
     params_cnt++;
@@ -1167,8 +1181,11 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     dynstring_t *expected_params = Dynstring.ctor("");
     GET_FUNCTION_SIGNATURES(id_name, expected_params, function_returns);
 
+
     // generate code for function call start
-    Generator.func_createframe();
+    if (Dynstring.cmp_c_str(id_name, "write") != 0) {
+        Generator.func_createframe();
+    }
 
     // (
     EXPECTED(TOKEN_LPAREN);
@@ -1179,7 +1196,9 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
     }
 
     // generate code for function call
-    Generator.func_call(Dynstring.c_str(id_name));
+    if (Dynstring.cmp_c_str(id_name, "write") != 0) {
+        Generator.func_call(Dynstring.c_str(id_name));
+    }
 
     Dynstring.dtor(expected_params);
     return true;
