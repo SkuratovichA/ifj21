@@ -438,7 +438,7 @@ static void Print_instr_list(instr_list_t instr_list_type) {
             List.print_list(instructions.mainList, (char *(*)(void *)) Dynstring.c_str);
             break;
         default:
-            printf("Undefined instruction list.\n");
+            debug_msg("Undefined instruction list.\n");
             break;
     }
 }
