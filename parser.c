@@ -409,6 +409,7 @@ static bool assignment(dynstring_t *id_name, int id_type) {
     }
 
     if (r_type != NO_RECAST) {
+        Generator.expression_push();
         Generator.recast_int_to_number();
     }
     // expression result is in GF@%expr_result
