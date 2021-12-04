@@ -445,7 +445,7 @@ static bool for_increment() {
     PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_DEFAULT);
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // generate step
-    Generator.tmp_var_definition("step");
+    Generator.tmp_var_definition("for%step");
 
     noerr:
     // do
@@ -515,7 +515,7 @@ static bool for_cycle() {
 
     // generate terminating `expr`
     Generator.comment("for loop - terminating expr definition");
-    Generator.tmp_var_definition("terminating_cond");
+    Generator.tmp_var_definition("for%terminating_cond");
 
     // do | , `expr` do
     if (!for_increment()) {
