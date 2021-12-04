@@ -847,6 +847,12 @@ static bool parse_parents(sstack_t *stack, bool *parents_parsed) {
         goto err;
     }
 
+    // Check empty expression
+    if (Dynstring.len(new_expr->expression_type) == 0) {
+        Errors.set_error(ERROR_SYNTAX);
+        goto err;
+    }
+
     // )
     EXPECTED(TOKEN_RPAREN);
 
