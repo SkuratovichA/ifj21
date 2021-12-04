@@ -1265,6 +1265,13 @@ static void generate_func_call_return_value(size_t index) {
 }
 
 /*
+ * @brief Generates clear stack.
+ */
+static void generate_clear_stack() {
+    ADD_INSTR("CLEARS");
+}
+
+/*
  * @brief Generates start of main scope.
  */
 static void generate_main_start() {
@@ -1342,7 +1349,8 @@ const struct code_generator_interface_t Generator = {
         .var_declaration = generate_var_declaration,
         .var_definition = generate_var_definition,
         .tmp_var_definition = generate_tmp_var_definition,
-        .return_nil = generate_return_nil,
+        .var_assignment = generate_var_assignment,
+        .var_set_nil = generate_var_set_nil,
         .recast_expression_to_bool = recast_expression_to_bool,
         .recast_int_to_number = recast_second,
         .expression_operand = generate_expression_operand,
@@ -1376,9 +1384,8 @@ const struct code_generator_interface_t Generator = {
         .func_call_pass_param = generate_func_call_pass_param,
         .func_call = generate_func_call,
         .func_call_return_value = generate_func_call_return_value,
+        .clear_stack = generate_clear_stack,
         .main_end = generate_main_end,
         .prog_start = generate_prog_start,
         .comment = generate_comment,
-        .var_assignment = generate_var_assignment,
-        .var_set_nil = generate_var_set_nil,
 };

@@ -947,8 +947,13 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
             Dynstring.append(expr->expression_type, 'n');
         }
 
+        size_t expr_num = Dynstring.len(expr->expression_type);
         Semantics.trunc_signature(expr->expression_type);
-        // TODO: clear stack in generated code
+
+        // clear generator stack
+        for(size_t i = 0; i < expr_num - 1; i++) {
+            Generator.expression_pop();
+        }
     }
 
     // Precedence comparison
@@ -1575,7 +1580,7 @@ static bool Default_expression(pfile_t *pfile_,
     CHECK_EMPTY_SIGNATURE(received_signature);
 
     Generator.expression_pop();
-    // TODO: CLEARS stack?
+    Generator.clear_stack();
 
     if (type_expr_statement == TYPE_EXPR_DEFAULT) {
         goto noerr;
@@ -1623,7 +1628,7 @@ static bool Global_expression(pfile_t *pfile_) {
         goto err;
     }
 
-    // TODO: CLEARS stack?
+    Generator.clear_stack();
 
     Dynstring.dtor(id_name);
     return true;
@@ -1653,13 +1658,13 @@ static bool Function_expression(pfile_t *pfile_) {
         if (!func_call(id_name, NULL)) {
             goto err;
         }
-        // TODO: CLEARS stack?
+        Generator.clear_stack();
     } else {
         // [assign_id]
         if (!assign_id(id_name)) {
             goto err;
         }
-        // TODO: CLEARS stack?
+        Generator.clear_stack();
     }
 
     Dynstring.dtor(id_name);
