@@ -331,7 +331,26 @@ static void generate_modulo_func() {
               "MUL GF@%expr_result GF@%expr_result LF@%divisor \n"
               "SUB GF@%expr_result LF@%divident GF@%expr_result \n"
               "PUSHS GF@%expr_result \n"
-              "RETURN ");
+              "RETURN \n");
+}
+
+/*
+ * @brief Generates unary minus operation.
+ */
+static void generate_minus_unary_func() {
+    ADD_INSTR("LABEL $$minus \n"
+              "POPS GF@%expr_result2 \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+              "TYPE GF@%expr_result3 GF@%expr_result2 \n"
+              "JUMPIFNEQ $$minus$float GF@%expr_result3 string@int \n"
+              "PUSHS int@-1 \n"
+              "JUMP $$minus$end \n"
+              "LABEL $$minus$float \n"
+              "PUSHS float@-0x1.0p+0 \n"
+              "LABEL $$minus$end \n"
+              "PUSHS GF@%expr_result2 \n"
+              "MULS \n"
+              "RETURN \n");
 }
 
 /*
@@ -808,6 +827,9 @@ static void generate_expression_unary(op_list_t op) {
                       "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
                       "STRLEN GF@%expr_result GF@%expr_result2 \n"
                       "PUSHS GF@%expr_result");
+            break;
+        case OP_MINUS_UNARY:    // -
+            ADD_INSTR("CALL $$minus");
             break;
         default:
             ADD_INSTR("# unrecognized_operation");
@@ -1314,6 +1336,7 @@ static void generate_prog_start() {
     generate_func_tointeger();
     generate_power_func();
     generate_modulo_func();
+    generate_minus_unary_func();
     nil_check_func();
     recast_to_bool_func();
     generate_ors_short();
