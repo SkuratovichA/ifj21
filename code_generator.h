@@ -92,6 +92,7 @@ struct code_generator_interface_t {
      * @brief Converts GF@%expr_result int -> float
      */
     void (*recast_int_to_number)(void);
+
     /*
      * @brief Generates expressions reduce.
      * @param expr stores info about the expr to be processed.
@@ -213,7 +214,7 @@ struct code_generator_interface_t {
     /*
      * @brief Generates passing param from TF to LF.
      */
-    void (*func_start_param)(dynstring_t*, size_t);
+    void (*func_start_param)(dynstring_t *, size_t);
 
     /*
      * @brief Generates passing return value.
@@ -246,6 +247,19 @@ struct code_generator_interface_t {
      * @brief Generates parameter pass to a function.
      */
     void (*func_call_pass_param)(size_t);
+
+    /*
+     * @brief Generates new TF variable declaration with
+     *        assignment of the value on the top of the stack.
+     *        This function is used for function write call.
+     */
+    void (*pop_to_tmp_var)(size_t);
+
+    /*
+     * @brief Generates move from TF variable to GF@%expr_result.
+     *        This function is used for function write call.
+     */
+    void (*move_tmp_var)(size_t);
 
     /*
      * @brief Generates getting return value after function call.

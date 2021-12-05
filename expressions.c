@@ -1045,11 +1045,14 @@ static bool fc_other_expr(dynstring_t *expected_params,
     if (Scanner.get_curr_token().type == TOKEN_RPAREN) {
         size_t all_params = params_cnt + Dynstring.len(last_expression);
 
+        if (Dynstring.cmp_c_str(func_name, "write") == 0) {
+            // create frame bcs new TF variables will be defined
+            Generator.func_createframe();
+        }
         for (size_t i = 0; i < Dynstring.len(last_expression); i++) {
             if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-                // generate code for write
-                Generator.expression_pop();
-                Generator.func_call("write");
+                // generates pop to TF variable
+                Generator.pop_to_tmp_var(i);
                 continue;
             }
 
@@ -1073,6 +1076,13 @@ static bool fc_other_expr(dynstring_t *expected_params,
         }
 
         EXPECTED(TOKEN_RPAREN);
+        if (Dynstring.cmp_c_str(func_name, "write") == 0) {
+            for (size_t i = Dynstring.len(last_expression); i > 0; i--) {
+                // moves value of TF variable to GF@%expr_result and calls write
+                Generator.move_tmp_var(i - 1);
+                Generator.func_call("write");
+            }
+        }
         goto noerr;
     }
 
@@ -1081,7 +1091,13 @@ static bool fc_other_expr(dynstring_t *expected_params,
 
     // Truncate signature if it has multiple return types
     // and located not at the end of statement
+    size_t expr_num = Dynstring.len(last_expression);
     Semantics.trunc_signature(last_expression);
+
+    // clear generator stack
+    for(size_t i = 0; i < expr_num - 1; i++) {
+        Generator.expression_pop();
+    }
 
     if (Dynstring.cmp_c_str(func_name, "write") == 0) {
         // generate code for write

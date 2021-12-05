@@ -1248,6 +1248,31 @@ static void generate_func_call_pass_param(size_t param_index) {
 }
 
 /*
+ * @brief Generates new TF variable declaration with
+ *        assignment of the value on the top of the stack.
+ *        This function is used for function write call.
+ */
+static void generate_pop_to_tmp_var(size_t index) {
+    ADD_INSTR_PART("DEFVAR TF@%write");
+    ADD_INSTR_INT(index);
+    ADD_INSTR_TMP();
+
+    ADD_INSTR_PART("POPS TF@%write");
+    ADD_INSTR_INT(index);
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates move from TF variable to GF@%expr_result.
+ *        This function is used for function write call.
+ */
+static void generate_move_tmp_var(size_t index) {
+    ADD_INSTR_PART("MOVE GF@%expr_result TF@%write");
+    ADD_INSTR_INT(index);
+    ADD_INSTR_TMP();
+}
+
+/*
  * @brief Generates function call.
  */
 static void generate_func_call(char *func_name) {
@@ -1385,6 +1410,8 @@ const struct code_generator_interface_t Generator = {
         .return_last = generate_return_last,
         .func_createframe = generate_func_createframe,
         .func_call_pass_param = generate_func_call_pass_param,
+        .pop_to_tmp_var = generate_pop_to_tmp_var,
+        .move_tmp_var = generate_move_tmp_var,
         .func_call = generate_func_call,
         .func_call_return_value = generate_func_call_return_value,
         .clear_stack = generate_clear_stack,
