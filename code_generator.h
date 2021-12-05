@@ -217,26 +217,14 @@ struct code_generator_interface_t {
     void (*func_start_param)(dynstring_t *, size_t);
 
     /*
-     * @brief Generates passing return value.
-     */
-    void (*func_pass_return)(size_t);
-
-    /*
      * @brief Generates return value of return parameter with index.
      */
     void (*func_return_value)(size_t);
 
     /*
-     * @brief Generates return for not_last expression. Pops unnecessary
-     *        items from the stack and returns only the last one.
+     * @brief Recast and generate function return.
      */
-    void (*return_not_last)(size_t, size_t);
-
-    /*
-     * @brief Generates return for the last expression. Pops all items from
-     *        the stack to LF%@return...
-     */
-    void (*return_last)(size_t, size_t);
+    void (*pass_return)(type_recast_t, size_t);
 
     /*
      * @brief Generates creation of a frame before passing parameters to a function
@@ -244,9 +232,14 @@ struct code_generator_interface_t {
     void (*func_createframe)(void);
 
     /*
-     * @brief Generates parameter pass to a function.
+     * @brief Generates nil parameter pass to a function.
      */
-    void (*func_call_pass_param)(size_t);
+    void (*func_call_pass_param_nil)(size_t);
+
+    /*
+     * @brief Recast and generate function call parameter.
+     */
+    void (*pass_param)(type_recast_t, size_t);
 
     /*
      * @brief Generates new TF variable declaration with
@@ -276,6 +269,11 @@ struct code_generator_interface_t {
      * @brief Generates function call.
      */
     void (*func_call)(char *);
+
+    /*
+     * @brief Generate multiple write functions.
+     */
+    void (*multiple_write)(size_t);
 
     /*
      * @brief Generates end of main scope.

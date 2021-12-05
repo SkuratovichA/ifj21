@@ -1196,32 +1196,19 @@ static void generate_func_return_value(size_t index) {
 }
 
 /*
- * @brief Generates return for not last expression. Pops unnecessary
- *        items from the stack and returns only the last one.
- *        return x, x, this_one, x
+ * @brief Recast and generate function return.
+ *
+ * @param r_type
+ * @param return_index
  */
-static void generate_return_not_last(size_t to_pop, size_t return_cnt) {
-    while (to_pop > 0) {
-        generate_expression_pop();
-        to_pop--;
+static void generate_return(type_recast_t r_type, size_t return_index) {
+    // recast if needed and assign parameter
+    if (r_type != NO_RECAST) {
+        recast_second();
     }
-    generate_func_pass_return(return_cnt);
+    generate_expression_pop();
+    generate_func_pass_return(return_index);
 }
-
-/*
- * @brief Generates return for the last expression. Pops all items from
- *        the stack to LF%@return...
- *        return x, x, x, this_one
- */
-static void generate_return_last(size_t expr_num, size_t return_cnt) {
-    size_t return_cnt_before = return_cnt - 1;
-    while (return_cnt < expr_num) {
-        generate_expression_pop();
-        generate_func_pass_return(expr_num - return_cnt + return_cnt_before);
-        return_cnt++;
-    }
-}
-
 
 /*
  * @brief Generates creation of a frame before passing parameters to a function
@@ -1245,6 +1232,38 @@ static void generate_func_call_pass_param(size_t param_index) {
     ADD_INSTR_INT(param_index);
     ADD_INSTR_PART(" GF@%expr_result");
     ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generates nil parameter pass to a function.
+ * generates sth like:
+ *          DEFVAR TF@%0
+ *          MOVE TF@%0 nil@nil
+ */
+static void generate_func_call_pass_param_nil(size_t param_index) {
+    ADD_INSTR_PART("DEFVAR TF@%");
+    ADD_INSTR_INT(param_index);
+    ADD_INSTR_TMP();
+
+    ADD_INSTR_PART("MOVE TF@%");
+    ADD_INSTR_INT(param_index);
+    ADD_INSTR_PART(" nil@nil");
+    ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Recast and generate function call parameter.
+ *
+ * @param r_type
+ * @param param_index
+ */
+static void generate_param(type_recast_t r_type, size_t param_index) {
+    // recast if needed and assign parameter
+    if (r_type != NO_RECAST) {
+        recast_second();
+    }
+    generate_expression_pop();
+    generate_func_call_pass_param(param_index);
 }
 
 /*
@@ -1279,6 +1298,24 @@ static void generate_func_call(char *func_name) {
     ADD_INSTR_PART("CALL $");
     ADD_INSTR_PART(func_name);
     ADD_INSTR_TMP();
+}
+
+/*
+ * @brief Generate multiple write functions.
+ */
+static void generate_multiple_write(size_t expr_len) {
+    generate_func_createframe();
+
+    for (size_t i = 0; i < expr_len; i++) {
+        // generates pop to TF variable
+        Generator.pop_to_tmp_var(i);
+    }
+
+    for (size_t i = expr_len; i > 0; i--) {
+        // moves value of TF variable to GF@%expr_result and calls write
+        Generator.move_tmp_var(i - 1);
+        Generator.func_call("write");
+    }
 }
 
 /*
@@ -1404,15 +1441,15 @@ const struct code_generator_interface_t Generator = {
         .func_start = generate_func_start,
         .func_end = generate_func_end,
         .func_start_param = generate_func_start_param,
-        .func_pass_return = generate_func_pass_return,
+        .pass_return = generate_return,
         .func_return_value = generate_func_return_value,
-        .return_not_last = generate_return_not_last,
-        .return_last = generate_return_last,
         .func_createframe = generate_func_createframe,
-        .func_call_pass_param = generate_func_call_pass_param,
+        .func_call_pass_param_nil = generate_func_call_pass_param_nil,
+        .pass_param = generate_param,
         .pop_to_tmp_var = generate_pop_to_tmp_var,
         .move_tmp_var = generate_move_tmp_var,
         .func_call = generate_func_call,
+        .multiple_write = generate_multiple_write,
         .func_call_return_value = generate_func_call_return_value,
         .clear_stack = generate_clear_stack,
         .main_end = generate_main_end,
