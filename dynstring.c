@@ -206,6 +206,10 @@ static dynstring_t *Str_dup(dynstring_t *s) {
 }
 
 static int Cmp_c_str(dynstring_t *s1, char *s2) {
+    if (s2 == NULL) {
+        return 1;
+    }
+
     return strcmp(Dynstring.c_str(s1), s2);
 }
 

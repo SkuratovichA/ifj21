@@ -71,7 +71,8 @@ static pfile_t *pfile;
     do {                                                                                    \
         symbol_t *sym;                                                                      \
                                                                                             \
-        if (!Symtable.get_symbol(global_table, id_name, &sym)) {                             \
+        if (!Symtable.get_symbol(global_table, id_name, &sym)) {                            \
+            Errors.set_error(ERROR_DEFINITION);                                             \
             goto err;                                                                       \
         }                                                                                   \
                                                                                             \
@@ -1309,7 +1310,7 @@ static bool r_expr(dynstring_t *received_rets, size_t func_rets) {
         goto err;
     }
 
-    // Check if expression was empty
+    // Check if expression is empty
     if (Dynstring.len(received_signature) == 0) {
         goto noerr;
     }
@@ -1384,7 +1385,7 @@ static bool check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
     return false;
 }
 
-/** Assignment other expressions.
+/** Parse other expressions for assignment.
  *
  * !rule [a_other_expr] -> , expr [a_other_expr] | e
  *
@@ -1438,7 +1439,7 @@ static bool a_other_expr(dynstring_t *rhs_expressions, dynstring_t *last_express
     return false;
 }
 
-/** Assignment expression.
+/** Parse an expression for assignment.
  *
  * !rule [a_expr] -> expr [a_other_expr]
  *
@@ -1469,7 +1470,7 @@ static bool a_expr(dynstring_t *rhs_expressions) {
     return false;
 }
 
-/** Assignment other identifiers.
+/** Parse other identifiers for assignment.
  *
  * !rule [a_other_id] -> , id [a_other_id] | = [a_expr]
  *
@@ -1522,7 +1523,7 @@ static bool a_other_id(list_t *ids_list) {
     return false;
 }
 
-/** Assignment identifier.
+/** Parse an identifier for assignment.
  *
  * !rule [assign_id] -> [a_other_id]
  *
@@ -1559,7 +1560,7 @@ static bool assign_id(dynstring_t *id_name) {
  * @param pfile_
  * @param received_signature is an initialized empty vector.
  * @param func_rets
- * @return true if successive parsing performed.
+ * @return true if successful parsing performed.
  */
 static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature, size_t func_rets) {
     debug_msg("Return_expression\n");
@@ -1579,7 +1580,7 @@ static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature,
  * @param received_signature is an initialized empty vector.
  * @param type_expr_statement TYPE_EXPR_DEFAULT will not be casted to boolean.
  *                            TYPE_EXPR_CONDITIONAL will be casted to boolean.
- * @return true if successive parsing performed.
+ * @return true if successful parsing performed.
  */
 static bool Default_expression(pfile_t *pfile_,
                                dynstring_t *received_signature,
@@ -1626,7 +1627,7 @@ static bool Default_expression(pfile_t *pfile_,
  * @brief Function calling in the global scope. `id( ...`
  * !rule [global_expression] -> id [func_call]
  * @param pfile_
- * @return true if successive parsing and semantic analysis of expressions performed.
+ * @return true if successful parsing and semantic analysis of expressions performed.
  */
 static bool Global_expression(pfile_t *pfile_) {
     debug_msg("Global_expression\n");
@@ -1661,7 +1662,7 @@ static bool Global_expression(pfile_t *pfile_) {
  * @brief Function calling or assignments in the local scope.
  * !rule [function_expression] -> id [func_call] | id [assign_id]
  * @param pfile_
- * @return true if successive parsing and semantic analysis of expressions performed.
+ * @return true if successful parsing and semantic analysis of expressions performed.
  */
 static bool Function_expression(pfile_t *pfile_) {
     debug_msg("Function_expression\n");
