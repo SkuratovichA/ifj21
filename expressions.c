@@ -103,6 +103,23 @@ static pfile_t *pfile;
     } while(0)
 
 /**
+ * @brief Check expression types compatibility.
+ *
+ * @param expected_type
+ * @param received_type
+ * @param r_type variable to store type of recast
+ */
+#define CHECK_EXPR_TYPES(expected_type, received_type, r_type)      \
+    do {                                                            \
+        if (!Semantics.check_type_compatibility((expected_type),    \
+                                                (received_type),    \
+                                                &(r_type))) {       \
+            Errors.set_error(ERROR_FUNCTION_SEMANTICS);             \
+            goto err;                                               \
+        }                                                           \
+    } while(0)
+
+/**
  * @brief Checks if identifier is a function.
  *
  * @param id_name identifier name.
@@ -387,6 +404,20 @@ static void stack_item_dtor(void *item) {
 
     noerr:
     free(s_item);
+}
+
+/**
+ * @brief Clear unnecessary expressions, if there are more than 1.
+ *
+ * @param received_expressions
+ */
+static void clear_expressions(dynstring_t *received_expressions) {
+    size_t received_expr_len = Dynstring.len(received_expressions);
+    Semantics.trunc_signature(received_expressions);
+
+    for(size_t i = 0; i < received_expr_len - 1; i++) {
+        Generator.expression_pop();
+    }
 }
 
 /**
@@ -948,13 +979,7 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
             Dynstring.append(expr->expression_type, 'n');
         }
 
-        size_t expr_num = Dynstring.len(expr->expression_type);
-        Semantics.trunc_signature(expr->expression_type);
-
-        // clear generator stack
-        for(size_t i = 0; i < expr_num - 1; i++) {
-            Generator.expression_pop();
-        }
+        clear_expressions(expr->expression_type);
     }
 
     // Precedence comparison
@@ -1022,6 +1047,52 @@ static bool parse_init(dynstring_t *received_signature) {
     return false;
 }
 
+/**
+ * @brief Check if lasr function expression was successfully parsed.
+ *
+ * @param expected_signature
+ * @param last_expression last parsed expression.
+ * @param expr number of parsed expressions.
+ * @return bool.
+ */
+static bool is_func_expr_parsed (dynstring_t *expected_signature,
+                                 dynstring_t *last_expression,
+                                 size_t expr) {
+    // Total number of received expressions
+    size_t received = expr + Dynstring.len(last_expression);
+
+    // Total number of expected expressions
+    size_t expected = Dynstring.len(expected_signature);
+
+    // if received expressions <= expected,
+    // that means it is not necessary to clear stack,
+    // but last expression was not parsed yet.
+    if (received <= expected) {
+        return false;
+    }
+
+    // otherwise received > expected, so
+    // clear generator stack
+    while (received > expected) {
+        Generator.expression_pop();
+        received--;
+    }
+
+    // if number of parsed expressions >= expected,
+    // so it is not necessary to parse something, return true
+    // (>=) because expr is indexing from 0
+    if (expr >= expected) {
+        return true;
+    }
+
+    // truncate last expression to size of expected
+    // without size of already parsed expressions
+    size_t trunc_len = expected - expr;
+    Dynstring.trunc_to_len(last_expression, trunc_len);
+
+    return false;
+}
+
 /** Function call other expressions.
  *
  * !rule [fc_other_expr] -> , expr [fc_other_expr] | )
@@ -1039,86 +1110,63 @@ static bool fc_other_expr(dynstring_t *expected_params,
     debug_msg("[fc_other_expr] ->\n");
 
     dynstring_t *received_signature = Dynstring.ctor("");
-    dynstring_t *curr_expected_param = Dynstring.ctor("");
     type_recast_t r_type = NO_RECAST;
 
     // | )
     if (Scanner.get_curr_token().type == TOKEN_RPAREN) {
-        size_t all_params = params_cnt + Dynstring.len(last_expression);
-
         if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-            // create frame bcs new TF variables will be defined
-            Generator.func_createframe();
-        }
-        for (size_t i = 0; i < Dynstring.len(last_expression); i++) {
-            if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-                // generates pop to TF variable
-                Generator.pop_to_tmp_var(i);
-                continue;
+            // generate multiple write functions
+            Generator.multiple_write(Dynstring.len(last_expression));
+        } else {
+            // Number of received parameters
+            size_t received_params = params_cnt + Dynstring.len(last_expression);
+
+            if (is_func_expr_parsed(expected_params,
+                                    last_expression,
+                                    params_cnt)) {
+                EXPECTED(TOKEN_RPAREN);
+                goto noerr;
             }
 
-            if (all_params != Dynstring.len(expected_params) ||
-                !Semantics.check_type_compatibility(Dynstring.c_str(expected_params)[params_cnt],
-                                                    Dynstring.c_str(last_expression)[i],
-                                                    &r_type)) {
-                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
-                goto err;
+            // Parse other params
+            for (size_t i = 0; i < Dynstring.len(last_expression); i++) {
+                CHECK_EXPR_TYPES(Dynstring.c_str(expected_params)[params_cnt],
+                                 Dynstring.c_str(last_expression)[i],
+                                 r_type);
+                Generator.pass_param(r_type, params_cnt);
+                r_type = NO_RECAST;
+                params_cnt++;
             }
 
-            // recast if needed and assign parameter
-            if (r_type != NO_RECAST) {
-                Generator.recast_int_to_number();
+            // if received < expected, set nil values to missing params
+            if (received_params < Dynstring.len(expected_params)) {
+                for (size_t i = 0; i < Dynstring.len(expected_params) - received_params; i++) {
+                    Generator.func_call_pass_param_nil(params_cnt);
+                    params_cnt++;
+                }
             }
-            Generator.expression_pop();
-            Generator.func_call_pass_param(params_cnt);
-
-            r_type = NO_RECAST;
-            params_cnt++;
         }
 
         EXPECTED(TOKEN_RPAREN);
-        if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-            for (size_t i = Dynstring.len(last_expression); i > 0; i--) {
-                // moves value of TF variable to GF@%expr_result and calls write
-                Generator.move_tmp_var(i - 1);
-                Generator.func_call("write");
-            }
-        }
         goto noerr;
     }
 
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    // Truncate signature if it has multiple return types
-    // and located not at the end of statement
-    size_t expr_num = Dynstring.len(last_expression);
-    Semantics.trunc_signature(last_expression);
-
-    // clear generator stack
-    for(size_t i = 0; i < expr_num - 1; i++) {
-        Generator.expression_pop();
-    }
+    clear_expressions(last_expression);
 
     if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-        // generate code for write
+        // generate one write function
         Generator.expression_pop();
         Generator.func_call("write");
     } else {
-        if (params_cnt == Dynstring.len(expected_params) ||
-            !Semantics.check_type_compatibility(Dynstring.c_str(expected_params)[params_cnt],
-                                                Dynstring.c_str(last_expression)[0],
-                                                &r_type)) {
-            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
-            goto err;
+        if (params_cnt < Dynstring.len(expected_params)) {
+            CHECK_EXPR_TYPES(Dynstring.c_str(expected_params)[params_cnt],
+                             Dynstring.c_str(last_expression)[0],
+                             r_type);
+            Generator.pass_param(r_type, params_cnt);
         }
-
-        // recast if needed and assign parameter
-        if (r_type != NO_RECAST) {
-            Generator.recast_int_to_number();
-        }
-        Generator.expression_pop();
-        Generator.func_call_pass_param(params_cnt);
     }
 
     params_cnt++;
@@ -1137,11 +1185,9 @@ static bool fc_other_expr(dynstring_t *expected_params,
 
     noerr:
     Dynstring.dtor(received_signature);
-    Dynstring.dtor(curr_expected_param);
     return true;
     err:
     Dynstring.dtor(received_signature);
-    Dynstring.dtor(curr_expected_param);
     return false;
 }
 
@@ -1160,13 +1206,15 @@ static bool fc_expr(dynstring_t *expected_params, dynstring_t *func_name) {
     dynstring_t *received_signature = Dynstring.ctor("");
 
     // | )
+    //EXPECTED_OPT(TOKEN_RPAREN);
     if (Scanner.get_curr_token().type == TOKEN_RPAREN) {
-        // Check if function does not have any parameters
+        // if function has params, set nil to all of them
         if (Dynstring.len(expected_params) > 0) {
-            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
-            goto err;
+            for (size_t i = 0; i < Dynstring.len(expected_params); i++) {
+                Generator.func_call_pass_param_nil(params_cnt);
+                params_cnt++;
+            }
         }
-
         EXPECTED(TOKEN_RPAREN);
         goto noerr;
     }
@@ -1235,38 +1283,51 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
  *
  * !rule [r_other_expr] -> , expr [r_other_expr] | e
  *
- * @param received_rets is an initialized empty vector.
- * @param last_expression is an initialized vector for last expression type/s.
- * @param func_rets
+ * @param expected_rets
+ * @param last_expression
  * @param return_cnt
  * @return bool.
  */
-static bool r_other_expr(dynstring_t *received_rets,
+static bool r_other_expr(dynstring_t *expected_rets,
                          dynstring_t *last_expression,
-                         size_t func_rets,
                          size_t return_cnt) {
     debug_msg("[r_other_expr] ->\n");
 
     dynstring_t *received_signature = Dynstring.ctor("");
+    type_recast_t r_type = NO_RECAST;
 
     // | e
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
-        Dynstring.cat(received_rets, last_expression);
+        if (is_func_expr_parsed(expected_rets,
+                                last_expression,
+                                return_cnt)) {
+            goto noerr;
+        }
 
-        Generator.return_last(Dynstring.len(received_rets), return_cnt);
+        // Parse other return values
+        for (size_t i = 0; i < Dynstring.len(last_expression); i++) {
+            CHECK_EXPR_TYPES(Dynstring.c_str(expected_rets)[return_cnt],
+                             Dynstring.c_str(last_expression)[i],
+                             r_type);
+            Generator.pass_return(r_type, return_cnt);
+            r_type = NO_RECAST;
+            return_cnt++;
+        }
+
         goto noerr;
     }
 
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    // Truncate signature if it has multiple return types
-    // and located not at the end of expression
-    size_t to_pop = Dynstring.len(last_expression);
-    Semantics.trunc_signature(last_expression);
-    Dynstring.cat(received_rets, last_expression);
+    clear_expressions(last_expression);
 
-    Generator.return_not_last(to_pop, return_cnt);
+    if (return_cnt < Dynstring.len(expected_rets)) {
+        CHECK_EXPR_TYPES(Dynstring.c_str(expected_rets)[return_cnt],
+                         Dynstring.c_str(last_expression)[0],
+                         r_type);
+        Generator.pass_return(r_type, return_cnt);
+    }
 
     return_cnt++;
 
@@ -1278,7 +1339,7 @@ static bool r_other_expr(dynstring_t *received_rets,
     CHECK_EMPTY_SIGNATURE(received_signature);
 
     // [r_other_expr]
-    if (!r_other_expr(received_rets, received_signature, func_rets, return_cnt)) {
+    if (!r_other_expr(expected_rets, received_signature, return_cnt)) {
         goto err;
     }
 
@@ -1296,10 +1357,10 @@ static bool r_other_expr(dynstring_t *received_rets,
  * !rule [r_expr] -> expr [r_other_expr]
  *
  * @param received_rets is an initialized empty vector.
- * @param func_rets
+ * @param expected_rets
  * @return bool.
  */
-static bool r_expr(dynstring_t *received_rets, size_t func_rets) {
+static bool r_expr(dynstring_t *expected_rets) {
     debug_msg("[r_expr] ->\n");
 
     size_t return_cnt = 0;
@@ -1316,7 +1377,7 @@ static bool r_expr(dynstring_t *received_rets, size_t func_rets) {
     }
 
     // [r_other_expr]
-    if (!r_other_expr(received_rets, received_signature, func_rets, return_cnt)) {
+    if (!r_other_expr(expected_rets, received_signature, return_cnt)) {
         goto err;
     }
 
@@ -1407,17 +1468,8 @@ static bool a_other_expr(dynstring_t *rhs_expressions, dynstring_t *last_express
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    // Truncate signature if it has multiple return types
-    // and located not at the end of expression
-    size_t expr_num = Dynstring.len(last_expression);
-    Semantics.trunc_signature(last_expression);
+    clear_expressions(last_expression);
     Dynstring.cat(rhs_expressions, last_expression);
-
-    // clear generator stack
-    for(size_t i = 0; i < expr_num - 1; i++) {
-        Generator.expression_pop();
-    }
-
 
     // expr
     if (!parse_init(received_signature)) {
@@ -1562,13 +1614,18 @@ static bool assign_id(dynstring_t *id_name) {
  * @param func_rets
  * @return true if successful parsing performed.
  */
-static bool Return_expressions(pfile_t *pfile_, dynstring_t *received_signature, size_t func_rets) {
+static bool Return_expressions(pfile_t *pfile_, dynstring_t *expected_rets) {
     debug_msg("Return_expression\n");
 
     pfile = pfile_;
 
     // [r_expr]
-    return r_expr(received_signature, func_rets);
+    if (!r_expr(expected_rets)) {
+        return false;
+    }
+
+    Generator.clear_stack();
+    return true;
 }
 
 /**
@@ -1596,11 +1653,7 @@ static bool Default_expression(pfile_t *pfile_,
 
     CHECK_EMPTY_SIGNATURE(received_signature);
 
-    size_t received_len = Dynstring.len(received_signature);
-    Semantics.trunc_signature(received_signature);
-    for(size_t i = 0; i < received_len; i++) {
-        Generator.expression_pop();
-    }
+    clear_expressions(received_signature);
     Generator.clear_stack();
 
     if (type_expr_statement == TYPE_EXPR_DEFAULT) {

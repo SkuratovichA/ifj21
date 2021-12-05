@@ -74,7 +74,7 @@ struct expr_interface_t {
      * @param func_rets
      * @return true if successive parsing performed.
      */
-    bool (*return_expressions)(pfile_t *, dynstring_t *, size_t);
+    bool (*return_expressions)(pfile_t *, dynstring_t *);
 
     /**
      * @brief Default expression after = in the local assignment
