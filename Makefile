@@ -17,5 +17,5 @@ clean:
 	rm -f *.o $(TARGET) $(ZIPNAME)
 
 zip:
-	zip $(ZIPNAME) *.h *.c Makefile
+	zip $(ZIPNAME) *.h *.c Makefile rozdeleni
 
