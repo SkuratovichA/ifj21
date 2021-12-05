@@ -767,19 +767,11 @@ static token_t Get_next_token(pfile_t *pfile) {
     return curr;
 }
 
-/** Get previous token.
- *
- * @return previous token
- */
-static token_t Get_prev_token() {
-    return prev;
-}
-
 /** Get current token.
  *
  * @return current token.
  */
-static token_t Get_curr() {
+static token_t Get_curr_token() {
     return curr;
 }
 
@@ -824,102 +816,10 @@ static void Init_scanner() {
 const struct scanner_interface Scanner = {
         .free = Free_scanner,
         .get_next_token = Get_next_token,
-        .get_curr_token = Get_curr,
+        .get_curr_token = Get_curr_token,
         .to_string = To_string,
         .get_line = Get_line,
         .get_charpos = Get_charpos,
         .init = Init_scanner,
 };
 
-
-#ifdef SELFTEST_scanner
-#include "tests/tests.h"
-
-int main() {
-    token_t token;
-
-    //********************************************************************//
-    //****************************** NUMBERS *****************************//
-
-    // floats ok
-    printf("Test 1 - float numbers, good\n");
-
-    pfile_t *pfile = Pfile.getfile("../tests/number_ok.tl", "r");
-    if (!pfile) {
-        goto nexttest;
-    }
-    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type != TOKEN_NUM_F) {
-            Tests.failed("expected: got: with attribute:\n");
-        } else {
-            Tests.passed("%d\n", nu);
-        }
-    }
-    if (0) {
-        nexttest:
-        Tests.failed("Cannot open the file!\n");
-    }
-    Pfile.dtor(pfile);
-
-    // integer ok
-    printf("Test 3 - integer numbers, good\n");
-    pfile = Pfile.getfile("../tests/integer_ok.tl", "r");
-    if (!pfile) {
-        goto nexttest3;
-    }
-    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type != TOKEN_NUM_I) {
-            Tests.failed("expected: got: with attribute:\n");
-        } else {
-            Tests.passed("%d\n", nu);
-        }// green [PASSED]
-    }
-    if (0) {
-        nexttest3:
-        Tests.failed("Cannot open the file!\n");
-    }
-    Pfile.dtor(pfile);
-
-
-    // identifier ok
-    printf("Test 5 - identifiers, good\n");
-    pfile = Pfile.getfile("../tests/identif_ok.tl", "r");
-    if (!pfile) {
-        goto nexttest5;
-    }
-    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type != TOKEN_ID) {
-            Tests.failed("expected: got: with attribute:\n");
-        } else {
-            Tests.passed("%d\n", nu);
-        }// green [PASSED]
-    }
-    if (0) {
-        nexttest5:
-        Tests.failed("Cannot open the file!\n");
-    }
-    Pfile.dtor(pfile);
-
-    // strings good
-    printf("Test 7 - strings, good\n");
-    pfile = Pfile.getfile("../tests/string_ok.tl", "r");
-    if (!pfile) {
-        goto nexttest7;
-    }
-    for (int nu = 0; (token = Scanner.get_next_token(pfile)).type != TOKEN_EOFILE; nu++) {
-        if (token.type != TOKEN_STR) {
-            Tests.failed("expected: got: with attribute:\n");
-        } else {
-            Tests.passed("%d\n", nu);
-        }// green [PASSED]
-    }
-    if (0) {
-        nexttest7:
-        Tests.failed("Cannot open the file!\n");
-    }
-    Pfile.dtor(pfile);
-
-    return 0;
-}
-
-#endif
