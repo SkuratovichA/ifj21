@@ -101,12 +101,14 @@ let () =
                          (global_replace (regexp ">") "\\rangle{}$}"      (* same as before *)
                           (global_replace (regexp "<") "\\mbox{\\boldmath$\\langle{}"     (* latex doesn't like <, too *)
                            (global_replace (regexp "_") "\\_"           (* then kill undercores*)
-                             (replace_first (regexp "->") latexarrow x) (* firstly get rid of the first arrow *)
+                             (replace_first (regexp "->") latexarrow
+                                x
+                             )
+                           ) (* firstly get rid of the first arrow *)
                            )
                           )
                          )
                         )
-                      ) 
             ) (List.rev lines); (* they are our lines. but prolog is below(suppose). *)
   Printf.printf "\\end{enumerate}\n";
   Printf.printf "\n\n\n";

@@ -1,60 +1,113 @@
 
 #include <stdio.h>
 
-#include "../errors.h"
-#include "../parser.h"
 #include "../progfile.h"
-#include "../list.h"
+#include <assert.h>
 
 
 #define NL "\n"
 #define PROLOG "require \"ifj21\" \n"
 
 #define TEST_CASE(number)                                                    \
-  do {                                                                      \
+  do {                                                                       \
       char *_filname;                                                        \
       switch (retcode##number) {                                             \
           case    ERROR_DEFINITION:                                          \
           case    ERROR_TYPE_MISSMATCH:                                      \
           case    ERROR_FUNCTION_SEMANTICS:                                  \
-          case    ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY:                         \
+          case    ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY:                    \
           case    ERROR_SEMANTICS_OTHER:                                     \
-              _filname = "../tests/semantic_errors/sasha" #number "_";        \
+              _filname = "../tests/semantic_errors/sasha" #number "_";       \
               break;                                                         \
           case ERROR_NOERROR:                                                \
-              _filname = "../tests/without_errors/sasha" #number "_";         \
+              _filname = "../tests/without_errors/sasha" #number "_";        \
               break;                                                         \
           case ERROR_SYNTAX:                                                 \
-              _filname = "../tests/syntax_errors/sasha" #number "_";          \
+              _filname = "../tests/syntax_errors/sasha" #number "_";         \
               break;                                                         \
           case ERROR_LEXICAL:                                                \
-              _filname = "../tests/lexical_errors/sasha" #number "_";         \
+              _filname = "../tests/lexical_errors/sasha" #number "_";        \
               break;                                                         \
           default:                                                           \
-              debug_msg_s("Undefined error code: %d\n", retcode##number);     \
-              _filname = "sasha";                                             \
+              debug_msg_s("Undefined error code: %d\n", retcode##number);    \
+              _filname = "sasha";                                            \
       }                                                                      \
-      dynstring_t *filnam = Dynstring.ctor(_filname);                          \
-      Dynstring.append(filnam, retcode ## number + '0');                      \
-      Dynstring.cat(filnam, Dynstring.ctor(".tl"));                           \
-      FILE *fil = fopen(Dynstring.c_str(filnam), "w");                         \
-      assert(fil);                                                            \
-      fprintf(fil, "-- test case %d.\n"                                       \
+      dynstring_t *filnam = Dynstring.ctor(_filname);                        \
+      Dynstring.append(filnam, retcode ## number + '0');                     \
+      Dynstring.cat(filnam, Dynstring.ctor(".tl"));                          \
+      FILE *fil = fopen(Dynstring.c_str(filnam), "w");                       \
+      assert(fil);                                                           \
+      fprintf(fil, "-- test case %d.\n"                                      \
                   "-- Description : %s\n\n"                                  \
                   "-- Expected : '%d'\n",                                    \
                       number, description ## number, retcode ## number);     \
-          fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                  \
-          fclose(fil);                                                        \
-      Pfile.dtor(pf ## number);                                               \
-      debug_msg_s("file created: "                                            \
+          fprintf(fil, "%s\n", Pfile.get_tape(pf ## number));                \
+          fclose(fil);                                                       \
+      Pfile.dtor(pf ## number);                                              \
+      debug_msg_s("file created: "                                           \
           "%s %s%c.tl\n",                                                    \
-          Dynstring.c_str(filnam),                                            \
-          _filname, retcode##number + '0');                                   \
-      Dynstring.dtor(filnam);                                                 \
+          Dynstring.c_str(filnam),                                           \
+          _filname, retcode##number + '0');                                  \
+      Dynstring.dtor(filnam);                                                \
   } while (0)
 
+#define STRING_NOERROR(_num, _string)                            \
+        char *description##_num = "good string";                 \
+        int retcode##_num = ERROR_NOERROR;                       \
+        pfile_t *pf##_num = Pfile.ctor(                          \
+            PROLOG                                               \
+            "function one()                             "NL      \
+            "    local s : string =  \"\\x" _string "\" "NL      \
+            "end                                        "NL      \
+        );                                                       \
+
+#define STRING_ERROR(_num, _string)                            \
+        char *description##_num = "badstring";                 \
+        int retcode##_num = ERROR_LEXICAL;                     \
+        pfile_t *pf##_num = Pfile.ctor(                        \
+            PROLOG                                             \
+            "function one()                             "NL    \
+            "    local s : string =      " _string "     "NL   \
+            "end                                        "NL    \
+        );                                                     \
+
+#define GLOBAL_EXPRESSION(_num, _expr, _errcode)                                                    \
+        char *description##_num = "global expression";                                              \
+        int retcode##_num = _errcode;                                                               \
+        pfile_t *pf##_num = Pfile.ctor(                                                             \
+            PROLOG                                                                                  \
+            "function a(_a : number ) : integer return 1 end "NL                                    \
+            "function b(_a : number ) : integer return 1 end "NL                                    \
+            "function c(_a : number ) : integer return 1 end "NL                                    \
+            "function d(_a : number ) : integer return 1 end "NL                                    \
+            "function e(_a : number ) : integer return 1 end "NL                                    \
+            "function f(_a : number ) : integer return 1 end "NL                                    \
+            "function aa(_a : number, _b : number ) : integer return 1 end "NL                      \
+            "function bb(_a : number, _b : number ) : integer return 1 end "NL                      \
+            "function cc(_a : number, _b : number) : integer return 1 end "NL                       \
+            "function dd(_a : number, _b : number) : integer return 1 end "NL                       \
+            "function ee(_a : number, _b : number) : integer return 1 end "NL                       \
+            "function ff(_a : number, _b : number) : integer return 1 end "NL                       \
+            "function aaa(_a : number, _b : number, _c : number ) : integer return 1 end "NL        \
+            "function bbb(_a : number, _b : number, _c : number ) : integer return 1 end "NL        \
+            "function ccc(_a : number, _b : number, _c : number ) : integer return 1 end "NL        \
+            "function ddd(_a : number, _b : number, _c : number ) : integer return 1 end "NL        \
+            "function eee(_a : number, _b : number, _c : number ) : integer return 1 end "NL        \
+            "function fff(_a : number, _b : number, _c : number ) : integer return 1 end "NL        \
+            _expr                                                                         NL        \
+        );
+
+#define GLOBAL_EXPRESSION_ERROR(_num, _expr) GLOBAL_EXPRESSION(_num, _expr, ERROR_SYNTAX)
+#define GLOBAL_EXPRESSION_NOERROR(_num, _expr) GLOBAL_EXPRESSION(_num, _expr, ERROR_NOERROR)
 
 int main() {
+
+    system("rm -rf ../tests/*errors && echo \"Directories deleted.\"");
+    system("mkdir ../tests/lexical_errors");
+    system("mkdir ../tests/syntax_errors");
+    system("mkdir ../tests/semantic_errors");
+    system("mkdir ../tests/without_errors");
+
     char *description1 = "prolog string";
     int retcode1 = ERROR_NOERROR;
     pfile_t *pf1 = Pfile.ctor(PROLOG);
@@ -517,9 +570,9 @@ int main() {
     int retcode25 = ERROR_SYNTAX;
     pfile_t *pf25 = Pfile.ctor(
             PROLOG NL
-            "function me() :string                                           "NL
-            "    return \"the whole project was written by a cat \"          "NL
-            "end                                                             "NL
+            "function me() :string                                         "NL
+            "    return \"the whole project was written by a cat \"        "NL
+            "end                                                           "NL
 
             "function main()                                               "NL
             "   local you : string = \"atata\"                             "NL
@@ -575,15 +628,15 @@ int main() {
             "function main()                                                 "NL
             "   local a : string                                             "NL
             "   local b : number                                             "NL
-            "   a, b = foo()                                                 "NL
+            "   a, b = foo(\"test\", \"text\")                               "NL
             "   write(a)                                                     "NL
             "   write(b)                                                     "NL
             "end                                                             "NL
             "main()                                                          "NL
     );
 
-    char *description30 = "function semantic: declaration without definiton (error)";
-    int retcode30 = ERROR_FUNCTION_SEMANTICS;
+    char *description30 = "declaration without definiton (error)";
+    int retcode30 = ERROR_DEFINITION;
     pfile_t *pf30 = Pfile.ctor(
             PROLOG
             "global foo : function( string, string ) : string, number"
@@ -596,7 +649,7 @@ int main() {
             "global foo : function( nil, nil ) : nil"NL
             "function foo(a : nil, b : nil) : nil   "NL
             "end                                    "NL
-            "foo()                                  "NL
+            "foo(nil, nil)                          "NL
     );
 
     char *description32 = "nil as a local variable.";
@@ -622,11 +675,11 @@ int main() {
     int retcode34 = ERROR_NOERROR;
     pfile_t *pf34 = Pfile.ctor(
             PROLOG
-            "function foo( a : string, b : string ) : nil "NL
-            "end                                          "NL
+            "function foo( a : string, b : string ) : nil   "NL
+            "end                                            "NL
 
-            "global foo : function(string, string ) : nil  "NL
-            "foo(\"I \" .. \"LOVE\",  \"MINECRAFT\")  "NL
+            "global foo : function(string, string ) : nil   "NL
+            "foo(\"I \" .. \"LOVE\",  \"MINECRAFT\")        "NL
     );
 
     char *description35 = "syntax error";
@@ -664,11 +717,11 @@ int main() {
             "foo(1 + 2 + 3 + 4 * (2 + 3 + three()), 1)    "NL
     );
 
-    char *description39 = "wrong number of aparameters in function calling";
+    char *description39 = "wrong number of paarameters in function calling";
     int retcode39 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf39 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
+            "function three(): number return 3 end        "NL
             "function foo( a : number, b : number )       "NL
             "    write(a)                                 "NL
             "    write(b)                                 "NL
@@ -677,10 +730,10 @@ int main() {
     );
 
     char *description40 = "no expression after comma";
-    int retcode40 = ERROR_FUNCTION_SEMANTICS;
+    int retcode40 = ERROR_SYNTAX;
     pfile_t *pf40 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
+            "function three(): number return 3 end        "NL
             "function foo( a : number, b : number )       "NL
             "    write(a)                                 "NL
             "    write(b)                                 "NL
@@ -692,12 +745,12 @@ int main() {
     int retcode41 = ERROR_SYNTAX;
     pfile_t *pf41 = Pfile.ctor(
             PROLOG
-            "functino three(): number return 3 end        "NL
-            "function foo( a : number, b : number )       "NL
-            "    write(a)                                 "NL
-            "    write(b)                                 "NL
-            "end                                          "NL
-            "foo(1 + 2 + 3 + 4 * (2 + 3 + three()), ((()((     "NL
+            "function three(): number return 3 end              "NL
+            "function foo( a : number, b : number )             "NL
+            "    write(a)                                       "NL
+            "    write(b)                                       "NL
+            "end                                                "NL
+            "foo(1 + 2 + 3 + 4 * (2 + 3 + three()), ((()((      "NL
     );
 
     char *description42 = "undefined function.";
@@ -869,13 +922,12 @@ int main() {
     int retcode52 = ERROR_NOERROR;
     pfile_t *pf52 = Pfile.ctor(
             PROLOG
-            " global bar : function(string, integer)" NL
-            "function bar(str : string, int : integer)" NL
-            "end " NL
-
-            NL
-            "global arst : function(string,         integer,             number,       number,     integer, string)" NL
-            "function "              "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)" NL
+            " global bar : function(string, integer)                                                                                "NL
+            "function bar(str : string, int : integer)                                                                              "NL
+            "end                                                                                                                    "NL
+                                                                                                                                     NL
+            "global arst : function(string,         integer,             number,       number,     integer, string)                 "NL
+            "function "              "arst(str : string, ddd : integer, nummm : number, aaa : number, ii: integer, suka :string)    "NL
             "end " NL
     );
 
@@ -887,8 +939,7 @@ int main() {
             "function foo (a : string, b : string) :  string, number         "NL
             "    return \"hello\", 10.5 + 1.5                                "NL
             "end                                                             "NL
-
-            "foo()                                                          "NL
+            "foo(\"test\", \"text\")                                         "NL
     );
 
     char *description54 = "return types #2 no returns.";
@@ -898,8 +949,7 @@ int main() {
             "global foo : function(    string,     string ) : string, number "NL
             "function foo (a : string, b : string) :  string, number         "NL
             "end                                                             "NL
-
-            "foo()                                                          "NL
+            "foo(\"test\", \"text\")                                         "NL
     );
 
     char *description55 = "return types #3. Typecasting";
@@ -910,8 +960,7 @@ int main() {
             "function foo (a : string, b : string) :  string, number         "NL
             "    return \"hello\", 10                                        "NL
             "end                                                             "NL
-
-            "foo()                                                          "NL
+            "foo(\"test\", \"text\")                                         "NL
     );
 
     char *description56 = "return types #4. Exceed returns";
@@ -946,8 +995,7 @@ int main() {
             "function foo (a : string, b : string) :  string, number         "NL
             "    return nil, nil                                             "NL
             "end                                                             "NL
-
-            "foo()                                                           "NL
+            "foo(\"test\", \"text\")                                         "NL
     );
 
     char *description59 = "return types #7. Typecasting nil in return.";
@@ -960,7 +1008,7 @@ int main() {
             "                              string, number, boolean "NL
             "    return nil, nil, true                             "NL
             "end                                                   "NL
-            "foo()                                                 "NL
+            "foo(\"test\", \"text\")                               "NL
     );
 
     char *description60 = "return types #8";
@@ -1010,7 +1058,7 @@ int main() {
             PROLOG
             "function main(iterations : number )      "NL
             "    for i=0,iterations,2 do              "NL
-            "        for j=0,iterations,2 do        "NL
+            "        for j=0,iterations,2 do          "NL
             "            write(\"hello, many times\") "NL
             "        end                              "NL
             "    end                                  "NL
@@ -1059,7 +1107,7 @@ int main() {
             "function main(iterations : number )      "NL
             "    for i=0,iterations do                "NL
             "       write(\"I'm gonna be printed\\n\")"NL
-            "        for j=0, iterations do          "NL
+            "        for j=0, iterations do           "NL
             "            break                        "NL
             "            write(\"hello, 9 times\")    "NL
             "        end                              "NL
@@ -1342,7 +1390,7 @@ int main() {
             "function main(iterations : number )      "NL
             "    for i=0, -iterations, -1 do          "NL
             "       write(\"I'm gonna be printed\\n\")"NL
-            "        for j=0, i-iterations do        "NL
+            "        for j=0, i-iterations do         "NL
             "            write(\"hello, n times\")    "NL
             "        end                              "NL
             "    end                                  "NL
@@ -1350,8 +1398,8 @@ int main() {
             "main(3)                                  "NL
     );
 
-    char *description81 = "for cycles, minus in the assignment";
-    int retcode81 = ERROR_TYPE_MISSMATCH;
+    char *description81 = "minus with string";
+    int retcode81 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
     pfile_t *pf81 = Pfile.ctor(
             PROLOG
             "function main(iterations : string )      "NL
@@ -1419,16 +1467,16 @@ int main() {
             "       break                             "NL
             "    end                                  "NL
             "end                                      "NL
-            "main(\"helloo\")                         "NL
+            "main(#\"helloo\")                        "NL
     );
 
     char *description87 = "break inside repuntil";
     int retcode87 = ERROR_NOERROR;
     pfile_t *pf87 = Pfile.ctor(
             PROLOG NL
-            "function me() :string                                            "NL
-            "    return \"the whole project was written by a cat\"            "NL
-            "end                                                              "NL
+            "function me() :string                                           "NL
+            "    return \"the whole project was written by a cat\"           "NL
+            "end                                                             "NL
 
             "function main()                                                 "NL
             " local you : string = \"atata\"                                 "NL
@@ -1457,9 +1505,9 @@ int main() {
     int retcode88 = ERROR_NOERROR;
     pfile_t *pf88 = Pfile.ctor(
             PROLOG NL
-            "function me() :string                                            "NL
-            "    return \"the whole project was written by a cat\"            "NL
-            "end                                                              "NL
+            "function me() :string                                         "NL
+            "    return \"the whole project was written by a cat\"         "NL
+            "end                                                           "NL
 
             "function main()                                               "NL
             "   local you : string = \"atata\"                             "NL
@@ -1515,7 +1563,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : integer)"NL
             "   while (counter) > 0 do                "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")          "NL
             "    counter = counter - 1                "NL
             "    end                                  "NL
             "end                                      "NL
@@ -1527,7 +1575,7 @@ int main() {
             PROLOG
             "function write_numbers(counter : integer)   "NL
             "   while (((((counter)))) > 0) do           "NL
-            "        write(((((counter)))), \"\n\")      "NL
+            "        write(((((counter)))), \"\\n\")     "NL
             "    counter = (((((counter) - 1) + 2)) - 1) "NL
             "    end                                     "NL
             "end                                         "NL
@@ -1541,7 +1589,7 @@ int main() {
             "                                                                                             "NL
             "function write_numbers(counter : integer)                                                    "NL
             "    while (counter) > 0 do                                                                   "NL
-            "        write(counter, \"\n\")                                                               "NL
+            "        write(counter, \"\\n\")                                                              "NL
             "        counter = counter - 1                                                                "NL
             "    end                                                                                      "NL
             "end                                                                                          "NL
@@ -1551,7 +1599,7 @@ int main() {
             "    if counter == 0 then                                                                     "NL
             "        write(\"Error\", \" enter\",                                                         "NL
             "              \" another\", \" number\",                                                     "NL
-            "              \", because \", 0, \" is wrong\",\"\n\")                                       "NL
+            "              \", because \", 0, \" is wrong\",\"\\n\")                                      "NL
             "        return                                                                               "NL
             "    else                                                                                     "NL
             "        write_numbers(counter)                                                               "NL
@@ -1566,7 +1614,7 @@ int main() {
             "    if counter == 0 then                                                                     "NL
             "        write(\"Error\", \" enter\",                                                         "NL
             "              \" another\", \" number\",                                                     "NL
-            "              \", because \", 0, \" is wrong\",\"\n\")                                       "NL
+            "              \", because \", 0, \" is wrong\",\"\\n\")                                      "NL
             "        return                                                                               "NL
             "    else                                                                                     "NL
             "        write_numbers(counter)                                                               "NL
@@ -1582,6 +1630,7 @@ int main() {
     char *description94 = "wrong parameters";
     int retcode94 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf94 = Pfile.ctor(
+            PROLOG
             "global name : function (integer, number, string,                   "NL
             "                        string, number, integer, integer, nil, nil,"NL
             "                        nil, number)                               "NL
@@ -1594,24 +1643,24 @@ int main() {
     );
 
     char *description95 = "condition with wrong types. Condition cannot be a string";
-    int retcode95 = ERROR_TYPE_MISSMATCH;
+    int retcode95 = ERROR_NOERROR;
     pfile_t *pf95 = Pfile.ctor(
             PROLOG
-            "function write_numbers(counter : string)"NL
-            "   while counter do                "NL
-            "        write(counter, \"\n\")           "NL
-            "    end                                  "NL
-            "end                                      "NL
+            "function write_numbers(counter : string)   "NL
+            "   while counter do                        "NL
+            "        write(counter, \"\\n\")            "NL
+            "    end                                    "NL
+            "end                                        "NL
     );
 
 
     char *description96 = "condition with wrong types. Condition cannot be a number";
-    int retcode96 = ERROR_TYPE_MISSMATCH;
+    int retcode96 = ERROR_NOERROR;
     pfile_t *pf96 = Pfile.ctor(
             PROLOG
             "function write_numbers(counter : string) "NL
             "   while #counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")          "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1621,19 +1670,19 @@ int main() {
     pfile_t *pf97 = Pfile.ctor(
             PROLOG
             "function write_numbers(counter : nil)    "NL
-            "   while counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "   while counter do                      "NL
+            "        write(counter, \"\\n\")          "NL
             "    end                                  "NL
             "end                                      "NL
     );
 
     char *description98 = "condition with wrong syntax. nil cannot have length";
-    int retcode98 = ERROR_SYNTAX;
+    int retcode98 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
     pfile_t *pf98 = Pfile.ctor(
             PROLOG
             "function write_numbers(counter : nil)    "NL
             "   while #counter do                     "NL
-            "        write(counter, \"\n\")           "NL
+            "        write(counter, \"\\n\")          "NL
             "    end                                  "NL
             "end                                      "NL
     );
@@ -1655,6 +1704,1862 @@ int main() {
             "end                                                 "NL
             "yours()                                             "NL
     );
+
+    char *description100 = "type errors in expressions.";
+    int retcode100 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf100 = Pfile.ctor(
+            PROLOG
+            "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"NL
+            "    write(\"I'm about 2bee printed only once!\")    "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function yours()                                    "NL
+            "   local a : string = \"arst\"                      "NL
+            "   repeat                                           "NL
+            "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()  "NL
+            "       a = false                                    "NL
+            "   until (a + 10)                                   "NL
+            "end                                                 "NL
+            "yours()                                             "NL
+    );
+
+    char *description101 = "type errors in expressions.";
+    int retcode101 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf101 = Pfile.ctor(
+            PROLOG
+            "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()"NL
+            "    write(\"I'm about 2bee printed only once!\")    "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function yours()                                    "NL
+            "   local a : string = \"arst\"  + 10                "NL
+            "   repeat                                           "NL
+            "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()  "NL
+            "       a = false                                    "NL
+            "   until a                                          "NL
+            "end                                                 "NL
+            "yours()                                             "NL
+    );
+
+    char *description102 = "no error";
+    int retcode102 = ERROR_NOERROR;
+    pfile_t *pf102 = Pfile.ctor(
+            PROLOG
+            "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()                                  "NL
+            "    write(\"I'm about 2bee printed only once!\")                                      "NL
+            "end                                                                                   "NL
+            "                                                                                      "NL
+            "function yours()                                                                      "NL
+            "   local a : number = #(\"arst\" .. \"arsoi\" .. \"arsot\" .. (\"arst\")) + 10        "NL
+            "   repeat                                                                             "NL
+            "       to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()                                    "NL
+            "       a = nil                                                                        "NL
+            "   until a                                                                            "NL
+            "end                                                                                   "NL
+            "yours()                                                                               "NL
+    );
+
+    char *description103 = " no type errors in expressions.";
+    int retcode103 = ERROR_NOERROR;
+    pfile_t *pf103 = Pfile.ctor(
+            PROLOG
+            "function one(a : integer) : string                  "NL
+            "end                                                 "NL
+            "function two() : string                             "NL
+            "end                                                 "NL
+            "function three() : string                           "NL
+            "end                                                 "NL
+            "function four() : string                            "NL
+            "end                                                 "NL
+            "one(#(((two()) .. three()) .. four()))                "NL
+    );
+
+
+    char *description104 = "type errors in expressions.";
+    int retcode104 = ERROR_NOERROR;
+    pfile_t *pf104 = Pfile.ctor(
+            PROLOG
+            "function one(a : string) : string                   "NL
+            "end                                                 "NL
+            "function two() : string                             "NL
+            "end                                                 "NL
+            "function three() : string                           "NL
+            "end                                                 "NL
+            "function four() : string                            "NL
+            "end                                                 "NL
+            "one((((two()) .. three()) .. four()))                 "NL
+    );
+
+    char *description105 = "bad string.";
+    int retcode105 = ERROR_LEXICAL;
+    pfile_t *pf105 = Pfile.ctor(
+            PROLOG
+            "function one(a : integer) : string                  "NL
+            "   local s : string = \"\\x00\"                     "NL
+            "end                                                 "NL
+    );
+
+
+    char *description141 = "";
+    int retcode141 = ERROR_NOERROR;
+    pfile_t *pf141 = Pfile.ctor(
+            PROLOG
+            "global chuj: function(): string, integer          "NL
+            "                                                  "NL
+            "function main ()                                  "NL
+            "    local id : integer                            "NL
+            "    local str_var : string                        "NL
+            "    local nil_var : nil                           "NL
+            "                                                  "NL
+            "    if str_var == nil_var then                    "NL
+            "        local len_str : integer = 10              "NL
+            "        id = len_str                              "NL
+            "	if id == len_str then                          "NL
+            "    	    write(\"\\n\")                         "NL
+            "	else                                           "NL
+            "        end                                       "NL
+            "    else end                                      "NL
+            "                                                  "NL
+            "                                                  "NL
+            "    local aaa : integer = 0                       "NL
+            "    while str_var == nil do                       "NL
+            "                                                  "NL
+            "	if id == 20 then                               "NL
+            "           str_var, aaa = chuj()                  "NL
+            "        else                                      "NL
+            "           id = id + 1                            "NL
+            "        end                                       "NL
+            "    end                                           "NL
+            "    write(str_var, aaa, \"\\n\")                  "NL
+            "                                                  "NL
+            "                                                  "NL
+            "    return                                        "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function chuj() : string, integer                 "NL
+            "  return \"chuj\", 7                              "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+            "                                                  "NL
+    );
+
+    char *description142 = "";
+    int retcode142 = ERROR_NOERROR;
+    pfile_t *pf142 = Pfile.ctor(
+            PROLOG
+            "                                                  "NL
+            "function chuj(n : integer) : integer              "NL
+            "    local a : integer = 0                         "NL
+            "    while a < (n*n) do                            "NL
+            "        a = n + a * a                             "NL
+            "    end                                           "NL
+            "    return a                                      "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main ()                                  "NL
+            "    local id : integer = 100000                   "NL
+            "                                                  "NL
+            "    id = chuj(id)                                 "NL
+            "                                                  "NL
+            "    write(id, \"\\n\")                            "NL
+            "                                                  "NL
+            "                                                  "NL
+            "    return                                        "NL
+            "end                                               "NL
+            "                                                  "NL
+            "                                                  "NL
+            "main()                                            "NL
+            "                                                  "NL
+    );
+
+    char *description143 = "";
+    int retcode143 = ERROR_NOERROR;
+    pfile_t *pf143 = Pfile.ctor(
+            PROLOG
+            "                                                  "NL
+            "function chuj(n : integer, s : string) : integer  "NL
+            "    local a : integer = 0                         "NL
+            "    if s == \"chch\" then                         "NL
+            "	    while a < (n*n) do                         "NL
+            "		a = n + a * a                              "NL
+            "	    end                                        "NL
+            "    else                                          "NL
+            "        a = 7                                     "NL
+            "    end                                           "NL
+            "    return a                                      "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main ()                                  "NL
+            "    local id : integer = 100000                   "NL
+            "                                                  "NL
+            "    id = chuj(id, \"4\")                          "NL
+            "                                                  "NL
+            "    write(id, \"\\n\")                            "NL
+            "                                                  "NL
+            "                                                  "NL
+            "    return                                        "NL
+            "end                                               "NL
+            "                                                  "NL
+            "                                                  "NL
+            "main()                                            "NL
+
+    );
+
+    char *description144 = "";
+    int retcode144 = ERROR_NOERROR;
+    pfile_t *pf144 = Pfile.ctor(
+            PROLOG
+            "                                                                       "NL
+            "function chuj(n : integer, s : string) : integer                       "NL
+            "    local a : integer = 0                                              "NL
+            "    while a < (n*n) do                                                 "NL
+            "	    a = n + a * a                                                   "NL
+            "    end                                                                "NL
+            "    return a                                                           "NL
+            "end                                                                    "NL
+            "                                                                       "NL
+            "chuj(0, \"a\")                                                         "NL
+            "write(chuj(0, \"a\"), \"\\n\")                                         "NL
+            "write(chuj(100, \"a\"), \"\\n\")                                       "NL
+            "write(chuj(1000000, \"a\"), \"\\n\")                                   "NL
+            "write(chuj(10000000000000000, \"a\"), \"\\n\")                         "NL
+            "write(chuj(90000000000000000000000000000000000000, \"a\"), \"\\n\")    "NL
+            "write(chuj(220000000000000005665456666666666666666, \"a\"), \"\\n\")   "NL
+            "                                                                       "NL
+            "                                                                       "NL
+    );
+
+    char *description145 = "";
+    int retcode145 = ERROR_NOERROR;
+    pfile_t *pf145 = Pfile.ctor(
+            PROLOG
+            "function chuj(n : number, a : number) : number                                 "NL
+            "	return a * n + n * a                                                        "NL
+            "end                                                                            "NL
+            "                                                                               "NL
+            "write(chuj(0.48949, 5.5645646 ), \"\\n\")                                      "NL
+            "write(chuj(90000000000000000000000000000000000000, 4564.456), \"\\n\")         "NL
+            "write(chuj(220000000000000005665456666666666666666, 48997489.894981), \"\\n\") "NL
+            "                                                                               "NL
+    );
+
+    char *description146 = "";
+    int retcode146 = ERROR_NOERROR;
+    pfile_t *pf146= Pfile.ctor(
+            PROLOG
+            "                                                                               "NL
+            "function chuj(n : number, a : number) : number                                 "NL
+            "	if a == 7 then                                                              "NL
+            "        	return 0                                                            "NL
+            "  	end                                                                         "NL
+            "	return a * n + chuj(n, 7)                                                   "NL
+            "end                                                                            "NL
+            "                                                                               "NL
+            "write(chuj(0.48949, 5.5645646 ), \"\\n\")                                      "NL
+            "write(chuj(90000000000000000000000000000000000000, 4564.456), \"\\n\")         "NL
+            "write(chuj(220000000000000005665456666666666666666, 48997489.894981), \"\\n\") "NL
+    );
+
+    char *description147 = "";
+    int retcode147 = ERROR_NOERROR;
+    pfile_t *pf147 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local i : integer = 69                        "NL
+            "    local r : string = chr(i)                     "NL
+            "end                                               "NL
+            "main()                                            "NL
+            "                                                  "NL
+
+    );
+
+    char *description148 = "";
+    int retcode148 = ERROR_NOERROR;
+    pfile_t *pf148 = Pfile.ctor(
+            PROLOG
+
+            "function main()                                   "NL
+            "    local j : string                              "NL
+            "    local i : integer = 69                        "NL
+            "    if i == 69 then                               "NL
+            "      local i : number                            "NL
+            "    elseif j == nil then                          "NL
+            "      local z : string                            "NL
+            "    elseif 0 then                                 "NL
+            "      local b : number                            "NL
+            "    end                                           "NL
+            "    local k : integer                             "NL
+            "    if 3 == 2 then                                "NL
+            "      k = 2                                       "NL
+            "    else                                          "NL
+            "      k = 5                                       "NL
+            "    end                                           "NL
+            "    write(i, \"\\n\")                             "NL
+            "                                                  "NL
+            "end                                               "NL
+            "main()                                            "NL
+            "                                                  "NL
+
+
+
+    );
+
+    char *description149 = "";
+    int retcode149 = ERROR_NOERROR;
+    pfile_t *pf149 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local i : integer                             "NL
+            "                                                  "NL
+            "    i = 0                                         "NL
+            "    while i == 1 do                               "NL
+            "      i = 1 + i                                   "NL
+            "      while 3 == 2 do                             "NL
+            "      	i = 1 + i                                  "NL
+            "        local j : integer                         "NL
+            "      end                                         "NL
+            "    end                                           "NL
+            "    while i == 1 do                               "NL
+            "      i = 1 + i                                   "NL
+            "      while 3 == 2 do                             "NL
+            "      	i = 1 + i                                  "NL
+            "        local j : integer                         "NL
+            "      end                                         "NL
+            "    end                                           "NL
+            "    write(i,\"\\n\")                              "NL
+            "end                                               "NL
+            "main()                                            "NL
+            "                                                  "NL
+    );
+    char *description150 = "";
+    int retcode150 = ERROR_NOERROR;
+    pfile_t *pf150 = Pfile.ctor(
+            PROLOG
+            "function foo(n : integer) : integer               "NL
+            "    local f : integer                             "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main()                                   "NL
+            "    local i : integer = 69                        "NL
+            "    foo(i)                                        "NL
+            "    local r : string = chr(i)                     "NL
+            "    write(r,\"\\n\")                              "NL
+            "end                                               "NL
+            "main()                                            "NL
+            "                                                  "NL
+
+
+    );
+    char *description151 = "";
+    int retcode151 = ERROR_NOERROR;
+    pfile_t *pf151 = Pfile.ctor(
+            PROLOG
+            "function foo(n : integer) : integer               "NL
+            "    local f : integer                             "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main()                                   "NL
+            "    local i : integer                             "NL
+            "    repeat                                        "NL
+            "      local i : integer                           "NL
+            "    until 1 == 1                                  "NL
+            "    repeat                                        "NL
+            "      local i : integer                           "NL
+            "    until 1 == 1                                  "NL
+            "    write(i,\"\\n\")                              "NL
+            "end                                               "NL
+            "main()                                            "NL
+            "                                                  "NL
+    );
+    char *description152 = "";
+    int retcode152 = ERROR_NOERROR;
+    pfile_t *pf152 = Pfile.ctor(
+            PROLOG
+            "                                                  "NL
+            "function main()                                   "NL
+            "    local i : integer                             "NL
+            "    write(\"69\\n\")                              "NL
+            "    while 1 == 1 do                               "NL
+            "      local j : integer                           "NL
+            "      write(i,\"\\n\")                            "NL
+            "      break                                       "NL
+            "      while 3 == 2 do                             "NL
+            "        local j : integer                         "NL
+            "      break                                       "NL
+            "        repeat                                    "NL
+            "    write(i,\"\\n\")                              "NL
+            "          local j : integer                       "NL
+            "          if true then                            "NL
+            "          write(i,\"\\n\")                        "NL
+            "            local j : integer                     "NL
+            "          elseif false then                       "NL
+            "            write(i,\"\\n\")                      "NL
+            "            local j : integer                     "NL
+            "          elseif true then                        "NL
+            "            local j : integer                     "NL
+            "          else                                    "NL
+            "            local j : integer                     "NL
+            "      break                                       "NL
+            "          end                                     "NL
+            "          write(i,\"\\n\")                        "NL
+            "      break                                       "NL
+            "        until 1 == 1                              "NL
+            "      break                                       "NL
+            "      end                                         "NL
+            "    end                                           "NL
+            "    while 1 == 1 do                               "NL
+            "      write(i,\"\\n\")                            "NL
+            "      while 3 == 2 do                             "NL
+            "        local j : integer                         "NL
+            "      break                                       "NL
+            "      end                                         "NL
+            "      break                                       "NL
+            "    end                                           "NL
+            "end                                               "NL
+            "main()                                            "NL
+            "                                                  "NL
+    );
+    char *description153 = "";
+    int retcode153 = ERROR_NOERROR;
+    pfile_t *pf153 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local a : integer = 1                         "NL
+            "    local b : number = 3.0 + 4.2                  "NL
+            "    local c : string = \"hell\"                   "NL
+            "    local d : number = nil                        "NL
+            "    d = a + b + 5                                 "NL
+            "    write(d,\"\\n\")                              "NL
+            "end                                               "NL
+            "main()                                            "NL
+            "                                                  "NL
+    );
+
+    char *description154 = "";
+    int retcode154 = ERROR_NOERROR;
+    pfile_t *pf154 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "  if 1 == 1 then                                  "NL
+            "    local i : integer = 1                         "NL
+            "    write(i,\"\\n\")                              "NL
+            "  end                                             "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description155 = "";
+    int retcode155 = ERROR_NOERROR;
+    pfile_t *pf155 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    while 1 == 1 do                               "NL
+            "	write(\"helo\\n\")                             "NL
+            "    for i = 0, 10, 1 do                           "NL
+            "	write(\"helo\\n\")                             "NL
+            "        for i = 0, 2, 2 do                        "NL
+            "	write(\"helo\\n\")                             "NL
+            "            if 1 == 6 then                        "NL
+            "                local k : integer = 1             "NL
+            "            elseif 1 == 2 then                    "NL
+            "	write(\"helo\\n\")                             "NL
+            "                local j : number                  "NL
+            "            elseif 2 == 5 then                    "NL
+            "	write(\"helo\\n\")                             "NL
+            "                local c : string = \"heyo\"       "NL
+            "            else                                  "NL
+            "	write(\"helo\\n\")                             "NL
+            "                local m : integer = 9             "NL
+            "                if 1 == 1 then                    "NL
+            "                    local k : integer = 3         "NL
+            "                end                               "NL
+            "                repeat                            "NL
+            "	write(\"helo\\n\")                             "NL
+            "                    local z : string = \"good\"   "NL
+            "                    break                         "NL
+            "                until 1 == 3                      "NL
+            "            end                                   "NL
+            "            break                                 "NL
+            "        end                                       "NL
+            "        break                                     "NL
+            "    end                                           "NL
+            "    break                                         "NL
+            "    end                                           "NL
+            "	write(\"helo\\n\")                             "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+            "                                                  "NL
+    );
+
+    char *description156 = "Výpočet faktoriálu iterativně";
+    int retcode156 = ERROR_NOERROR;
+    pfile_t *pf156 = Pfile.ctor(
+            PROLOG
+            "function main() -- uzivatelska funkce bez parametru "NL
+            "  local a : integer                                 "NL
+            "  local vysl : integer = 0                          "NL
+            "  write(\"Zadejte cislo pro vypocet faktorialu\\n\")"NL
+            "  a = readi()                                       "NL
+            "  if a == nil then                                  "NL
+            "    write(\"a je nil\\n\") return                   "NL
+            "  else                                              "NL
+            "  end                                               "NL
+            "  if a < 0 then                                     "NL
+            "    write(\"Faktorial nelze spocitat\\n\")          "NL
+            "  else                                              "NL
+            "    vysl = 1                                        "NL
+            "    while a > 0 do                                  "NL
+            "      vysl = vysl * a a = a - 1  -- dva prikazy     "NL
+            "    end                                             "NL
+            "    write(\"Vysledek je: \", vysl, \"\\n\")         "NL
+            "    end                                             "NL
+            "  end                                               "NL
+            "                                                    "NL
+            "  main()  -- prikaz hlavniho tela programu          "NL
+            "                                                    "NL
+
+    );
+    char *description157 = "";
+    int retcode157 = ERROR_NOERROR;
+    pfile_t *pf157 = Pfile.ctor(
+            PROLOG
+            "function factorial(n : integer) : integer                  "NL
+            "  local n1 : integer = n - 1                               "NL
+            "  if n < 2 then                                            "NL
+            "    return 1                                               "NL
+            "  else                                                     "NL
+            "    local tmp : integer = factorial(n1)                    "NL
+            "    return n * tmp                                         "NL
+            "  end                                                      "NL
+            "end                                                        "NL
+            "                                                           "NL
+            "function main()                                            "NL
+            "  write(\"Zadejte cislo pro vypocet faktorialu: \")        "NL
+            "  local a : integer = readi()                              "NL
+            "  if a ~= nil then                                         "NL
+            "		if a < 0 then                                       "NL
+            "			write(\"Faktorial nejde spocitat!\", \"\\n\")   "NL
+            "		else                                                "NL
+            "			local vysl : integer = factorial(a)             "NL
+            "			write(\"Vysledek je \", vysl, \"\\n\")          "NL
+            "    end                                                    "NL
+            "  else                                                     "NL
+            "     write(\"Chyba pri nacitani celeho cisla!\\n\")        "NL
+            "  end                                                      "NL
+            "end                                                        "NL
+            "                                                           "NL
+            "main()                                                     "NL
+    );
+
+
+    char *description158 = "";
+    int retcode158 = ERROR_NOERROR;
+    pfile_t *pf158 = Pfile.ctor(
+            PROLOG
+            "function hlavni_program(year : integer)           "NL
+            "  write(\"Hello from IFJ\", year, \"\\n\")        "NL
+            "end                                               "NL
+            "                                                  "NL
+            "hlavni_program(21)                                "NL
+            "hlavni_program(22) -- pozdrav z budoucnosti       "NL
+    );
+
+    char *description159 = "";
+    int retcode159 = ERROR_NOERROR;
+    pfile_t *pf159 = Pfile.ctor(
+            PROLOG
+            "function hlavni_program(year : integer)           "NL
+            "  write(\"Hello from IFJ\", year, \"\\n\")        "NL
+            "end                                               "NL
+            "                                                  "NL
+            "hlavni_program(21)                                "NL
+    "hlavni_program(22) -- pozdrav z budoucnosti               "NL
+
+
+    );
+
+    char *description160 = "";
+    int retcode160 = ERROR_NOERROR;
+    pfile_t *pf160 = Pfile.ctor(
+            PROLOG
+            "function main ()                     "NL
+            "   local id : integer                "NL
+            "   local str_var : string            "NL
+            "   local nil_var : nil               "NL
+            "   if str_var == nil_var then        "NL
+            "       local len_str : integer = 10  "NL
+            "       id = len_str                  "NL
+            "       if id == len_str then         "NL
+            "           write(\"\\n\")            "NL
+            "       else                          "NL
+            "       end                           "NL
+            "  else end                           "NL
+            "return                               "NL
+            "end                                  "NL
+            "main()                               "NL
+
+    );
+
+    char *description161 = "";
+    int retcode161 = ERROR_NOERROR;
+    pfile_t *pf161 = Pfile.ctor(
+            PROLOG
+            "function main ()                   "NL
+            "   local id : integer              "NL
+            "   local str_var : string          "NL
+            "   local nil_var : nil             "NL
+            "   if str_var == nil_var then      "NL
+            "   local len_str : integer = 10    "NL
+            "   id = len_str                    "NL
+            "               else end            "NL
+            " return                            "NL
+            "   end                             "NL
+            " main()                            "NL
+    );
+
+    char *description162 = "";
+    int retcode162 = ERROR_NOERROR;
+    pfile_t *pf162 = Pfile.ctor(
+            PROLOG
+            "function main ()                               "NL
+            "   local id : integer                          "NL
+            "   local str_var : string                      "NL
+            "   local nil_var : nil                         "NL
+            "   if str_var == nil_var then                  "NL
+            "       local len_str : integer = 10            "NL
+            "       id = len_str                            "NL
+            "       if id == len_str then                   "NL
+            "           write(len_str, \"\\n\" , len_str)   "NL
+            "       else                                    "NL
+            "       end                                     "NL
+            "   else end                                    "NL
+            "   return                                      "NL
+            "end                                            "NL
+            "main()                                         "NL
+    );
+
+    char *description163 = "";
+    int retcode163 = ERROR_NOERROR;
+    pfile_t *pf163 = Pfile.ctor(
+            PROLOG
+            "function main ()                               "NL
+            "   local id : integer                          "NL
+            "   local str_var : string                      "NL
+            "   local nil_var : nil                         "NL
+            "   if str_var == nil_var then                  "NL
+            "       local len_str : integer = 10            "NL
+            "       id = len_str                            "NL
+            "       if id == len_str then                   "NL
+            "           write(len_str, \"\\n\" , len_str)   "NL
+            "       else                                    "NL
+            "       end                                     "NL
+            "   else end                                    "NL
+            "   return                                      "NL
+            "end                                            "NL
+            "main()                                         "NL
+    );
+
+    char *description164 = "";
+    int retcode164 = ERROR_NOERROR;
+    pfile_t *pf164 = Pfile.ctor(
+            PROLOG
+            "function chuj() : string                                   "NL
+            "  return \"chuj\"                                          "NL
+            "end                                                        "NL
+            "                                                           "NL
+            "                                                           "NL
+            "function main ()                                           "NL
+            "    local id : integer                                     "NL
+            "    local str_var : string                                 "NL
+            "    local nil_var : nil                                    "NL
+            "                                                           "NL
+            "    if str_var == nil_var then                             "NL
+            "        local len_str : integer = 10                       "NL
+            "        id = len_str                                       "NL
+            "	if id == len_str then                                   "NL
+            "    	    write(\"\\n\")                                  "NL
+            "	else                                                    "NL
+            "        end                                                "NL
+            "    else end                                               "NL
+            "                                                           "NL
+            "                                                           "NL
+            "    while str_var == nil do                                "NL
+            "	if id == 20 then                                        "NL
+            "           str_var = chuj()                                "NL
+            "        else                                               "NL
+            "           id = id + 1                                     "NL
+            "        end                                                "NL
+            "    end                                                    "NL
+            "    write(str_var, \"\\n\")                                "NL
+            "                                                           "NL
+            "    return                                                 "NL
+            "end                                                        "NL
+            "                                                           "NL
+            "main()                                                     "NL
+            "                                                           "NL
+            "                                                           "NL
+    );
+
+    char *description165 = "";
+    int retcode165 = ERROR_NOERROR;
+    pfile_t *pf165 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, string   "NL
+	        "       return 1, \"hi\"            "NL
+            "end                                "NL
+            "                                   "NL
+            "function main()                    "NL
+            "	local i : integer               "NL
+            "	i = foo()                       "NL
+            "	write(i)                        "NL
+            "end                                "NL
+            "                                   "NL
+            "main()                             "NL
+            "                                   "NL
+    );
+
+    char *description166 = "";
+    int retcode166 = ERROR_NOERROR;
+    pfile_t *pf166 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, string  "NL
+            "    return 1, \"hi\"              "NL
+            "end                               "NL
+            "                                  "NL
+            "function main()                   "NL
+            "	 local i : integer             "NL
+            "    local s : string              "NL
+            "    i, s = foo()                  "NL
+            "	 write(i, s)                   "NL
+            "end                               "NL
+            "                                  "NL
+            "main()                            "NL
+            "                                  "NL
+    );
+
+    char *description167 = "";
+    int retcode167 = ERROR_NOERROR;
+    pfile_t *pf167 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, string                  "NL
+            "	return 1, \"hi\"                               "NL
+            "end                                               "NL
+            "                                                  "NL
+            "foo()                                             "NL
+    );
+
+    char *description168 = "";
+    int retcode168 = ERROR_NOERROR;
+    pfile_t *pf168 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, string                  "NL
+            "	return 1, \"hi\"                               "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main()                                   "NL
+            "	local i : integer                              "NL
+            "    local s : string = \"xd\"                     "NL
+            "    local j : number                              "NL
+            "                                                  "NL
+            "    i, s, j = foo(), \"hello\", 2.0               "NL
+            "	write(i, s, j)                                 "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description169 = "";
+    int retcode169 = ERROR_NOERROR;
+    pfile_t *pf169 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, string                  "NL
+            "	return 1, \"hi\"                               "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main()                                   "NL
+            "	 local i : integer                             "NL
+            "    local s : string = \"xd\"                     "NL
+            "    local j : number                              "NL
+            "                                                  "NL
+            "    j, i, s = 1.1, foo()                          "NL
+            " 	 write(i, s, j)                                "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description170 = "";
+    int retcode170 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf170 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, string                  "NL
+            "	return 1, \"hi\"                               "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main() : integer                         "NL
+            "	return foo()                                   "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description171 = "";
+    int retcode171 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf171 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, string                  "NL
+            "	return 1, \"hi\"                               "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main() : integer, integer                "NL
+            "	return 1, foo()                                "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description172 = "";
+    int retcode172 = ERROR_NOERROR;
+    pfile_t *pf172 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, string                  "NL
+            "	return 1, \"hi\"                               "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main() : integer, integer, string        "NL
+            "	return 1, foo()                                "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function bar()                                    "NL
+            "    write(main())                                 "NL
+            "end                                               "NL
+            "                                                  "NL
+            "bar()                                             "NL
+    );
+
+    char *description173 = "";
+    int retcode173 = ERROR_NOERROR;
+    pfile_t *pf173 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, string                       "NL
+            "	return 1, \"hi\"                                    "NL
+            "end                                                    "NL
+            "                                                       "NL
+            "function main() : integer, integer, string             "NL
+            "	return 1, foo()                                     "NL
+            "end                                                    "NL
+            "                                                       "NL
+            "function buzz(i : integer, j : integer, s : string)    "NL
+            "    write(i, j, s)                                     "NL
+            "end                                                    "NL
+            "                                                       "NL
+            "function bar()                                         "NL
+            "    buzz(main())                                       "NL
+            "    write(main())                                      "NL
+            "end                                                    "NL
+            "                                                       "NL
+            "bar()                                                  "NL
+    );
+
+    char *description174 = "";
+    int retcode174 = ERROR_NOERROR;
+    pfile_t *pf174 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, string                  "NL
+            "	return 1, \"hi\"                               "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main() : integer, integer, string        "NL
+            "	return 1, foo()                                "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function buzz(i : integer)                        "NL
+            "    write(i)                                      "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function bar()                                    "NL
+            "    buzz(1)                                       "NL
+            "    write(main())                                 "NL
+            "end                                               "NL
+            "                                                  "NL
+            "bar()                                             "NL
+    );
+
+    char *description175 = "";
+    int retcode175 = ERROR_NOERROR;
+    pfile_t *pf175 = Pfile.ctor(
+            PROLOG
+            "function main() : integer, integer, string        "NL
+            "	return 1                                       "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function bar()                                    "NL
+            "    local i : integer                             "NL
+            "    local j : number                              "NL
+            "                                                  "NL
+            "    i, j = 2, main()                              "NL
+            "    write(i, j)                                   "NL
+            "end                                               "NL
+            "                                                  "NL
+            "bar()                                             "NL
+    );
+
+    char *description176 = "";
+    int retcode176 = ERROR_NOERROR;
+    pfile_t *pf176 = Pfile.ctor(
+            PROLOG
+            "function main() : integer, integer, string        "NL
+            "	return 1, 3, \"hi\"                            "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function bar()                                    "NL
+            "    local i : integer                             "NL
+            "    local j : number                              "NL
+            "    local k : integer                             "NL
+            "                                                  "NL
+            "    i, j, k = 2, main()                           "NL
+            "    write(i, j, k)                                "NL
+            "end                                               "NL
+            "                                                  "NL
+            "bar()                                             "NL
+    );
+
+    char *description177 = "";
+    int retcode177 = ERROR_NOERROR;
+    pfile_t *pf177 = Pfile.ctor(
+            PROLOG
+            "function foo(i : integer, n: number)              "NL
+            "    if (i == n) then                              "NL
+            "        write(\"i == n\")                         "NL
+            "    elseif (i < n) then                           "NL
+            "        write(\"i < n\")                          "NL
+            "    else                                          "NL
+            "        write(\"i > n\")                         "NL
+            "    end                                           "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main()                                   "NL
+            "    foo(1, 2.4)                                   "NL
+            "    foo(35, 34.5)                                 "NL
+            "    foo(2, 2)                                     "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description178 = "";
+    int retcode178 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf178 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    local i : integer = 0                         "NL
+            "    write(i)                                      "NL
+            "    repeat                                        "NL
+            "        local i : integer = 1                     "NL
+            "        write(i)                                  "NL
+            "        repeat                                    "NL
+            "            local i : integer = 2                 "NL
+            "            write(i)                              "NL
+            "            while i == 1 - (1 * 2 - 1) do         "NL
+            "                local i : integer = 3             "NL
+            "                write(i)                          "NL
+            "                break                             "NL
+            "            end                                   "NL
+            "        until true                                "NL
+            "    until (false or true)                         "NL
+            "    repeat                                        "NL
+            "            while false do                        "NL
+            "                local i : integer = 4             "NL
+            "                write(i)                          "NL
+            "            end                                   "NL
+            "        local i : integer = 5                     "NL
+            "        write(i)                                  "NL
+            "    until (false or (true or false))              "NL
+            "    while true do                                 "NL
+            "        local i : integer = 6                     "NL
+            "        while i - 2 * 3 and true do               "NL
+            "            local i : integer = 7                 "NL
+            "            write(i)                              "NL
+            "            break                                 "NL
+            "        end                                       "NL
+            "        break                                     "NL
+            "    end                                           "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description179 = "";
+    int retcode179 = ERROR_NOERROR;
+    pfile_t *pf179 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    local i : integer = 0                         "NL
+            "    write(i)                                      "NL
+            "    repeat                                        "NL
+            "        local i : integer = 1                     "NL
+            "        write(i)                                  "NL
+            "    until (false or true)                         "NL
+            "    write(i)                                      "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description180 = "";
+    int retcode180 = ERROR_NOERROR;
+    pfile_t *pf180 = Pfile.ctor(
+            PROLOG
+            "function main ()                                                                              "NL
+            "    local i : number = (162.28 * 22 - (#(\"hello\" .. \" world\") // tointeger(23.42)) - 3)   "NL
+            "    if i == (162.28 * 22 - #(\"hello\" .. \" world\") // tointeger(23.42) - 3) then           "NL
+            "        write(\"success\")                                                                    "NL
+            "    else                                                                                      "NL
+            "        write(\"fail\")                                                                       "NL
+            "    end                                                                                       "NL
+            "end                                                                                           "NL
+            "                                                                                              "NL
+            "main()                                                                                        "NL
+    );
+
+    char *description181 = "";
+    int retcode181 = ERROR_NOERROR;
+    pfile_t *pf181 = Pfile.ctor(
+            PROLOG
+            "function foo(a : integer, b : string) : number, integer, string    "NL
+            "    local k : integer = a + 3                                      "NL
+            "    return 1, k, b                                                 "NL
+            "end                                                                "NL
+            "                                                                   "NL
+            "function bar (ah: number, jo: integer, ne: string)                 "NL
+            "    write(ah, jo, ne)                                                      "NL
+            "end                                                                "NL
+            "                                                                   "NL
+            "function main()                                                    "NL
+            "    local i : integer = 0                                          "NL
+            "    i = 2 + 4 + 43                                                 "NL
+            "    write(i)                                                       "NL
+            "                                                                   "NL
+            "    local x : number                                               "NL
+            "    local y : integer                                              "NL
+            "    local z : string                                               "NL
+            "    x, y, z = foo(3, \"hey\")                                      "NL
+            "    bar(x, y, z)                                                   "NL
+            "end                                                                "NL
+            "main()                                                             "NL
+    );
+
+    char *description182 = "";
+    int retcode182 = ERROR_NOERROR;
+    pfile_t *pf182 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    local i : integer                             "NL
+            "    while 1 == 1 do                               "NL
+            "    for i = 0, 10, 1 do                           "NL
+            "        for i = 0, 2, 2 do                        "NL
+            "            if 1 == 6 then                        "NL
+            "                i = 1                             "NL
+            "            elseif 1 == 2 then                    "NL
+            "                i = 2                             "NL
+            "            elseif 2 == 5 then                    "NL
+            "                i = 3                             "NL
+            "            else                                  "NL
+            "                i = 9                             "NL
+            "                if 1 == 1 then                    "NL
+            "                    i = 4                         "NL
+            "                end                               "NL
+            "                repeat                            "NL
+            "                    i = 42                        "NL
+            "                    break                         "NL
+            "                until 1 == 3                      "NL
+            "            end                                   "NL
+            "            break                                 "NL
+            "        end                                       "NL
+            "        break                                     "NL
+            "    end                                           "NL
+            "    break                                         "NL
+            "    end                                           "NL
+            "    write(i)                                      "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description183 = "";
+    int retcode183 = ERROR_NOERROR;
+    pfile_t *pf183 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    local i : integer = 1                         "NL
+            "    for i = 0, 10, 2 do                           "NL
+            "        i = 5                                     "NL
+            "    end                                           "NL
+            "    write(i)                                      "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description184 = "";
+    int retcode184 = ERROR_NOERROR;
+    pfile_t *pf184 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    for j = 0, 10, 2 do                           "NL
+            "        write(j)                                  "NL
+            "        j = 5                                     "NL
+            "        write(j)                                  "NL
+            "    end                                           "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description185 = "";
+    int retcode185 = ERROR_NOERROR;
+    pfile_t *pf185 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    for j = 0, 10, 2 do                           "NL
+            "        j = 5                                     "NL
+            "        write(j)                                  "NL
+            "    end                                           "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description186 = "";
+    int retcode186 = ERROR_NOERROR;
+    pfile_t *pf186 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    for j = 0, 10, 2 do                           "NL
+            "        write(j)                                  "NL
+            "        j = 5                                     "NL
+            "    end                                           "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description187 = "";
+    int retcode187 = ERROR_SYNTAX;
+    pfile_t *pf187 = Pfile.ctor(
+            PROLOG
+            "function foo()                                    "NL
+            "end                                               "NL
+            "                                                  "NL
+            "foo(())                                           "NL
+    );
+
+    char *description188 = "";
+    int retcode188 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf188 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    repeat                                        "NL
+            "        local i : integer = 1                     "NL
+            "        write(i)                                  "NL
+            "        repeat                                    "NL
+            "            local i : integer = 2                 "NL
+            "            write(i)                              "NL
+            "            while i == 1 - (1 * 2 - 1) do         "NL
+            "                local i : integer = 3             "NL
+            "                write(i)                          "NL
+            "                break                             "NL
+            "            end                                   "NL
+            "        until true                                "NL
+            "    until (false or true)                         "NL
+            "    repeat                                        "NL
+            "            while false do                        "NL
+            "                local i : integer = 4             "NL
+            "                write(i)                          "NL
+            "            end                                   "NL
+            "        local i : integer = 5                     "NL
+            "        write(i)                                  "NL
+            "    until (false or (true or false))              "NL
+            "    while true do                                 "NL
+            "        local i : integer = 6                     "NL
+            "        while i - 2 * 3 and true do               "NL
+            "            local i : integer = 7                 "NL
+            "            write(i)                              "NL
+            "            break                                 "NL
+            "        end                                       "NL
+            "        break                                     "NL
+            "    end                                           "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description189 = "";
+    int retcode189 = ERROR_NOERROR;
+    pfile_t *pf189 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    for j = 0, 5 do                               "NL
+            "        write(j)                                  "NL
+            "        j = 5                                     "NL
+            "    end                                           "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description190 = "";
+    int retcode190 = ERROR_NOERROR;
+    pfile_t *pf190 = Pfile.ctor(
+            PROLOG
+            "function main(s : string) : integer               "NL
+            "    local new_str : string = s .. s               "NL
+            "    local s_len : integer = #s                    "NL
+            "    local new_str_len : number = #new_str         "NL
+            "                                                  "NL
+            "    if (s_len == new_str_len) then                "NL
+            "        write(\"nonono\")                         "NL
+            "    elseif (s_len > new_str_len) then             "NL
+            "        write(\"no chance\")                      "NL
+            "    elseif (s_len ~= new_str_len) then            "NL
+            "        write(\"not again\")                      "NL
+            "    elseif s_len == new_str_len / 2 then          "NL
+            "        write(\"finally correct\")                "NL
+            "    else                                          "NL
+            "        write(\"bad\")                            "NL
+            "    end                                           "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main(\"test\")                                    "NL
+    );
+
+    char *description191 = "";
+    int retcode191 = ERROR_NOERROR;
+    pfile_t *pf191 = Pfile.ctor(
+            PROLOG
+            "function main(s : string) : integer               "NL
+            "    local new_str : string = s .. s               "NL
+            "    local s_len : integer = #s                    "NL
+            "    local new_str_len : number = #new_str         "NL
+            "                                                  "NL
+            "    if (s_len == new_str_len) then                "NL
+            "        write(\"nonono\")                         "NL
+            "    elseif (s_len > new_str_len) then             "NL
+            "        write(\"no chance\")                      "NL
+            "    elseif (s_len ~= new_str_len) then            "NL
+            "        write(\"not again\")                      "NL
+            "    elseif s_len == new_str_len / 2 then          "NL
+            "        write(\"finally correct\")                "NL
+            "    else                                          "NL
+            "        write(\"bad\")                            "NL
+            "    end                                           "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main(\"s\")                                       "NL
+
+    );
+
+    char *description192 = "";
+    int retcode192 = ERROR_NOERROR;
+    pfile_t *pf192 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    local z : integer = 0                         "NL
+            "    repeat                                        "NL
+            "            while false do                        "NL
+            "                local i : integer = 4             "NL
+            "                write(i)                          "NL
+            "            end                                   "NL
+            "        local i : number = 5 / z                  "NL
+            "        write(i)                                  "NL
+            "    until (false or (true or false))              "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description193 = "";
+    int retcode193 = ERROR_NOERROR;
+    pfile_t *pf193 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    local z : integer = 0                         "NL
+            "    repeat                                        "NL
+            "            while false do                        "NL
+            "                local i : integer = 4             "NL
+            "                write(i)                          "NL
+            "            end                                   "NL
+            "        local i : number = 5 / z                  "NL
+            "        write(i)                                  "NL
+            "    until (false or (true or false))              "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description194 = "";
+    int retcode194 = ERROR_NOERROR;
+    pfile_t *pf194 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    local z : integer = 0                         "NL
+            "    repeat                                        "NL
+            "            while false do                        "NL
+            "                local i : integer = 4             "NL
+            "                write(i)                          "NL
+            "            end                                   "NL
+            "        local i : number = 5 // z                 "NL
+            "        write(i)                                  "NL
+            "    until (false or (true or false))              "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description195 = "";
+    int retcode195 = ERROR_NOERROR;
+    pfile_t *pf195 = Pfile.ctor(
+            PROLOG
+            "function main ()                                  "NL
+            "    local exp : integer = 4                       "NL
+            "    local base : integer = 2                      "NL
+            "    local res : integer = 1                       "NL
+            "    while exp ~= 0 do                             "NL
+            "        res = res * base                          "NL
+            "        exp = exp - 1                             "NL
+            "    end                                           "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description196 = "";
+    int retcode196 = ERROR_NOERROR;
+    pfile_t *pf196 = Pfile.ctor(
+            PROLOG
+            "function foo(a : integer, b : string) : integer, integer, integer  "NL
+            "    return 1, 2, 3                                                 "NL
+            "end                                                                "NL
+            "                                                                   "NL
+            "function main()                                                    "NL
+            "    local i : integer                                              "NL
+            "    local j : integer                                              "NL
+            "    local k : integer                                              "NL
+            "    local l : integer                                              "NL
+            "    i, j, k, l = 0, foo(1, \"hello\")                              "NL
+            "    write(j)                                                       "NL
+            "                                                                   "NL
+            "end                                                                "NL
+            "main()                                                             "NL
+    );
+
+    char *description197 = "";
+    int retcode197 = ERROR_NOERROR;
+    pfile_t *pf197 = Pfile.ctor(
+            PROLOG
+            "function foo(a : integer, b : string) : integer, integer           "NL
+            "    return 1, 2                                                    "NL
+            "end                                                                "NL
+            "                                                                   "NL
+            "function main()                                                    "NL
+            "    local i : integer                                              "NL
+            "    local j : integer                                              "NL
+            "    local k : integer                                              "NL
+            "    local l : integer                                              "NL
+            "    i, j, k, l = 0, foo(1, \"test\"), 3                            "NL
+            "    write(j)                                                       "NL
+            "                                                                   "NL
+            "end                                                                "NL
+            "main()                                                             "NL
+    );
+
+    char *description198 = "";
+    int retcode198 = ERROR_NOERROR;
+    pfile_t *pf198 = Pfile.ctor(
+            PROLOG
+            "function foo(a : integer, b : string) : integer, integer           "NL
+            "    return 1, 2                                                    "NL
+            "end                                                                "NL
+            "                                                                   "NL
+            "function main()                                                    "NL
+            "    local i : integer                                              "NL
+            "    local j : integer                                              "NL
+            "    local k : integer                                              "NL
+            "    local l : integer                                              "NL
+            "    i, j, k, l = 0, 3, foo(1, \"hello\")                           "NL
+            "    write(j)                                                       "NL
+            "                                                                   "NL
+            "end                                                                "NL
+            "main()                                                             "NL
+    );
+
+    char *description199 = "";
+    int retcode199 = ERROR_NOERROR;
+    pfile_t *pf199 = Pfile.ctor(
+            PROLOG
+            "function main()                                                    "NL
+            "    local l : integer = #(\"yes\")                                 "NL
+            "end                                                                "NL
+            "main()                                                             "NL
+    );
+
+    char *description200 = "";
+    int retcode200 = ERROR_NOERROR;
+    pfile_t *pf200 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string                            "NL
+            "    local k : integer                             "NL
+            "    local m : integer                             "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+            "                                                  "NL
+    );
+
+    char *description201 = "";
+    int retcode201 = ERROR_NOERROR;
+    pfile_t *pf201 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"hey\"                  "NL
+            "    local k : integer                             "NL
+            "    local m : integer                             "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description202 = "";
+    int retcode202 = ERROR_NOERROR;
+    pfile_t *pf202 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"hey\"                  "NL
+            "    local k : integer                             "NL
+            "    local m : integer                             "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description203 = "";
+    int retcode203 = ERROR_NOERROR;
+    pfile_t *pf203 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"hey\"                  "NL
+            "    local k : integer = 3                         "NL
+            "    local m : integer = 8                         "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description204 = "";
+    int retcode204 = ERROR_NOERROR;
+    pfile_t *pf204 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"loremipsumsthidk\"     "NL
+            "    local k : integer = 3                         "NL
+            "    local m : integer = 5                         "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description205 = "";
+    int retcode205 = ERROR_NOERROR;
+    pfile_t *pf205 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"loremipsumsthidk\"     "NL
+            "    local k : integer = 3                         "NL
+            "    local m : integer = 3                         "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description206 = "";
+    int retcode206 = ERROR_NOERROR;
+    pfile_t *pf206 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"loremipsumsthidk\"     "NL
+            "    local k : integer = -3                        "NL
+            "    local m : integer = -5                        "NL
+            "    local res : string = substr(str, k, m)        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description207 = "";
+    int retcode207 = ERROR_NOERROR;
+    pfile_t *pf207 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"loremipsumsthidk\"     "NL
+            "    local k : integer = -3                        "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description208 = "";
+    int retcode208 = ERROR_NOERROR;
+    pfile_t *pf208 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"loremipsumsthidk\"     "NL
+            "    local k : integer = 3                         "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description209 = "";
+    int retcode209 = ERROR_NOERROR;
+    pfile_t *pf209 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"loremipsumsthidk\"     "NL
+            "    local k : integer = 354                       "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description210 = "";
+    int retcode210 = ERROR_NOERROR;
+    pfile_t *pf210 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"\"                     "NL
+            "    local k : integer = 0                         "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description211 = "";
+    int retcode211 = ERROR_NOERROR;
+    pfile_t *pf211 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string                            "NL
+            "    local k : integer                             "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description212 = "";
+    int retcode212 = ERROR_NOERROR;
+    pfile_t *pf212 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string                            "NL
+            "    local k : integer = 3                         "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description213 = "";
+    int retcode213 = ERROR_NOERROR;
+    pfile_t *pf213 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"hello\"                "NL
+            "    local k : integer                             "NL
+            "    local res : integer = ord(str, k)             "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description214 = "";
+    int retcode214 = ERROR_NOERROR;
+    pfile_t *pf214 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"hello\"                "NL
+            "    local k : integer = 3                         "NL
+            "    local res : number = ord(str, k)              "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description215 = "";
+    int retcode215 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf215 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local str : string = \"hello\"                "NL
+            "    local k : number = 3                          "NL
+            "    local res : number = ord(str, k)              "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description216 = "";
+    int retcode216 = ERROR_NOERROR;
+    pfile_t *pf216 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : number                              "NL
+            "    local res : string = chr(tointeger(k))        "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description217 = "";
+    int retcode217 = ERROR_NOERROR;
+    pfile_t *pf217 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : integer = -2                        "NL
+            "    local res : string = chr(k)                   "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description218 = "";
+    int retcode218 = ERROR_NOERROR;
+    pfile_t *pf218 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : integer = 256                       "NL
+            "    local res : string = chr(k)                   "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description219 = "";
+    int retcode219 = ERROR_NOERROR;
+    pfile_t *pf219 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : integer = 255                       "NL
+            "    local res : string = chr(k)                   "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+
+    );
+
+    char *description220 = "";
+    int retcode220 = ERROR_NOERROR;
+    pfile_t *pf220 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : integer = 69                        "NL
+            "    local res : string = chr(k)                   "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description221 = "";
+    int retcode221 = ERROR_NOERROR;
+    pfile_t *pf221 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : integer = 0                         "NL
+            "    local res : string = chr(k)                   "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description222 = "";
+    int retcode222 = ERROR_NOERROR;
+    pfile_t *pf222 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local res : integer = tointeger(3.4)          "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description223 = "";
+    int retcode223 = ERROR_NOERROR;
+    pfile_t *pf223 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local k : integer                             "NL
+            "    local res : integer = tointeger(k)            "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description224 = "";
+    int retcode224 = ERROR_NOERROR;
+    pfile_t *pf224 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local res : integer = tointeger(-02.28)       "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description225 = "";
+    int retcode225 = ERROR_NOERROR;
+    pfile_t *pf225 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local res : integer = readi()                 "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description226 = "";
+    int retcode226 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf226 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local res : integer = readn()                 "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description227 = "";
+    int retcode227 = ERROR_NOERROR;
+    pfile_t *pf227 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local res : number = readn()                  "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description228 = "";
+    int retcode228 = ERROR_NOERROR;
+    pfile_t *pf228 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "    local res : string = reads()                  "NL
+            "    write(res)                                    "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description229 = "";
+    int retcode229 = ERROR_NOERROR;
+    pfile_t *pf229 = Pfile.ctor(
+            PROLOG
+            "function main()                                          "NL
+            "    local i : string                                     "NL
+            "    i = write(6656,6%87,\"\\n\", \"escape\", \"\\010\")  "NL
+            "    write(i)                                             "NL
+            "end                                                      "NL
+            "main()                                                   "NL
+    );
+
+    char *description230 = "";
+    int retcode230 = ERROR_NOERROR;
+    pfile_t *pf230 = Pfile.ctor(
+            PROLOG
+            "function modulo(a: integer, b: integer) : integer "NL
+            "  local i : integer = a - (a // b) * b            "NL
+            "  if (i == (a%b)) then                            "NL
+            "    write(\"success\\n\")                         "NL
+            "  else                                            "NL
+            "    write(\"fail\\n\")                            "NL
+            "  end                                             "NL
+            "  return i                                        "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main()                                   "NL
+            "  local mod : number = modulo(42, 23)             "NL
+            "  write(mod, \"\\n\")                             "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description231 = "";
+    int retcode231 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf231 = Pfile.ctor(
+            PROLOG
+            "function power(a: number, b: integer) : number    "NL
+            "  local i : number = a ^ b                        "NL
+            "  return i                                        "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main()                                   "NL
+            "  local res : number = power(2.0)                 "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    STRING_NOERROR(107, "02");
+    STRING_NOERROR(108, "0A");
+    STRING_NOERROR(109, "aa");
+    STRING_NOERROR(110, "bb");
+
+    STRING_NOERROR(111, "cc");
+    STRING_NOERROR(112, "Aa");
+    STRING_NOERROR(113, "Ab");
+    STRING_NOERROR(114, "ff");
+    STRING_NOERROR(115, "Ff");
+    STRING_NOERROR(116, "FF");
+    STRING_NOERROR(117, "F0");
+    STRING_NOERROR(118, "0f");
+    STRING_NOERROR(119, "0F");
+
+    STRING_NOERROR(120, "0A");
+    STRING_NOERROR(121, "A0");
+    STRING_NOERROR(122, "F0");
+    STRING_NOERROR(123, "F2");
+    STRING_NOERROR(124, "DD");
+    STRING_NOERROR(125, "FD");
+    STRING_ERROR(126, "\\x00");
+    STRING_ERROR(127, "\\0x22");
+    STRING_ERROR(128, "\\000");
+    STRING_ERROR(129, "\269");
+
+    STRING_ERROR(130, "\256");
+    STRING_ERROR(131, "\\a");
+    STRING_ERROR(132, "\\x");
+    STRING_ERROR(133, "\\f");
+    STRING_ERROR(134, "\\r");
+    STRING_ERROR(135, "\\0x");
+    STRING_ERROR(136, "\\N");
+
+    GLOBAL_EXPRESSION_ERROR(137, "aa(a(a(1)) + b(a(1)), c(a(1)) + d(a(1))");
+    GLOBAL_EXPRESSION_ERROR(138, "aa(   a(a(1)) + b(a(1)), c(a(1)) + d(,a(1))   )");
+    GLOBAL_EXPRESSION_ERROR(139, "aa(   a(a(1)) + b(a(1)), c(a(1)) + d(a(1),)   )");
+
+    GLOBAL_EXPRESSION_NOERROR(140, "aaa(    a(1) + b(2), c(c(c(c(c(2))))) + dd( 1 + 2, 3 * (4 + a((2))) ), 2    )");
 
     TEST_CASE(1);
     TEST_CASE(2);
@@ -1764,5 +3669,144 @@ int main() {
     TEST_CASE(97);
     TEST_CASE(98);
     TEST_CASE(99);
+
+
+    TEST_CASE(101);
+    TEST_CASE(102);
+    TEST_CASE(103);
+    TEST_CASE(104);
+    TEST_CASE(105);
+    //TEST_CASE(106);
+    TEST_CASE(107);
+    TEST_CASE(108);
+    TEST_CASE(109);
+
+    TEST_CASE(110);
+    TEST_CASE(111);
+    TEST_CASE(112);
+    TEST_CASE(113);
+    TEST_CASE(114);
+    TEST_CASE(115);
+    TEST_CASE(116);
+    TEST_CASE(117);
+    TEST_CASE(118);
+    TEST_CASE(119);
+
+    TEST_CASE(120);
+    TEST_CASE(121);
+    TEST_CASE(122);
+    TEST_CASE(123);
+    TEST_CASE(124);
+    TEST_CASE(125);
+    TEST_CASE(126);
+    TEST_CASE(127);
+    TEST_CASE(128);
+    TEST_CASE(129);
+
+    TEST_CASE(130);
+    TEST_CASE(131);
+    TEST_CASE(132);
+    TEST_CASE(133);
+    TEST_CASE(134);
+    TEST_CASE(135);
+    TEST_CASE(136);
+    TEST_CASE(137);
+    TEST_CASE(138);
+    TEST_CASE(139);
+    TEST_CASE(140);
+
+
+    TEST_CASE(141);
+    TEST_CASE(142);
+    TEST_CASE(143);
+    TEST_CASE(144);
+    TEST_CASE(145);
+    TEST_CASE(146);
+    TEST_CASE(147);
+    TEST_CASE(148);
+    TEST_CASE(149);
+    TEST_CASE(150);
+    TEST_CASE(151);
+    TEST_CASE(152);
+    TEST_CASE(153);
+    TEST_CASE(154);
+    TEST_CASE(155);
+    TEST_CASE(156);
+    TEST_CASE(157);
+    TEST_CASE(158);
+    TEST_CASE(159);
+    TEST_CASE(160);
+    TEST_CASE(161);
+    TEST_CASE(162);
+    TEST_CASE(163);
+    TEST_CASE(164);
+    TEST_CASE(165);
+    TEST_CASE(166);
+    TEST_CASE(167);
+    TEST_CASE(168);
+    TEST_CASE(169);
+    TEST_CASE(170);
+    TEST_CASE(171);
+    TEST_CASE(172);
+    TEST_CASE(173);
+    TEST_CASE(174);
+    TEST_CASE(175);
+    TEST_CASE(176);
+    TEST_CASE(177);
+    TEST_CASE(178);
+    TEST_CASE(179);
+    TEST_CASE(180);
+    TEST_CASE(181);
+    TEST_CASE(182);
+    TEST_CASE(183);
+    TEST_CASE(184);
+    TEST_CASE(185);
+    TEST_CASE(186);
+    TEST_CASE(187);
+    TEST_CASE(188);
+    TEST_CASE(189);
+    TEST_CASE(190);
+    TEST_CASE(191);
+    TEST_CASE(192);
+    TEST_CASE(193);
+    TEST_CASE(194);
+    TEST_CASE(195);
+    TEST_CASE(196);
+    TEST_CASE(197);
+    TEST_CASE(198);
+    TEST_CASE(199);
+    TEST_CASE(200);
+    TEST_CASE(201);
+    TEST_CASE(202);
+    TEST_CASE(203);
+    TEST_CASE(204);
+    TEST_CASE(205);
+    TEST_CASE(206);
+    TEST_CASE(207);
+    TEST_CASE(208);
+    TEST_CASE(209);
+    TEST_CASE(210);
+    TEST_CASE(211);
+    TEST_CASE(212);
+    TEST_CASE(213);
+    TEST_CASE(214);
+    TEST_CASE(215);
+    TEST_CASE(216);
+    TEST_CASE(217);
+    TEST_CASE(218);
+    TEST_CASE(219);
+    TEST_CASE(220);
+    TEST_CASE(221);
+    TEST_CASE(222);
+    TEST_CASE(223);
+    TEST_CASE(224);
+    TEST_CASE(225);
+    TEST_CASE(226);
+    TEST_CASE(227);
+    TEST_CASE(228);
+    TEST_CASE(229);
+    TEST_CASE(230);
+    TEST_CASE(231);
+
     return 0;
 }

@@ -75,20 +75,51 @@ struct code_generator_interface_t {
 
     /*
      * @brief Generates assignment to a variable
-     *        MOVE LF@%0%i GF@%expr_result
      */
     void (*var_assignment)(dynstring_t *);
+
+    /*
+     * @brief Sets variable to nil.
+     */
+    void (*var_set_nil)(dynstring_t *);
+
+    /*
+     * @brief Converts GF@%expr_result to bool
+     */
+    void (*recast_expression_to_bool)(void);
+
+    /*
+     * @brief Converts GF@%expr_result int -> float
+     */
+    void (*recast_int_to_number)(void);
 
     /*
      * @brief Generates expressions reduce.
      * @param expr stores info about the expr to be processed.
      */
-    void (*expression)(expr_semantics_t *);
+    void (*expression_operand)(token_t);
+
+    /*
+     * @brief Generates expressions reduce.
+     * @param expr stores info about the expr to be processed.
+    */
+    void (*expression_unary)(op_list_t);
+
+    /*
+     * @brief Generates expressions reduce.
+     * @param expr stores info about the expr to be processed.
+     */
+    void (*expression_binary)(op_list_t, type_recast_t);
 
     /*
      * @brief Generates pop from the stack to GF@%expr_result.
      */
     void (*expression_pop)(void);
+
+    /*
+     * @brief Generates pop from the stack to GF@%expr_result.
+     */
+    void (*expression_push)(void);
 
     /*
      * @brief Gets info about current cond scope from
@@ -183,12 +214,12 @@ struct code_generator_interface_t {
     /*
      * @brief Generates passing param from TF to LF.
      */
-    void (*func_start_param)(dynstring_t*, size_t);
+    void (*func_start_param)(dynstring_t *, size_t);
 
     /*
-     * @brief Generates parameter pass to a function.
+     * @brief Generates passing return value.
      */
-    void (*func_pass_param)(size_t);
+    void (*func_pass_return)(size_t);
 
     /*
      * @brief Generates return value of return parameter with index.
@@ -196,14 +227,55 @@ struct code_generator_interface_t {
     void (*func_return_value)(size_t);
 
     /*
+     * @brief Generates return for not_last expression. Pops unnecessary
+     *        items from the stack and returns only the last one.
+     */
+    void (*return_not_last)(size_t, size_t);
+
+    /*
+     * @brief Generates return for the last expression. Pops all items from
+     *        the stack to LF%@return...
+     */
+    void (*return_last)(size_t, size_t);
+
+    /*
      * @brief Generates creation of a frame before passing parameters to a function
      */
     void (*func_createframe)(void);
 
     /*
+     * @brief Generates parameter pass to a function.
+     */
+    void (*func_call_pass_param)(size_t);
+
+    /*
+     * @brief Generates new TF variable declaration with
+     *        assignment of the value on the top of the stack.
+     *        This function is used for function write call.
+     */
+    void (*pop_to_tmp_var)(size_t);
+
+    /*
+     * @brief Generates move from TF variable to GF@%expr_result.
+     *        This function is used for function write call.
+     */
+    void (*move_tmp_var)(size_t);
+
+    /*
+     * @brief Generates getting return value after function call.
+     * generates sth like:  MOVE LF%id%res TF@%return0
+     */
+    void (*func_call_return_value)(size_t);
+
+    /*
+     * @brief Generates clear stack.
+     */
+    void (*clear_stack)(void);
+
+    /*
      * @brief Generates function call.
      */
-    void (*func_call)(dynstring_t *);
+    void (*func_call)(char *);
 
     /*
      * @brief Generates end of main scope.
@@ -214,6 +286,11 @@ struct code_generator_interface_t {
      * @brief Generates program start (adds header, define built-in functions).
      */
     void (*prog_start)(void);
+
+    /*
+     * @brief Generates comment.
+     */
+    void (*comment)(char *);
 };
 
 // Functions from code_generator.c will be visible in different file under Generator name.

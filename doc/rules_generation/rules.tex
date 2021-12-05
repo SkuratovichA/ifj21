@@ -1,0 +1,58 @@
+\begin{enumerate}
+	\item $\mbox{\boldmath$\langle{}program\rangle{}$}\ \rightarrow\ require\ "ifj21"\ \mbox{\boldmath$\langle{}stmt\_list\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}stmt\_list\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}stmt\rangle{}$}\ \mbox{\boldmath$\langle{}stmt\_list\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}stmt\_list\rangle{}$}\ \rightarrow\ EOF$
+	\item $\mbox{\boldmath$\langle{}stmt\rangle{}$}\ \rightarrow\ [global\_expression]$
+	\item $\mbox{\boldmath$\langle{}stmt\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}function\_definition\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}stmt\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}function\_declaration\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}function\_definition\rangle{}$}\ \rightarrow\ function\ id\ (\ \mbox{\boldmath$\langle{}funparam\_def\_list\rangle{}$}\ \mbox{\boldmath$\langle{}funretopt\rangle{}$}\ \mbox{\boldmath$\langle{}fun\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}function\_declaration\rangle{}$}\ \rightarrow\ global\ id\ :\ function\ (\ \mbox{\boldmath$\langle{}datatype\_list\rangle{}$}\ \mbox{\boldmath$\langle{}funretopt\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}funretopt\rangle{}$}\ \rightarrow\ e$
+	\item $\mbox{\boldmath$\langle{}funretopt\rangle{}$}\ \rightarrow\ :\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ \mbox{\boldmath$\langle{}other\_funrets\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}other\_funrets\rangle{}$}\ \rightarrow\ e$
+	\item $\mbox{\boldmath$\langle{}other\_funrets\rangle{}$}\ \rightarrow\ ,\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ \mbox{\boldmath$\langle{}other\_funrets\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}dataype\_list\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ \mbox{\boldmath$\langle{}other\_datatypes\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}dataype\_list\rangle{}$}\ \rightarrow\ )$
+	\item $\mbox{\boldmath$\langle{}other\_datatypes\rangle{}$}\ \rightarrow\ )$
+	\item $\mbox{\boldmath$\langle{}other\_datatypes\rangle{}$}\ \rightarrow\ ,\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ \mbox{\boldmath$\langle{}other\_datatypes\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}funparam\_def\_list\rangle{}$}\ \rightarrow\ )$
+	\item $\mbox{\boldmath$\langle{}funparam\_def\_list\rangle{}$}\ \rightarrow\ id\ :\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ \mbox{\boldmath$\langle{}other\_funparams\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}other\_funparams\rangle{}$}\ \rightarrow\ )$
+	\item $\mbox{\boldmath$\langle{}other\_funparams\rangle{}$}\ \rightarrow\ ,\ id\ :\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ \mbox{\boldmath$\langle{}other\_funparams\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_body\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \mbox{\boldmath$\langle{}fun\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_body\rangle{}$}\ \rightarrow\ end$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ break$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ [function\_expression]$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}for\_cycle\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}var\_definition\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}while\_cycle\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}repeat\_until\_cycle\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}return\_stmt\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}repeat\_until\_cycle\rangle{}$}\ \rightarrow\ repeat\ \mbox{\boldmath$\langle{}repeat\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}return\_stmt\rangle{}$}\ \rightarrow\ return\ [return\_expressions]$
+	\item $\mbox{\boldmath$\langle{}while\_cycle\rangle{}$}\ \rightarrow\ while\ [default\_expression]\ do\ \mbox{\boldmath$\langle{}fun\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}var\_definition\rangle{}$}\ \rightarrow\ local\ id\ :\ \mbox{\boldmath$\langle{}datatype\rangle{}$}\ \mbox{\boldmath$\langle{}assignment\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}if\_stmt\rangle{}$}\ \rightarrow\ if\ \mbox{\boldmath$\langle{}cond\_stmt\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}for\_cycle\rangle{}$}\ \rightarrow\ for\ id\ =\ [default\_expression]\ ,\ [default\_expression]\ \mbox{\boldmath$\langle{}for\_increment\rangle{}$}\ \mbox{\boldmath$\langle{}fun\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}for\_increment\rangle{}$}\ \rightarrow\ do$
+	\item $\mbox{\boldmath$\langle{}for\_increment\rangle{}$}\ \rightarrow\ ,\ [default\_expression]\ do$
+	\item $\mbox{\boldmath$\langle{}assignment\rangle{}$}\ \rightarrow\ e$
+	\item $\mbox{\boldmath$\langle{}assignment\rangle{}$}\ \rightarrow\ =\ [default\_expression]$
+	\item $\mbox{\boldmath$\langle{}repeat\_body\rangle{}$}\ \rightarrow\ until$
+	\item $\mbox{\boldmath$\langle{}repeat\_body\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \mbox{\boldmath$\langle{}repeat\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}datatype\rangle{}$}\ \rightarrow\ string$
+	\item $\mbox{\boldmath$\langle{}datatype\rangle{}$}\ \rightarrow\ integer$
+	\item $\mbox{\boldmath$\langle{}datatype\rangle{}$}\ \rightarrow\ boolean$
+	\item $\mbox{\boldmath$\langle{}datatype\rangle{}$}\ \rightarrow\ number$
+	\item $\mbox{\boldmath$\langle{}datatype\rangle{}$}\ \rightarrow\ nil$
+	\item $\mbox{\boldmath$\langle{}cond\_stmt\rangle{}$}\ \rightarrow\ [default\_expression]\ then\ \mbox{\boldmath$\langle{}cond\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}cond\_body\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}fun\_stmt\rangle{}$}\ \mbox{\boldmath$\langle{}cond\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}cond\_body\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}elseif\_stmt\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}cond\_body\rangle{}$}\ \rightarrow\ \mbox{\boldmath$\langle{}else\_stmt\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}cond\_body\rangle{}$}\ \rightarrow\ end$
+	\item $\mbox{\boldmath$\langle{}elseif\_stmt\rangle{}$}\ \rightarrow\ elseif\ \mbox{\boldmath$\langle{}cond\_body\rangle{}$}$
+	\item $\mbox{\boldmath$\langle{}else\_stmt\rangle{}$}\ \rightarrow\ else\ \mbox{\boldmath$\langle{}fun\_body\rangle{}$}$
+\end{enumerate}
+
+
+

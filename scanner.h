@@ -46,6 +46,7 @@ typedef struct token {
     X(STR_ESC)                \
     X(STR_HEX_1)              \
     X(STR_HEX_2)              \
+    X(STR_HEX_3)              \
     X(STR_DEC_1_0)            \
     X(STR_DEC_1_1)            \
     X(STR_DEC_1_2)            \
@@ -102,15 +103,17 @@ typedef struct token {
     X(not)      \
     X(UNDEF)
 
-#define SINGLE_CHAR_TOKENS(X) \
-    X(EOFILE)                \
-    X(LPAREN)                \
-    X(RPAREN)                \
-    X(ADD)                   \
-    X(MUL)                   \
-    X(HASH)                  \
-    X(COLON)                 \
-    X(COMMA)
+#define SINGLE_CHAR_TOKENS(X)   \
+    X(EOFILE)                   \
+    X(LPAREN)                   \
+    X(RPAREN)                   \
+    X(ADD)                      \
+    X(MUL)                      \
+    X(HASH)                     \
+    X(COLON)                    \
+    X(COMMA)                    \
+    X(PERCENT)                  \
+    X(CARET)
 
 /**
  * Tokens enum. What does each token represent.
@@ -137,6 +140,8 @@ typedef enum token_type {
     TOKEN(SUB),     // '-'
     TOKEN(STRCAT),  // ..
 
+    // for precedence analyse
+    TOKEN(MINUS_UNARY),
 
     // to make single tokens compatible with their ascii values
     TOKEN(EOFILE) = EOF,

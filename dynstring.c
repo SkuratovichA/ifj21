@@ -197,10 +197,16 @@ static void Trunc_to_len(dynstring_t *self, size_t new_len) {
  * @return pointer to the new dynstring_t object.
  */
 static dynstring_t *Str_dup(dynstring_t *s) {
-    soft_assert(s != NULL, ERROR_INTERNAL);
+    if (s == NULL) {
+        return Str_ctor("");
+    }
     soft_assert(s->str != NULL, ERROR_INTERNAL);
 
     return Str_ctor(s->str);
+}
+
+static int Cmp_c_str(dynstring_t *s1, char *s2) {
+    return strcmp(Dynstring.c_str(s1), s2);
 }
 
 /**
@@ -220,6 +226,7 @@ const struct dynstring_interface_t Dynstring = {
         .dup = Str_dup,
         .clear = Str_clear,
         .trunc_to_len = Trunc_to_len,
+        .cmp_c_str = Cmp_c_str,
 };
 
 #ifdef SELFTEST_dynstring
