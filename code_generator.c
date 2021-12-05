@@ -438,7 +438,7 @@ static void Print_instr_list(instr_list_t instr_list_type) {
             List.print_list(instructions.mainList, (char *(*)(void *)) Dynstring.c_str);
             break;
         default:
-            printf("Undefined instruction list.\n");
+            debug_msg("Undefined instruction list.\n");
             break;
     }
 }
@@ -606,36 +606,6 @@ static void generate_expression_push() {
 }
 
 /*
- * @brief Generates multiple assignment.
- */
-static void generate_assignment(list_t *ids_list, dynstring_t *rhs_expressions) {
-    // ids_list needs to be reversed because the stack is used
-    List.reverse(ids_list);
-    list_item_t *id = ids_list->head;
-    size_t id_cnt = 0;
-    size_t ids_len = List.len(ids_list);
-    size_t rhs_len = Dynstring.len(rhs_expressions);
-
-    while (rhs_len > ids_len) {
-        printf("\n# rhs: [%lu], ids: [%lu]\n", rhs_len, ids_len);
-        generate_expression_pop();
-        rhs_len--;
-    }
-    while (id != NULL) {
-        // there is not an expression for the variable
-        if (ids_len - rhs_len > id_cnt) {
-            // assign nil to other variables
-            generate_var_set_nil(id->data);
-        } else {
-            // generate code for assignment
-            generate_var_assignment(id->data);
-        }
-        id_cnt++;
-        id = id->next;
-    }
-}
-
-/*
  * @brief Generates nil assignment to return variable.
  */
 static void generate_return_nil(size_t index) {
@@ -684,9 +654,11 @@ static void recast_first_or_both(type_recast_t recast) {
     ADD_INSTR("# convert int -> float");
     ADD_INSTR("POPS GF@%expr_result2 \n"
               "POPS GF@%expr_result \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
               "INT2FLOAT GF@%expr_result GF@%expr_result");
     if (recast == TYPE_RECAST_BOTH) {
         ADD_INSTR("# convert int -> float");
+        ADD_INSTR("JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n");
         ADD_INSTR("INT2FLOAT GF@%expr_result2 GF@%expr_result2");
     }
     ADD_INSTR("PUSHS GF@%expr_result \n"
@@ -700,6 +672,7 @@ static void recast_first_or_both(type_recast_t recast) {
 static void recast_second() {
     ADD_INSTR("# convert int -> float");
     ADD_INSTR("POPS GF@%expr_result \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
               "INT2FLOAT GF@%expr_result GF@%expr_result \n"
               "PUSHS GF@%expr_result");
 }
@@ -1295,6 +1268,13 @@ static void generate_func_call_return_value(size_t index) {
 }
 
 /*
+ * @brief Generates clear stack.
+ */
+static void generate_clear_stack() {
+    ADD_INSTR("CLEARS");
+}
+
+/*
  * @brief Generates start of main scope.
  */
 static void generate_main_start() {
@@ -1372,8 +1352,8 @@ const struct code_generator_interface_t Generator = {
         .var_declaration = generate_var_declaration,
         .var_definition = generate_var_definition,
         .tmp_var_definition = generate_tmp_var_definition,
-        .assignment = generate_assignment,
-        .return_nil = generate_return_nil,
+        .var_assignment = generate_var_assignment,
+        .var_set_nil = generate_var_set_nil,
         .recast_expression_to_bool = recast_expression_to_bool,
         .recast_int_to_number = recast_second,
         .expression_operand = generate_expression_operand,
@@ -1407,6 +1387,7 @@ const struct code_generator_interface_t Generator = {
         .func_call_pass_param = generate_func_call_pass_param,
         .func_call = generate_func_call,
         .func_call_return_value = generate_func_call_return_value,
+        .clear_stack = generate_clear_stack,
         .main_end = generate_main_end,
         .prog_start = generate_prog_start,
         .comment = generate_comment,

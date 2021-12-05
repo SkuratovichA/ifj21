@@ -947,8 +947,13 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
             Dynstring.append(expr->expression_type, 'n');
         }
 
+        size_t expr_num = Dynstring.len(expr->expression_type);
         Semantics.trunc_signature(expr->expression_type);
-        // TODO: clear stack in generated code
+
+        // clear generator stack
+        for(size_t i = 0; i < expr_num - 1; i++) {
+            Generator.expression_pop();
+        }
     }
 
     // Precedence comparison
@@ -1319,29 +1324,39 @@ static bool check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
     size_t id_cnt = 0;
     type_recast_t r_type = NO_RECAST;
 
+    size_t ids_len = List.len(ids_list);
+    size_t rhs_len = Dynstring.len(rhs_expressions);
+
+    while (rhs_len > ids_len) {
+        Dynstring.trunc_to_len(rhs_expressions, ids_len);
+        Generator.expression_pop();
+        rhs_len--;
+    }
+
     while (id != NULL) {
         // there is no more expressions
-        if (id_cnt >= Dynstring.len(rhs_expressions)) {
-            // TODO: assign nil to other variables
-            id_cnt++;
-            id = id->next;
-            continue;
-        }
+        if (id_cnt < ids_len - rhs_len) {
+            // assign nil to other variables
+            Generator.var_set_nil(id->data);
+        } else {
+            symbol_t *sym;
+            if (!Symstack.get_local_symbol(symstack, id->data, &sym)) {
+                Errors.set_error(ERROR_DEFINITION);
+                goto err;
+            }
 
-        symbol_t *sym;
-        if (!Symstack.get_local_symbol(symstack, id->data, &sym)) {
-            Errors.set_error(ERROR_DEFINITION);
-            goto err;
-        }
+            if (!Semantics.check_type_compatibility(Semantics.of_id_type(sym->type),
+                                                    rhs_expr_str[ids_len - id_cnt - 1],
+                                                    &r_type)) {
+                Errors.set_error(ERROR_TYPE_MISSMATCH);
+                goto err;
+            }
 
-        if (!Semantics.check_type_compatibility(Semantics.of_id_type(sym->type),
-                                                rhs_expr_str[id_cnt],
-                                                &r_type)) {
-            Errors.set_error(ERROR_TYPE_MISSMATCH);
-            goto err;
+            if (r_type != NO_RECAST) {
+                Generator.recast_int_to_number();
+            }
+            Generator.var_assignment(id->data);
         }
-
-        // TODO: recast in generator
 
         r_type = NO_RECAST;
         id_cnt++;
@@ -1462,7 +1477,6 @@ static bool a_other_id(list_t *ids_list) {
         }
 
         check_multiple_assignment(ids_list, rhs_expressions);
-        Generator.assignment(ids_list, rhs_expressions);
         goto noerr;
     }
 
@@ -1474,8 +1488,8 @@ static bool a_other_id(list_t *ids_list) {
 
     CHECK_DEFINITION(id_name);
 
-    // Append next identifier
-    List.append(ids_list, Dynstring.dup(id_name));
+    // Prepend next identifier
+    List.prepend(ids_list, Dynstring.dup(id_name));
 
     // [a_other_id]
     if (!a_other_id(ids_list)) {
@@ -1507,8 +1521,8 @@ static bool assign_id(dynstring_t *id_name) {
 
     CHECK_DEFINITION(id_name);
 
-    // Append first identifier
-    List.append(ids_list, Dynstring.dup(id_name));
+    // Prepend first identifier
+    List.prepend(ids_list, Dynstring.dup(id_name));
 
     // [a_other_id]
     if (!a_other_id(ids_list)) {
@@ -1565,8 +1579,12 @@ static bool Default_expression(pfile_t *pfile_,
 
     CHECK_EMPTY_SIGNATURE(received_signature);
 
-    Generator.expression_pop();
-    // TODO: CLEARS stack?
+    size_t received_len = Dynstring.len(received_signature);
+    Semantics.trunc_signature(received_signature);
+    for(size_t i = 0; i < received_len; i++) {
+        Generator.expression_pop();
+    }
+    Generator.clear_stack();
 
     if (type_expr_statement == TYPE_EXPR_DEFAULT) {
         goto noerr;
@@ -1614,7 +1632,7 @@ static bool Global_expression(pfile_t *pfile_) {
         goto err;
     }
 
-    // TODO: CLEARS stack?
+    Generator.clear_stack();
 
     Dynstring.dtor(id_name);
     return true;
@@ -1644,13 +1662,13 @@ static bool Function_expression(pfile_t *pfile_) {
         if (!func_call(id_name, NULL)) {
             goto err;
         }
-        // TODO: CLEARS stack?
+        Generator.clear_stack();
     } else {
         // [assign_id]
         if (!assign_id(id_name)) {
             goto err;
         }
-        // TODO: CLEARS stack?
+        Generator.clear_stack();
     }
 
     Dynstring.dtor(id_name);

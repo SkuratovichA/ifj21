@@ -74,14 +74,14 @@ struct code_generator_interface_t {
     void (*tmp_var_definition)(char *);
 
     /*
-     * @brief Generates assignment.
+     * @brief Generates assignment to a variable
      */
-    void (*assignment)(list_t *, dynstring_t *);
+    void (*var_assignment)(dynstring_t *);
 
     /*
-     * @brief Generates nil assignment to return variable.
+     * @brief Sets variable to nil.
      */
-    void (*return_nil)(size_t);
+    void (*var_set_nil)(dynstring_t *);
 
     /*
      * @brief Converts GF@%expr_result to bool
@@ -252,6 +252,11 @@ struct code_generator_interface_t {
      * generates sth like:  MOVE LF%id%res TF@%return0
      */
     void (*func_call_return_value)(size_t);
+
+    /*
+     * @brief Generates clear stack.
+     */
+    void (*clear_stack)(void);
 
     /*
      * @brief Generates function call.

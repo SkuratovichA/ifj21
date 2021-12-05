@@ -293,8 +293,6 @@ static bool cond_stmt() {
     // semantic check, to be more precise, it will check expression for emptiness.
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY);
 
-    // TODO: generate code for a conditional statement
-
     // then
     EXPECTED(KEYWORD_then);
     // generate condition evaluation (JUMPIFNEQ ...)
@@ -386,8 +384,8 @@ static bool assignment(dynstring_t *id_name, int id_type) {
     debug_msg("<assignment> -> \n");
 
     dynstring_t *received_signature = Dynstring.ctor("");
-    dynstring_t *expected_signature = Dynstring.ctor("");
-    Dynstring.append(expected_signature, Semantics.of_id_type(id_type));
+    char expected_type = Semantics.of_id_type(id_type);
+    type_recast_t r_type = NO_RECAST;
 
     // e |
     if (Scanner.get_curr_token().type != TOKEN_ASSIGN) {
@@ -403,18 +401,24 @@ static bool assignment(dynstring_t *id_name, int id_type) {
 
     // local int : integer
 
-    // todo: add type recasting in the case of "i" and "f" in the assignment
-    // probably add flag for recasting i -> f
-    CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
+    if (!Semantics.check_type_compatibility(expected_type,
+                                            Dynstring.c_str(received_signature)[0],
+                                            &r_type)) {
+        Errors.set_error(ERROR_TYPE_MISSMATCH);
+        goto err;
+    }
+
+    if (r_type != NO_RECAST) {
+        Generator.expression_push();
+        Generator.recast_int_to_number();
+    }
     // expression result is in GF@%expr_result
     Generator.var_definition(id_name);
 
     noerr:
-    Dynstring.dtor(expected_signature);
     Dynstring.dtor(received_signature);
     return true;
     err:
-    Dynstring.dtor(expected_signature);
     Dynstring.dtor(received_signature);
     return false;
 }
@@ -674,8 +678,6 @@ static bool return_stmt() {
     PARSE_RETURN_EXPRESSIONS(received_rets, Dynstring.len(expected_rets));
     // check signatures
     CHECK_EXPR_SIGNATURES(expected_rets, received_rets, ERROR_FUNCTION_SEMANTICS);
-
-    // TODO: generate return values.
 
     Dynstring.dtor(expected_rets);
     Dynstring.dtor(received_rets);
