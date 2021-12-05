@@ -113,13 +113,13 @@ void print_error_unexpected_token(const char *a, const char *b) {
         }                                                                    \
     } while(0)
 
-#define PARSE_RETURN_EXPRESSIONS(received_signature, return_count)                \
-    do {                                                                         \
-        if (!Expr.return_expressions(pfile, received_signature, return_count)) {  \
-            debug_msg("\n");                                                     \
-            debug_msg_s("\t\t[error] return expression failed.\n");              \
-            goto err;                                                            \
-        }                                                                        \
+#define PARSE_RETURN_EXPRESSIONS(expected_rets)                                     \
+    do {                                                                            \
+        if (!Expr.return_expressions(pfile, expected_rets)) {                       \
+            debug_msg("\n");                                                        \
+            debug_msg_s("\t\t[error] return expression failed.\n");                 \
+            goto err;                                                               \
+        }                                                                           \
     } while(0)
 
 #define PARSE_FUNCTION_EXPRESSION()                                    \
@@ -667,7 +667,6 @@ static bool while_cycle() {
  */
 static bool return_stmt() {
     debug_msg("<return_stmt> ->\n");
-    dynstring_t *received_rets = Dynstring.ctor("");
     // create expected returns vector from returns
     dynstring_t *expected_rets = Dynstring.dup(
             Symstack.get_parent_func(symstack)->function_semantics->definition.returns);
@@ -675,16 +674,12 @@ static bool return_stmt() {
 
     EXPECTED(KEYWORD_return);
     // return expr
-    PARSE_RETURN_EXPRESSIONS(received_rets, Dynstring.len(expected_rets));
-    // check signatures
-    CHECK_EXPR_SIGNATURES(expected_rets, received_rets, ERROR_FUNCTION_SEMANTICS);
+    PARSE_RETURN_EXPRESSIONS(expected_rets);
 
     Dynstring.dtor(expected_rets);
-    Dynstring.dtor(received_rets);
     return true;
     err:
     Dynstring.dtor(expected_rets);
-    Dynstring.dtor(received_rets);
     return false;
 }
 
