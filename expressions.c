@@ -1654,6 +1654,7 @@ static bool Default_expression(pfile_t *pfile_,
     CHECK_EMPTY_SIGNATURE(received_signature);
 
     clear_expressions(received_signature);
+    Generator.expression_pop();
     Generator.clear_stack();
 
     if (type_expr_statement == TYPE_EXPR_DEFAULT) {
