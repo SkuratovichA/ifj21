@@ -1047,52 +1047,6 @@ static bool parse_init(dynstring_t *received_signature) {
     return false;
 }
 
-/**
- * @brief Check if lasr function expression was successfully parsed.
- *
- * @param expected_signature
- * @param last_expression last parsed expression.
- * @param expr number of parsed expressions.
- * @return bool.
- */
-static bool is_func_expr_parsed (dynstring_t *expected_signature,
-                                 dynstring_t *last_expression,
-                                 size_t expr) {
-    // Total number of received expressions
-    size_t received = expr + Dynstring.len(last_expression);
-
-    // Total number of expected expressions
-    size_t expected = Dynstring.len(expected_signature);
-
-    // if received expressions <= expected,
-    // that means it is not necessary to clear stack,
-    // but last expression was not parsed yet.
-    if (received <= expected) {
-        return false;
-    }
-
-    // otherwise received > expected, so
-    // clear generator stack
-    while (received > expected) {
-        Generator.expression_pop();
-        received--;
-    }
-
-    // if number of parsed expressions >= expected,
-    // so it is not necessary to parse something, return true
-    // (>=) because expr is indexing from 0
-    if (expr >= expected) {
-        return true;
-    }
-
-    // truncate last expression to size of expected
-    // without size of already parsed expressions
-    size_t trunc_len = expected - expr;
-    Dynstring.trunc_to_len(last_expression, trunc_len);
-
-    return false;
-}
-
 /** Function call other expressions.
  *
  * !rule [fc_other_expr] -> , expr [fc_other_expr] | )
@@ -1121,11 +1075,10 @@ static bool fc_other_expr(dynstring_t *expected_params,
             // Number of received parameters
             size_t received_params = params_cnt + Dynstring.len(last_expression);
 
-            if (is_func_expr_parsed(expected_params,
-                                    last_expression,
-                                    params_cnt)) {
-                EXPECTED(TOKEN_RPAREN);
-                goto noerr;
+            // Check params number
+            if (received_params != Dynstring.len(expected_params)) {
+                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+                goto err;
             }
 
             // Parse other params
@@ -1136,14 +1089,6 @@ static bool fc_other_expr(dynstring_t *expected_params,
                 Generator.pass_param(r_type, params_cnt);
                 r_type = NO_RECAST;
                 params_cnt++;
-            }
-
-            // if received < expected, set nil values to missing params
-            if (received_params < Dynstring.len(expected_params)) {
-                for (size_t i = 0; i < Dynstring.len(expected_params) - received_params; i++) {
-                    Generator.func_call_pass_param_nil(params_cnt);
-                    params_cnt++;
-                }
             }
         }
 
@@ -1161,12 +1106,10 @@ static bool fc_other_expr(dynstring_t *expected_params,
         Generator.expression_pop();
         Generator.func_call("write");
     } else {
-        if (params_cnt < Dynstring.len(expected_params)) {
-            CHECK_EXPR_TYPES(Dynstring.c_str(expected_params)[params_cnt],
-                             Dynstring.c_str(last_expression)[0],
-                             r_type);
-            Generator.pass_param(r_type, params_cnt);
-        }
+        CHECK_EXPR_TYPES(Dynstring.c_str(expected_params)[params_cnt],
+                         Dynstring.c_str(last_expression)[0],
+                         r_type);
+        Generator.pass_param(r_type, params_cnt);
     }
 
     params_cnt++;
@@ -1208,12 +1151,10 @@ static bool fc_expr(dynstring_t *expected_params, dynstring_t *func_name) {
     // | )
     //EXPECTED_OPT(TOKEN_RPAREN);
     if (Scanner.get_curr_token().type == TOKEN_RPAREN) {
-        // if function has params, set nil to all of them
+        // if function has params, set error
         if (Dynstring.len(expected_params) > 0) {
-            for (size_t i = 0; i < Dynstring.len(expected_params); i++) {
-                Generator.func_call_pass_param_nil(params_cnt);
-                params_cnt++;
-            }
+            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+            goto err;
         }
         EXPECTED(TOKEN_RPAREN);
         goto noerr;
@@ -1298,10 +1239,12 @@ static bool r_other_expr(dynstring_t *expected_rets,
 
     // | e
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
-        if (is_func_expr_parsed(expected_rets,
-                                last_expression,
-                                return_cnt)) {
-            goto noerr;
+        // Total number of received return values
+        size_t received_rets = return_cnt + Dynstring.len(last_expression);
+
+        if (received_rets > Dynstring.len(expected_rets)) {
+            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+            goto err;
         }
 
         // Parse other return values
@@ -1322,12 +1265,10 @@ static bool r_other_expr(dynstring_t *expected_rets,
 
     clear_expressions(last_expression);
 
-    if (return_cnt < Dynstring.len(expected_rets)) {
-        CHECK_EXPR_TYPES(Dynstring.c_str(expected_rets)[return_cnt],
-                         Dynstring.c_str(last_expression)[0],
-                         r_type);
-        Generator.pass_return(r_type, return_cnt);
-    }
+    CHECK_EXPR_TYPES(Dynstring.c_str(expected_rets)[return_cnt],
+                     Dynstring.c_str(last_expression)[0],
+                     r_type);
+    Generator.pass_return(r_type, return_cnt);
 
     return_cnt++;
 
