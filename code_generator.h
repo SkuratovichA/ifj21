@@ -232,11 +232,6 @@ struct code_generator_interface_t {
     void (*func_createframe)(void);
 
     /*
-     * @brief Generates nil parameter pass to a function.
-     */
-    void (*func_call_pass_param_nil)(size_t);
-
-    /*
      * @brief Recast and generate function call parameter.
      */
     void (*pass_param)(type_recast_t, size_t);

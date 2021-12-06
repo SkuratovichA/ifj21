@@ -1235,23 +1235,6 @@ static void generate_func_call_pass_param(size_t param_index) {
 }
 
 /*
- * @brief Generates nil parameter pass to a function.
- * generates sth like:
- *          DEFVAR TF@%0
- *          MOVE TF@%0 nil@nil
- */
-static void generate_func_call_pass_param_nil(size_t param_index) {
-    ADD_INSTR_PART("DEFVAR TF@%");
-    ADD_INSTR_INT(param_index);
-    ADD_INSTR_TMP();
-
-    ADD_INSTR_PART("MOVE TF@%");
-    ADD_INSTR_INT(param_index);
-    ADD_INSTR_PART(" nil@nil");
-    ADD_INSTR_TMP();
-}
-
-/*
  * @brief Recast and generate function call parameter.
  *
  * @param r_type
@@ -1444,7 +1427,6 @@ const struct code_generator_interface_t Generator = {
         .pass_return = generate_return,
         .func_return_value = generate_func_return_value,
         .func_createframe = generate_func_createframe,
-        .func_call_pass_param_nil = generate_func_call_pass_param_nil,
         .pass_param = generate_param,
         .pop_to_tmp_var = generate_pop_to_tmp_var,
         .move_tmp_var = generate_move_tmp_var,
