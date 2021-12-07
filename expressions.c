@@ -130,6 +130,16 @@ static inline bool is_a_function(dynstring_t *id_name) {
 }
 
 /**
+ * @brief Checks if identifier is a variable.
+ *
+ * @param id_name identifier name.
+ * @return bool.
+ */
+static inline bool is_a_variable(dynstring_t *id_name) {
+    return Symstack.get_local_symbol(symstack, id_name, NULL);
+}
+
+/**
  * Precedence function table.
  * f, g - precedence functions.
  *
@@ -816,7 +826,14 @@ static bool parse_function(sstack_t *stack, bool *function_parsed) {
 
     GET_ID_SAFE(id_name);
 
+    // check if id is a function
     if (!is_a_function(id_name)) {
+        // check if id is a variable
+        if (!is_a_variable(id_name)) {
+            Errors.set_error(ERROR_DEFINITION);
+            goto err;
+        }
+
         goto noerr;
     }
 
@@ -961,6 +978,11 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
 
         // Append nil if expression type is empty
         if (Dynstring.len(expr->expression_type) == 0) {
+            if (function_parsed) {
+                // generate code for function which does not return anything
+                Generator.expression_push_nil();
+            }
+
             Dynstring.append(expr->expression_type, 'n');
         }
 
@@ -1047,52 +1069,6 @@ static bool parse_init(dynstring_t *received_signature) {
     return false;
 }
 
-/**
- * @brief Check if lasr function expression was successfully parsed.
- *
- * @param expected_signature
- * @param last_expression last parsed expression.
- * @param expr number of parsed expressions.
- * @return bool.
- */
-static bool is_func_expr_parsed (dynstring_t *expected_signature,
-                                 dynstring_t *last_expression,
-                                 size_t expr) {
-    // Total number of received expressions
-    size_t received = expr + Dynstring.len(last_expression);
-
-    // Total number of expected expressions
-    size_t expected = Dynstring.len(expected_signature);
-
-    // if received expressions <= expected,
-    // that means it is not necessary to clear stack,
-    // but last expression was not parsed yet.
-    if (received <= expected) {
-        return false;
-    }
-
-    // otherwise received > expected, so
-    // clear generator stack
-    while (received > expected) {
-        Generator.expression_pop();
-        received--;
-    }
-
-    // if number of parsed expressions >= expected,
-    // so it is not necessary to parse something, return true
-    // (>=) because expr is indexing from 0
-    if (expr >= expected) {
-        return true;
-    }
-
-    // truncate last expression to size of expected
-    // without size of already parsed expressions
-    size_t trunc_len = expected - expr;
-    Dynstring.trunc_to_len(last_expression, trunc_len);
-
-    return false;
-}
-
 /** Function call other expressions.
  *
  * !rule [fc_other_expr] -> , expr [fc_other_expr] | )
@@ -1121,29 +1097,20 @@ static bool fc_other_expr(dynstring_t *expected_params,
             // Number of received parameters
             size_t received_params = params_cnt + Dynstring.len(last_expression);
 
-            if (is_func_expr_parsed(expected_params,
-                                    last_expression,
-                                    params_cnt)) {
-                EXPECTED(TOKEN_RPAREN);
-                goto noerr;
+            // Check params number
+            if (received_params != Dynstring.len(expected_params)) {
+                Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+                goto err;
             }
 
             // Parse other params
             for (size_t i = 0; i < Dynstring.len(last_expression); i++) {
-                CHECK_EXPR_TYPES(Dynstring.c_str(expected_params)[params_cnt],
-                                 Dynstring.c_str(last_expression)[i],
+                CHECK_EXPR_TYPES(Dynstring.c_str(expected_params)[Dynstring.len(expected_params) - i - 1],
+                                 Dynstring.c_str(last_expression)[Dynstring.len(last_expression) - i - 1],
                                  r_type);
-                Generator.pass_param(r_type, params_cnt);
+                Generator.pass_param(r_type, Dynstring.len(expected_params) - i - 1);
                 r_type = NO_RECAST;
                 params_cnt++;
-            }
-
-            // if received < expected, set nil values to missing params
-            if (received_params < Dynstring.len(expected_params)) {
-                for (size_t i = 0; i < Dynstring.len(expected_params) - received_params; i++) {
-                    Generator.func_call_pass_param_nil(params_cnt);
-                    params_cnt++;
-                }
             }
         }
 
@@ -1154,19 +1121,15 @@ static bool fc_other_expr(dynstring_t *expected_params,
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    clear_expressions(last_expression);
-
     if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-        // generate one write function
-        Generator.expression_pop();
-        Generator.func_call("write");
+        // generate write for each return value
+        Generator.multiple_write(Dynstring.len(last_expression));
     } else {
-        if (params_cnt < Dynstring.len(expected_params)) {
-            CHECK_EXPR_TYPES(Dynstring.c_str(expected_params)[params_cnt],
-                             Dynstring.c_str(last_expression)[0],
-                             r_type);
-            Generator.pass_param(r_type, params_cnt);
-        }
+        clear_expressions(last_expression);
+        CHECK_EXPR_TYPES(Dynstring.c_str(expected_params)[params_cnt],
+                         Dynstring.c_str(last_expression)[0],
+                         r_type);
+        Generator.pass_param(r_type, params_cnt);
     }
 
     params_cnt++;
@@ -1208,12 +1171,10 @@ static bool fc_expr(dynstring_t *expected_params, dynstring_t *func_name) {
     // | )
     //EXPECTED_OPT(TOKEN_RPAREN);
     if (Scanner.get_curr_token().type == TOKEN_RPAREN) {
-        // if function has params, set nil to all of them
+        // if function has params, set error
         if (Dynstring.len(expected_params) > 0) {
-            for (size_t i = 0; i < Dynstring.len(expected_params); i++) {
-                Generator.func_call_pass_param_nil(params_cnt);
-                params_cnt++;
-            }
+            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+            goto err;
         }
         EXPECTED(TOKEN_RPAREN);
         goto noerr;
@@ -1256,6 +1217,7 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
 
     // generate code for function call start
     if (Dynstring.cmp_c_str(id_name, "write") != 0) {
+        Generator.comment("start of function call");
         Generator.func_createframe();
     }
 
@@ -1298,20 +1260,22 @@ static bool r_other_expr(dynstring_t *expected_rets,
 
     // | e
     if (Scanner.get_curr_token().type != TOKEN_COMMA) {
-        if (is_func_expr_parsed(expected_rets,
-                                last_expression,
-                                return_cnt)) {
-            goto noerr;
+        // Total number of received return values
+        size_t received_rets = return_cnt + Dynstring.len(last_expression);
+
+        if (received_rets > Dynstring.len(expected_rets)) {
+            Errors.set_error(ERROR_FUNCTION_SEMANTICS);
+            goto err;
         }
 
         // Parse other return values
+        size_t received_ret_cnt = return_cnt + Dynstring.len(last_expression);
         for (size_t i = 0; i < Dynstring.len(last_expression); i++) {
-            CHECK_EXPR_TYPES(Dynstring.c_str(expected_rets)[return_cnt],
-                             Dynstring.c_str(last_expression)[i],
+            CHECK_EXPR_TYPES(Dynstring.c_str(expected_rets)[received_ret_cnt - i - 1],
+                             Dynstring.c_str(last_expression)[Dynstring.len(last_expression) - i - 1],
                              r_type);
-            Generator.pass_return(r_type, return_cnt);
+            Generator.pass_return(r_type, received_ret_cnt - i - 1);
             r_type = NO_RECAST;
-            return_cnt++;
         }
 
         goto noerr;
@@ -1322,12 +1286,10 @@ static bool r_other_expr(dynstring_t *expected_rets,
 
     clear_expressions(last_expression);
 
-    if (return_cnt < Dynstring.len(expected_rets)) {
-        CHECK_EXPR_TYPES(Dynstring.c_str(expected_rets)[return_cnt],
-                         Dynstring.c_str(last_expression)[0],
-                         r_type);
-        Generator.pass_return(r_type, return_cnt);
-    }
+    CHECK_EXPR_TYPES(Dynstring.c_str(expected_rets)[return_cnt],
+                     Dynstring.c_str(last_expression)[0],
+                     r_type);
+    Generator.pass_return(r_type, return_cnt);
 
     return_cnt++;
 
@@ -1431,7 +1393,7 @@ static bool check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
             }
 
             if (r_type != NO_RECAST) {
-                Generator.recast_int_to_number();
+                Generator.recast_int_to_number(r_type);
             }
             Generator.var_assignment(id->data);
         }
@@ -1624,7 +1586,8 @@ static bool Return_expressions(pfile_t *pfile_, dynstring_t *expected_rets) {
         return false;
     }
 
-    Generator.clear_stack();
+    Generator.return_end();
+
     return true;
 }
 
@@ -1654,7 +1617,7 @@ static bool Default_expression(pfile_t *pfile_,
     CHECK_EMPTY_SIGNATURE(received_signature);
 
     clear_expressions(received_signature);
-    Generator.clear_stack();
+    Generator.expression_pop();
 
     if (type_expr_statement == TYPE_EXPR_DEFAULT) {
         goto noerr;
@@ -1702,8 +1665,6 @@ static bool Global_expression(pfile_t *pfile_) {
         goto err;
     }
 
-    Generator.clear_stack();
-
     Dynstring.dtor(id_name);
     return true;
     err:
@@ -1732,13 +1693,11 @@ static bool Function_expression(pfile_t *pfile_) {
         if (!func_call(id_name, NULL)) {
             goto err;
         }
-        Generator.clear_stack();
     } else {
         // [assign_id]
         if (!assign_id(id_name)) {
             goto err;
         }
-        Generator.clear_stack();
     }
 
     Dynstring.dtor(id_name);

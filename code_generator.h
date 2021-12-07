@@ -71,7 +71,7 @@ struct code_generator_interface_t {
     /*
      * @brief Generates variable used for code generating.
      */
-    void (*tmp_var_definition)(char *);
+    void (*tmp_var_definition_float)(char *);
 
     /*
      * @brief Generates assignment to a variable
@@ -91,7 +91,7 @@ struct code_generator_interface_t {
     /*
      * @brief Converts GF@%expr_result int -> float
      */
-    void (*recast_int_to_number)(void);
+    void (*recast_int_to_number)(type_recast_t);
 
     /*
      * @brief Generates expressions reduce.
@@ -117,9 +117,14 @@ struct code_generator_interface_t {
     void (*expression_pop)(void);
 
     /*
-     * @brief Generates pop from the stack to GF@%expr_result.
+     * @brief Generates pushing GF@%expr_result to the stack.
      */
     void (*expression_push)(void);
+
+    /*
+     * @brief Generates pushing nil to the stack.
+     */
+    void (*expression_push_nil)(void);
 
     /*
      * @brief Gets info about current cond scope from
@@ -227,14 +232,14 @@ struct code_generator_interface_t {
     void (*pass_return)(type_recast_t, size_t);
 
     /*
+     * @brief Generates jump to function end after return.
+     */
+    void (*return_end)(void);
+
+    /*
      * @brief Generates creation of a frame before passing parameters to a function
      */
     void (*func_createframe)(void);
-
-    /*
-     * @brief Generates nil parameter pass to a function.
-     */
-    void (*func_call_pass_param_nil)(size_t);
 
     /*
      * @brief Recast and generate function call parameter.
@@ -259,11 +264,6 @@ struct code_generator_interface_t {
      * generates sth like:  MOVE LF%id%res TF@%return0
      */
     void (*func_call_return_value)(size_t);
-
-    /*
-     * @brief Generates clear stack.
-     */
-    void (*clear_stack)(void);
 
     /*
      * @brief Generates function call.
