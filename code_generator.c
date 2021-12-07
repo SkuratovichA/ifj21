@@ -283,7 +283,7 @@ static void recast_to_float_first() {
     ADD_INSTR("LABEL $$recast_to_float_first \n"
               "POPS GF@%expr_result2 \n"
               "POPS GF@%expr_result \n"
-              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+              "JUMPIFEQ $$recast_to_float_first$end GF@%expr_result nil@nil \n"
               "TYPE GF@%expr_result3 GF@%expr_result \n"
               "JUMPIFEQ $$recast_to_float_first$end GF@%expr_result3 string@float \n"
               "INT2FLOAT GF@%expr_result GF@%expr_result \n"
@@ -299,7 +299,7 @@ static void recast_to_float_first() {
 static void recast_to_float_second() {
     ADD_INSTR("LABEL $$recast_to_float_second \n"
               "POPS GF@%expr_result \n"
-              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+              "JUMPIFEQ $$recast_to_float_second$end GF@%expr_result nil@nil \n"
               "TYPE GF@%expr_result3 GF@%expr_result \n"
               "JUMPIFEQ $$recast_to_float_second$end GF@%expr_result3 string@float \n"
               "INT2FLOAT GF@%expr_result GF@%expr_result \n"
@@ -315,12 +315,12 @@ static void recast_to_float_both() {
     ADD_INSTR("LABEL $$recast_to_float_both \n"
               "POPS GF@%expr_result2 \n"
               "POPS GF@%expr_result \n"
-              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
-              "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+              "JUMPIFEQ $$recast_to_float_both$second GF@%expr_result nil@nil \n"
               "TYPE GF@%expr_result3 GF@%expr_result \n"
               "JUMPIFEQ $$recast_to_float_both$second GF@%expr_result3 string@float \n"
               "INT2FLOAT GF@%expr_result GF@%expr_result \n"
               "LABEL $$recast_to_float_both$second \n"
+              "JUMPIFEQ $$recast_to_float_both$end GF@%expr_result2 nil@nil\n"
               "TYPE GF@%expr_result3 GF@%expr_result2 \n"
               "JUMPIFEQ $$recast_to_float_both$end GF@%expr_result3 string@float \n"
               "INT2FLOAT GF@%expr_result2 GF@%expr_result2 \n"
@@ -622,7 +622,7 @@ static void generate_tmp_var_definition_float(char *var_name) {
     generate_defvar(name);
 
     ADD_INSTR("PUSHS GF@%expr_result");
-    ADD_INSTR("CALL $$recast_to_float_second ");
+    ADD_INSTR("CALL $$recast_to_float_second");
     ADD_INSTR_PART("POPS LF@%");
     generate_var_name(name, true);  // true == new variable
     ADD_INSTR_TMP();
