@@ -3875,6 +3875,132 @@ int main() {
             "end                                               "NL
     );
 
+    char *description261 = "correct usage of not operator";
+    int retcode261 = ERROR_NOERROR;
+    pfile_t *pf261 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local a : integer = 5                          "NL
+            "   if not(2 < a) then                             "NL
+            "       write(\"something wrong\\n\")              "NL
+            "   else                                           "NL
+            "       write(\"correct\")                         "NL
+            "	end                                            "NL
+            "end                                               "NL
+    );
+
+    char *description262 = "unrecognised token in precedence analyze";
+    int retcode262 = ERROR_LEXICAL;
+    pfile_t *pf262 = Pfile.ctor(
+            PROLOG
+            "function main()              "NL
+            "   local a : integer = 1 @ 2 "NL
+            "end                          "NL
+    );
+
+    char *description263 = "semantics error with not operator";
+    int retcode263 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf263 = Pfile.ctor(
+            PROLOG
+            "function main()                       "NL
+            "   local a : boolean = not \"string\" "NL
+            "end                                   "NL
+    );
+
+    char *description264 = "precedence error in expression";
+    int retcode264 = ERROR_SYNTAX;
+    pfile_t *pf264 = Pfile.ctor(
+            PROLOG
+            "function main()             "NL
+            "   local a : integer = 1 2  "NL
+            "end                         "NL
+    );
+
+    char *description265 = "call a function without any params";
+    int retcode265 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf265 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, string         "NL
+            "   return 22, \"test\"                   "NL
+            "end                                      "NL
+            "                                         "NL
+            "function main(a : integer, b : string)   "NL
+            "   write(a)                              "NL
+            "end                                      "NL
+            "                                         "NL
+            "main(foo(1, 2, 3))                       "NL
+    );
+
+    char *description266 = "precedence analyse error in return stmt";
+    int retcode266 = ERROR_SYNTAX;
+    pfile_t *pf266 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, number, integer     "NL
+            "   local bar : number = 25.6                  "NL
+            "   return 1, bar, # # \"text\"                "NL
+            "end                                           "NL
+    );
+
+    char *description267 = "undefined variable in multiple assignment";
+    int retcode267 = ERROR_DEFINITION;
+    pfile_t *pf267 = Pfile.ctor(
+            PROLOG
+            "function foo(a : boolean) : string, integer   "NL
+            "   if a then                                  "NL
+            "      return \"true\", 112                    "NL
+            "   end                                        "NL
+            "                                              "NL
+            "   return \"false\", -112                     "NL
+            "end                                           "NL
+            "                                              "NL
+            "function main()                               "NL
+            "   local b : string                           "NL
+            "   local c : integer                          "NL
+            "   a, b, c = 2.0, foo()                       "NL
+            "end                                           "NL
+            "                                              "NL
+            "main()                                        "NL
+    );
+
+    char *description268 = "wrong expression in multiple assignment #1";
+    int retcode268 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf268 = Pfile.ctor(
+            PROLOG
+            "function main()                                "NL
+            "   local a : integer                           "NL
+            "   local b : integer                           "NL
+            "   a, b = 6.0 // 2.0, 2                        "NL
+            "end                                            "NL
+    );
+
+    char *description269 = "wrong expression in multiple assignment #2";
+    int retcode269 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf269 = Pfile.ctor(
+            PROLOG
+            "function main()                                "NL
+            "   local a : boolean                           "NL
+            "   local b : integer                           "NL
+            "   local c : string                            "NL
+            "   a, b, c = true, 2, not \"text\"             "NL
+            "end                                            "NL
+    );
+
+    char *description270 = "call undefined function in global scope";
+    int retcode270 = ERROR_DEFINITION;
+    pfile_t *pf270 = Pfile.ctor(
+            PROLOG
+            "foo(1, 2, 3)"NL
+    );
+
+    char *description271 = "call undefined function inside other function";
+    int retcode271 = ERROR_DEFINITION;
+    pfile_t *pf271 = Pfile.ctor(
+            PROLOG
+            "function main()                     "NL
+            "   foo(1, 2, 3)                     "NL
+            "end                                 "NL
+    );
+
     STRING_NOERROR(107, "02");
     STRING_NOERROR(108, "0A");
     STRING_NOERROR(109, "aa");
@@ -4190,6 +4316,17 @@ int main() {
     TEST_CASE(258);
     TEST_CASE(259);
     TEST_CASE(260);
+    TEST_CASE(261);
+    TEST_CASE(262);
+    TEST_CASE(263);
+    TEST_CASE(264);
+    TEST_CASE(265);
+    TEST_CASE(266);
+    TEST_CASE(267);
+    TEST_CASE(268);
+    TEST_CASE(269);
+    TEST_CASE(270);
+    TEST_CASE(271);
 
     return 0;
 }
