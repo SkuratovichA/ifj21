@@ -1195,6 +1195,7 @@ static bool func_call(dynstring_t *id_name, dynstring_t *function_returns) {
 
     // generate code for function call start
     if (Dynstring.cmp_c_str(id_name, "write") != 0) {
+        Generator.comment("start of function call");
         Generator.func_createframe();
     }
 

@@ -500,6 +500,15 @@ static void Print_instr_list(instr_list_t instr_list_type) {
 }
 
 /*
+ * @brief Generates comment.
+ */
+static void generate_comment(char *comment) {
+    ADD_INSTR_PART("# ");
+    ADD_INSTR_PART(comment);
+    ADD_INSTR_TMP();
+}
+
+/*
  * @brief Generates code with value of the token.
  */
 static void generate_var_value(token_t token) {
@@ -1410,15 +1419,6 @@ static void generate_prog_start() {
     generate_main_start();
 }
 
-/*
- * @brief Generates comment.
- */
-static void generate_comment(char *comment) {
-    ADD_INSTR_PART("# ");
-    ADD_INSTR_PART(comment);
-    ADD_INSTR_TMP();
-}
-
 /**
  * Interface to use when dealing with code generator.
  * Functions are in struct so we can use them in different files.
@@ -1427,6 +1427,7 @@ const struct code_generator_interface_t Generator = {
         .initialise = initialise_generator,
         .dtor = dtor,
         .print_instr_list = Print_instr_list,
+        .comment = generate_comment,
         .var_declaration = generate_var_declaration,
         .var_definition = generate_var_definition,
         .tmp_var_definition_float = generate_tmp_var_definition_float,
@@ -1469,5 +1470,4 @@ const struct code_generator_interface_t Generator = {
         .func_call_return_value = generate_func_call_return_value,
         .main_end = generate_main_end,
         .prog_start = generate_prog_start,
-        .comment = generate_comment,
 };
