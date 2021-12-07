@@ -1099,13 +1099,11 @@ static bool fc_other_expr(dynstring_t *expected_params,
     // ,
     EXPECTED(TOKEN_COMMA);
 
-    clear_expressions(last_expression);
-
     if (Dynstring.cmp_c_str(func_name, "write") == 0) {
-        // generate one write function
-        Generator.expression_pop();
-        Generator.func_call("write");
+        // generate write for each return value
+        Generator.multiple_write(Dynstring.len(last_expression));
     } else {
+        clear_expressions(last_expression);
         CHECK_EXPR_TYPES(Dynstring.c_str(expected_params)[params_cnt],
                          Dynstring.c_str(last_expression)[0],
                          r_type);
