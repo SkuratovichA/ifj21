@@ -1288,7 +1288,7 @@ static bool program() {
     }
     // ifj21
     if (Dynstring.cmp(Scanner.get_curr_token().attribute.id, prolog_str) != 0) {
-        Errors.set_error(ERROR_SYNTAX);
+        Errors.set_error(ERROR_SEMANTICS_OTHER);
         goto err;
     }
     // get "ifj21"
