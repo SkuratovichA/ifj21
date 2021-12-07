@@ -1083,10 +1083,10 @@ static bool fc_other_expr(dynstring_t *expected_params,
 
             // Parse other params
             for (size_t i = 0; i < Dynstring.len(last_expression); i++) {
-                CHECK_EXPR_TYPES(Dynstring.c_str(expected_params)[params_cnt],
-                                 Dynstring.c_str(last_expression)[i],
+                CHECK_EXPR_TYPES(Dynstring.c_str(expected_params)[Dynstring.len(expected_params) - i - 1],
+                                 Dynstring.c_str(last_expression)[Dynstring.len(last_expression) - i - 1],
                                  r_type);
-                Generator.pass_param(r_type, params_cnt);
+                Generator.pass_param(r_type, Dynstring.len(expected_params) - i - 1);
                 r_type = NO_RECAST;
                 params_cnt++;
             }
@@ -1565,7 +1565,6 @@ static bool Return_expressions(pfile_t *pfile_, dynstring_t *expected_rets) {
 
     Generator.return_end();
 
-    Generator.clear_stack();
     return true;
 }
 
@@ -1596,7 +1595,6 @@ static bool Default_expression(pfile_t *pfile_,
 
     clear_expressions(received_signature);
     Generator.expression_pop();
-    Generator.clear_stack();
 
     if (type_expr_statement == TYPE_EXPR_DEFAULT) {
         goto noerr;
@@ -1644,8 +1642,6 @@ static bool Global_expression(pfile_t *pfile_) {
         goto err;
     }
 
-    Generator.clear_stack();
-
     Dynstring.dtor(id_name);
     return true;
     err:
@@ -1674,13 +1670,11 @@ static bool Function_expression(pfile_t *pfile_) {
         if (!func_call(id_name, NULL)) {
             goto err;
         }
-        Generator.clear_stack();
     } else {
         // [assign_id]
         if (!assign_id(id_name)) {
             goto err;
         }
-        Generator.clear_stack();
     }
 
     Dynstring.dtor(id_name);
