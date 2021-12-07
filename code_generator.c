@@ -621,23 +621,10 @@ static void generate_tmp_var_definition_float(char *var_name) {
     dynstring_t *name = Dynstring.ctor(var_name);
     generate_defvar(name);
 
-    ADD_INSTR_PART("MOVE LF@%");
+    ADD_INSTR("PUSHS GF@%expr_result");
+    ADD_INSTR("CALL $$recast_to_float_second ");
+    ADD_INSTR_PART("POPS LF@%");
     generate_var_name(name, true);  // true == new variable
-    ADD_INSTR_PART(" GF@%expr_result");
-    ADD_INSTR_TMP();
-    ADD_INSTR("# recast to float if needed");
-    ADD_INSTR_PART("TYPE GF@%expr_result3 LF@%");
-    generate_var_name(name, true);  // true == new variable
-    ADD_INSTR_PART("\nJUMPIFEQ $$ERROR_NIL GF@%expr_result3 nil@nil \n"
-                   "JUMPIFEQ $for$float$");
-    generate_var_name(name, true);
-    ADD_INSTR_PART(" GF@%expr_result3 string@float \n"
-                   "INT2FLOAT LF@%");
-    generate_var_name(name, true);
-    ADD_INSTR_PART(" LF@%");
-    generate_var_name(name, true);
-    ADD_INSTR_PART("\nLABEL $for$float$");
-    generate_var_name(name, true);
     ADD_INSTR_TMP();
 
     Dynstring.dtor(name);
@@ -1073,25 +1060,15 @@ static void generate_for_cond(dynstring_t *var_name) {
     ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
-    ADD_INSTR_PART("\n# recast for%i\n"
-                   "TYPE GF@%expr_result3 LF@%for%");
+    ADD_INSTR_PART("\nPUSHS LF@%for%");
     ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
-    ADD_INSTR_PART("\nJUMPIFEQ $$ERROR_NIL GF@%expr_result3 nil@nil \n"
-                   "JUMPIFEQ $for$incr$float");
-    ADD_INSTR_INT(scope_id);
-    ADD_INSTR_PART(" GF@%expr_result3 string@float\n"
-                   "INT2FLOAT LF@%for%");
+    ADD_INSTR_PART("\nCALL $$recast_to_float_second \n"
+                   "POPS LF@%for%");
     ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
-    ADD_INSTR_PART(" LF@%for%");
-    ADD_INSTR_INT(scope_id);
-    ADD_INSTR_PART("%");
-    ADD_INSTR_PART_DYN(var_name);
-    ADD_INSTR_PART("\nLABEL $for$incr$float");
-    ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("\nLABEL $for$");
     ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("\nMOVE LF@%");
