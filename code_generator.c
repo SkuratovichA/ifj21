@@ -635,6 +635,10 @@ static void generate_tmp_var_definition_float(char *var_name) {
     ADD_INSTR_PART("POPS LF@%");
     generate_var_name(name, true);  // true == new variable
     ADD_INSTR_TMP();
+    ADD_INSTR_PART("JUMPIFEQ $$ERROR_NIL LF@%");
+    generate_var_name(name, true);  // true == new variable
+    ADD_INSTR_PART(" nil@nil");
+    ADD_INSTR_TMP();
 
     Dynstring.dtor(name);
 }
@@ -666,10 +670,17 @@ static void generate_expression_pop() {
 }
 
 /*
- * @brief Generates pop from the stack to GF@%expr_result.
+ * @brief Generates pushing GF@%expr_result to the stack.
  */
 static void generate_expression_push() {
     ADD_INSTR("PUSHS GF@%expr_result");
+}
+
+/*
+ * @brief Generates pop from the stack to GF@%expr_result.
+ */
+static void generate_expression_push_nil() {
+    ADD_INSTR("PUSHS nil@nil");
 }
 
 /*
@@ -1071,6 +1082,11 @@ static void generate_for_cond(dynstring_t *var_name) {
     ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
+    ADD_INSTR_PART("\nJUMPIFEQ $$ERROR_NIL LF@%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
+    ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_PART("\nLABEL $for$");
     ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("\nMOVE LF@%");
@@ -1440,6 +1456,7 @@ const struct code_generator_interface_t Generator = {
         .expression_binary = generate_expression_binary,
         .expression_pop = generate_expression_pop,
         .expression_push = generate_expression_push,
+        .expression_push_nil = generate_expression_push_nil,
         .push_cond_info = push_cond_info,
         .pop_cond_info = pop_cond_info,
         .cond_if = generate_cond_if,

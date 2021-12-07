@@ -962,7 +962,8 @@ static bool parse(sstack_t *stack, dynstring_t *received_signature, bool hard_re
         // Append nil if expression type is empty
         if (Dynstring.len(expr->expression_type) == 0) {
             if (function_parsed) {
-                // TODO: generate code for function which does not return anything
+                // generate code for function which does not return anything
+                Generator.expression_push_nil();
             }
 
             Dynstring.append(expr->expression_type, 'n');

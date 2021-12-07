@@ -117,9 +117,14 @@ struct code_generator_interface_t {
     void (*expression_pop)(void);
 
     /*
-     * @brief Generates pop from the stack to GF@%expr_result.
+     * @brief Generates pushing GF@%expr_result to the stack.
      */
     void (*expression_push)(void);
+
+    /*
+     * @brief Generates pushing nil to the stack.
+     */
+    void (*expression_push_nil)(void);
 
     /*
      * @brief Gets info about current cond scope from
