@@ -45,7 +45,7 @@ void print_error_unexpected_token(const char *a, const char *b) {
 #define SEMANTIC_CHECK_FUNCTION_SIGNATURES(sym)                          \
     do {                                                                \
         if (!Semantics.check_signatures(symbol->function_semantics)) {  \
-            Errors.set_error(ERROR_FUNCTION_SEMANTICS);                 \
+            Errors.set_error(ERROR_DEFINITION);                         \
             return false;                                               \
         }                                                               \
     } while(0)
