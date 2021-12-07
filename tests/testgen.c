@@ -816,7 +816,7 @@ int main() {
     );
 
     char *description46 = "Syntax. wrong prolog string";
-    int retcode46 = ERROR_SYNTAX;
+    int retcode46 = ERROR_SEMANTICS_OTHER;
     pfile_t *pf46 = Pfile.ctor(
             "require \"love\"" NL
     );
@@ -3057,7 +3057,7 @@ int main() {
     );
 
     char *description197 = "";
-    int retcode197 = ERROR_NOERROR;
+    int retcode197 = ERROR_SEMANTICS_OTHER;
     pfile_t *pf197 = Pfile.ctor(
             PROLOG
             "function foo(a : integer, b : string) : integer, integer           "NL
