@@ -130,6 +130,16 @@ static inline bool is_a_function(dynstring_t *id_name) {
 }
 
 /**
+ * @brief Checks if identifier is a variable.
+ *
+ * @param id_name identifier name.
+ * @return bool.
+ */
+static inline bool is_a_variable(dynstring_t *id_name) {
+    return Symstack.get_local_symbol(symstack, id_name, NULL);
+}
+
+/**
  * Precedence function table.
  * f, g - precedence functions.
  *
@@ -816,7 +826,14 @@ static bool parse_function(sstack_t *stack, bool *function_parsed) {
 
     GET_ID_SAFE(id_name);
 
+    // check if id is a function
     if (!is_a_function(id_name)) {
+        // check if id is a variable
+        if (!is_a_variable(id_name)) {
+            Errors.set_error(ERROR_DEFINITION);
+            goto err;
+        }
+
         goto noerr;
     }
 
