@@ -227,6 +227,11 @@ struct code_generator_interface_t {
     void (*pass_return)(type_recast_t, size_t);
 
     /*
+     * @brief Generates jump to function end after return.
+     */
+    void (*return_end)(void);
+
+    /*
      * @brief Generates creation of a frame before passing parameters to a function
      */
     void (*func_createframe)(void);

@@ -1565,6 +1565,8 @@ static bool Return_expressions(pfile_t *pfile_, dynstring_t *expected_rets) {
         return false;
     }
 
+    Generator.return_end();
+
     Generator.clear_stack();
     return true;
 }

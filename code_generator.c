@@ -1250,6 +1250,16 @@ static void generate_return(type_recast_t r_type, size_t return_index) {
 }
 
 /*
+ * @brief Generates jump to function end after return.
+ */
+static void generate_return_end() {
+    ADD_INSTR_PART("JUMP $");
+    ADD_INSTR_PART(Symstack.get_parent_func_name(symstack));
+    ADD_INSTR_PART("$end");
+    ADD_INSTR_TMP();
+}
+
+/*
  * @brief Generates creation of a frame before passing parameters to a function
  */
 static void generate_func_createframe() {
@@ -1467,6 +1477,7 @@ const struct code_generator_interface_t Generator = {
         .func_start_param = generate_func_start_param,
         .pass_return = generate_return,
         .func_return_value = generate_func_return_value,
+        .return_end = generate_return_end,
         .func_createframe = generate_func_createframe,
         .pass_param = generate_param,
         .pop_to_tmp_var = generate_pop_to_tmp_var,
