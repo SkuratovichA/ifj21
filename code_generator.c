@@ -184,7 +184,7 @@ static void generate_func_chr() {
  *          result: %return0
  */
 static void generate_func_ord() {
-    ADD_INSTR("LABEL $ord \n"
+    ADD_INSTR("\nLABEL $ord \n"
               "PUSHFRAME \n"
               "JUMPIFEQ $$ERROR_NIL LF@%0 nil@nil \n"
               "JUMPIFEQ $$ERROR_NIL LF@%1 nil@nil \n"
@@ -277,6 +277,60 @@ static void recast_to_bool_func() {
 }
 
 /*
+ * @brief Generates recast_to_float_first type casting function.
+ */
+static void recast_to_float_first() {
+    ADD_INSTR("LABEL $$recast_to_float_first \n"
+              "POPS GF@%expr_result2 \n"
+              "POPS GF@%expr_result \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+              "TYPE GF@%expr_result3 GF@%expr_result \n"
+              "JUMPIFEQ $$recast_to_float_first$end GF@%expr_result3 string@float \n"
+              "INT2FLOAT GF@%expr_result GF@%expr_result \n"
+              "LABEL $$recast_to_float_first$end \n"
+              "PUSHS GF@%expr_result \n"
+              "PUSHS GF@%expr_result2 \n"
+              "RETURN \n");
+}
+
+/*
+ * @brief Generates recast_to_float_second type casting function.
+ */
+static void recast_to_float_second() {
+    ADD_INSTR("LABEL $$recast_to_float_second \n"
+              "POPS GF@%expr_result \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+              "TYPE GF@%expr_result3 GF@%expr_result \n"
+              "JUMPIFEQ $$recast_to_float_second$end GF@%expr_result3 string@float \n"
+              "INT2FLOAT GF@%expr_result GF@%expr_result \n"
+              "LABEL $$recast_to_float_second$end \n"
+              "PUSHS GF@%expr_result \n"
+              "RETURN \n");
+}
+
+/*
+ * @brief Generates recast_to_float_both type casting function.
+ */
+static void recast_to_float_both() {
+    ADD_INSTR("LABEL $$recast_to_float_both \n"
+              "POPS GF@%expr_result2 \n"
+              "POPS GF@%expr_result \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
+              "JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n"
+              "TYPE GF@%expr_result3 GF@%expr_result \n"
+              "JUMPIFEQ $$recast_to_float_both$second GF@%expr_result3 string@float \n"
+              "INT2FLOAT GF@%expr_result GF@%expr_result \n"
+              "LABEL $$recast_to_float_both$second \n"
+              "TYPE GF@%expr_result3 GF@%expr_result2 \n"
+              "JUMPIFEQ $$recast_to_float_both$end GF@%expr_result3 string@float \n"
+              "INT2FLOAT GF@%expr_result2 GF@%expr_result2 \n"
+              "LABEL $$recast_to_float_both$end \n"
+              "PUSHS GF@%expr_result \n"
+              "PUSHS GF@%expr_result2 \n"
+              "RETURN \n");
+}
+
+/*
  * @brief Generates function for computing the power.
  */
 static void generate_power_func() {
@@ -316,6 +370,7 @@ static void generate_power_func() {
  */
 static void generate_modulo_func() {
     ADD_INSTR("LABEL $$modulo \n"
+              "PUSHFRAME \n"
               "DEFVAR LF@%return0 \n"
               "MOVE LF@%return0 float@0x1p+0 \n"
               "DEFVAR LF@%divisor \n"
@@ -331,6 +386,7 @@ static void generate_modulo_func() {
               "MUL GF@%expr_result GF@%expr_result LF@%divisor \n"
               "SUB GF@%expr_result LF@%divident GF@%expr_result \n"
               "PUSHS GF@%expr_result \n"
+              "POPFRAME \n"
               "RETURN \n");
 }
 
@@ -561,7 +617,7 @@ static void generate_var_definition(dynstring_t *var_name) {
 /*
  * @brief Generates variable used for code generating.
  */
-static void generate_tmp_var_definition(char *var_name) {
+static void generate_tmp_var_definition_float(char *var_name) {
     dynstring_t *name = Dynstring.ctor(var_name);
     generate_defvar(name);
 
@@ -569,6 +625,21 @@ static void generate_tmp_var_definition(char *var_name) {
     generate_var_name(name, true);  // true == new variable
     ADD_INSTR_PART(" GF@%expr_result");
     ADD_INSTR_TMP();
+    ADD_INSTR("# recast to float if needed");
+    ADD_INSTR_PART("TYPE GF@%expr_result3 LF@%");
+    generate_var_name(name, true);  // true == new variable
+    ADD_INSTR_PART("\nJUMPIFEQ $$ERROR_NIL GF@%expr_result3 nil@nil \n"
+                   "JUMPIFEQ $for$float$");
+    generate_var_name(name, true);
+    ADD_INSTR_PART(" GF@%expr_result3 string@float \n"
+                   "INT2FLOAT LF@%");
+    generate_var_name(name, true);
+    ADD_INSTR_PART(" LF@%");
+    generate_var_name(name, true);
+    ADD_INSTR_PART("\nLABEL $for$float$");
+    generate_var_name(name, true);
+    ADD_INSTR_TMP();
+
     Dynstring.dtor(name);
 }
  /*
@@ -650,44 +721,13 @@ static void generate_nil_check() {
  * @brief Converts first or both int expressions to float.
  * @param expr stores info about the expr to be converted.
  */
-static void recast_first_or_both(type_recast_t recast) {
-    ADD_INSTR("# convert int -> float");
-    ADD_INSTR("POPS GF@%expr_result2 \n"
-              "POPS GF@%expr_result \n"
-              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
-              "INT2FLOAT GF@%expr_result GF@%expr_result");
-    if (recast == TYPE_RECAST_BOTH) {
-        ADD_INSTR("# convert int -> float");
-        ADD_INSTR("JUMPIFEQ $$ERROR_NIL GF@%expr_result2 nil@nil \n");
-        ADD_INSTR("INT2FLOAT GF@%expr_result2 GF@%expr_result2");
-    }
-    ADD_INSTR("PUSHS GF@%expr_result \n"
-              "PUSHS GF@%expr_result2");
-}
-
-/*
- * @brief Converts second int expression to float.
- * @param expr stores info about the expr to be converted.
- */
-static void recast_second() {
-    ADD_INSTR("# convert int -> float");
-    ADD_INSTR("POPS GF@%expr_result \n"
-              "JUMPIFEQ $$ERROR_NIL GF@%expr_result nil@nil \n"
-              "INT2FLOAT GF@%expr_result GF@%expr_result \n"
-              "PUSHS GF@%expr_result");
-}
-
-/*
- * @brief Generates conversion int -> float if needed
- *        and pushes operands on the stack.
- * @param expr stores info about the expr to be converted.
- */
-static void recast_check(type_recast_t recast) {
-    if (recast == TYPE_RECAST_FIRST || recast == TYPE_RECAST_BOTH) {
-        recast_first_or_both(recast);
-    }
-    if (recast == TYPE_RECAST_SECOND) {
-        recast_second();
+static void recast_to_float(type_recast_t recast) {
+    if (recast == TYPE_RECAST_FIRST) {
+        ADD_INSTR("CALL $$recast_to_float_first");
+    } else if (recast == TYPE_RECAST_SECOND) {
+        ADD_INSTR("CALL $$recast_to_float_second");
+    } else if (recast == TYPE_RECAST_BOTH) {
+        ADD_INSTR("CALL $$recast_to_float_both");
     }
 }
 
@@ -704,7 +744,7 @@ static void generate_expression_operand(token_t token) {
  * @brief Generates binary operation.
  */
 static void generate_expression_binary(op_list_t op, type_recast_t recast) {
-    recast_check(recast);
+    recast_to_float(recast);
 
     switch (op) {
         case OP_ADD:    // '+'
@@ -782,7 +822,8 @@ static void generate_expression_binary(op_list_t op, type_recast_t recast) {
             ADD_INSTR("CALL $$power");
             break;
         case OP_PERCENT: // %
-            ADD_INSTR("CALL $$modulo");
+            ADD_INSTR("CREATEFRAME \n"
+                      "CALL $$modulo");
             break;
         default:
             ADD_INSTR("# unrecognized_operation");
@@ -1009,7 +1050,7 @@ static void generate_for_default_step() {
 
     ADD_INSTR_PART("MOVE LF@%");
     generate_var_name(var_name, true);
-    ADD_INSTR_PART(" int@1");
+    ADD_INSTR_PART(" float@0x1.0p+0");      // check if it is number 1
     ADD_INSTR_TMP();
 }
 
@@ -1032,6 +1073,25 @@ static void generate_for_cond(dynstring_t *var_name) {
     ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
+    ADD_INSTR_PART("\n# recast for%i\n"
+                   "TYPE GF@%expr_result3 LF@%for%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
+    ADD_INSTR_PART("\nJUMPIFEQ $$ERROR_NIL GF@%expr_result3 nil@nil \n"
+                   "JUMPIFEQ $for$incr$float");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART(" GF@%expr_result3 string@float\n"
+                   "INT2FLOAT LF@%for%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
+    ADD_INSTR_PART(" LF@%for%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%");
+    ADD_INSTR_PART_DYN(var_name);
+    ADD_INSTR_PART("\nLABEL $for$incr$float");
+    ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("\nLABEL $for$");
     ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("\nMOVE LF@%");
@@ -1045,13 +1105,13 @@ static void generate_for_cond(dynstring_t *var_name) {
     ADD_INSTR_PART(  "\n# check if step is < 0 \n"
                      "LT GF@%expr_result LF@%");
     ADD_INSTR_INT(scope_id);
-    ADD_INSTR_PART("%for%step int@0 \n"
+    ADD_INSTR_PART("%for%step float@0x1.0p+0 \n"
                    "JUMPIFEQ $for$");
     ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("$step_le GF@%expr_result bool@true \n"
                    "    # step >= 0 \n"
                    "    # if i <= cond then break \n"
-                   "    PUSHS LF@%");
+                   "    PUSHS LF@%for%");
     ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
@@ -1079,7 +1139,9 @@ static void generate_for_cond(dynstring_t *var_name) {
     ADD_INSTR_INT(scope_id);
     ADD_INSTR_PART("%");
     ADD_INSTR_PART_DYN(var_name);
-    ADD_INSTR_PART("\n    PUSHS LF@%cond \n"
+    ADD_INSTR_PART("\n    PUSHS LF@%");
+    ADD_INSTR_INT(scope_id);
+    ADD_INSTR_PART("%for%terminating_cond \n"
                    "    POPS GF@%expr_result2 \n"
                    "    POPS GF@%expr_result \n"
                    "    GT GF@%expr_result3 GF@%expr_result GF@%expr_result2 \n"
@@ -1204,7 +1266,7 @@ static void generate_func_return_value(size_t index) {
 static void generate_return(type_recast_t r_type, size_t return_index) {
     // recast if needed and assign parameter
     if (r_type != NO_RECAST) {
-        recast_second();
+        ADD_INSTR("CALL $$recast_to_float_second");
     }
     generate_expression_pop();
     generate_func_pass_return(return_index);
@@ -1243,7 +1305,7 @@ static void generate_func_call_pass_param(size_t param_index) {
 static void generate_param(type_recast_t r_type, size_t param_index) {
     // recast if needed and assign parameter
     if (r_type != NO_RECAST) {
-        recast_second();
+        ADD_INSTR("CALL $$recast_to_float_second");
     }
     generate_expression_pop();
     generate_func_call_pass_param(param_index);
@@ -1306,7 +1368,6 @@ static void generate_multiple_write(size_t expr_len) {
  * generates sth like:  MOVE LF%id%res TF@%return0
  */
 static void generate_func_call_return_value(size_t index) {
-    //ADD_INSTR_PART("MOVE GF@%expr_result TF@%return");
     ADD_INSTR_PART("PUSHS TF@%return");
     ADD_INSTR_INT(index);
     ADD_INSTR_TMP();
@@ -1350,9 +1411,9 @@ static void generate_prog_start() {
               "MOVE GF@%expr_result2 nil@nil");
     ADD_INSTR("DEFVAR GF@%expr_result3 \n"
               "MOVE GF@%expr_result3 nil@nil");
-    ADD_INSTR("JUMP $$MAIN");
+    ADD_INSTR("JUMP $$MAIN \n");
     ADD_INSTR("LABEL $$ERROR_NIL \n"
-              "EXIT int@8 \n"
+              "EXIT int@8 \n\n"
               "LABEL $$ERROR_DIV_BY_ZERO \n"
               "EXIT int@9");
 
@@ -1370,6 +1431,9 @@ static void generate_prog_start() {
     generate_minus_unary_func();
     nil_check_func();
     recast_to_bool_func();
+    recast_to_float_first();
+    recast_to_float_second();
+    recast_to_float_both();
     generate_ors_short();
     generate_ands_short();
 
@@ -1396,11 +1460,11 @@ const struct code_generator_interface_t Generator = {
         .print_instr_list = Print_instr_list,
         .var_declaration = generate_var_declaration,
         .var_definition = generate_var_definition,
-        .tmp_var_definition = generate_tmp_var_definition,
+        .tmp_var_definition_float = generate_tmp_var_definition_float,
         .var_assignment = generate_var_assignment,
         .var_set_nil = generate_var_set_nil,
         .recast_expression_to_bool = recast_expression_to_bool,
-        .recast_int_to_number = recast_second,
+        .recast_int_to_number = recast_to_float,
         .expression_operand = generate_expression_operand,
         .expression_unary = generate_expression_unary,
         .expression_binary = generate_expression_binary,

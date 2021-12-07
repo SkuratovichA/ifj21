@@ -71,7 +71,7 @@ struct code_generator_interface_t {
     /*
      * @brief Generates variable used for code generating.
      */
-    void (*tmp_var_definition)(char *);
+    void (*tmp_var_definition_float)(char *);
 
     /*
      * @brief Generates assignment to a variable
@@ -91,7 +91,7 @@ struct code_generator_interface_t {
     /*
      * @brief Converts GF@%expr_result int -> float
      */
-    void (*recast_int_to_number)(void);
+    void (*recast_int_to_number)(type_recast_t);
 
     /*
      * @brief Generates expressions reduce.

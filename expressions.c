@@ -1372,7 +1372,7 @@ static bool check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
             }
 
             if (r_type != NO_RECAST) {
-                Generator.recast_int_to_number();
+                Generator.recast_int_to_number(r_type);
             }
             Generator.var_assignment(id->data);
         }

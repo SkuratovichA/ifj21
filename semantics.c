@@ -562,7 +562,7 @@ static bool Check_type_compatibility (const char expected_type,
     }
 
     if (expected_type == 'f' && received_char == 'i') {
-        *r_type = TYPE_RECAST_FIRST;
+        *r_type = TYPE_RECAST_SECOND;
         goto ret;
     }
 

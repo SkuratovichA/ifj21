@@ -410,7 +410,7 @@ static bool assignment(dynstring_t *id_name, int id_type) {
 
     if (r_type != NO_RECAST) {
         Generator.expression_push();
-        Generator.recast_int_to_number();
+        Generator.recast_int_to_number(r_type);
     }
     // expression result is in GF@%expr_result
     Generator.var_definition(id_name);
@@ -449,7 +449,7 @@ static bool for_increment() {
     PARSE_DEFAULT_EXPRESSION(received_signature, TYPE_EXPR_DEFAULT);
     CHECK_EXPR_SIGNATURES(expected_signature, received_signature, ERROR_TYPE_MISSMATCH);
     // generate step
-    Generator.tmp_var_definition("for%step");
+    Generator.tmp_var_definition_float("for%step");
 
     noerr:
     // do
@@ -519,7 +519,7 @@ static bool for_cycle() {
 
     // generate terminating `expr`
     Generator.comment("for loop - terminating expr definition");
-    Generator.tmp_var_definition("for%terminating_cond");
+    Generator.tmp_var_definition_float("for%terminating_cond");
 
     // do | , `expr` do
     if (!for_increment()) {
