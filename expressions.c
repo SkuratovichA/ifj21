@@ -1246,13 +1246,13 @@ static bool r_other_expr(dynstring_t *expected_rets,
         }
 
         // Parse other return values
+        size_t received_ret_cnt = return_cnt + Dynstring.len(last_expression);
         for (size_t i = 0; i < Dynstring.len(last_expression); i++) {
-            CHECK_EXPR_TYPES(Dynstring.c_str(expected_rets)[return_cnt],
-                             Dynstring.c_str(last_expression)[i],
+            CHECK_EXPR_TYPES(Dynstring.c_str(expected_rets)[received_ret_cnt - i - 1],
+                             Dynstring.c_str(last_expression)[Dynstring.len(last_expression) - i - 1],
                              r_type);
-            Generator.pass_return(r_type, return_cnt);
+            Generator.pass_return(r_type, received_ret_cnt - i - 1);
             r_type = NO_RECAST;
-            return_cnt++;
         }
 
         goto noerr;
