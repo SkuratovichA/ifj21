@@ -1367,6 +1367,11 @@ static bool check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
     size_t ids_len = List.len(ids_list);
     size_t rhs_len = Dynstring.len(rhs_expressions);
 
+    if (rhs_len < ids_len) {
+        Errors.set_error(ERROR_SEMANTICS_OTHER);
+        goto err;
+    }
+
     while (rhs_len > ids_len) {
         Dynstring.trunc_to_len(rhs_expressions, ids_len);
         Generator.expression_pop();
@@ -1374,29 +1379,23 @@ static bool check_multiple_assignment(list_t *ids_list, dynstring_t *rhs_express
     }
 
     while (id != NULL) {
-        // there is no more expressions
-        if (id_cnt < ids_len - rhs_len) {
-            // assign nil to other variables
-            Generator.var_set_nil(id->data);
-        } else {
-            symbol_t *sym;
-            if (!Symstack.get_local_symbol(symstack, id->data, &sym)) {
-                Errors.set_error(ERROR_DEFINITION);
-                goto err;
-            }
-
-            if (!Semantics.check_type_compatibility(Semantics.of_id_type(sym->type),
-                                                    rhs_expr_str[ids_len - id_cnt - 1],
-                                                    &r_type)) {
-                Errors.set_error(ERROR_TYPE_MISSMATCH);
-                goto err;
-            }
-
-            if (r_type != NO_RECAST) {
-                Generator.recast_int_to_number(r_type);
-            }
-            Generator.var_assignment(id->data);
+        symbol_t *sym;
+        if (!Symstack.get_local_symbol(symstack, id->data, &sym)) {
+            Errors.set_error(ERROR_DEFINITION);
+            goto err;
         }
+
+        if (!Semantics.check_type_compatibility(Semantics.of_id_type(sym->type),
+                                                rhs_expr_str[ids_len - id_cnt - 1],
+                                                &r_type)) {
+            Errors.set_error(ERROR_TYPE_MISSMATCH);
+            goto err;
+        }
+
+        if (r_type != NO_RECAST) {
+            Generator.recast_int_to_number(r_type);
+        }
+        Generator.var_assignment(id->data);
 
         r_type = NO_RECAST;
         id_cnt++;
