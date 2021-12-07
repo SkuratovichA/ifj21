@@ -686,7 +686,6 @@ static void recast_expression_to_bool(void) {
  *        to check is integer (true) or float (false).
  */
 static void generate_division_check(bool is_integer) {
-    ADD_INSTR("# zero division check");
     ADD_INSTR("POPS GF@%expr_result");
     if (is_integer) {
         ADD_INSTR("JUMPIFEQ $$ERROR_DIV_BY_ZERO GF@%expr_result int@0");
@@ -700,7 +699,6 @@ static void generate_division_check(bool is_integer) {
  * @brief Generates nil check.
  */
 static void generate_nil_check() {
-    ADD_INSTR("# nil check");
     ADD_INSTR("CALL $$nil_check");
 }
 
@@ -889,7 +887,6 @@ static void generate_cond_label(size_t if_scope_id, size_t cond_num) {
  *         generates: JUMPIFNEQ $if$id$next_cond LF@%result bool@true
  */
 static void generate_cond_if(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR("\n# condition - if check");
     ADD_INSTR_PART("JUMPIFNEQ $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$");
@@ -935,7 +932,6 @@ static void generate_cond_else(size_t if_scope_id, size_t cond_num) {
  *                     LABEL $if$id$scope_num
  */
 static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
-    ADD_INSTR("\n# condition end");
     ADD_INSTR_PART("LABEL $if$");
     ADD_INSTR_INT(if_scope_id);
     ADD_INSTR_PART("$end");
@@ -949,7 +945,6 @@ static void generate_cond_end(size_t if_scope_id, size_t cond_num) {
  * @brief Generates break instruction.
  */
 static void generate_break() {
-    ADD_INSTR_PART("\n# break \n");
     ADD_INSTR_PART("JUMP $end$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
@@ -973,7 +968,6 @@ static void generate_end() {
  * generates sth like: LABEL $while$id
  */
 static void generate_while_header() {
-    ADD_INSTR("\n# while");
     ADD_INSTR_PART("LABEL $while$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
@@ -999,7 +993,6 @@ static void generate_while_end() {
     ADD_INSTR_PART("JUMP $while$");
     ADD_INSTR_INT(Symstack.get_scope_info(symstack).unique_id);
     ADD_INSTR_TMP();
-
     generate_end();
 }
 
@@ -1141,7 +1134,6 @@ static void generate_for_cond(dynstring_t *var_name) {
  *                     LABEL $end$id
  */
 static void generate_for_end(dynstring_t *var_name) {
-    ADD_INSTR("# for loop end");
     ADD_INSTR_PART("ADD LF@%for%");\
     generate_var_name(var_name, false);
     ADD_INSTR_PART(" LF@%for%");
@@ -1174,7 +1166,6 @@ static void generate_func_start(dynstring_t *func_name) {
  * @brief Generates function definition end.
  */
 static void generate_func_end(char *func_name) {
-    ADD_INSTR("# function end");
     ADD_INSTR_PART("LABEL $");
     ADD_INSTR_PART(func_name);
     ADD_INSTR_PART("$end");
@@ -1192,7 +1183,6 @@ static void generate_func_end(char *func_name) {
  *      MOVE LF@%param LF@%0
  */
 static void generate_func_start_param(dynstring_t *param_name, size_t index) {
-    ADD_INSTR("# generate_function_start_param");
     ADD_INSTR_PART("DEFVAR LF@%");
     generate_var_name(param_name, true);
     ADD_INSTR_TMP();
@@ -1223,7 +1213,6 @@ static void generate_func_pass_return(size_t index) {
  *      MOVE LF@%return0 nil@nil
  */
 static void generate_func_return_value(size_t index) {
-    ADD_INSTR("# generate_function_return_value");
     ADD_INSTR_PART("DEFVAR LF@%return");
     ADD_INSTR_INT(index);
     ADD_INSTR_TMP();
@@ -1361,13 +1350,6 @@ static void generate_func_call_return_value(size_t index) {
 }
 
 /*
- * @brief Generates clear stack.
- */
-static void generate_clear_stack() {
-    ADD_INSTR("CLEARS");
-}
-
-/*
  * @brief Generates start of main scope.
  */
 static void generate_main_start() {
@@ -1397,7 +1379,7 @@ static void generate_prog_start() {
     ADD_INSTR("DEFVAR GF@%expr_result2 \n"
               "MOVE GF@%expr_result2 nil@nil");
     ADD_INSTR("DEFVAR GF@%expr_result3 \n"
-              "MOVE GF@%expr_result3 nil@nil");
+              "MOVE GF@%expr_result3 nil@nil \n");
     ADD_INSTR("JUMP $$MAIN \n");
     ADD_INSTR("LABEL $$ERROR_NIL \n"
               "EXIT int@8 \n\n"
@@ -1485,7 +1467,6 @@ const struct code_generator_interface_t Generator = {
         .func_call = generate_func_call,
         .multiple_write = generate_multiple_write,
         .func_call_return_value = generate_func_call_return_value,
-        .clear_stack = generate_clear_stack,
         .main_end = generate_main_end,
         .prog_start = generate_prog_start,
         .comment = generate_comment,

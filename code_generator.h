@@ -261,11 +261,6 @@ struct code_generator_interface_t {
     void (*func_call_return_value)(size_t);
 
     /*
-     * @brief Generates clear stack.
-     */
-    void (*clear_stack)(void);
-
-    /*
      * @brief Generates function call.
      */
     void (*func_call)(char *);
