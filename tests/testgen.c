@@ -371,19 +371,19 @@ int main() {
     );
 
     char *description13 = "more repuntil, multiple returns";
-    int retcode13 = ERROR_SEMANTICS_OTHER; // ?? FIXME: which error is it?
+    int retcode13 = ERROR_SYNTAX;
     pfile_t *pf13 = Pfile.ctor(
             PROLOG
             "function to_be_a_bee_but_bi_bee_and_maybe_be_a_bee() : string "NL
             "    return \"I'm about 2bee printed only once!\"              "NL
-            "    return false                                              "NL
+            "    return \"a\"                                              "NL
             "end                                                           "NL
             "                                                              "NL
             "function yours()                                              "NL
-            "   local a : boolean = true                                   "NL
+            "   local a : string                                           "NL
             "   repeat                                                     "NL
             "       a = to_be_a_bee_but_bi_bee_and_maybe_be_a_bee()        "NL
-            "   until a == true                                            "NL
+            "   until a == \"a\"                                           "NL
             "end                                                           "NL
             "yours()                                                       "NL
     );
@@ -1628,7 +1628,7 @@ int main() {
     );
 
     char *description94 = "wrong parameters";
-    int retcode94 = ERROR_FUNCTION_SEMANTICS;
+    int retcode94 = ERROR_DEFINITION;
     pfile_t *pf94 = Pfile.ctor(
             PROLOG
             "global name : function (integer, number, string,                   "NL
@@ -3674,7 +3674,7 @@ int main() {
             "global foo : function(string) : integer           "NL
     );
 
-    char *description244 = "";
+    char *description244 = "function is declared but not defined";
     int retcode244 = ERROR_DEFINITION;
     pfile_t *pf244 = Pfile.ctor(
             PROLOG
