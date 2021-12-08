@@ -663,7 +663,7 @@ int main() {
     );
 
     char *description33 = "Function semantics: nil in declaration, but not in definition";
-    int retcode33 = ERROR_FUNCTION_SEMANTICS;
+    int retcode33 = ERROR_DEFINITION;
     pfile_t *pf33 = Pfile.ctor(
             PROLOG
             "global foo : function( string, string ) : nil"NL
@@ -3614,7 +3614,7 @@ int main() {
     );
 
     char *description240 = "";
-    int retcode240 = ERROR_SYNTAX;
+    int retcode240 = ERROR_DEFINITION;
     pfile_t *pf240 = Pfile.ctor(
             PROLOG
             "function abcd()                                   "NL
@@ -3668,7 +3668,7 @@ int main() {
             "                                                  "NL
             "function main()                                   "NL
             "	write(\"ok\")                                  "NL
-            "	foo()                                          "NL
+            "	foo(\"text\")                                  "NL
             "end                                               "NL
             "                                                  "NL
             "global foo : function(string) : integer           "NL
@@ -3736,7 +3736,7 @@ int main() {
             "global foo : function(string) : integer           "NL
             "                                                  "NL
             "function main()                                   "NL
-            "	foo()                                          "NL
+            "	foo(\"text\")                                  "NL
             "end                                               "NL
             "                                                  "NL
             "function foo(s: string) : integer, number         "NL
@@ -3875,29 +3875,276 @@ int main() {
             "end                                               "NL
     );
 
-    char *description261 = "";
-    int retcode261 = ERROR_TYPE_MISSMATCH;
+    char *description261 = "correct usage of not operator";
+    int retcode261 = ERROR_NOERROR;
     pfile_t *pf261 = Pfile.ctor(
             PROLOG
             "function main()                                   "NL
-            "	local i : string                               "NL
-            "	local j : integer                              "NL
-            "	local c : number                               "NL
-            "	i, j, c = \"ijc\", 5.0, 9                      "NL
+            "	local a : integer = 5                          "NL
+            "   if not(2 < a) then                             "NL
+            "       write(\"something wrong\\n\")              "NL
+            "   else                                           "NL
+            "       write(\"correct\")                         "NL
+            "	end                                            "NL
             "end                                               "NL
     );
 
-    char *description262 = "";
-    int retcode262 = ERROR_SEMANTICS_OTHER;
+    char *description262 = "unrecognised token in precedence analyze";
+    int retcode262 = ERROR_LEXICAL;
     pfile_t *pf262 = Pfile.ctor(
             PROLOG
-            "function main()                                   "NL
-            "	local i : string                               "NL
-            "	local j : integer                              "NL
-            "	local c : number                               "NL
-            "	i, j, c = \"ijc\", 9                           "NL
-            "end                                               "NL
+            "function main()              "NL
+            "   local a : integer = 1 @ 2 "NL
+            "end                          "NL
+    );
 
+    char *description263 = "semantics error with not operator";
+    int retcode263 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf263 = Pfile.ctor(
+            PROLOG
+            "function main()                       "NL
+            "   local a : boolean = not \"string\" "NL
+            "end                                   "NL
+    );
+
+    char *description264 = "precedence error in expression";
+    int retcode264 = ERROR_SYNTAX;
+    pfile_t *pf264 = Pfile.ctor(
+            PROLOG
+            "function main()             "NL
+            "   local a : integer = 1 2  "NL
+            "end                         "NL
+    );
+
+    char *description265 = "call a function without any params";
+    int retcode265 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf265 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, string         "NL
+            "   return 22, \"test\"                   "NL
+            "end                                      "NL
+            "                                         "NL
+            "function main(a : integer, b : string)   "NL
+            "   write(a)                              "NL
+            "end                                      "NL
+            "                                         "NL
+            "main(foo(1, 2, 3))                       "NL
+    );
+
+    char *description266 = "precedence analyse error in return stmt";
+    int retcode266 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf266 = Pfile.ctor(
+            PROLOG
+            "function foo() : integer, number, integer     "NL
+            "   local bar : number = 25.6                  "NL
+            "   return 1, bar, # # \"text\"                "NL
+            "end                                           "NL
+    );
+
+    char *description267 = "undefined variable in multiple assignment";
+    int retcode267 = ERROR_DEFINITION;
+    pfile_t *pf267 = Pfile.ctor(
+            PROLOG
+            "function foo(a : boolean) : string, integer   "NL
+            "   if a then                                  "NL
+            "      return \"true\", 112                    "NL
+            "   end                                        "NL
+            "                                              "NL
+            "   return \"false\", -112                     "NL
+            "end                                           "NL
+            "                                              "NL
+            "function main()                               "NL
+            "   local b : string                           "NL
+            "   local c : integer                          "NL
+            "   a, b, c = 2.0, foo()                       "NL
+            "end                                           "NL
+            "                                              "NL
+            "main()                                        "NL
+    );
+
+    char *description268 = "wrong expression in multiple assignment #1";
+    int retcode268 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf268 = Pfile.ctor(
+            PROLOG
+            "function main()                                "NL
+            "   local a : integer                           "NL
+            "   local b : integer                           "NL
+            "   a, b = 6.0 // 2.0, 2                        "NL
+            "end                                            "NL
+    );
+
+    char *description269 = "wrong expression in multiple assignment #2";
+    int retcode269 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf269 = Pfile.ctor(
+            PROLOG
+            "function main()                                "NL
+            "   local a : boolean                           "NL
+            "   local b : integer                           "NL
+            "   local c : string                            "NL
+            "   a, b, c = true, 2, not \"text\"             "NL
+            "end                                            "NL
+    );
+
+    char *description270 = "call undefined function in global scope";
+    int retcode270 = ERROR_DEFINITION;
+    pfile_t *pf270 = Pfile.ctor(
+            PROLOG
+            "foo(1, 2, 3)"NL
+    );
+
+    char *description271 = "call undefined function inside other function";
+    int retcode271 = ERROR_DEFINITION;
+    pfile_t *pf271 = Pfile.ctor(
+            PROLOG
+            "function main()                     "NL
+            "   foo(1, 2, 3)                     "NL
+            "end                                 "NL
+    );
+
+    char *description272 = "multiple unary minuses";
+    int retcode272 = ERROR_NOERROR;
+    pfile_t *pf272 = Pfile.ctor(
+            PROLOG
+            "function main() : integer                         "NL
+            "   local a : integer = 1 + - - - - - 3            "NL
+            "   return a                                       "NL
+            "end                                               "NL
+            "write(main())                                     "NL
+    );
+
+    char *description273 = "expression with function which does not return anything";
+    int retcode273 = ERROR_NOERROR;
+    pfile_t *pf273 = Pfile.ctor(
+            PROLOG
+            "function foo()                           "NL
+            "   write(\"hello\")                      "NL
+            "end                                      "NL
+            "                                         "NL
+            "function main()                          "NL
+            "   local a : boolean = foo() == nil      "NL
+            "   if a then                             "NL
+            "       write(\"yes\")                    "NL
+            "   else                                  "NL
+            "       write(\"no\")                     "NL
+            "   end                                   "NL
+            "end                                      "NL
+            "main()                                   "NL
+    );
+
+    char *description274 = "strcat with wrong types";
+    int retcode274 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf274 = Pfile.ctor(
+            PROLOG
+            "function main()                       "NL
+            "   local str : string = true .. 123   "NL
+            "end                                   "NL
+    );
+
+    char *description275 = "boolean subtraction";
+    int retcode275 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf275 = Pfile.ctor(
+            PROLOG
+            "function main()                       "NL
+            "   local a : boolean = true - false   "NL
+            "end                                   "NL
+    );
+
+    char *description276 = "wrong if statement";
+    int retcode276 = ERROR_SYNTAX;
+    pfile_t *pf276 = Pfile.ctor(
+            PROLOG
+            "function main()                       "NL
+            "   local a : boolean                  "NL
+            "   if 1 == 2 then                     "NL
+            "       a = true                       "NL
+            "end                                   "NL
+    );
+
+    char *description277 = "unrecognized variable type";
+    int retcode277 = ERROR_SYNTAX;
+    pfile_t *pf277 = Pfile.ctor(
+            PROLOG
+            "function main()                       "NL
+            "   local b : float = 12.337           "NL
+            "end                                   "NL
+    );
+
+    char *description278 = "wrong type of parameter in function definition #1";
+    int retcode278 = ERROR_SYNTAX;
+    pfile_t *pf278 = Pfile.ctor(
+            PROLOG
+            "function main(a : float)              "NL
+            "   write(\"i parsed type float :/\")  "NL
+            "end                                   "NL
+    );
+
+    char *description279 = "wrong type of parameter in function definition #2";
+    int retcode279 = ERROR_SYNTAX;
+    pfile_t *pf279 = Pfile.ctor(
+            PROLOG
+            "function main(a : number, b : float)              "NL
+            "   write(\"i parsed type float :/\")              "NL
+            "end                                               "NL
+    );
+
+    char *description280 = "wrong parameters in function definition";
+    int retcode280 = ERROR_SYNTAX;
+    pfile_t *pf280 = Pfile.ctor(
+            PROLOG
+            "function main(a : number, b : number,)            "NL
+            "   local b : integer = nil                        "NL
+            "end                                               "NL
+    );
+
+    char *description281 = "unrecognized symbol in function statement";
+    int retcode281 = ERROR_LEXICAL;
+    pfile_t *pf281 = Pfile.ctor(
+            PROLOG
+            "function main()                       "NL
+            "   @                                  "NL
+            "end                                   "NL
+    );
+
+    char *description282 = "error in function declaration parameters #1";
+    int retcode282 = ERROR_SYNTAX;
+    pfile_t *pf282 = Pfile.ctor(
+            PROLOG
+            "global foo : function(float, string)"NL
+    );
+
+    char *description283 = "error in function declaration parameters #2";
+    int retcode283 = ERROR_SYNTAX;
+    pfile_t *pf283 = Pfile.ctor(
+            PROLOG
+            "global foo : function(number, integer, float)"NL
+    );
+
+    char *description284 = "error in function declaration rets #1";
+    int retcode284 = ERROR_SYNTAX;
+    pfile_t *pf284 = Pfile.ctor(
+            PROLOG
+            "global foo : function() : float, string"NL
+    );
+
+    char *description285 = "error in function declaration rets #2";
+    int retcode285 = ERROR_SYNTAX;
+    pfile_t *pf285 = Pfile.ctor(
+            PROLOG
+            "global foo : function() : integer, number, float"NL
+    );
+
+    char *description286 = "function declaration wrong rets";
+    int retcode286 = ERROR_SYNTAX;
+    pfile_t *pf286 = Pfile.ctor(
+            PROLOG
+            "global foo : function() : integer,"NL
+    );
+
+    char *description287 = "function declaration wrong params";
+    int retcode287 = ERROR_SYNTAX;
+    pfile_t *pf287 = Pfile.ctor(
+            PROLOG
+            "global foo : function(string, number,)"NL
     );
 
     STRING_NOERROR(107, "02");
@@ -4215,6 +4462,33 @@ int main() {
     TEST_CASE(258);
     TEST_CASE(259);
     TEST_CASE(260);
+    TEST_CASE(261);
+    TEST_CASE(262);
+    TEST_CASE(263);
+    TEST_CASE(264);
+    TEST_CASE(265);
+    TEST_CASE(266);
+    TEST_CASE(267);
+    TEST_CASE(268);
+    TEST_CASE(269);
+    TEST_CASE(270);
+    TEST_CASE(271);
+    TEST_CASE(272);
+    TEST_CASE(273);
+    TEST_CASE(274);
+    TEST_CASE(275);
+    TEST_CASE(276);
+    TEST_CASE(277);
+    TEST_CASE(278);
+    TEST_CASE(279);
+    TEST_CASE(280);
+    TEST_CASE(281);
+    TEST_CASE(282);
+    TEST_CASE(283);
+    TEST_CASE(284);
+    TEST_CASE(285);
+    TEST_CASE(286);
+    TEST_CASE(287);
 
     return 0;
 }

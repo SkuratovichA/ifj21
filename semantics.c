@@ -370,6 +370,12 @@ static bool Check_binary_compatibility(dynstring_t *first_type,
                 break;
             }
 
+            // check boolean
+            if (Dynstring.cmp_c_str(first_type, "b") == 0 ||
+                Dynstring.cmp_c_str(second_type, "b") == 0) {
+                break;
+            }
+
             // number -> number +|-|*|/|^ number
             if (Dynstring.cmp(first_type, second_type) == 0) {
 
