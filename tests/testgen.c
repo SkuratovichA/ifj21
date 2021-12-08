@@ -663,7 +663,7 @@ int main() {
     );
 
     char *description33 = "Function semantics: nil in declaration, but not in definition";
-    int retcode33 = ERROR_FUNCTION_SEMANTICS;
+    int retcode33 = ERROR_DEFINITION;
     pfile_t *pf33 = Pfile.ctor(
             PROLOG
             "global foo : function( string, string ) : nil"NL
@@ -1628,7 +1628,7 @@ int main() {
     );
 
     char *description94 = "wrong parameters";
-    int retcode94 = ERROR_FUNCTION_SEMANTICS;
+    int retcode94 = ERROR_DEFINITION;
     pfile_t *pf94 = Pfile.ctor(
             PROLOG
             "global name : function (integer, number, string,                   "NL
@@ -3614,7 +3614,7 @@ int main() {
     );
 
     char *description240 = "";
-    int retcode240 = ERROR_SYNTAX;
+    int retcode240 = ERROR_DEFINITION;
     pfile_t *pf240 = Pfile.ctor(
             PROLOG
             "function abcd()                                   "NL
@@ -3668,14 +3668,14 @@ int main() {
             "                                                  "NL
             "function main()                                   "NL
             "	write(\"ok\")                                  "NL
-            "	foo()                                          "NL
+            "	foo(\"text\")                                  "NL
             "end                                               "NL
             "                                                  "NL
             "global foo : function(string) : integer           "NL
     );
 
     char *description244 = "";
-    int retcode244 = ERROR_DEFINITION;
+    int retcode244 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf244 = Pfile.ctor(
             PROLOG
             "global foo : function(string) : integer           "NL
@@ -3736,7 +3736,7 @@ int main() {
             "global foo : function(string) : integer           "NL
             "                                                  "NL
             "function main()                                   "NL
-            "	foo()                                          "NL
+            "	foo(\"text\")                                  "NL
             "end                                               "NL
             "                                                  "NL
             "function foo(s: string) : integer, number         "NL
@@ -3932,7 +3932,7 @@ int main() {
     );
 
     char *description266 = "precedence analyse error in return stmt";
-    int retcode266 = ERROR_SYNTAX;
+    int retcode266 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
     pfile_t *pf266 = Pfile.ctor(
             PROLOG
             "function foo() : integer, number, integer     "NL
@@ -3999,6 +3999,36 @@ int main() {
             "function main()                     "NL
             "   foo(1, 2, 3)                     "NL
             "end                                 "NL
+    );
+
+    char *description272 = "multiple unary minuses";
+    int retcode272 = ERROR_NOERROR;
+    pfile_t *pf272 = Pfile.ctor(
+            PROLOG
+            "function main() : integer                         "NL
+            "   local a : integer = 1 + - - - - - 3            "NL
+            "   return a                                       "NL
+            "end                                               "NL
+            "write(main())                                     "NL
+    );
+
+    char *description273 = "expression with function which does not return anything";
+    int retcode273 = ERROR_NOERROR;
+    pfile_t *pf273 = Pfile.ctor(
+            PROLOG
+            "function foo()                           "NL
+            "   write(\"hello\")                      "NL
+            "end                                      "NL
+            "                                         "NL
+            "function main()                          "NL
+            "   local a : boolean = foo() == nil      "NL
+            "   if a then                             "NL
+            "       write(\"yes\")                    "NL
+            "   else                                  "NL
+            "       write(\"no\")                     "NL
+            "   end                                   "NL
+            "end                                      "NL
+            "main()                                   "NL
     );
 
     STRING_NOERROR(107, "02");
@@ -4327,6 +4357,8 @@ int main() {
     TEST_CASE(269);
     TEST_CASE(270);
     TEST_CASE(271);
+    TEST_CASE(272);
+    TEST_CASE(273);
 
     return 0;
 }
