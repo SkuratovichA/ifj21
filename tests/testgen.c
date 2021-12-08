@@ -3675,7 +3675,7 @@ int main() {
     );
 
     char *description244 = "function is declared but not defined";
-    int retcode244 = ERROR_DEFINITION;
+    int retcode244 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf244 = Pfile.ctor(
             PROLOG
             "global foo : function(string) : integer           "NL
@@ -4394,6 +4394,10 @@ int main() {
     int retcode304 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf304 = Pfile.ctor(
             PROLOG
+            "function bar(i : integer) : integer, number       "NL
+            "   return i, 2.0                                  "NL
+            "end                                               "NL
+            "                                                  "NL
             "function main()                                   "NL
             "	local i : integer                              "NL
             "	local j : number                               "NL
@@ -4421,6 +4425,10 @@ int main() {
     int retcode306 = ERROR_FUNCTION_SEMANTICS;
     pfile_t *pf306 = Pfile.ctor(
             PROLOG
+            "function bar(i : integer) : integer, number       "NL
+            "   return i, 2.0                                  "NL
+            "end                                               "NL
+            "                                                  "NL
             "function main(i : integer)                        "NL
             "	local j : number                               "NL
             "	i, j = bar(i)                                  "NL
@@ -4526,6 +4534,10 @@ int main() {
     int retcode312 = ERROR_SYNTAX;
     pfile_t *pf312 = Pfile.ctor(
             PROLOG
+            "function bar(i : integer) : integer, number       "NL
+            "   return i, 2.0                                  "NL
+            "end                                               "NL
+            "                                                  "NL
             "function main(i : integer)                        "NL
             "	local j : number                               "NL
             "	i, j = bar(i)                                  "NL
@@ -4658,7 +4670,7 @@ int main() {
             "	local j : number                               "NL
             "	i, j = bar(i)                                  "NL
             "end                                               "NL
-            "main(i)                                           "NL
+            "main(1)                                           "NL
     );
 
     STRING_NOERROR(107, "02");
