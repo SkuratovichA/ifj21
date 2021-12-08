@@ -39,7 +39,7 @@ typedef enum id_type {
 } id_type_t;
 
 
-/** Symbol is not opaque because fuck it.
+/** Symbol.
  */
 typedef struct symbol {
     id_type_t type;
