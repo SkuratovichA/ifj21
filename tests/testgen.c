@@ -4147,6 +4147,520 @@ int main() {
             "global foo : function(string, number,)"NL
     );
 
+    char *description288 = "equality of incompatible types";
+    int retcode288 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf288 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	if true == \"a\" then                          "NL
+            "	else                                           "NL
+            "	end                                            "NL
+            "end                                               "NL
+    );
+
+    char *description289 = "equality of boolean and nil";
+    int retcode289 = ERROR_NOERROR;
+    pfile_t *pf289 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	if true == nil then                            "NL
+            "		write(\"false\")                           "NL
+            "	else                                           "NL
+            "		write(\"true\")                            "NL
+            "	end                                            "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description290 = "more else";
+    int retcode290 = ERROR_SYNTAX;
+    pfile_t *pf290 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	if true == nil then                            "NL
+            "		write(\"false\")                           "NL
+            "	else                                           "NL
+            "		write(\"true\")                            "NL
+            "	else                                           "NL
+            "		write(\"ba                                 "NL
+            "	end                                            "NL
+            "end                                               "NL
+    );
+
+    char *description291 = "more if";
+    int retcode291 = ERROR_SYNTAX;
+    pfile_t *pf291 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local i : integer                              "NL
+            "	if true == nil then                            "NL
+            "		i = 0                                      "NL
+            "	if false == nil then                           "NL
+            "		i = 1                                      "NL
+            "	else                                           "NL
+            "		i = 2                                      "NL
+            "	end                                            "NL
+            "	write(i)                                       "NL
+            "end                                               "NL
+    );
+
+    char *description292 = "nested if";
+    int retcode292 = ERROR_NOERROR;
+    pfile_t *pf292 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local i : integer                              "NL
+            "	if true == nil then                            "NL
+            "		i = 0                                      "NL
+            "	if false == nil then                           "NL
+            "		i = 1                                      "NL
+            "	else                                           "NL
+            "		i = 2                                      "NL
+            "	end                                            "NL
+            "	end                                            "NL
+            "	write(i)                                       "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description293 = "elseif without if";
+    int retcode293 = ERROR_SYNTAX;
+    pfile_t *pf293 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local i : integer                              "NL
+            "	elseif 1 + 4 + 334 - 3 then                    "NL
+            "		i = 10                                     "NL
+            "	if true == nil then                            "NL
+            "		i = 0                                      "NL
+            "	if false == nil then                           "NL
+            "		i = 1                                      "NL
+            "	else                                           "NL
+            "		i = 2                                      "NL
+            "	end                                            "NL
+            "	end                                            "NL
+            "	print(i)                                       "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description294 = "undeclared variable in loop";
+    int retcode294 = ERROR_DEFINITION;
+    pfile_t *pf294 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	while i <= 10 do                               "NL
+            "		local i : integer                          "NL
+            "		print(i)                                   "NL
+            "	end                                            "NL
+            "end                                               "NL
+    );
+
+    char *description295 = "wrong number of params in function call";
+    int retcode295 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf295 = Pfile.ctor(
+            PROLOG
+            "function bar (a: string, b: integer, c : number, d : string)   "NL
+            "end                                                            "NL
+            "                                                               "NL
+            "function main()                                                "NL
+            "	bar(\"hello\", 1, 4, \"world\", 2)                          "NL
+            "end                                                            "NL
+    );
+
+    char *description296 = "wrong number of params in function call";
+    int retcode296 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf296 = Pfile.ctor(
+            PROLOG
+            "function bar (a: string, b: integer, c : number, d : string)   "NL
+            "end                                                            "NL
+            "                                                               "NL
+            "function main()                                                "NL
+            "	bar(\"hello\", 1, 4)                                        "NL
+            "end                                                            "NL
+    );
+
+    char *description297 = "wrong param types in function call";
+    int retcode297 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf297 = Pfile.ctor(
+            PROLOG
+            "function bar (a: string, b: integer, d : string)  "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main()                                   "NL
+            "	bar(\"hello\", 1.4, \"s\")                     "NL
+            "end                                               "NL
+    );
+
+    char *description298 = "wrong param types in function call";
+    int retcode298 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf298 = Pfile.ctor(
+            PROLOG
+            "function bar (a: string, b: integer, c : number)  "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main()                                   "NL
+            "	bar(\"hello\", 1.4, 4)                         "NL
+            "end                                               "NL
+    );
+
+    char *description299 = "fewer ids than return values";
+    int retcode299 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf299 = Pfile.ctor(
+            PROLOG
+            "function bar (a: integer) : integer, number       "NL
+            "	return 1, 2                                    "NL
+            "end                                               "NL
+            "                                                  "NL
+            "function main()                                   "NL
+            "	local i : integer                              "NL
+            "	local j : number                               "NL
+            "	local k : string                               "NL
+            "	i, j, k = bar(4)                               "NL
+            "end                                               "NL
+    );
+
+    char *description300 = "more ids than return values";
+    int retcode300 = ERROR_NOERROR;
+    pfile_t *pf300 = Pfile.ctor(
+            PROLOG
+            "function bar (a: integer) : integer, number, integer   "NL
+            "	return 1, 2, 3                                      "NL
+            "end                                                    "NL
+            "                                                       "NL
+            "function main()                                        "NL
+            "	local i : integer                                   "NL
+            "	local j : number                                    "NL
+            "	i, j = bar(4)                                       "NL
+            "	write(i, j)                                         "NL
+            "end                                                    "NL
+            "                                                       "NL
+            "main()                                                 "NL
+    );
+
+    char *description301 = "wrong type of id in assignment";
+    int retcode301 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf301 = Pfile.ctor(
+            PROLOG
+            "function bar (a: integer) : integer, number, integer  "NL
+            "	return 1, 2, 3                                     "NL
+            "end                                                   "NL
+            "                                                      "NL
+            "function main()                                       "NL
+            "	local i : integer                                  "NL
+            "	local j : string                                   "NL
+            "	i, j = bar(4)                                      "NL
+            "end                                                   "NL
+    );
+
+    char *description302 = "wrong id type in assignment";
+    int retcode302 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf302 = Pfile.ctor(
+            PROLOG
+            "function bar (a: integer) : integer, number, integer   "NL
+            "	return                                              "NL
+            "end                                                    "NL
+            "                                                       "NL
+            "function main()                                        "NL
+            "	local i : integer                                   "NL
+            "	local j : string                                    "NL
+            "	i, j = bar(4)                                       "NL
+            "end                                                    "NL
+    );
+
+    char *description303 = "";
+    int retcode303 = ERROR_NOERROR;
+    pfile_t *pf303 = Pfile.ctor(
+            PROLOG
+            "function bar (a: integer) : integer, number, integer   "NL
+            "	write(a)                                            "NL
+            "	return a                                            "NL
+            "end                                                    "NL
+            "                                                       "NL
+            "function main()                                        "NL
+            "	local i : integer                                   "NL
+            "	local j : number                                    "NL
+            "	i, j = bar(i)                                       "NL
+            "	write(i)                                            "NL
+            "end                                                    "NL
+            "                                                       "NL
+            "main()                                                 "NL
+    );
+
+    char *description304 = "wrong number of params in main scope";
+    int retcode304 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf304 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local i : integer                              "NL
+            "	local j : number                               "NL
+            "	i, j = bar(i)                                  "NL
+            "	write(i)                                       "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main(8)                                           "NL
+    );
+
+    char *description305 = "redeclaration of variable in params";
+    int retcode305 = ERROR_DEFINITION;
+    pfile_t *pf305 = Pfile.ctor(
+            PROLOG
+            "function main(i : integer)                        "NL
+            "	local i : integer                              "NL
+            "	local j : number                               "NL
+            "	i, j = bar(i)                                  "NL
+            "	write(i)                                       "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description306 = "wrong number of params in main scope";
+    int retcode306 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf306 = Pfile.ctor(
+            PROLOG
+            "function main(i : integer)                        "NL
+            "	local j : number                               "NL
+            "	i, j = bar(i)                                  "NL
+            "	write(i)                                       "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description307 = "wrong number of values in return";
+    int retcode307 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf307 = Pfile.ctor(
+            PROLOG
+            "function bar (a: integer) : integer, number, integer   "NL
+            "	return a, 3, 4, 5                                   "NL
+            "end                                                    "NL
+            "                                                       "NL
+            "function main(i : integer)                             "NL
+            "	local j : number                                    "NL
+            "	i, j = bar(i)                                       "NL
+            "	write(i)                                            "NL
+            "end                                                    "NL
+    );
+
+    char *description308 = "fewer values in return";
+    int retcode308 = ERROR_NOERROR;
+    pfile_t *pf308 = Pfile.ctor(
+            PROLOG
+            "function bar (a: integer) : integer, number, number "NL
+            "	write(a)                                         "NL
+            "	return a, 3                                      "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function main(i : integer)                          "NL
+            "	local j : number                                 "NL
+            "	i, j = bar(i)                                    "NL
+            "	write(i)                                         "NL
+            "end                                                 "NL
+    );
+
+    char *description309 = "expecting nil error 8";
+    int retcode309 = ERROR_NOERROR;
+    pfile_t *pf309 = Pfile.ctor(
+            PROLOG
+            "function bar (a: integer) : integer, number, number "NL
+            "	while a <= 3 do                                  "NL
+            "		write(a)                                     "NL
+            "		if (a == 2) then                             "NL
+            "			return a                                 "NL
+            "		end                                          "NL
+            "	end                                              "NL
+            "	return a                                         "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function main(i : integer)                          "NL
+            "	local j : number                                 "NL
+            "	i, j = bar(i)                                    "NL
+            "	write(i)                                         "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "main(nil)                                           "NL
+    );
+
+    char *description310 = "";
+    int retcode310 = ERROR_NOERROR;
+    pfile_t *pf310 = Pfile.ctor(
+            PROLOG
+            "function bar (a: integer) : integer, number, number "NL
+            "	while a <= 3 do                                  "NL
+            "		write(a)                                     "NL
+            "		if (a == 2) then                             "NL
+            "			return a                                 "NL
+            "		end                                          "NL
+            "	end                                              "NL
+            "	return a                                         "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function main(i : integer)                          "NL
+            "	local j : number                                 "NL
+            "	i, j = bar(i)                                    "NL
+            "	write(i)                                         "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "main(4)                                             "NL
+    );
+
+    char *description311 = "variable declaration in main scope";
+    int retcode311 = ERROR_SYNTAX;
+    pfile_t *pf311 = Pfile.ctor(
+            PROLOG
+            "function bar(a : integer) : integer, number       "NL
+            "   write(a)                                       "NL
+            "end                                               "NL
+            "function main(i : integer)                        "NL
+            "	local j : number                               "NL
+            "	i, j = bar(i)                                  "NL
+            "end                                               "NL
+            "                                                  "NL
+            "local i : integer                                 "NL
+            "main(i)                                           "NL
+    );
+
+    char *description312 = "global variable declaration in main scope";
+    int retcode312 = ERROR_SYNTAX;
+    pfile_t *pf312 = Pfile.ctor(
+            PROLOG
+            "function main(i : integer)                        "NL
+            "	local j : number                               "NL
+            "	i, j = bar(i)                                  "NL
+            "	write(i)                                       "NL
+            "end                                               "NL
+            "                                                  "NL
+            "global i : integer                                "NL
+            "main(i)                                           "NL
+    );
+
+    char *description313 = "comparing boolean and integer";
+    int retcode313 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf313 = Pfile.ctor(
+            PROLOG
+            "function bar (a: integer) : integer, number, number "NL
+            "	while a <= 3 do                                  "NL
+            "		write(a)                                     "NL
+            "		if (false == 2) then                         "NL
+            "			return a                                 "NL
+            "		end                                          "NL
+            "	end                                              "NL
+            "	return a                                         "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "function main(i : integer)                          "NL
+            "	local j : number                                 "NL
+            "	i, j = bar(i)                                    "NL
+            "	write(i)                                         "NL
+            "end                                                 "NL
+            "                                                    "NL
+            "main(2)                                             "NL
+    );
+
+    char *description314 = "built-in function call wrong returns";
+    int retcode314 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf314 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local s : string                               "NL
+            "	s = readn()                                    "NL
+            "end                                               "NL
+    );
+
+    char *description315 = "built-in function call nil error expected (8)";
+    int retcode315 = ERROR_NOERROR;
+    pfile_t *pf315 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local i : number                               "NL
+            "	i = tointeger(i)                               "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description316 = "built-in function call";
+    int retcode316 = ERROR_NOERROR;
+    pfile_t *pf316 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local i : number                               "NL
+            "	i = tointeger(4)                               "NL
+            "	write(i)                                       "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description317 = "built-in function call wrong params";
+    int retcode317 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf317 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local i : number                               "NL
+            "	i = ord(\"hello\", i)                          "NL
+            "	write(i)                                       "NL
+            "end                                               "NL
+    );
+
+    char *description318 = "fuilt-in function call wrong params";
+    int retcode318 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf318 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local s : string                               "NL
+            "	local i : string                               "NL
+            "	s = chr(i)                                     "NL
+            "	write(i)                                       "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description319 = "built-in function call";
+    int retcode319 = ERROR_NOERROR;
+    pfile_t *pf319 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "   local s : string = \"bumblebee\"               "NL
+            "	while (s > \"\") do                              "NL
+            "		s = substr(s, 1, #s - 1)                   "NL
+            "		write(s)                                   "NL
+            "	end                                            "NL
+            "	write(s)                                       "NL
+            "end                                               "NL
+            "main()                                            "NL
+    );
+
+    char *description320 = "built-in function call expecting error 8";
+    int retcode320 = ERROR_NOERROR;
+    pfile_t *pf320 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local s : string                               "NL
+            "	while (s > \"\") do                              "NL
+            "		s = substr(s, 1, #s - 1)                   "NL
+            "		write(s)                                   "NL
+            "	end                                            "NL
+            "	write(s)                                       "NL
+            "end                                               "NL
+            "                                                  "NL
+            "main()                                            "NL
+    );
+
+    char *description321 = "more ids than return values in assignment";
+    int retcode321 = ERROR_FUNCTION_SEMANTICS;
+    pfile_t *pf321 = Pfile.ctor(
+            PROLOG
+            "function bar(a : integer) : integer               "NL
+            "   write(a)                                       "NL
+            "end                                               "NL
+            "function main(i : integer)                        "NL
+            "	local j : number                               "NL
+            "	i, j = bar(i)                                  "NL
+            "end                                               "NL
+            "main(i)                                           "NL
+    );
+
     STRING_NOERROR(107, "02");
     STRING_NOERROR(108, "0A");
     STRING_NOERROR(109, "aa");
@@ -4489,6 +5003,40 @@ int main() {
     TEST_CASE(285);
     TEST_CASE(286);
     TEST_CASE(287);
+    TEST_CASE(288);
+    TEST_CASE(289);
+    TEST_CASE(290);
+    TEST_CASE(291);
+    TEST_CASE(292);
+    TEST_CASE(293);
+    TEST_CASE(294);
+    TEST_CASE(295);
+    TEST_CASE(296);
+    TEST_CASE(297);
+    TEST_CASE(298);
+    TEST_CASE(299);
+    TEST_CASE(300);
+    TEST_CASE(301);
+    TEST_CASE(302);
+    TEST_CASE(303);
+    TEST_CASE(304);
+    TEST_CASE(305);
+    TEST_CASE(306);
+    TEST_CASE(307);
+    TEST_CASE(308);
+    TEST_CASE(309);
+    TEST_CASE(310);
+    TEST_CASE(311);
+    TEST_CASE(312);
+    TEST_CASE(313);
+    TEST_CASE(314);
+    TEST_CASE(315);
+    TEST_CASE(316);
+    TEST_CASE(317);
+    TEST_CASE(318);
+    TEST_CASE(319);
+    TEST_CASE(320);
+    TEST_CASE(321);
 
     return 0;
 }
