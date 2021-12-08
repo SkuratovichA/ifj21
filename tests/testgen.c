@@ -4031,6 +4031,122 @@ int main() {
             "main()                                   "NL
     );
 
+    char *description274 = "strcat with wrong types";
+    int retcode274 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf274 = Pfile.ctor(
+            PROLOG
+            "function main()                       "NL
+            "   local str : string = true .. 123   "NL
+            "end                                   "NL
+    );
+
+    char *description275 = "boolean subtraction";
+    int retcode275 = ERROR_EXPRESSIONS_TYPE_INCOMPATIBILITY;
+    pfile_t *pf275 = Pfile.ctor(
+            PROLOG
+            "function main()                       "NL
+            "   local a : boolean = true - false   "NL
+            "end                                   "NL
+    );
+
+    char *description276 = "wrong if statement";
+    int retcode276 = ERROR_SYNTAX;
+    pfile_t *pf276 = Pfile.ctor(
+            PROLOG
+            "function main()                       "NL
+            "   local a : boolean                  "NL
+            "   if 1 == 2 then                     "NL
+            "       a = true                       "NL
+            "end                                   "NL
+    );
+
+    char *description277 = "unrecognized variable type";
+    int retcode277 = ERROR_SYNTAX;
+    pfile_t *pf277 = Pfile.ctor(
+            PROLOG
+            "function main()                       "NL
+            "   local b : float = 12.337           "NL
+            "end                                   "NL
+    );
+
+    char *description278 = "wrong type of parameter in function definition #1";
+    int retcode278 = ERROR_SYNTAX;
+    pfile_t *pf278 = Pfile.ctor(
+            PROLOG
+            "function main(a : float)              "NL
+            "   write(\"i parsed type float :/\")  "NL
+            "end                                   "NL
+    );
+
+    char *description279 = "wrong type of parameter in function definition #2";
+    int retcode279 = ERROR_SYNTAX;
+    pfile_t *pf279 = Pfile.ctor(
+            PROLOG
+            "function main(a : number, b : float)              "NL
+            "   write(\"i parsed type float :/\")              "NL
+            "end                                               "NL
+    );
+
+    char *description280 = "wrong parameters in function definition";
+    int retcode280 = ERROR_SYNTAX;
+    pfile_t *pf280 = Pfile.ctor(
+            PROLOG
+            "function main(a : number, b : number,)            "NL
+            "   local b : integer = nil                        "NL
+            "end                                               "NL
+    );
+
+    char *description281 = "unrecognized symbol in function statement";
+    int retcode281 = ERROR_LEXICAL;
+    pfile_t *pf281 = Pfile.ctor(
+            PROLOG
+            "function main()                       "NL
+            "   @                                  "NL
+            "end                                   "NL
+    );
+
+    char *description282 = "error in function declaration parameters #1";
+    int retcode282 = ERROR_SYNTAX;
+    pfile_t *pf282 = Pfile.ctor(
+            PROLOG
+            "global foo : function(float, string)"NL
+    );
+
+    char *description283 = "error in function declaration parameters #2";
+    int retcode283 = ERROR_SYNTAX;
+    pfile_t *pf283 = Pfile.ctor(
+            PROLOG
+            "global foo : function(number, integer, float)"NL
+    );
+
+    char *description284 = "error in function declaration rets #1";
+    int retcode284 = ERROR_SYNTAX;
+    pfile_t *pf284 = Pfile.ctor(
+            PROLOG
+            "global foo : function() : float, string"NL
+    );
+
+    char *description285 = "error in function declaration rets #2";
+    int retcode285 = ERROR_SYNTAX;
+    pfile_t *pf285 = Pfile.ctor(
+            PROLOG
+            "global foo : function() : integer, number, float"NL
+    );
+
+    char *description286 = "function declaration wrong rets";
+    int retcode286 = ERROR_SYNTAX;
+    pfile_t *pf286 = Pfile.ctor(
+            PROLOG
+            "global foo : function() : integer,"NL
+    );
+
+    char *description287 = "function declaration wrong params";
+    int retcode287 = ERROR_SYNTAX;
+    pfile_t *pf287 = Pfile.ctor(
+            PROLOG
+            "global foo : function(string, number,)"NL
+    );
+
     STRING_NOERROR(107, "02");
     STRING_NOERROR(108, "0A");
     STRING_NOERROR(109, "aa");
@@ -4359,6 +4475,20 @@ int main() {
     TEST_CASE(271);
     TEST_CASE(272);
     TEST_CASE(273);
+    TEST_CASE(274);
+    TEST_CASE(275);
+    TEST_CASE(276);
+    TEST_CASE(277);
+    TEST_CASE(278);
+    TEST_CASE(279);
+    TEST_CASE(280);
+    TEST_CASE(281);
+    TEST_CASE(282);
+    TEST_CASE(283);
+    TEST_CASE(284);
+    TEST_CASE(285);
+    TEST_CASE(286);
+    TEST_CASE(287);
 
     return 0;
 }
