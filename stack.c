@@ -1,7 +1,8 @@
 /**
  * @file stack.c
  *
- * @author Lucie Svobodova
+ * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ * @author Lucie Svobodova <xsvobo1x@vutbr.cz>
  */
 #include "stack.h"
 
@@ -146,7 +147,6 @@ int main() {
 
     }
 //        .clear = Clear,
-//  todo
     return 0;
 }
 

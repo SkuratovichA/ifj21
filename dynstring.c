@@ -66,7 +66,6 @@ static dynstring_t *Str_ctor_empty(size_t length) {
     str->str = calloc(1, alloc);
     soft_assert(str->str, ERROR_INTERNAL);
 
-    // TODO check bounds (length/length+1/length-1)
     memset(str->str, '\0', length);
 
     return str;

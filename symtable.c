@@ -5,8 +5,6 @@
  *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
  * @author Kuznik Jakub <xkuzni04@vutbr.cz>
- *
- * TODO: move global_table, local_table here. From parser.c
  */
 
 #include "symtable.h"

@@ -42,7 +42,6 @@ static void Set_error(int errcode) {
             errmsg = "Syntax error";
             break;
         case ERROR_DEFINITION:
-            // todo: does it want to add more error messages? i.e undefined function, undefined variable ...
             // case ERROR_UNDEFINED_FUNCTION:
             // 3 - semantic error in the program - undefined function/variable, attempt of redefining the variable,. ..
             errmsg = "Undefined function/variable!";

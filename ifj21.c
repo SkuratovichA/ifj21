@@ -2,7 +2,7 @@
  * @file ifj21.c
  *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
- * @author Lucie Svobodova
+ * @author Lucie Svobodova <xsvobo1x@vutbr.cz>
  */
 
 #include "errors.h"

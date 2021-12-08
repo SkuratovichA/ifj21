@@ -1,7 +1,7 @@
 /**
  * @file code_generator.c
  *
- * @author Lucie Svobodova
+ * @author Lucie Svobodova <xsvobo1x@vutbr.cz>
  */
 
 #include "code_generator.h"
@@ -521,7 +521,7 @@ static void generate_var_value(token_t token) {
             unsigned str_len = Dynstring.len(token.attribute.id);
             char *str_id = Dynstring.c_str(token.attribute.id);
             for (unsigned i = 0; i < str_len; i++) {
-                // check format (check what to do with not printable chars?)
+                // check format
                 if (str_id[i] <= 32 || str_id[i] == '#' || str_id[i] == '\\'|| !isprint(str_id[i])) {
                     // print as an escape sequence
                     sprintf(str_tmp, "\\%03d", str_id[i]);

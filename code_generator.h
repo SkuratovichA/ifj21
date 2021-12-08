@@ -1,7 +1,7 @@
 /**
  * @file code_generator.h
  *
- * @author Lucie Svobodova
+ * @author Lucie Svobodova <xsvobo1x@vutbr.cz>
  */
 
 #pragma once

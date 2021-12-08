@@ -4,6 +4,7 @@
  * @brief Function semantics structure and functions.
  *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ * @author Evgeny Torbin <xtorbi00@vutbr.cz>
  */
 
 #include "semantics.h"

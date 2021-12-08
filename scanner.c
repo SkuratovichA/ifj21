@@ -638,7 +638,6 @@ static token_t lex_number(pfile_t *pfile) {
     Pfile.ungetc(pfile);
     token_t token;
 
-    // TODO: actually we can get rid of it and left number as string but with market that its an integer or a float.
     if (is_fp) {
         token.type = TOKEN_NUM_F;
         token.attribute.num_f = strtod(Dynstring.c_str(ascii_num), NULL);

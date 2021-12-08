@@ -4,6 +4,7 @@
  * @brief Implementation of different semantic controls.
  *
  * @author Skuratovich Aliaksandr <xskura01@vutbr.cz>
+ * @author Evgeny Torbin <xtorbi00@vutbr.cz>
  */
 #pragma once
 
@@ -79,8 +80,6 @@ struct semantics_interface_t {
 
     /** Set is_declared.
      *
-     * TODO: depricate?
-     *
      * @param self semantics to change it_declared flag.
      * @return void.
      */
@@ -88,16 +87,12 @@ struct semantics_interface_t {
 
     /** Set is_defined.
      *
-     * TODO: depricate?
-     *
      * @param self semantics to change it_defined flag.
      * @return void.
      */
     void (*define)(func_semantics_t *);
 
     /** Set is_builtin.
-     *
-     * TODO: depricate?
      *
      * @param self semantics to change it_builtin flag.
      * @return void.
