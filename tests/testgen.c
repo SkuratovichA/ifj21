@@ -3875,6 +3875,31 @@ int main() {
             "end                                               "NL
     );
 
+    char *description261 = "";
+    int retcode261 = ERROR_TYPE_MISSMATCH;
+    pfile_t *pf261 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local i : string                               "NL
+            "	local j : integer                              "NL
+            "	local c : number                               "NL
+            "	i, j, c = \"ijc\", 5.0, 9                      "NL
+            "end                                               "NL
+    );
+
+    char *description262 = "";
+    int retcode262 = ERROR_SEMANTICS_OTHER;
+    pfile_t *pf262 = Pfile.ctor(
+            PROLOG
+            "function main()                                   "NL
+            "	local i : string                               "NL
+            "	local j : integer                              "NL
+            "	local c : number                               "NL
+            "	i, j, c = \"ijc\", 9                           "NL
+            "end                                               "NL
+
+    );
+
     STRING_NOERROR(107, "02");
     STRING_NOERROR(108, "0A");
     STRING_NOERROR(109, "aa");
