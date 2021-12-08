@@ -1249,6 +1249,16 @@ static void generate_func_return_value(size_t index) {
 }
 
 /*
+ * Generates definition of return values - sets them to nil.
+ * @param returns_vector vector with functions return types
+ */
+static void generate_return_defvars(dynstring_t *returns_vector) {
+    for (size_t i = 0; i < Dynstring.len(returns_vector); i++) {
+        generate_func_return_value(i);
+    }
+}
+
+/*
  * @brief Recast and generate function return.
  *
  * @param r_type
@@ -1476,7 +1486,7 @@ const struct code_generator_interface_t Generator = {
         .func_end = generate_func_end,
         .func_start_param = generate_func_start_param,
         .pass_return = generate_return,
-        .func_return_value = generate_func_return_value,
+        .return_defvars = generate_return_defvars,
         .return_end = generate_return_end,
         .func_createframe = generate_func_createframe,
         .pass_param = generate_param,

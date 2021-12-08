@@ -1015,7 +1015,7 @@ static bool datatype_list(pfile_t *pfile, func_info_t function_decl_info) {
  * @param pfile input file for Scanner.get_next_token().
  * @return bool.
  */
-static bool other_funrets(pfile_t *pfile, func_info_t function_info, size_t ret_num) {
+static bool other_funrets(pfile_t *pfile, func_info_t function_info) {
     debug_msg("<other_funrets> -> \n");
 
     // e |
@@ -1025,11 +1025,9 @@ static bool other_funrets(pfile_t *pfile, func_info_t function_info, size_t ret_
     // ,
     EXPECTED(TOKEN_COMMA);
     Semantics.add_return(&function_info, Scanner.get_curr_token().type);
-    // generate return var
-    Generator.func_return_value(ret_num++);
 
     // <datatype> <other_funrets>
-    if (!datatype() || !other_funrets(pfile, function_info, ret_num)) {
+    if (!datatype() || !other_funrets(pfile, function_info)) {
         goto err;
     }
 
@@ -1056,12 +1054,9 @@ static bool funretopt(pfile_t *pfile, func_info_t function_info) {
     // :
     EXPECTED(TOKEN_COLON);
     Semantics.add_return(&function_info, Scanner.get_curr_token().type);
-    // generate return var
-    size_t ret_num = 0;
-    Generator.func_return_value(ret_num++);
 
     // <datatype> <other_funrets>
-    if (!datatype() || !other_funrets(pfile, function_info, ret_num)) {
+    if (!datatype() || !other_funrets(pfile, function_info)) {
         goto err;
     }
 
@@ -1174,6 +1169,10 @@ static bool function_definition() {
     if (Semantics.is_declared(symbol->function_semantics)) {
         SEMANTIC_CHECK_FUNCTION_SIGNATURES(symbol);
     }
+
+    // generate code for return values
+    Generator.return_defvars(symbol->function_semantics->definition.returns);
+
     // <fun_body>
     if (!fun_body("")) {
         goto err;

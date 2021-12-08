@@ -222,9 +222,10 @@ struct code_generator_interface_t {
     void (*func_start_param)(dynstring_t *, size_t);
 
     /*
-     * @brief Generates return value of return parameter with index.
+     * Generates definition of return values - sets them to nil.
+     * @param returns_vector vector with functions return types
      */
-    void (*func_return_value)(size_t);
+    void (*return_defvars)(dynstring_t *);
 
     /*
      * @brief Recast and generate function return.
