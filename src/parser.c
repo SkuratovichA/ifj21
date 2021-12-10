@@ -33,7 +33,7 @@ void print_error_unexpected_token(const char *a, const char *b) {
     fprintf(stderr, "[error](syntax): Expected '%s', got '%s' instead\n", a, b);
 }
 
-#define CHECK_EXPR_SIGNATURES(accepted, received, errtype)                             \
+#define CHECK_EXPR_SIGNATURES(accepted, received, errtype)                            \
     do {                                                                              \
         if (!Semantics.check_signatures_compatibility(accepted, received, errtype)) { \
             goto err;                                                                 \
@@ -42,7 +42,7 @@ void print_error_unexpected_token(const char *a, const char *b) {
 
 /** If there's a mismatch in number/type of parameters, then return false.
  */
-#define SEMANTIC_CHECK_FUNCTION_SIGNATURES(sym)                          \
+#define SEMANTIC_CHECK_FUNCTION_SIGNATURES(sym)                         \
     do {                                                                \
         if (!Semantics.check_signatures(symbol->function_semantics)) {  \
             Errors.set_error(ERROR_DEFINITION);                         \
@@ -55,7 +55,7 @@ void print_error_unexpected_token(const char *a, const char *b) {
  *  There is a need to store a function id to perform code generation magic.
  *  Set a local table to the newly puched table.
  */
-#define SYMSTACK_PUSH(_scope_type, _id_fun_name)                  \
+#define SYMSTACK_PUSH(_scope_type, _id_fun_name)                 \
     do {                                                         \
         char *_str = NULL;                                       \
         local_table = Symtable.ctor();                           \
@@ -67,7 +67,7 @@ void print_error_unexpected_token(const char *a, const char *b) {
 
 /** Pop an item prom the stack. Change local table, too.
  */
-#define SYMSTACK_POP()                          \
+#define SYMSTACK_POP()                         \
      do {                                      \
         Symstack.pop(symstack);                \
         local_table = Symstack.top(symstack);  \
@@ -75,7 +75,7 @@ void print_error_unexpected_token(const char *a, const char *b) {
 
 /** Set an error code and return an error if there's a declaration error.
  */
-#define error_multiple_declaration(a)                                 \
+#define error_multiple_declaration(a)                                \
     do {                                                             \
         Errors.set_error(ERROR_DEFINITION);                          \
         fprintf(stderr, "line %zu, character %zu\n",                 \
@@ -87,11 +87,11 @@ void print_error_unexpected_token(const char *a, const char *b) {
 
 /** Check semantics(for functions, variables, but not for expressions).
  */
-#define SEMANTICS_SYMTABLE_CHECK_AND_PUT(name, type)                     \
+#define SEMANTICS_SYMTABLE_CHECK_AND_PUT(name, type)                    \
     do {                                                                \
         dynstring_t *_name = name;                                      \
         symbol_t *_dummy_symbol = NULL;                                 \
-        /* if name is already defined in the local scope */              \
+        /* if name is already defined in the local scope */             \
         if (Symtable.get_symbol(local_table, _name, &_dummy_symbol)) {  \
             error_multiple_declaration(_name);                          \
             goto err;                                                   \
@@ -104,9 +104,9 @@ void print_error_unexpected_token(const char *a, const char *b) {
         Symstack.put_symbol(symstack, _name, type);                     \
     } while (0)
 
-#define PARSE_DEFAULT_EXPRESSION(received_signature, expr_type)               \
+#define PARSE_DEFAULT_EXPRESSION(received_signature, expr_type)              \
     do {                                                                     \
-        if (!Expr.default_expression(pfile, received_signature, expr_type)) { \
+        if (!Expr.default_expression(pfile, received_signature, expr_type)) {\
             debug_msg("\n");                                                 \
             debug_msg_s("\t\t[error] assignment expression failed.\n");      \
             goto err;                                                        \
@@ -122,18 +122,18 @@ void print_error_unexpected_token(const char *a, const char *b) {
         }                                                                           \
     } while(0)
 
-#define PARSE_FUNCTION_EXPRESSION()                                    \
+#define PARSE_FUNCTION_EXPRESSION()                                   \
     do {                                                              \
-        if (!Expr.function_expression(pfile)) {                        \
+        if (!Expr.function_expression(pfile)) {                       \
             debug_msg("\n");                                          \
             debug_msg_s("\t\t[error] function expression failed.\n"); \
             goto err;                                                 \
         }                                                             \
     } while(0)
 
-#define PARSE_GLOBAL_EXPRESSION()                                      \
+#define PARSE_GLOBAL_EXPRESSION()                                     \
     do {                                                              \
-        if (!Expr.global_expression(pfile)) {                          \
+        if (!Expr.global_expression(pfile)) {                         \
             debug_msg("\n");                                          \
             debug_msg_s("\t\t[error] global expression failed.\n");   \
             goto err;                                                 \
