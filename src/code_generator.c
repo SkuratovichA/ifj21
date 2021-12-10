@@ -516,13 +516,15 @@ static void generate_var_value(token_t token) {
     memset(str_tmp, '\0', MAX_CHAR);
     switch (token.type) {
         case TOKEN_STR:
+            ADD_INSTR("\n# var value generating");
+            ADD_INSTR("\n# --------------------");
             ADD_INSTR_PART("string@");
             // transform the string format
             unsigned str_len = Dynstring.len(token.attribute.id);
             char *str_id = Dynstring.c_str(token.attribute.id);
             for (unsigned i = 0; i < str_len; i++) {
                 // check format
-                if (str_id[i] <= 32 || str_id[i] == '#' || str_id[i] == '\\'|| !isprint(str_id[i])) {
+                if (str_id[i] <= 32 || str_id[i] == '#' || str_id[i] == '\\' || !isprint(str_id[i])) {
                     // print as an escape sequence
                     sprintf(str_tmp, "\\%03d", str_id[i]);
                 } else {
@@ -531,27 +533,39 @@ static void generate_var_value(token_t token) {
                 ADD_INSTR_PART(str_tmp);
                 memset(str_tmp, '\0', MAX_CHAR);
             }
+            ADD_INSTR("\n# --------------------");
             break;
         case TOKEN_NUM_F:
+            ADD_INSTR("\n#generating var value: float");
             ADD_INSTR_PART("float@");
             sprintf(str_tmp, "%a", token.attribute.num_f);
             ADD_INSTR_PART(str_tmp);
+            ADD_INSTR("\n# --------------------");
             break;
         case TOKEN_NUM_I:
+            ADD_INSTR("\n#generating var value: int");
             ADD_INSTR_PART("int@");
             sprintf(str_tmp, "%lu", token.attribute.num_i);
             ADD_INSTR_PART(str_tmp);
+            ADD_INSTR("\n# --------------------");
             break;
         case KEYWORD_nil:
+            ADD_INSTR("\n#generating var value: nil");
             ADD_INSTR_PART("nil@nil");
+            ADD_INSTR("\n# --------------------");
             break;
         case KEYWORD_0:
+            ADD_INSTR("\n#generating var value: false");
             ADD_INSTR_PART("bool@false");
+            ADD_INSTR("\n# --------------------");
             break;
         case KEYWORD_1:
+            ADD_INSTR("\n#generating var value: true");
             ADD_INSTR_PART("bool@true");
+            ADD_INSTR("\n# --------------------");
             break;
         case TOKEN_ID:
+            ADD_INSTR("\n #generating var value: id - lf what the fuck");
             ADD_INSTR_PART("LF@%");
             symbol_t *symbol;
             if (!Symstack.get_local_symbol(symstack, token.attribute.id, &symbol)) {
@@ -561,9 +575,11 @@ static void generate_var_value(token_t token) {
             }
             ADD_INSTR_PART("%");
             ADD_INSTR_PART_DYN(token.attribute.id);
+            ADD_INSTR("\n# --------------------");
             break;
         default:
             ADD_INSTR_PART("unexpected_token");
+            ADD_INSTR("\n# --------------------");
             break;
     }
 }
@@ -1208,6 +1224,8 @@ static void generate_func_end(char *func_name) {
  *      MOVE LF@%param LF@%0
  */
 static void generate_func_start_param(dynstring_t *param_name, size_t index) {
+    ADD_INSTR("\n# generate passing parameter from TF to LF");
+    ADD_INSTR("\n#------------------------------------------");
     ADD_INSTR_PART("DEFVAR LF@%");
     generate_var_name(param_name, true);
     ADD_INSTR_TMP();
@@ -1217,6 +1235,7 @@ static void generate_func_start_param(dynstring_t *param_name, size_t index) {
     ADD_INSTR_PART(" LF@%");
     ADD_INSTR_INT(index);
     ADD_INSTR_TMP();
+    ADD_INSTR("\n#------------------------------------------");
 }
 
 /*
@@ -1238,6 +1257,8 @@ static void generate_func_pass_return(size_t index) {
  *      MOVE LF@%return0 nil@nil
  */
 static void generate_func_return_value(size_t index) {
+    ADD_INSTR("\n# generate func return");
+    ADD_INSTR("\n# --------------------");
     ADD_INSTR_PART("DEFVAR LF@%return");
     ADD_INSTR_INT(index);
     ADD_INSTR_TMP();
@@ -1246,6 +1267,7 @@ static void generate_func_return_value(size_t index) {
     ADD_INSTR_INT(index);
     ADD_INSTR_PART(" nil@nil");
     ADD_INSTR_TMP();
+    ADD_INSTR("\n# --------------------");
 }
 
 /*
@@ -1287,6 +1309,7 @@ static void generate_return_end() {
  * @brief Generates creation of a frame before passing parameters to a function
  */
 static void generate_func_createframe() {
+    ADD_INSTR("\n# creating of a frame before passing parameters to a function");
     ADD_INSTR("CREATEFRAME");
 }
 
@@ -1297,6 +1320,8 @@ static void generate_func_createframe() {
  *          MOVE TF@%0 GF@%expr_result
  */
 static void generate_func_call_pass_param(size_t param_index) {
+    ADD_INSTR("\n# generate parameter passed to a function");
+    ADD_INSTR("\n# --------------------");
     ADD_INSTR_PART("DEFVAR TF@%");
     ADD_INSTR_INT(param_index);
     ADD_INSTR_TMP();
@@ -1305,6 +1330,7 @@ static void generate_func_call_pass_param(size_t param_index) {
     ADD_INSTR_INT(param_index);
     ADD_INSTR_PART(" GF@%expr_result");
     ADD_INSTR_TMP();
+    ADD_INSTR("\n# --------------------");
 }
 
 /*

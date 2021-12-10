@@ -10,12 +10,12 @@ TARGET=ifj21
 
 all: $(TARGET)
 
-$(TARGET): *.c
+$(TARGET): src/*.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 clean:
 	rm -f *.o $(TARGET) $(ZIPNAME)
 
 zip:
-	zip $(ZIPNAME) *.h *.c Makefile rozdeleni rozsireni
+	zip $(ZIPNAME) src/* Makefile rozdeleni rozsireni doc/dokumentace.pdf
 

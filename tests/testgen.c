@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 
-#include "../progfile.h"
+#include "../src/progfile.h"
 #include <assert.h>
 
 

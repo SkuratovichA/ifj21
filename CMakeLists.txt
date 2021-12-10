@@ -8,22 +8,22 @@ set(PROJECT_NAME ifj21)
 
 # definitions of cmake variables.
 set(UTILS_SOURCES
-        macros.h
-        debug.h
-        errors.c
-        progfile.c
-        scanner.c
-        symstack.c
-        parser.c
-        expressions.c
-        semantics.c
-        code_generator.c
+        src/macros.h
+        src/debug.h
+        src/errors.c
+        src/progfile.c
+        src/scanner.c
+        src/symstack.c
+        src/parser.c
+        src/expressions.c
+        src/semantics.c
+        src/code_generator.c
         )
 set(DATASTRUCTURES
-        symtable.c
-        list.c
-        stack.c
-        dynstring.c
+        src/symtable.c
+        src/list.c
+        src/stack.c
+        src/dynstring.c
         )
 set(PROJ_FILES
         ${DATASTRUCTURES} ${UTILS_SOURCES}
@@ -54,7 +54,7 @@ set(CMAKE_EXE_LINKER_FLAGS
 #adding targets
 # The project itself.
 add_executable(${PROJECT_NAME}
-        ifj21.c
+        src/ifj21.c
         ${PROJ_FILES}
         )
 message(STATUS ${PROJECT_NAME} " execucumber compiled.")
