@@ -11,7 +11,7 @@ representation called "ifjcode21"
   cd cmake-build-debug && make ifj21
 ```
 
--To compile & generate tests:
+- To compile & generate tests:
 
 ```shell
   cd cmake-build-debug && make testgen && ./testgen
