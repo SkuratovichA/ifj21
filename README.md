@@ -5,15 +5,28 @@ representation called "ifjcode21"
 
 ### Compilation
 
-```sh
-cd cmake-build-debug
-make ifj21
+- To compile a compiler itself:
+
+```shell
+  cd cmake-build-debug && make ifj21
 ```
 
-### Run
+-To compile & generate tests:
 
+```shell
+  cd cmake-build-debug && make testgen && ./testgen
 ```
+
+### Running
+
+```shell
 ./ifj21 < "inputfile.tl"
+```
+
+### Testing
+
+```shell
+cd tests && ./tests_shch all
 ```
 
 An intermediate code is written to the stdout.
