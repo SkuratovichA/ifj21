@@ -65,7 +65,7 @@ void print_error_unexpected_token(const char *a, const char *b) {
         Symstack.push(symstack, local_table, _scope_type, _str); \
     } while (0)
 
-/** Pop an item prom the stack. Change local table, too.
+/** Pop an item from the stack. Change local table, too.
  */
 #define SYMSTACK_POP()                         \
      do {                                      \
